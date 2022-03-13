@@ -1,0 +1,300 @@
+*leap.txt*
+For Neovim version 0.7.0
+Last change: 2022 March 19
+
+==============================================================================
+CONTENTS                                                         *leap-contents*
+
+  Usage ··························································· |leap-usage|
+  Configuration ·················································· |leap-config|
+  Default keymaps ········································|leap-default-keymaps|
+  Custom keymaps ········································· |leap-custom-keymaps|
+  Highlighting ················································ |leap-highlight|
+  Events ························································· |leap-events|
+
+==============================================================================
+USAGE                                                               *leap-usage*
+
+Command sequence in Normal mode, with the default settings:
+
+`s|S char1 char2? (<space>|<tab>)* label?`
+
+That is,
+- invoke in the forward (`s`) or backward (`S`) direction
+
+  | the "beacons" are lit at this point; all potential matches (`char1` + `?`)
+  | are labeled
+
+- enter the first character of the search pattern (might short-circuit after
+  this, if the character is unique in the search direction)
+
+- enter the second character of the search pattern (might short-circuit after
+  this, if there is only one match)
+
+  | certain beacons are extinguished; only `char1` + `char2` matches remain
+
+  | the cursor automatically jumps to the first match if there are enough
+  | "safe" labels (|leap-config|); pressing any other key than a group-switch
+  | or a target label exits the plugin now
+
+- optionally cycle through the groups of matches that can be labeled at once
+
+- choose a labeled target to jump to (in the current group)
+
+                                                                   *leap-x-mode*
+In Operator-pending mode, there are two different (pairs of) motions
+available, providing the necessary additional comfort and precision, since in
+that case we are targeting exact positions, and can only aim once, without the
+means of easy correction.
+
+`z`/`Z` are the equivalents of `s`/`S`, and they follow the semantics of `/`
+and `?` in terms of cursor placement and inclusive/exclusive operational
+behaviour, including |forced-motion| types.
+
+The mnemonic for X-mode could be extend/exclude (corresponding to `x`/`X`). It
+provides missing variants for the two directions:
+
+ab···|                    |···ab
+█████·  ←  Zab    zab  →  ████ab
+ab███·  ←  Xab    xab  →  ██████
+
+As you can see from the figure, `x` goes to the end of the match, including it
+in the operation, while `X` stops just before - in an absolute sense, after -
+the end of the match (the equivalent of `T` for Leap motions). In simpler
+terms: in X-mode, the relevant edge of the operated area gets an offset of +2.
+
+                                                                *leap-match-EOL* 
+A character at the end of a line can be targeted by pressing `<enter>` after
+it.
+
+                                                             *leap-cross-window*
+`gs` searches in all the other windows on the tab page.
+
+                                                  *leap-omni* *leap-bidirectional*
+By mapping to the special key `<Plug>(leap-omni)`, you can search in the whole
+window, instead of just a given direction. In this case, the matches are
+sorted by their screen distance from the cursor, advancing in concentric
+circles. This is a very different mental model, but has its own merits too.
+The cross-window motion (`gs`) behaves this way by default.
+
+                                                    *leap-repeat* *leap-traversal*
+Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
+motions searches with the previous input. Subsequent keystrokes of `<enter>`
+move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
+the motion ("traversal" mode). 
+
+Note that the revert key does not start a new search in the reverse direction,
+but puts the cursor back to its previous position, allowing for an easy
+correction when you accidentally overshoot your target (this is relevant
+for x-motions).
+
+If the safe label set is in use (|leap-config|), the labels will remain
+available during the whole time, even after entering traversal mode.
+
+Note: For bidirecional and cross-window search, traversal mode is not
+      supported, you can only start a fresh repeat.
+
+                                                               *leap-dot-repeat*
+You can repeat change and delete operations with the `.` character, if
+repeat.vim (https://github.com/tpope/vim-repeat) is installed.
+
+Note: Dot-repeating a jump in which group-switching was involved is repeated
+      as <enter>-repeat (the target chosen is not saved, will prompt for input
+      again)
+
+==============================================================================
+CONFIGURATION                                                      *leap-config*
+
+Setting an individual option via the `opts` table directly:
+
+`   require('leap').opts.case_insensitive = false`
+
+Setting multiple options via the `setup` function: >
+
+    require('leap').setup { 
+        case_insensitive = false,
+        labels = { ... }
+    }
+<
+    Note: These will be merged with the current/default settings. (Settings
+          not mentioned here are not disturbed.)
+
+Available options~
+
+`case_insensitive = true`
+
+    Ignore case in search patterns.
+
+`safe_labels` >
+    {"s", "f", "n",
+     "u", "t",
+     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+<
+    When the number of matches does not exceed the number of these "safe"
+    labels plus one, the plugin jumps to the first match automatically after
+    entering the pattern. Obviously, for this purpose you should choose keys
+    that are unlikely to be used right after a jump!
+    Leaving the list empty (or setting it to `nil`) effectively disables the
+    auto-jump feature.
+
+    Note: Operator-pending mode ignores this, all targets (if multiple found)
+          are labeled then (using the `labels` list, if not empty).
+
+`labels` >
+    {"s", "f", "n",
+     "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g",
+     "u", "t",
+     "c", ".", "z",
+     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+<
+    Target labels to be used when there are more matches than the number of
+    safe labels plus one.
+    Leaving the list empty (or setting it to `nil`) forces auto-jump to always
+    be on, except for Operator-pending mode. In this case, do not forget to
+    set `special_keys.next_match_group` to something "safe" too.
+
+    Note: If you have mapped some keys to `<Plug>(leap-repeat-forward)` and
+    `<Plug>(leap-repeat-backward)`, you should not use them as labels too,
+    obviously.
+
+    Heuristics behind the defaults: 
+    - At least the first few labels should be the same on the two lists, since
+      those become muscle memory, and might be used automatically, a bit like
+      [count] values.
+    - Since the commands invoking the motions are mapped to left-hand keys by
+      default, we tend to prioritize right-hand keys to get a better balance
+      for the whole sequence on average.
+
+`special_keys` >
+    { 
+      next_match_group = '<space>',
+      prev_match_group = '<tab>',
+      repeat = '<enter>',
+      revert = '<tab>',
+    }
+<
+    Keys captured by the plugin at runtime, to:
+    - switch to the next/previous group of matches, when there are more
+      matches than labels available (|leap-usage|)
+    - repeat with the previous input after invocation, or jump to the
+      next/previous match (|leap-repeat|)
+
+==============================================================================
+DEFAULT KEYMAPS                                           *leap-default-keymaps*
+
+The defaults can be set by calling `require('leap').set_default_keymaps()`.
+Note that the function will check for conflicts with any custom mappings
+created by you or other plugins, and will not overwite them, unless explicitly
+told so (called with a `true` argument).
+
+Search trigger keys~
+
+Normal mode
+
+s{char}{char}              Jump to the first character of {char}{char}
+                           in the forward direction.
+S{char}{char}              Jump to the first character of {char}{char}
+                           in the backward direction.
+
+Visual mode
+
+s{char}{char}              Extend visual selection up to and including the
+                           first character of {char}{char} in the forward
+                           direction.
+S{char}{char}              Extend visual selection up to and including the
+                           first character of {char}{char} in the backward
+                           direction.
+
+Operator-pending mode
+
+{operator}z{char}{char}    Perform {operator} from the cursor up to the first
+                           character of {char}{char} in the forward direction.
+{operator}Z{char}{char}    Perform {operator} from the cursor up to and
+                           including the first character of {char}{char} in
+                           the backward direction. (|exclusive| motion: the
+                           cursor position is not included without |o_v|.)
+
+{operator}x{char}{char}    Perform {operator} from the cursor up to and
+                           including the second character of {char}{char} in
+                           the forward direction.
+{operator}X{char}{char}    Perform {operator} from the cursor up to the second
+                           character of {char}{char} in the backward
+                           direction. (|exclusive| motion: the cursor position
+                           is not included without |o_v|.)
+
+Special keys~
+
+<Enter>                    Repeat with the previous input.
+<Tab>                      Revert the previous repeat.
+<Space>                    Shift to the next group of labeled matches.
+<Tab>                      Shift to the previous group of labeled matches.
+<Esc>                      Exit Leap at any stage cleanly.
+
+==============================================================================
+CUSTOM KEYMAPS                                             *leap-custom-keymaps*
+
+<Plug> keys are aliases for right hand sides of mappings - in our case, Lua
+method calls. If you are not familiar with the concept, see |<Plug>| and
+|using-<Plug>|.
+
+Available <Plug> keys:
+
+`<Plug>(leap-forward)`        /-like (offset: 0; as operation: exclusive)
+`<Plug>(leap-backward)`       ?-like (offset: 0; as operation: exclusive)
+`<Plug>(leap-forward-x)`             (offset: 1; as operation: inclusive)
+`<Plug>(leap-backward-x)`            (offset: 2; as operation: exclusive)
+`<Plug>(leap-omni)`
+`<Plug>(leap-cross-window)`
+
+The keys for repeating and for switching between groups of matches can be set
+via `opts.special_keys` (|leap-config|).
+
+==============================================================================
+HIGHLIGHTING                                                    *leap-highlight*
+
+Leap uses the following highlight groups that you can configure to your own
+liking:
+
+    *LeapMatch*
+        Matches that can be reached directly, without having to use a label.
+
+    *LeapLabelPrimary*
+        The character needed to be pressed to jump to the match position,
+        after the whole search pattern has been given. It appears once the
+        first input has been entered, right next to the pair.
+
+    *LeapLabelSecondary*
+        If the number of matches exceeds the available target labels, the next
+        group of labeled targets are shown with a different color. Those can
+        be reached by pressing `<space>` (`special_keys.next_match_group`)
+        before the label character.
+         
+    *LeapBackdrop*
+        In some cases it might be useful or even necessary to apply certain
+        settings on the rest of the area, like disabling all `gui` attributes,
+        or adding a uniform grey foreground color, to make the Leap matches
+        and labels more distinguishable.
+
+In order to preserve your custom settings after changing the colorscheme, you
+might want to wrap them in a function, and define an autocommand like below.
+(Leap does the same, but with |:hi-default|, so it will not overwrite yours.)
+>
+    vim.api.nvim_create_autocmd('ColorScheme', {callback = function ()
+      < my settings here >
+    end})
+
+==============================================================================
+EVENTS                                                             *leap-events*
+
+The following |User| events are triggered on entering/exiting Leap (except for
+instant-repeat):
+
+*LeapEnter* 
+*LeapLeave* 
+
+Example: >
+    vim.api.nvim_create_autocmd('User LeapEnter', {command = 'nohlsearch'})
+    vim.api.nvim_create_autocmd('User LeapLeave', {command = 'let &hlsearch=&hlsearch'})
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
