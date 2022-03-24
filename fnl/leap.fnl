@@ -214,8 +214,6 @@ character instead."
     ; Adjust position after the jump (for x-mode).
     (adjust)
     (when-not op-mode? (force-matchparen-refresh))
-    ; We should get this before the (potential) hacks below.
-    (local adjusted-pos (get-cursor-pos))
     ; Simulating inclusive/exclusive behaviour for operator-pending mode by
     ; adjusting the cursor position.
     ; For operators, our jump is always interpreted by Vim as an exclusive
@@ -230,7 +228,8 @@ character instead."
                 ; The EOF edge case requires some hackery.
                 ; Note: No need to undo the `l` afterwards, as the cursor will
                 ; be moved to the end of the operated area anyway.
-                (do (set vim.o.virtualedit :onemore) (vim.cmd "norm! l")
+                (do (set vim.o.virtualedit :onemore)
+                    (vim.cmd "norm! l")
                     (add-restore-virtualedit-autocmd virtualedit-saved)))
         ; We should _never_ push the cursor in the linewise case, as we might
         ; push it beyond EOL, and that would add another line to the selection.
@@ -243,8 +242,7 @@ character instead."
         ; perspective - an exclusive motion, `v` will change it to
         ; _inclusive_, so we should push the cursor back to "undo" that.
         ; (Previous column as inclusive = target column as exclusive.)
-        :v (push-cursor! :bwd)))
-    adjusted-pos))
+        :v (push-cursor! :bwd)))))
 
 
 (fn highlight-cursor [?pos]
@@ -482,9 +480,9 @@ Dynamic attributes
             ; <cr> is the expected input for matching line breaks, so
             ; let's convert ch2 to the key for the sublist right away.
             ch2 (or (char-at-pos pos {:char-offset 1}) "\r")
-            overlaps-prev-match? (and (= line prev-match.line)
-                                      (= col ((if reverse? dec inc) prev-match.col)))
-            same-char-triplet? (and overlaps-prev-match? (= ch2 prev-match.ch2))]
+            same-char-triplet? (and (= ch2 prev-match.ch2)
+                                    (= line prev-match.line)
+                                    (= col ((if reverse? dec inc) prev-match.col)))]
         (set prev-match {: line : col : ch2})
         (when-not same-char-triplet?
           (table.insert targets
@@ -903,8 +901,8 @@ should actually be displayed depends on the `label-state` flag."
                         (var curr-idx (or (?. traversal-state :idx) 0))
                         (when-not doing-traversal?
                           (when sublist.autojump? (jump-to! first) (set curr-idx 1)))
-                        (match (or (get-last-input sublist
-                                                   {:display-targets-from (inc curr-idx)})
+                        (match (or (get-last-input
+                                     sublist {:display-targets-from (inc curr-idx)})
                                    (exit-early))
                           [in3 group-offset]
                           (match (when-not (or (> group-offset 0)
@@ -918,16 +916,15 @@ should actually be displayed depends on the `label-state` flag."
                               (leap {: reverse? : x-mode?
                                      :traversal-state {: sublist :idx new-idx}}))
 
-                            _ 
-                            (match (when-not force-no-labels?
-                                     (get-target-with-active-primary-label sublist in3))
-                              [idx target]
-                              (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
-                                    (jump-to! target))
+                            _ (match (when-not force-no-labels?
+                                       (get-target-with-active-primary-label sublist in3))
+                                [idx target]
+                                (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
+                                      (jump-to! target))
 
-                              _ (if (or sublist.autojump? doing-traversal?)
-                                    (exit (vim.fn.feedkeys in3 :i))
-                                    (exit-early))))))))))))))))
+                                _ (if (or sublist.autojump? doing-traversal?)
+                                      (exit (vim.fn.feedkeys in3 :i))
+                                      (exit-early))))))))))))))))
 
 
 ; Keymaps ///1

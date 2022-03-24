@@ -228,24 +228,24 @@ local function jump_to_21_2a(target, _45_)
   if not op_mode_3f then
     force_matchparen_refresh()
   end
-  local adjusted_pos = get_cursor_pos()
   if (op_mode_3f and not reverse_3f and inclusive_motion_3f) then
     local _49_ = motion_force
     if (_49_ == nil) then
       if not cursor_before_eof_3f() then
-        push_cursor_21("fwd")
+        return push_cursor_21("fwd")
       else
         vim.o.virtualedit = "onemore"
         vim.cmd("norm! l")
-        add_restore_virtualedit_autocmd(virtualedit_saved)
+        return add_restore_virtualedit_autocmd(virtualedit_saved)
       end
     elseif (_49_ == "V") then
+      return nil
     elseif (_49_ == _3cctrl_v_3e) then
+      return nil
     elseif (_49_ == "v") then
-      push_cursor_21("bwd")
+      return push_cursor_21("bwd")
     end
   end
-  return adjusted_pos
 end
 local function highlight_cursor(_3fpos)
   local _let_53_ = (_3fpos or get_cursor_pos())
@@ -548,15 +548,14 @@ local function get_targets_2a(input, _109_)
     local pos = _each_115_
     local ch1 = char_at_pos(pos, {})
     local ch2 = (char_at_pos(pos, {["char-offset"] = 1}) or "\13")
-    local overlaps_prev_match_3f
+    local same_char_triplet_3f
     local _116_
     if reverse_3f then
       _116_ = dec
     else
       _116_ = inc
     end
-    overlaps_prev_match_3f = ((line == prev_match.line) and (col == _116_(prev_match.col)))
-    local same_char_triplet_3f = (overlaps_prev_match_3f and (ch2 == prev_match.ch2))
+    same_char_triplet_3f = ((ch2 == prev_match.ch2) and (line == prev_match.line) and (col == _116_(prev_match.col)))
     prev_match = {ch2 = ch2, col = col, line = line}
     if not same_char_triplet_3f then
       table.insert(targets0, {["edge-pos?"] = ((ch2 == "\13") or (col == right_bound)), pair = {ch1, ch2}, pos = pos, wininfo = wininfo})
@@ -607,7 +606,7 @@ local function get_targets(input, _125_)
           local line = _each_130_[1]
           local col = _each_130_[2]
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
+          if ((type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
             local row = (_131_).row
             cursor_positions[winid] = {row, col}
           end
@@ -623,7 +622,7 @@ local function get_targets(input, _125_)
         local winid = _each_137_["winid"]
         if by_screen_pos_3f then
           local _138_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_138_) == "table") and (nil ~= (_138_).row) and ((_138_).col == col)) then
+          if ((type(_138_) == "table") and ((_138_).col == col) and (nil ~= (_138_).row)) then
             local row = (_138_).row
             t["screenpos"] = {row, col}
           end
