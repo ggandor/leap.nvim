@@ -606,7 +606,7 @@ local function get_targets(input, _125_)
           local line = _each_130_[1]
           local col = _each_130_[2]
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
+          if ((type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
             local row = (_131_).row
             cursor_positions[winid] = {row, col}
           end
@@ -622,7 +622,7 @@ local function get_targets(input, _125_)
         local winid = _each_137_["winid"]
         if by_screen_pos_3f then
           local _138_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_138_) == "table") and ((_138_).col == col) and (nil ~= (_138_).row)) then
+          if ((type(_138_) == "table") and (nil ~= (_138_).row) and ((_138_).col == col)) then
             local row = (_138_).row
             t["screenpos"] = {row, col}
           end
@@ -873,18 +873,19 @@ local function leap(_201_)
   local reverse_3f = _arg_202_["reverse?"]
   local traversal_state = _arg_202_["traversal-state"]
   local x_mode_3f = _arg_202_["x-mode?"]
+  local omni_3f0 = (cross_window_3f or omni_3f)
   local mode = api.nvim_get_mode().mode
   local visual_mode_3f = ((mode == _3cctrl_v_3e) or (mode == "V") or (mode == "v"))
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
-  local dot_repeatable_op_3f = (op_mode_3f and not omni_3f and (vim.v.operator ~= "y"))
+  local dot_repeatable_op_3f = (op_mode_3f and not omni_3f0 and (vim.v.operator ~= "y"))
   local doing_traversal_3f = traversal_state
-  local force_no_autojump_3f = (op_mode_3f or (omni_3f and visual_mode_3f) or cross_window_3f)
+  local force_no_autojump_3f = (op_mode_3f or (omni_3f0 and visual_mode_3f) or cross_window_3f)
   local force_no_labels_3f = (doing_traversal_3f and not traversal_state.sublist["autojump?"])
   local _3ftarget_windows
   if cross_window_3f then
     _3ftarget_windows = get_targetable_windows()
-  elseif omni_3f then
+  elseif omni_3f0 then
     _3ftarget_windows = {vim.fn.getwininfo(vim.fn.win_getid())[1]}
   else
   _3ftarget_windows = nil
@@ -1150,7 +1151,7 @@ local function leap(_201_)
       _258_ = (prev_in2 or _259_() or _260_())
       if (nil ~= _258_) then
         local in2 = _258_
-        local accept_first_3f = (not (omni_3f or cross_window_3f) and (in2 == spec_keys.accept_first_match))
+        local accept_first_3f = (not omni_3f0 and (in2 == spec_keys.accept_first_match))
         local in20
         if accept_first_3f then
           in20 = targets[1].pair[2]
@@ -1259,7 +1260,7 @@ local function leap(_201_)
               local in3 = (_282_)[1]
               local group_offset = (_282_)[2]
               local _285_
-              if not ((group_offset > 0) or op_mode_3f or omni_3f or cross_window_3f) then
+              if not (op_mode_3f or omni_3f0 or (group_offset > 0)) then
                 _285_ = get_traversal_action(in3)
               else
               _285_ = nil

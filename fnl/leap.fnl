@@ -703,7 +703,8 @@ should actually be displayed depends on the `label-state` flag."
 (fn leap [{: reverse? : x-mode? : omni? : cross-window?
            : dot-repeat? : traversal-state}]
   "Entry point for Leap motions."
-  (let [; We need to save the mode here, because the `:normal` command
+  (let [omni? (or cross-window? omni?)
+        ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
         visual-mode? (one-of? mode <ctrl-v> :V :v)
@@ -881,7 +882,7 @@ should actually be displayed depends on the `label-state` flag."
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
-              (let [accept-first? (and (not (or omni? cross-window?))
+              (let [accept-first? (and (not omni?)
                                        (= in2 spec-keys.accept_first_match))
                     in2 (if accept-first? (. targets 1 :pair 2) in2)]
                 ; Should be saved here; a repeated search might have a match.
@@ -909,8 +910,7 @@ should actually be displayed depends on the `label-state` flag."
                                      sublist {:display-targets-from (inc curr-idx)})
                                    (exit-early))
                           [in3 group-offset]
-                          (match (when-not (or (> group-offset 0)
-                                               op-mode? omni? cross-window?)
+                          (match (when-not (or op-mode? omni? (> group-offset 0))
                                    (get-traversal-action in3))
                             action
                             (let [new-idx (match action
