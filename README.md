@@ -184,12 +184,15 @@ require('leap').setup {
   -- These keys are captured directly by the plugin at runtime.
   special_keys = {
     next_match_group = '<space>',
-    prev_match_group = '<tab>',
+    prev_match_group = '<backspace>',
     repeat = '<enter>',
-    revert = '<tab>',
+    revert = '<backspace>',
+    accept_first_match = '<tab>',
   },
 }
 ```
+
+For details, see `:h leap-config`.
 
 ### Keymaps
 

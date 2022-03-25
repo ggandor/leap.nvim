@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 March 19
+Last change: 2022 March 25
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -168,16 +168,18 @@ Available options~
 `special_keys` >
     { 
       next_match_group = '<space>',
-      prev_match_group = '<tab>',
+      prev_match_group = '<backspace>',
       repeat = '<enter>',
-      revert = '<tab>',
+      revert = '<backspace>',
+      accept_first_match = '<tab>',
     }
 <
     Keys captured by the plugin at runtime, to:
     - switch to the next/previous group of matches, when there are more
       matches than labels available (|leap-usage|)
     - repeat with the previous input after invocation, or jump to the
-      next/previous match (|leap-repeat|)
+      next/previous match in traversal mode (|leap-repeat|)
+    - accept the very first match, and exit (after the first input)
 
 ==============================================================================
 DEFAULT KEYMAPS                                           *leap-default-keymaps*
@@ -224,10 +226,13 @@ Operator-pending mode
 
 Special keys~
 
-<Enter>                    Repeat with the previous input.
-<Tab>                      Revert the previous repeat.
+<Enter>                    Repeat with the previous input, or jump to the next
+                           match (traversal mode).
+<Backspace>                Revert the previous jump (traversal mode).
 <Space>                    Shift to the next group of labeled matches.
-<Tab>                      Shift to the previous group of labeled matches.
+<Backspace>                Revert the previous group shift.
+<Tab>                      After entering the first input: accept the very
+                           first match (jump and exit).
 <Esc>                      Exit Leap at any stage cleanly.
 
 ==============================================================================

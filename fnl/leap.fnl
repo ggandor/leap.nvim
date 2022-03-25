@@ -76,9 +76,10 @@ character instead."
            :safe_labels safe-labels
            :labels labels
            :special_keys {:next_match_group "<space>"
-                          :prev_match_group "<tab>"
+                          :prev_match_group "<backspace>"
                           :repeat "<enter>"
-                          :revert "<tab>"}})
+                          :revert "<backspace>"
+                          :accept_first_match "<tab>"}})
 
 (fn setup [user-opts]
   (set opts (-> user-opts (setmetatable {:__index opts}))))
@@ -880,10 +881,12 @@ should actually be displayed depends on the `label-state` flag."
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
-              (do
+              (let [accept-first? (= in2 spec-keys.accept_first_match)
+                    in2 (if accept-first? (. targets 1 :pair 2) in2)]
                 ; Should be saved here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
                 (match (or (?. traversal-state :sublist)
+                           (when accept-first? [(. targets 1)])
                            (. targets.sublists in2)
                            (exit-early (echo-not-found (.. in1 in2))))
                   [only nil]
