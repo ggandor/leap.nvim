@@ -1150,7 +1150,7 @@ local function leap(_201_)
       _258_ = (prev_in2 or _259_() or _260_())
       if (nil ~= _258_) then
         local in2 = _258_
-        local accept_first_3f = (in2 == spec_keys.accept_first_match)
+        local accept_first_3f = (not (omni_3f or cross_window_3f) and (in2 == spec_keys.accept_first_match))
         local in20
         if accept_first_3f then
           in20 = targets[1].pair[2]

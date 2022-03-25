@@ -881,7 +881,8 @@ should actually be displayed depends on the `label-state` flag."
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
-              (let [accept-first? (= in2 spec-keys.accept_first_match)
+              (let [accept-first? (and (not (or omni? cross-window?))
+                                       (= in2 spec-keys.accept_first_match))
                     in2 (if accept-first? (. targets 1 :pair 2) in2)]
                 ; Should be saved here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
