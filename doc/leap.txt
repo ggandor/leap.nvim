@@ -17,7 +17,7 @@ USAGE                                                               *leap-usage*
 
 Command sequence in Normal mode, with the default settings:
 
-`s|S char1 char2? (<space>|<tab>)* label?`
+`s|S char1 char2? (<space>|<backspace>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -80,8 +80,8 @@ The cross-window motion (`gs`) behaves this way by default.
                                                     *leap-repeat* *leap-traversal*
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
 motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
-the motion ("traversal" mode). 
+move on to the next match, while `<backspace>` (`opts.special_keys.revert`)
+reverts the motion ("traversal" mode). 
 
 Note that the revert key does not start a new search in the reverse direction,
 but puts the cursor back to its previous position, allowing for an easy
@@ -152,10 +152,6 @@ Available options~
     Leaving the list empty (or setting it to `nil`) forces auto-jump to always
     be on, except for Operator-pending mode. In this case, do not forget to
     set `special_keys.next_match_group` to something "safe" too.
-
-    Note: If you have mapped some keys to `<Plug>(leap-repeat-forward)` and
-    `<Plug>(leap-repeat-backward)`, you should not use them as labels too,
-    obviously.
 
     Heuristics behind the defaults: 
     - At least the first few labels should be the same on the two lists, since
@@ -287,8 +283,8 @@ might want to wrap them in a function, and define an autocommand like below.
 ==============================================================================
 EVENTS                                                             *leap-events*
 
-The following |User| events are triggered on entering/exiting Leap (except for
-instant-repeat):
+The |User| event is triggered with the following patterns on entering/exiting
+Leap (not in traversal mode):
 
 *LeapEnter* 
 *LeapLeave* 

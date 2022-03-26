@@ -14,6 +14,10 @@ simplicity, sane defaults, and maintainability. Leap aims to be a common
 denominator, its goal being to establish a new standard interface for
 moving around in the visible editor area in Vim-like editors.
 
+## Status
+
+Leap is not stable yet - expect breaking changes in the API from time to time.
+
 ## Getting started
 
 ### Requirements
@@ -82,13 +86,13 @@ after one more `<space>`, green.
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
 
-`s|S char1 char2 (<space>|<tab>)* label?`
+`s|S char1 char2 (<space>|<backspace>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
 - enter the first character of the search pattern 
     - _the "beacons" are lit at this point; all potential matches (char1 + ?)
-      are labeled_
+      are highlighted/labeled_
 - enter the second character of the search pattern (might short-circuit after
   this, if there is only one match)
     - _certain beacons are extinguished; only char1 + char2 matches remain_
@@ -158,8 +162,8 @@ motion (`gs`) behaves this way by default.
 
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
 motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
-the motion ("traversal" mode).
+move on to the next match, while `<backspace>` (`opts.special_keys.revert`)
+reverts the motion ("traversal" mode).
 
 Note that the revert key does not start a new search in the reverse direction,
 but puts the cursor back to its previous position, allowing for an easy
@@ -205,9 +209,9 @@ leap-custom-keymaps`.
 
 ### User events
 
-Leap triggers `User` events on entering/exiting (`LeapEnter`, `LeapLeave`), so
-that you can set up autocommands, e.g. to change the values of some editor
-options while the plugin is active.
+Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
+`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
+some editor options while the plugin is active (`:h leap-events`).
 
 ### Highlight groups
 
