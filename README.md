@@ -187,7 +187,6 @@ require('leap').setup {
     prev_match_group = '<backspace>',
     repeat = '<enter>',
     revert = '<backspace>',
-    accept_first_match = '<tab>',
   },
 }
 ```

@@ -79,7 +79,7 @@ local function get_fold_edge(lnum, reverse_3f)
 end
 local safe_labels = {"s", "f", "n", "u", "t", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 local labels = {"s", "f", "n", "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g", "u", "t", "c", ".", "z", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-local opts = {case_insensitive = true, labels = labels, safe_labels = safe_labels, special_keys = {["repeat"] = "<enter>", accept_first_match = "<tab>", next_match_group = "<space>", prev_match_group = "<backspace>", revert = "<backspace>"}}
+local opts = {case_insensitive = true, labels = labels, safe_labels = safe_labels, special_keys = {["repeat"] = "<enter>", next_match_group = "<space>", prev_match_group = "<backspace>", revert = "<backspace>"}}
 local function setup(user_opts)
   opts = setmetatable(user_opts, {__index = opts})
   return nil
@@ -606,7 +606,7 @@ local function get_targets(input, _125_)
           local line = _each_130_[1]
           local col = _each_130_[2]
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
+          if ((type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
             local row = (_131_).row
             cursor_positions[winid] = {row, col}
           end
@@ -622,7 +622,7 @@ local function get_targets(input, _125_)
         local winid = _each_137_["winid"]
         if by_screen_pos_3f then
           local _138_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_138_) == "table") and ((_138_).col == col) and (nil ~= (_138_).row)) then
+          if ((type(_138_) == "table") and (nil ~= (_138_).row) and ((_138_).col == col)) then
             local row = (_138_).row
             t["screenpos"] = {row, col}
           end
@@ -1151,40 +1151,28 @@ local function leap(_201_)
       _258_ = (prev_in2 or _259_() or _260_())
       if (nil ~= _258_) then
         local in2 = _258_
-        local accept_first_3f = (not omni_3f0 and (in2 == spec_keys.accept_first_match))
-        local in20
-        if accept_first_3f then
-          in20 = targets[1].pair[2]
-        else
-          in20 = in2
-        end
-        update_state({["repeat"] = {in2 = in20}})
-        local _263_
-        local function _265_()
-          local t_264_ = traversal_state
-          if (nil ~= t_264_) then
-            t_264_ = (t_264_).sublist
+        update_state({["repeat"] = {in2 = in2}})
+        local _262_
+        local function _264_()
+          local t_263_ = traversal_state
+          if (nil ~= t_263_) then
+            t_263_ = (t_263_).sublist
           end
-          return t_264_
+          return t_263_
         end
-        local function _267_()
-          if accept_first_3f then
-            return {targets[1]}
-          end
-        end
-        local function _268_()
+        local function _266_()
           if change_op_3f then
             handle_interrupted_change_op_21()
           end
           do
-            echo_not_found((in1 .. in20))
+            echo_not_found((in1 .. in2))
           end
           doau_when_exists("LeapLeave")
           return nil
         end
-        _263_ = (_265_() or _267_() or targets.sublists[in20] or _268_())
-        if ((type(_263_) == "table") and (nil ~= (_263_)[1]) and ((_263_)[2] == nil)) then
-          local only = (_263_)[1]
+        _262_ = (_264_() or targets.sublists[in2] or _266_())
+        if ((type(_262_) == "table") and (nil ~= (_262_)[1]) and ((_262_)[2] == nil)) then
+          local only = (_262_)[1]
           if (dot_repeat_3f and (state["dot-repeat"]["target-idx"] ~= 1)) then
             if change_op_3f then
               handle_interrupted_change_op_21()
@@ -1198,19 +1186,19 @@ local function leap(_201_)
               set_dot_repeat(replace_keycodes(get_plug_key(reverse_3f, x_mode_3f, true)))
             end
             do
-              update_state({["dot-repeat"] = {["target-idx"] = 1, in2 = in20}})
+              update_state({["dot-repeat"] = {["target-idx"] = 1, in2 = in2}})
               jump_to_21(only)
             end
             doau_when_exists("LeapLeave")
             return nil
           end
-        elseif ((type(_263_) == "table") and (nil ~= (_263_)[1])) then
-          local first = (_263_)[1]
-          local sublist = _263_
+        elseif ((type(_262_) == "table") and (nil ~= (_262_)[1])) then
+          local first = (_262_)[1]
+          local sublist = _262_
           if dot_repeat_3f then
-            local _273_ = sublist[state["dot-repeat"]["target-idx"]]
-            if (nil ~= _273_) then
-              local target = _273_
+            local _271_ = sublist[state["dot-repeat"]["target-idx"]]
+            if (nil ~= _271_) then
+              local target = _271_
               if dot_repeatable_op_3f then
                 set_dot_repeat(replace_keycodes(get_plug_key(reverse_3f, x_mode_3f, true)))
               end
@@ -1220,7 +1208,7 @@ local function leap(_201_)
               doau_when_exists("LeapLeave")
               return nil
             else
-              local _ = _273_
+              local _ = _271_
               if change_op_3f then
                 handle_interrupted_change_op_21()
               end
@@ -1231,22 +1219,22 @@ local function leap(_201_)
             end
           else
             local curr_idx
-            local function _278_()
-              local t_277_ = traversal_state
-              if (nil ~= t_277_) then
-                t_277_ = (t_277_).idx
+            local function _276_()
+              local t_275_ = traversal_state
+              if (nil ~= t_275_) then
+                t_275_ = (t_275_).idx
               end
-              return t_277_
+              return t_275_
             end
-            curr_idx = (_278_() or 0)
+            curr_idx = (_276_() or 0)
             if not doing_traversal_3f then
               if sublist["autojump?"] then
                 jump_to_21(first)
                 curr_idx = 1
               end
             end
-            local _282_
-            local function _283_()
+            local _280_
+            local function _281_()
               if change_op_3f then
                 handle_interrupted_change_op_21()
               end
@@ -1255,24 +1243,24 @@ local function leap(_201_)
               doau_when_exists("LeapLeave")
               return nil
             end
-            _282_ = (get_last_input(sublist, {["display-targets-from"] = inc(curr_idx)}) or _283_())
-            if ((type(_282_) == "table") and (nil ~= (_282_)[1]) and (nil ~= (_282_)[2])) then
-              local in3 = (_282_)[1]
-              local group_offset = (_282_)[2]
-              local _285_
+            _280_ = (get_last_input(sublist, {["display-targets-from"] = inc(curr_idx)}) or _281_())
+            if ((type(_280_) == "table") and (nil ~= (_280_)[1]) and (nil ~= (_280_)[2])) then
+              local in3 = (_280_)[1]
+              local group_offset = (_280_)[2]
+              local _283_
               if not (op_mode_3f or omni_3f0 or (group_offset > 0)) then
-                _285_ = get_traversal_action(in3)
+                _283_ = get_traversal_action(in3)
               else
-              _285_ = nil
+              _283_ = nil
               end
-              if (nil ~= _285_) then
-                local action = _285_
+              if (nil ~= _283_) then
+                local action = _283_
                 local new_idx
                 do
-                  local _287_ = action
-                  if (_287_ == "to-next") then
+                  local _285_ = action
+                  if (_285_ == "to-next") then
                     new_idx = min(inc(curr_idx), #targets)
-                  elseif (_287_ == "to-prev") then
+                  elseif (_285_ == "to-prev") then
                     new_idx = max(dec(curr_idx), 1)
                   else
                   new_idx = nil
@@ -1281,27 +1269,27 @@ local function leap(_201_)
                 jump_to_21(sublist[new_idx])
                 return leap({["reverse?"] = reverse_3f, ["traversal-state"] = {idx = new_idx, sublist = sublist}, ["x-mode?"] = x_mode_3f})
               else
-                local _ = _285_
-                local _289_
+                local _ = _283_
+                local _287_
                 if not force_no_labels_3f then
-                  _289_ = get_target_with_active_primary_label(sublist, in3)
+                  _287_ = get_target_with_active_primary_label(sublist, in3)
                 else
-                _289_ = nil
+                _287_ = nil
                 end
-                if ((type(_289_) == "table") and (nil ~= (_289_)[1]) and (nil ~= (_289_)[2])) then
-                  local idx = (_289_)[1]
-                  local target = (_289_)[2]
+                if ((type(_287_) == "table") and (nil ~= (_287_)[1]) and (nil ~= (_287_)[2])) then
+                  local idx = (_287_)[1]
+                  local target = (_287_)[2]
                   if dot_repeatable_op_3f then
                     set_dot_repeat(replace_keycodes(get_plug_key(reverse_3f, x_mode_3f, true)))
                   end
                   do
-                    update_state({["dot-repeat"] = {["target-idx"] = idx, in2 = in20}})
+                    update_state({["dot-repeat"] = {["target-idx"] = idx, in2 = in2}})
                     jump_to_21(target)
                   end
                   doau_when_exists("LeapLeave")
                   return nil
                 else
-                  local _0 = _289_
+                  local _0 = _287_
                   if (sublist["autojump?"] or doing_traversal_3f) then
                     if dot_repeatable_op_3f then
                       set_dot_repeat(replace_keycodes(get_plug_key(reverse_3f, x_mode_3f, true)))
@@ -1330,50 +1318,50 @@ local function leap(_201_)
   end
 end
 local function set_default_keymaps(force_3f)
-  for _, _303_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
-    local _each_304_ = _303_
-    local mode = _each_304_[1]
-    local lhs = _each_304_[2]
-    local rhs = _each_304_[3]
+  for _, _301_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
+    local _each_302_ = _301_
+    local mode = _each_302_[1]
+    local lhs = _each_302_[2]
+    local rhs = _each_302_[3]
     if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
       vim.keymap.set(mode, lhs, rhs, {silent = true})
     end
   end
   return nil
 end
-local function _306_()
+local function _304_()
   return leap({["dot-repeat?"] = true, ["reverse?"] = true})
 end
-local function _307_()
+local function _305_()
   return leap({["dot-repeat?"] = true, ["reverse?"] = true, ["x-mode?"] = true})
 end
-local function _308_()
+local function _306_()
   return leap({["dot-repeat?"] = true})
 end
-local function _309_()
+local function _307_()
   return leap({["dot-repeat?"] = true, ["x-mode?"] = true})
 end
-for lhs, rhs in pairs({["<Plug>(leap-dotrepeat-backward)"] = _306_, ["<Plug>(leap-dotrepeat-backward-x)"] = _307_, ["<Plug>(leap-dotrepeat-forward)"] = _308_, ["<Plug>(leap-dotrepeat-forward-x)"] = _309_}) do
+for lhs, rhs in pairs({["<Plug>(leap-dotrepeat-backward)"] = _304_, ["<Plug>(leap-dotrepeat-backward-x)"] = _305_, ["<Plug>(leap-dotrepeat-forward)"] = _306_, ["<Plug>(leap-dotrepeat-forward-x)"] = _307_}) do
   vim.keymap.set("o", lhs, rhs, {silent = true})
 end
 local temporary_editor_opts = {["vim.bo.modeline"] = false}
 local saved_editor_opts = {}
 local function save_editor_opts()
   for opt, _ in pairs(temporary_editor_opts) do
-    local _let_310_ = vim.split(opt, ".", true)
-    local _0 = _let_310_[1]
-    local scope = _let_310_[2]
-    local name = _let_310_[3]
+    local _let_308_ = vim.split(opt, ".", true)
+    local _0 = _let_308_[1]
+    local scope = _let_308_[2]
+    local name = _let_308_[3]
     saved_editor_opts[opt] = _G.vim[scope][name]
   end
   return nil
 end
 local function set_editor_opts(opts0)
   for opt, val in pairs(opts0) do
-    local _let_311_ = vim.split(opt, ".", true)
-    local _ = _let_311_[1]
-    local scope = _let_311_[2]
-    local name = _let_311_[3]
+    local _let_309_ = vim.split(opt, ".", true)
+    local _ = _let_309_[1]
+    local scope = _let_309_[2]
+    local name = _let_309_[3]
     _G.vim[scope][name] = val
   end
   return nil
@@ -1387,10 +1375,10 @@ end
 init_highlight()
 api.nvim_create_augroup("LeapDefault", {})
 api.nvim_create_autocmd("ColorScheme", {callback = init_highlight, group = "LeapDefault"})
-local function _312_()
+local function _310_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {callback = _312_, group = "LeapDefault", pattern = "LeapEnter"})
+api.nvim_create_autocmd("User", {callback = _310_, group = "LeapDefault", pattern = "LeapEnter"})
 api.nvim_create_autocmd("User", {callback = restore_editor_opts, group = "LeapDefault", pattern = "LeapLeave"})
 return {init_highlight = init_highlight, leap = leap, opts = opts, set_default_keymaps = set_default_keymaps, setup = setup, state = state}
