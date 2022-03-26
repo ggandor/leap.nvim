@@ -652,8 +652,8 @@ should actually be displayed depends on the `label-state` flag."
   (local match-hl-positions {})  ; "<bufnr> <lnum> <col>" : true
   (local label-positions {})     ; "<bufnr> <lnum> <col>" : extmark-id
 
-  (macro make-key [[bufnr winid lnum col]]
-    `(table.concat [,bufnr " " ,winid " " ,lnum " " ,col]))
+  (macro make-key [bufnr winid lnum col]
+    `(.. ,bufnr " " ,winid " " ,lnum " " ,col))
 
   (for [i (or ?start-from 1) (length target-list)]
     (local target (. target-list i))
@@ -664,8 +664,8 @@ should actually be displayed depends on the `label-state` flag."
         (match target.beacon
           :match-highlight
           (let [[ch1 ch2] target.pair
-                k1 (make-key [bufnr winid lnum col])
-                k2 (make-key [bufnr winid lnum (+ col (ch1:len))])]
+                k1 (make-key bufnr winid lnum col)
+                k2 (make-key bufnr winid lnum (+ col (ch1:len)))]
             (each [_ k (ipairs [k1 k2])]
                 (tset match-hl-positions k true)
               ; Match highlights always win; remove any label already set.
@@ -676,7 +676,7 @@ should actually be displayed depends on the `label-state` flag."
 
           [label-offset virttext]
           (let [col (+ col label-offset)
-                k (make-key [bufnr winid lnum col])]
+                k (make-key bufnr winid lnum col)]
             (match (or (. match-hl-positions k) (. label-positions k))
               ; If the position is occupied by a match highlight, that takes
               ; priority - do nothing.

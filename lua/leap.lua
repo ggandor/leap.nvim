@@ -606,7 +606,7 @@ local function get_targets(input, _125_)
           local line = _each_130_[1]
           local col = _each_130_[2]
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
+          if ((type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
             local row = (_131_).row
             cursor_positions[winid] = {row, col}
           end
@@ -622,7 +622,7 @@ local function get_targets(input, _125_)
         local winid = _each_137_["winid"]
         if by_screen_pos_3f then
           local _138_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_138_) == "table") and (nil ~= (_138_).row) and ((_138_).col == col)) then
+          if ((type(_138_) == "table") and ((_138_).col == col) and (nil ~= (_138_).row)) then
             local row = (_138_).row
             t["screenpos"] = {row, col}
           end
@@ -834,8 +834,8 @@ local function light_up_beacons(target_list, _3fstart_from)
         local _let_194_ = target.pair
         local ch1 = _let_194_[1]
         local ch2 = _let_194_[2]
-        local k1 = table.concat({bufnr, " ", winid, " ", lnum, " ", col})
-        local k2 = table.concat({bufnr, " ", winid, " ", lnum, " ", (col + ch1:len())})
+        local k1 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. col)
+        local k2 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. (col + ch1:len()))
         for _, k in ipairs({k1, k2}) do
           match_hl_positions[k] = true
           local _195_ = label_positions[k]
@@ -849,7 +849,7 @@ local function light_up_beacons(target_list, _3fstart_from)
         local label_offset = (_193_)[1]
         local virttext = (_193_)[2]
         local col0 = (col + label_offset)
-        local k = table.concat({bufnr, " ", winid, " ", lnum, " ", col0})
+        local k = (bufnr .. " " .. winid .. " " .. lnum .. " " .. col0)
         local _197_ = (match_hl_positions[k] or label_positions[k])
         if (_197_ == true) then
         elseif (nil ~= _197_) then
