@@ -79,7 +79,7 @@ local function get_fold_edge(lnum, reverse_3f)
 end
 local safe_labels = {"s", "f", "n", "u", "t", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 local labels = {"s", "f", "n", "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g", "u", "t", "c", ".", "z", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-local opts = {case_insensitive = true, labels = labels, safe_labels = safe_labels, special_keys = {["repeat"] = "<enter>", next_match_group = "<space>", prev_match_group = "<backspace>", revert = "<backspace>"}}
+local opts = {case_insensitive = true, labels = labels, safe_labels = safe_labels, special_keys = {["repeat"] = "<enter>", next_match_group = "<space>", prev_match_group = "<tab>", revert = "<tab>"}}
 local function setup(user_opts)
   opts = setmetatable(user_opts, {__index = opts})
   return nil
@@ -606,7 +606,7 @@ local function get_targets(input, _125_)
           local line = _each_130_[1]
           local col = _each_130_[2]
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
+          if ((type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
             local row = (_131_).row
             cursor_positions[winid] = {row, col}
           end
@@ -622,7 +622,7 @@ local function get_targets(input, _125_)
         local winid = _each_137_["winid"]
         if by_screen_pos_3f then
           local _138_ = vim.fn.screenpos(winid, line, col)
-          if ((type(_138_) == "table") and (nil ~= (_138_).row) and ((_138_).col == col)) then
+          if ((type(_138_) == "table") and ((_138_).col == col) and (nil ~= (_138_).row)) then
             local row = (_138_).row
             t["screenpos"] = {row, col}
           end

@@ -76,9 +76,9 @@ character instead."
            :safe_labels safe-labels
            :labels labels
            :special_keys {:next_match_group "<space>"
-                          :prev_match_group "<backspace>"
+                          :prev_match_group "<tab>"
                           :repeat "<enter>"
-                          :revert "<backspace>"}})
+                          :revert "<tab>"}})
 
 (fn setup [user-opts]
   (set opts (-> user-opts (setmetatable {:__index opts}))))
