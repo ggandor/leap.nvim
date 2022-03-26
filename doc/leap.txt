@@ -163,10 +163,10 @@ Available options~
 
 `special_keys` >
     {
-      next_match_group = '<space>',
-      prev_match_group = '<tab>',
-      repeat = '<enter>',
-      revert = '<tab>',
+      ['next_match_group'] = '<space>',
+      ['prev_match_group'] = '<tab>',
+      ['repeat'] = '<enter>',
+      ['revert'] = '<tab>',
     }
 <
     Keys captured by the plugin at runtime, to:
