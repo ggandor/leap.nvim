@@ -17,7 +17,7 @@ USAGE                                                               *leap-usage*
 
 Command sequence in Normal mode, with the default settings:
 
-`s|S char1 char2? (<space>|<backspace>)* label?`
+`s|S char1 char2? (<space>|<tab>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -63,7 +63,7 @@ in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for Leap motions). In simpler
 terms: in X-mode, the relevant edge of the operated area gets an offset of +2.
 
-                                                                *leap-match-EOL* 
+                                                                *leap-match-EOL*
 A character at the end of a line can be targeted by pressing `<enter>` after
 it.
 
@@ -80,8 +80,8 @@ The cross-window motion (`gs`) behaves this way by default.
                                                     *leap-repeat* *leap-traversal*
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
 motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<backspace>` (`opts.special_keys.revert`)
-reverts the motion ("traversal" mode). 
+move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
+the motion ("traversal" mode).
 
 Note that the revert key does not start a new search in the reverse direction,
 but puts the cursor back to its previous position, allowing for an easy
@@ -111,7 +111,7 @@ Setting an individual option via the `opts` table directly:
 
 Setting multiple options via the `setup` function: >
 
-    require('leap').setup { 
+    require('leap').setup {
         case_insensitive = false,
         labels = { ... }
     }
@@ -153,7 +153,7 @@ Available options~
     be on, except for Operator-pending mode. In this case, do not forget to
     set `special_keys.next_match_group` to something "safe" too.
 
-    Heuristics behind the defaults: 
+    Heuristics behind the defaults:
     - At least the first few labels should be the same on the two lists, since
       those become muscle memory, and might be used automatically, a bit like
       [count] values.
@@ -162,11 +162,11 @@ Available options~
       for the whole sequence on average.
 
 `special_keys` >
-    { 
+    {
       next_match_group = '<space>',
-      prev_match_group = '<backspace>',
+      prev_match_group = '<tab>',
       repeat = '<enter>',
-      revert = '<backspace>',
+      revert = '<tab>',
     }
 <
     Keys captured by the plugin at runtime, to:
@@ -222,9 +222,9 @@ Special keys~
 
 <Enter>                    Repeat with the previous input, or jump to the next
                            match (traversal mode).
-<Backspace>                Revert the previous jump (traversal mode).
+<Tab>                      Revert the previous jump (traversal mode).
 <Space>                    Shift to the next group of labeled matches.
-<Backspace>                Revert the previous group shift.
+<Tab>                      Revert the previous group shift.
 <Esc>                      Exit Leap at any stage cleanly.
 
 ==============================================================================
@@ -265,7 +265,7 @@ liking:
         group of labeled targets are shown with a different color. Those can
         be reached by pressing `<space>` (`special_keys.next_match_group`)
         before the label character.
-         
+
     *LeapBackdrop*
         In some cases it might be useful or even necessary to apply certain
         settings on the rest of the area, like disabling all `gui` attributes,
@@ -286,8 +286,8 @@ EVENTS                                                             *leap-events*
 The |User| event is triggered with the following patterns on entering/exiting
 Leap (not in traversal mode):
 
-*LeapEnter* 
-*LeapLeave* 
+*LeapEnter*
+*LeapLeave*
 
 Example: >
     vim.api.nvim_create_autocmd('User LeapEnter', {command = 'nohlsearch'})

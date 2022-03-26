@@ -86,11 +86,11 @@ after one more `<space>`, green.
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
 
-`s|S char1 char2 (<space>|<backspace>)* label?`
+`s|S char1 char2 (<space>|<tab>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
-- enter the first character of the search pattern 
+- enter the first character of the search pattern
     - _the "beacons" are lit at this point; all potential matches (char1 + ?)
       are highlighted/labeled_
 - enter the second character of the search pattern (might short-circuit after
@@ -162,13 +162,13 @@ motion (`gs`) behaves this way by default.
 
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
 motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<backspace>` (`opts.special_keys.revert`)
-reverts the motion ("traversal" mode).
+move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
+the motion ("traversal" mode).
 
 Note that the revert key does not start a new search in the reverse direction,
 but puts the cursor back to its previous position, allowing for an easy
 correction when you accidentally overshoot your target (this is relevant for
-x-motions). 
+x-motions).
 
 If the safe label set is in use, the labels will remain available during the
 whole time, even after entering traversal mode.
@@ -188,9 +188,9 @@ require('leap').setup {
   -- These keys are captured directly by the plugin at runtime.
   special_keys = {
     next_match_group = '<space>',
-    prev_match_group = '<backspace>',
+    prev_match_group = '<tab>',
     repeat = '<enter>',
-    revert = '<backspace>',
+    revert = '<tab>',
   },
 }
 ```
