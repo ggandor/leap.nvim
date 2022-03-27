@@ -186,10 +186,10 @@ character instead."
   ; the unlikely case that the implementation details would change, this
   ; still cannot do any damage on our side if called with pcall (the
   ; feature just ceases to work then).
-  (pcall api.nvim_do_autocmd "CursorMoved" {:group "matchparen"})
+  (pcall api.nvim_exec_autocmd "CursorMoved" {:group "matchparen"})
   ; If vim-matchup is installed, it can similarly be forced to refresh
   ; by triggering a CursorMoved event. (The same caveats apply.)
-  (pcall api.nvim_do_autocmd "CursorMoved" {:group "matchup_matchparen"}))
+  (pcall api.nvim_exec_autocmd "CursorMoved" {:group "matchup_matchparen"}))
 
 
 (fn cursor-before-eof? []
@@ -277,7 +277,7 @@ interrupted change-operation."
 
 (fn doau-when-exists [pattern]
   (when (vim.fn.exists (.. "#User#" pattern))
-    (api.nvim_do_autocmd "User" {:pattern pattern :modeline false})))
+    (api.nvim_exec_autocmd "User" {:pattern pattern :modeline false})))
 
 
 (fn get-input []
