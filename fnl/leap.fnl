@@ -186,10 +186,10 @@ character instead."
   ; the unlikely case that the implementation details would change, this
   ; still cannot do any damage on our side if called with pcall (the
   ; feature just ceases to work then).
-  (pcall api.nvim_exec_autocmd "CursorMoved" {:group "matchparen"})
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchparen"})
   ; If vim-matchup is installed, it can similarly be forced to refresh
   ; by triggering a CursorMoved event. (The same caveats apply.)
-  (pcall api.nvim_exec_autocmd "CursorMoved" {:group "matchup_matchparen"}))
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
 (fn cursor-before-eof? []
@@ -275,9 +275,8 @@ interrupted change-operation."
         (api.nvim_feedkeys :n true))))
 
 
-(fn doau-when-exists [pattern]
-  (when (vim.fn.exists (.. "#User#" pattern))
-    (api.nvim_exec_autocmd "User" {:pattern pattern :modeline false})))
+(fn exec-autocmds [pattern]
+  (api.nvim_exec_autocmds "User" {:pattern pattern :modeline false}))
 
 
 (fn get-input []
@@ -739,7 +738,7 @@ should actually be displayed depends on the `label-state` flag."
              (set-dot-repeat
                (replace-keycodes (get-plug-key reverse? x-mode? true))))
            (do ,...)
-           (doau-when-exists :LeapLeave)
+           (exec-autocmds :LeapLeave)
            nil))
 
     (macro exit-early [...]
@@ -751,7 +750,7 @@ should actually be displayed depends on the `label-state` flag."
          ; it might feed keys too. (Is that a valid problem? Change-op
          ; can only be interrupted by <c-c> or <esc> I guess...)
          (do ,...)
-         (doau-when-exists :LeapLeave)
+         (exec-autocmds :LeapLeave)
          nil))
 
     (macro with-highlight-chores [...]
@@ -854,7 +853,7 @@ should actually be displayed depends on the `label-state` flag."
     ; waiting for:
 
     (when-not (or dot-repeat? doing-traversal?)
-      (doau-when-exists :LeapEnter)
+      (exec-autocmds :LeapEnter)
       (echo "")  ; clean up the command line
       (with-highlight-chores nil))
 
