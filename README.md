@@ -24,6 +24,9 @@ Leap is not stable yet - expect breaking changes in the API from time to time.
 
 * Neovim >= 0.7.0
 
+Leap follows the actual latest nightly release - always update Neovim before
+submitting issues.
+
 ### Dependencies
 
 * For the moment, [repeat.vim](https://github.com/tpope/vim-repeat) is required
@@ -102,20 +105,20 @@ That is,
 - optionally cycle through the groups of matches that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
-An invariant of the interface is that beacons should never overlap each other.
-In case of a conflict, a directly reachable match takes priority over a labeled
-one. If two labels should be displayed in the same column (this can only occur
-before EOL or at the window edge), neither of them will be shown until entering
-the second input, that resolves the ambiguity.
-
 ### Smart autojump
 
 Leap automatically jumps to the first match if the remaining matches can be
-covered by a limited set of "safe" target labels, but stays in place, and
-switches to an extended, more comfortable label set otherwise. (Note that in the
-second example above, the one with group switching, the cursor did not move
-initially.) This is like the best of both worlds between Sneak and EasyMotion.
-For details on configuring this behaviour, see `:h leap-config`.
+covered by a limited set of "safe" target labels (keys you would not use right
+after a jump), but stays in place, and switches to an extended, more comfortable
+label set otherwise. For details on configuring this behaviour, see `:h
+leap-config`.
+
+### Resolving conflicts in the first phase
+
+If a label gets positioned over a directly reachable match or another label
+(this latter might occur when a label needs to be shifted left for a match
+before EOL/window edge), it will not be shown until entering the second input,
+that resolves the ambiguity.
 
 ### Operator-pending mode
 
