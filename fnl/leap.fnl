@@ -75,10 +75,12 @@ character instead."
 (var opts {:case_insensitive true
            :safe_labels safe-labels
            :labels labels
-           :special_keys {:next_match_group "<space>"
-                          :prev_match_group "<tab>"
-                          :repeat "<enter>"
-                          :revert "<tab>"}})
+           :special_keys {:repeat_search "<enter>"
+                          :next_match "<enter>"
+                          :prev_match "<tab>"
+                          :next_group "<space>"
+                          :prev_group "<tab>"
+                          :eol "<space>"}})
 
 (fn setup [user-opts]
   (set opts (-> user-opts (setmetatable {:__index opts}))))
@@ -114,7 +116,7 @@ character instead."
 (fn init-highlight [force?]
   (local bg vim.o.background)
   (each [name def-map
-         (pairs 
+         (pairs
           {hl.group.backdrop        {:gui "none"
                                      :cterm "none"}
            hl.group.match           {:guifg (match bg
@@ -438,7 +440,7 @@ early termination in loops."
                    (= view.lnum line) (= (inc view.col) col))  ; 1/0-indexed!
               (do (push-cursor! :fwd)
                   (recur true))  ; true, as we might be on a match
-            
+
               (or (<= left-bound col right-bound) vim.wo.wrap)
               (do (set match-count (+ match-count 1))
                   pos)
@@ -476,9 +478,9 @@ Dynamic attributes
            (get-match-positions pattern {: bounds : reverse? : source-winid
                                          :whole-window? wininfo})]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
-            ; <cr> is the expected input for matching line breaks, so
-            ; let's convert ch2 to the key for the sublist right away.
-            ch2 (or (char-at-pos pos {:char-offset 1}) "\r")
+            (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
+                         char char
+                         _ (values (replace-keycodes opts.special_keys.eol) true))
             same-char-triplet? (and (= ch2 prev-match.ch2)
                                     (= line prev-match.line)
                                     (= col ((if reverse? dec inc) prev-match.col)))]
@@ -487,7 +489,7 @@ Dynamic attributes
           (table.insert targets
                         {: pos :pair [ch1 ch2] :wininfo wininfo
                          ; TODO: `right-bound` = virtcol, but `col` = byte col!
-                         :edge-pos? (or (= ch2 "\r") (= col right-bound))}))))
+                         :edge-pos? (or eol? (= col right-bound))}))))
     (when (next targets)
       targets)))
 
@@ -533,7 +535,7 @@ Dynamic attributes
                                     (. cursor-positions winid))))
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))
-    
+
       (get-targets* input {: reverse?})))
 
 
@@ -563,7 +565,7 @@ Note that there is no one-to-one correspondence between this flag and
 the `label-set` field set by `attach-label-set`. No-autojump might be
 forced implicitly, regardless of using safe labels."
   (tset sublist :autojump?
-        (and (not (or force-no-autojump? 
+        (and (not (or force-no-autojump?
                       (user-forced-no-autojump?)))
              (or (user-forced-autojump?)
                  (>= (length opts.safe_labels)
@@ -663,14 +665,15 @@ should actually be displayed depends on the `label-state` flag."
           :match-highlight
           (let [[ch1 ch2] target.pair
                 k1 (make-key bufnr winid lnum col)
-                k2 (make-key bufnr winid lnum (+ col (ch1:len)))]
+                k2 (make-key bufnr winid lnum (+ col (ch1:len)))
+                endcol (+ col (ch1:len) (ch2:len))]
             (each [_ k (ipairs [k1 k2])]
-                (tset match-hl-positions k true)
+              (tset match-hl-positions k true)
               ; Match highlights always win; remove any label already set.
               (match (. label-positions k)
                 id (api.nvim_buf_del_extmark bufnr hl.ns id)))
             (api.nvim_buf_add_highlight bufnr hl.ns hl.group.match
-                                        lnum col (+ col (ch1:len) (ch2:len))))
+                                        lnum col endcol))
 
           [label-offset virttext]
           (let [col (+ col label-offset)
@@ -709,20 +712,19 @@ should actually be displayed depends on the `label-state` flag."
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? (not omni?) (not= vim.v.operator :y))
-        doing-traversal? traversal-state
+        traversal? traversal-state
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
         force-no-autojump? (or op-mode? (and omni? visual-mode?) cross-window?)
-        force-no-labels? (and doing-traversal?
-                              (not traversal-state.sublist.autojump?))
+        force-no-labels? (and traversal? (not traversal-state.targets.autojump?))
         ?target-windows (if cross-window? (get-targetable-windows)
                             omni? [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)])
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
 
-    ; Could be set later by `special_keys.repeat` as first input.
-    (var new-search? (not (or dot-repeat? doing-traversal?)))
+    ; Could be set later by `special_keys.repeat_search` as first input.
+    (var new-search? (not (or dot-repeat? traversal?)))
 
     ; Helpers ///
 
@@ -766,21 +768,22 @@ should actually be displayed depends on the `label-state` flag."
          res#))
 
     (fn get-first-input []
-      (if doing-traversal? state.repeat.in1
+      (if traversal? state.repeat.in1
           dot-repeat? state.dot-repeat.in1
           (match (or (with-highlight-cleanup (get-input))
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises.
-            spec-keys.repeat (do (set new-search? false)
-                                 (or state.repeat.in1
-                                     (exit-early (echo-no-prev-search))))
+            spec-keys.repeat_search (do (set new-search? false)
+                                        (or state.repeat.in1
+                                            (exit-early (echo-no-prev-search))))
             in in)))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
       (fn [{: repeat : dot-repeat}]
-        (when new-search?
+        ; We might need to update the state if traversing _all_ matches.
+        (when-not dot-repeat?
           (when repeat
             (set state.repeat (doto repeat (tset :in1 in1))))
           (when (and dot-repeat dot-repeatable-op?)
@@ -797,8 +800,7 @@ should actually be displayed depends on the `label-state` flag."
                  (jump-to!* target.pos
                             {: mode : reverse?
                              :inclusive-motion? (and x-mode? (not reverse?))
-                             :add-to-jumplist? (and first-jump?
-                                                    (not doing-traversal?))
+                             :add-to-jumplist? (and first-jump? (not traversal?))
                              :adjust #(when x-mode?
                                         (push-cursor! :fwd)
                                         (when reverse? (push-cursor! :fwd)))})
@@ -816,17 +818,16 @@ should actually be displayed depends on the `label-state` flag."
               ; it implies that there are no subsequent groups.
               [input 0]
 
-              (and (not doing-traversal?)
-                   (one-of? input 
-                     spec-keys.next_match_group
-                     ; So that the repeat key can be == prev_match_group key.
-                     (when-not initial-invoc? spec-keys.prev_match_group)))
+              (and (not traversal?)
+                   (one-of? input
+                     spec-keys.next_group
+                     (when-not initial-invoc? spec-keys.prev_group)))
               (let [labels sublist.label-set
                     num-of-groups (ceil (/ (length sublist) (length labels)))
                     max-offset (dec num-of-groups)
                     new-group-offset (-> group-offset
                                          ((match input
-                                            spec-keys.next_match_group inc
+                                            spec-keys.next_group inc
                                             _ dec))
                                          (clamp 0 max-offset))]
                 (set-label-states sublist {:group-offset new-group-offset})
@@ -836,8 +837,8 @@ should actually be displayed depends on the `label-state` flag."
       (recur 0 true))
 
     (fn get-traversal-action [in]
-      (if (= in spec-keys.repeat) :to-next
-          (and doing-traversal? (= in spec-keys.revert)) :to-prev))
+      (if (= in spec-keys.next_match) :to-next
+          (and traversal? (= in spec-keys.prev_match)) :to-prev))
 
     (fn get-target-with-active-primary-label [target-list input]
       (var res nil)
@@ -852,7 +853,7 @@ should actually be displayed depends on the `label-state` flag."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
-    (when-not (or dot-repeat? doing-traversal?)
+    (when-not (or dot-repeat? traversal?)
       (exec-autocmds :LeapEnter)
       (echo "")  ; clean up the command line
       (with-highlight-chores nil))
@@ -862,12 +863,12 @@ should actually be displayed depends on the `label-state` flag."
       (let [update-state (update-state* in1)
             prev-in2 (when-not new-search?
                        (if dot-repeat? state.dot-repeat.in2 state.repeat.in2))]
-        (match (or (?. traversal-state :sublist)
+        (match (or (?. traversal-state :targets)
                    (get-targets in1 {: reverse? :target-windows ?target-windows})
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           targets
           (do
-            (when-not doing-traversal?
+            (when-not traversal?
               (doto targets
                 (populate-sublists)
                 (set-sublist-attributes {: force-no-autojump?})
@@ -880,50 +881,63 @@ should actually be displayed depends on the `label-state` flag."
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
-              (do
-                ; Should be saved here; a repeated search might have a match.
+              (let [accept-first? (and (not traversal?) (not omni)
+                                       (= in2 spec-keys.next_match))
+                    in2 (if accept-first? (. targets 1 :pair 2)
+                            ; If traversing through all targets, we will need to
+                            ; update the state each time (see below).
+                            traversal? (. targets traversal-state.idx :pair 2) 
+                            in2)]
+                ; Should be saved right here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
-                (match (or (?. traversal-state :sublist)
-                           (. targets.sublists in2)
-                           (exit-early (echo-not-found (.. in1 in2))))
-                  [only nil]
-                  (if (and dot-repeat? (not= state.dot-repeat.target-idx 1))
-                      (exit-early)
-                      (exit (update-state {:dot-repeat {: in2 :target-idx 1}})
-                            (jump-to! only)))
+                (if (and accept-first? (not op-mode?))
+                    ; Jump to the very first match, and enter traversal mode
+                    ; with all targets and no labels kept.
+                    (do (jump-to! (. targets 1))
+                        (set-beacons targets {:force-no-labels? true})
+                        (leap {: reverse? : x-mode? :traversal-state {: targets :idx 1}}))
+                    (match (or (?. traversal-state :targets)
+                               (when (and accept-first? op-mode?) [(. targets 1)])
+                               (. targets.sublists in2)
+                               (exit-early (echo-not-found (.. in1 in2))))
+                      [only nil]
+                      (if (and dot-repeat? (not= state.dot-repeat.target-idx 1))
+                          (exit-early)
+                          (exit (update-state {:dot-repeat {: in2 :target-idx 1}})
+                                (jump-to! only)))
 
-                  [first &as sublist]
-                  (if dot-repeat? (match (. sublist state.dot-repeat.target-idx)
-                                    target (exit (jump-to! target))
-                                    _ (exit-early))
-                      (do
-                        ; Our current position on the sublist.
-                        (var curr-idx (or (?. traversal-state :idx) 0))
-                        (when-not doing-traversal?
-                          (when sublist.autojump? (jump-to! first) (set curr-idx 1)))
-                        (match (or (get-last-input
-                                     sublist {:display-targets-from (inc curr-idx)})
-                                   (exit-early))
-                          [in3 group-offset]
-                          (match (when-not (or op-mode? omni? (> group-offset 0))
-                                   (get-traversal-action in3))
-                            action
-                            (let [new-idx (match action
-                                            :to-next (min (inc curr-idx) (length targets))
-                                            :to-prev (max (dec curr-idx) 1))]
-                              (jump-to! (. sublist new-idx))
-                              (leap {: reverse? : x-mode?
-                                     :traversal-state {: sublist :idx new-idx}}))
+                      [first &as sublist]
+                      (if dot-repeat? (match (. sublist state.dot-repeat.target-idx)
+                                        target (exit (jump-to! target))
+                                        _ (exit-early))
+                          (do
+                            ; Our current position on the sublist.
+                            (var curr-idx (or (?. traversal-state :idx) 0))
+                            (when-not traversal?
+                              (when sublist.autojump? (jump-to! first) (set curr-idx 1)))
+                            (match (or (get-last-input sublist
+                                                       {:display-targets-from (inc curr-idx)})
+                                       (exit-early))
+                              [in3 group-offset]
+                              (match (when-not (or op-mode? omni? (> group-offset 0))
+                                       (get-traversal-action in3))
+                                action
+                                (let [new-idx (match action
+                                                :to-next (min (inc curr-idx) (length targets))
+                                                :to-prev (max (dec curr-idx) 1))]
+                                  (jump-to! (. sublist new-idx))
+                                  (leap {: reverse? : x-mode?
+                                         :traversal-state {:targets sublist :idx new-idx}}))
 
-                            _ (match (when-not force-no-labels?
-                                       (get-target-with-active-primary-label sublist in3))
-                                [idx target]
-                                (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
-                                      (jump-to! target))
+                                _ (match (when-not force-no-labels?
+                                           (get-target-with-active-primary-label sublist in3))
+                                    [idx target]
+                                    (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
+                                          (jump-to! target))
 
-                                _ (if (or sublist.autojump? doing-traversal?)
-                                      (exit (vim.fn.feedkeys in3 :i))
-                                      (exit-early))))))))))))))))
+                                    _ (if (or sublist.autojump? traversal?)
+                                          (exit (vim.fn.feedkeys in3 :i))
+                                          (exit-early)))))))))))))))))
 
 
 ; Keymaps ///1

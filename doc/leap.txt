@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 March 26
+Last change: 2022 April 02
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -63,9 +63,9 @@ in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for Leap motions). In simpler
 terms: in X-mode, the relevant edge of the operated area gets an offset of +2.
 
-                                                                *leap-match-EOL*
-A character at the end of a line can be targeted by pressing `<enter>` after
-it.
+                                                                *leap-match-eol*
+A character at the end of a line can be targeted by pressing `<space>`
+(`opts.special_keys.eol`) after it.
 
                                                              *leap-cross-window*
 `gs` searches in all the other windows on the tab page.
@@ -77,30 +77,34 @@ sorted by their screen distance from the cursor, advancing in concentric
 circles. This is a very different mental model, but has its own merits too.
 The cross-window motion (`gs`) behaves this way by default.
 
-                                                    *leap-repeat* *leap-traversal*
+                                                                   *leap-repeat*
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
-motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
-the motion ("traversal" mode).
+motions searches with the previous input.
 
-Note that the revert key does not start a new search in the reverse direction,
-but puts the cursor back to its previous position, allowing for an easy
-correction when you accidentally overshoot your target (this is relevant
-for x-motions).
+                                                                *leap-traversal*
+After entering at least one input character, `<enter>`
+(`opts.special_keys.next_match`) moves on to the immediate next match.
+
+Entering traversal mode after the first input is a useful shortcut, especially
+in operator-pending mode, but it can also be used as a substitute for
+normal-mode |f|/|t| motions. `s{char}<enter>` is the same as `f{char}`, but
+works over multiple lines.
+
+Once in traversal mode, `<tab>` (`opts.special_keys.prev_match`) can revert
+the previous jump. Note that it does _not_ start a new search in the reverse
+direction (like the native `,`), but puts the cursor back to its previous
+position, allowing for an easy correction when you accidentally overshoot your
+target (this is relevant for x-motions).
 
 If the safe label set is in use (|leap-config|), the labels will remain
 available during the whole time, even after entering traversal mode.
 
 Note: For bidirecional and cross-window search, traversal mode is not
-      supported, you can only start a fresh repeat.
+      supported.
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
 repeat.vim (https://github.com/tpope/vim-repeat) is installed.
-
-Note: Dot-repeating a jump in which group-switching was involved is repeated
-      as <enter>-repeat (the target chosen is not saved, will prompt for input
-      again)
 
 ==============================================================================
 CONFIGURATION                                                      *leap-config*
@@ -151,7 +155,7 @@ Available options~
     safe labels plus one.
     Leaving the list empty (or setting it to `nil`) forces auto-jump to always
     be on, except for Operator-pending mode. In this case, do not forget to
-    set `special_keys.next_match_group` to something "safe" too.
+    set `special_keys.next_group` to something "safe" too.
 
     Heuristics behind the defaults:
     - At least the first few labels should be the same on the two lists, since
@@ -163,17 +167,20 @@ Available options~
 
 `special_keys` >
     {
-      ['next_match_group'] = '<space>',
-      ['prev_match_group'] = '<tab>',
-      ['repeat'] = '<enter>',
-      ['revert'] = '<tab>',
+      repeat_search = '<enter>',
+      next_match    = '<enter>',
+      prev_match    = '<tab>',
+      next_group    = '<space>',
+      prev_group    = '<tab>',
+      eol           = '<space>',
     }
 <
     Keys captured by the plugin at runtime, to:
+    - repeat with the previous input after invocation (|leap-repeat|)
+    - jump to the next/previous match in traversal mode (|leap-traversal|)
     - switch to the next/previous group of matches, when there are more
       matches than labels available (|leap-usage|)
-    - repeat with the previous input after invocation, or jump to the
-      next/previous match in traversal mode (|leap-repeat|)
+    - target characters before EOL
 
 ==============================================================================
 DEFAULT KEYMAPS                                           *leap-default-keymaps*
@@ -220,12 +227,14 @@ Operator-pending mode
 
 Special keys~
 
-<Enter>                    Repeat with the previous input, or jump to the next
-                           match (traversal mode).
-<Tab>                      Revert the previous jump (traversal mode).
-<Space>                    Shift to the next group of labeled matches.
-<Tab>                      Revert the previous group shift.
-<Esc>                      Exit Leap at any stage cleanly.
+<enter>                    Repeat with the previous input (after invocation);
+                           jump to the next match in |leap-traversal| mode.
+<space>                    Substitute for an EOL character (after the first
+                           input); shift to the next group of labeled matches
+                           (after the second input).
+<tab>                      Revert the previous jump (|leap-traversal| mode) or
+                           the previous group shift.
+<esc>                      Exit Leap at any stage cleanly.
 
 ==============================================================================
 CUSTOM KEYMAPS                                             *leap-custom-keymaps*
@@ -236,15 +245,15 @@ method calls. If you are not familiar with the concept, see |<Plug>| and
 
 Available <Plug> keys:
 
-`<Plug>(leap-forward)`        /-like (offset: 0; as operation: exclusive)
-`<Plug>(leap-backward)`       ?-like (offset: 0; as operation: exclusive)
-`<Plug>(leap-forward-x)`             (offset: 1; as operation: inclusive)
-`<Plug>(leap-backward-x)`            (offset: 2; as operation: exclusive)
-`<Plug>(leap-omni)`
-`<Plug>(leap-cross-window)`
+*<Plug>(leap-forward)*        /-like (offset: 0; as operation: exclusive)
+*<Plug>(leap-backward)*       ?-like (offset: 0; as operation: exclusive)
+*<Plug>(leap-forward-x)*             (offset: 1; as operation: inclusive)
+*<Plug>(leap-backward-x)*            (offset: 2; as operation: exclusive)
+*<Plug>(leap-omni)*
+*<Plug>(leap-cross-window)*
 
-The keys for repeating and for switching between groups of matches can be set
-via `opts.special_keys` (|leap-config|).
+The keys for repeating the search, and for switching between groups of matches
+can be set via `opts.special_keys` (|leap-config|).
 
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*
@@ -263,7 +272,7 @@ liking:
     *LeapLabelSecondary*
         If the number of matches exceeds the available target labels, the next
         group of labeled targets are shown with a different color. Those can
-        be reached by pressing `<space>` (`special_keys.next_match_group`)
+        be reached by pressing `<space>` (`special_keys.next_group`)
         before the label character.
 
     *LeapBackdrop*
@@ -292,6 +301,6 @@ Leap (not in traversal mode):
 Example: >
     vim.api.nvim_create_autocmd('User LeapEnter', {command = 'nohlsearch'})
     vim.api.nvim_create_autocmd('User LeapLeave', {command = 'let &hlsearch=&hlsearch'})
-
+<
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

@@ -147,7 +147,7 @@ in X-mode, the relevant edge of the operated area gets an offset of +2.
 
 ### Jumping to the last character on a line
 
-A character at the end of a line can be targeted by pressing `<enter>` after it.
+A character at the end of a line can be targeted by pressing `<space>` after it.
 
 ### Cross-window motions
 
@@ -164,20 +164,28 @@ motion (`gs`) behaves this way by default.
 ### Repeating motions
 
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
-motions searches with the previous input. Subsequent keystrokes of `<enter>`
-move on to the next match, while `<tab>` (`opts.special_keys.revert`) reverts
-the motion ("traversal" mode).
+motions searches with the previous input.
 
-Note that the revert key does not start a new search in the reverse direction,
-but puts the cursor back to its previous position, allowing for an easy
-correction when you accidentally overshoot your target (this is relevant for
-x-motions).
+### Traversal mode
+
+After entering at least one input character, `<enter>`
+(`opts.special_keys.next_match`) moves on to the immediate next match.
+
+Entering traversal mode after the first input is a useful shortcut, especially
+in operator-pending mode, but it can also be used as a substitute for
+normal-mode `f`/`t` motions. `s{char}<enter>` is the same as `f{char}`, but
+works over multiple lines.
+
+Once in traversal mode, `<tab>` (`opts.special_keys.prev_match`) can revert the
+previous jump. Note that it does _not_ start a new search in the reverse
+direction (like the native `,`), but puts the cursor back to its previous
+position, allowing for an easy correction when you accidentally overshoot your
+target (this is relevant for x-motions).
 
 If the safe label set is in use, the labels will remain available during the
 whole time, even after entering traversal mode.
 
-For bidirecional and cross-window search, traversal mode is not supported, you
-can only start a fresh repeat.
+For bidirecional and cross-window search, traversal mode is not supported.
 
 ## Configuration
 
@@ -190,10 +198,12 @@ require('leap').setup {
   labels = { . . . },
   -- These keys are captured directly by the plugin at runtime.
   special_keys = {
-    ['next_match_group'] = '<space>',
-    ['prev_match_group'] = '<tab>',
-    ['repeat'] = '<enter>',
-    ['revert'] = '<tab>',
+    repeat_search = '<enter>',
+    next_match    = '<enter>',
+    prev_match    = '<tab>',
+    next_group    = '<space>',
+    prev_group    = '<tab>',
+    eol           = '<space>',
   },
 }
 ```
