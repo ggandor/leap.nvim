@@ -844,7 +844,6 @@ local function light_up_beacons(target_list, _3fstart_from)
         local ch2 = _let_195_[2]
         local k1 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. col)
         local k2 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. (col + ch1:len()))
-        local endcol = (col + ch1:len() + ch2:len())
         for _, k in ipairs({k1, k2}) do
           match_hl_positions[k] = true
           local _196_ = label_positions[k]
@@ -853,7 +852,7 @@ local function light_up_beacons(target_list, _3fstart_from)
             api.nvim_buf_del_extmark(bufnr, hl.ns, id)
           end
         end
-        api.nvim_buf_add_highlight(bufnr, hl.ns, hl.group.match, lnum, col, endcol)
+        api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, col, {hl_mode = "combine", priority = hl.priority.label, virt_text = {{(ch1 .. ch2), hl.group.match}}, virt_text_pos = "overlay"})
       elseif ((type(_194_) == "table") and (nil ~= (_194_)[1]) and (nil ~= (_194_)[2])) then
         local label_offset = (_194_)[1]
         local virttext = (_194_)[2]
@@ -866,7 +865,7 @@ local function light_up_beacons(target_list, _3fstart_from)
           api.nvim_buf_del_extmark(bufnr, hl.ns, id)
         else
           local _ = _198_
-          label_positions[k] = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, col0, {priority = hl.priority.label, virt_text = virttext, virt_text_pos = "overlay"})
+          label_positions[k] = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, col0, {hl_mode = "combine", priority = hl.priority.label, virt_text = virttext, virt_text_pos = "overlay"})
         end
       end
     end

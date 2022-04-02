@@ -665,15 +665,17 @@ should actually be displayed depends on the `label-state` flag."
           :match-highlight
           (let [[ch1 ch2] target.pair
                 k1 (make-key bufnr winid lnum col)
-                k2 (make-key bufnr winid lnum (+ col (ch1:len)))
-                endcol (+ col (ch1:len) (ch2:len))]
+                k2 (make-key bufnr winid lnum (+ col (ch1:len)))]
             (each [_ k (ipairs [k1 k2])]
               (tset match-hl-positions k true)
               ; Match highlights always win; remove any label already set.
               (match (. label-positions k)
                 id (api.nvim_buf_del_extmark bufnr hl.ns id)))
-            (api.nvim_buf_add_highlight bufnr hl.ns hl.group.match
-                                        lnum col endcol))
+            (api.nvim_buf_set_extmark bufnr hl.ns lnum col
+                                      {:virt_text [[(.. ch1 ch2) hl.group.match]]
+                                       :virt_text_pos "overlay"
+                                       :hl_mode "combine"
+                                       :priority hl.priority.label}))
 
           [label-offset virttext]
           (let [col (+ col label-offset)
@@ -689,6 +691,7 @@ should actually be displayed depends on the `label-state` flag."
                       (api.nvim_buf_set_extmark bufnr hl.ns lnum col
                                                 {:virt_text virttext
                                                  :virt_text_pos "overlay"
+                                                 :hl_mode "combine"
                                                  :priority hl.priority.label})))))))))
 
 
