@@ -893,14 +893,14 @@ should actually be displayed depends on the `label-state` flag."
                             in2)]
                 ; Should be saved right here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
-                (if (and accept-first? (not op-mode?))
-                    ; Jump to the very first match, and enter traversal mode
-                    ; with all targets and no labels kept.
+                (if accept-first?
                     (do (jump-to! (. targets 1))
-                        (set-beacons targets {:force-no-labels? true})
-                        (leap {: reverse? : x-mode? :traversal-state {: targets :idx 1}}))
+                        (if op-mode? (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
+                            ; Enter traversal mode with all targets and no labels kept.
+                            (do (set-beacons targets {:force-no-labels? true})
+                                (leap {: reverse? : x-mode?
+                                       :traversal-state {: targets :idx 1}}))))
                     (match (or (?. traversal-state :targets)
-                               (when (and accept-first? op-mode?) [(. targets 1)])
                                (. targets.sublists in2)
                                (exit-early (echo-not-found (.. in1 in2))))
                       [only nil]
@@ -922,15 +922,18 @@ should actually be displayed depends on the `label-state` flag."
                                                        {:display-targets-from (inc curr-idx)})
                                        (exit-early))
                               [in3 group-offset]
-                              (match (when-not (or op-mode? omni? (> group-offset 0))
+                              (match (when-not (or omni? (> group-offset 0))
                                        (get-traversal-action in3))
                                 action
                                 (let [new-idx (match action
                                                 :to-next (min (inc curr-idx) (length targets))
                                                 :to-prev (max (dec curr-idx) 1))]
                                   (jump-to! (. sublist new-idx))
-                                  (leap {: reverse? : x-mode?
-                                         :traversal-state {:targets sublist :idx new-idx}}))
+                                  (if op-mode?
+                                      (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
+                                      ; Enter or continue traversal mode on the current sublist.
+                                      (leap {: reverse? : x-mode?
+                                             :traversal-state {:targets sublist :idx new-idx}})))
 
                                 _ (match (when-not force-no-labels?
                                            (get-target-with-active-primary-label sublist in3))
