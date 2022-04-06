@@ -885,7 +885,7 @@ should actually be displayed depends on the `label-state` flag."
                        (exit-early))
               ; Accept first match.
               (where spec-keys.next_match
-                     (and (not traversal?) (not omni)))
+                     (and (not traversal?) (not omni?)))
               (do (jump-to! first)
                   (if op-mode?
                       (exit (update-state {:dot-repeat {:in2 (. first :pair 2)

@@ -1159,7 +1159,7 @@ local function leap(_202_)
       end
       _259_ = (prev_in2 or _260_() or _261_())
       local function _263_()
-        return (not traversal_3f and not omni)
+        return (not traversal_3f and not omni_3f0)
       end
       if ((_259_ == spec_keys.next_match) and _263_()) then
         jump_to_21(first)
