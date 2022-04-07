@@ -56,7 +56,7 @@ The search is invoked with `s` in the forward direction, and `S` in the backward
 direction. Let's target some word containing `ol`. After entering the letter
 `o`, the plugin processes all character pairs starting with it, and from here
 on, you have all the visual information you need to reach your specific target.
-To reach the underlined matches, just finish the pattern, i.e., type the second
+To reach the unlabeled matches, just finish the pattern, i.e., type the second
 character. For the others, you also need to type the label character that is
 displayed right next to the match.
 
@@ -95,7 +95,7 @@ That is,
 - invoke in the forward (`s`) or backward (`S`) direction
 - enter the first character of the search pattern
     - _the "beacons" are lit at this point; all potential matches (char1 + ?)
-      are highlighted/labeled_
+      are labeled_
 - enter the second character of the search pattern (might short-circuit after
   this, if there is only one match)
     - _certain beacons are extinguished; only char1 + char2 matches remain_
@@ -115,11 +115,12 @@ leap-config`.
 
 ### Resolving conflicts in the first phase
 
-A directly reachable match always takes priority over a label, in that case the
-label will only be displayed after the second input, that resolves the
-ambiguity. If a label gets positioned over another label (this might occur
-before EOL or the window edge, when the labels need to be shifted left), an
-empty label will be displayed until entering the second input. 
+If a directly reachable match covers a label, the match will get a highlight
+(like in traversal mode), and the label will only be displayed after the second
+input, that resolves the ambiguity. If a label gets positioned over another
+label (this might occur before EOL or the window edge, when the labels need to
+be shifted left), an "empty" label will be displayed until entering the second
+input.
 
 ### Operator-pending mode
 

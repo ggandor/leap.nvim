@@ -616,13 +616,14 @@ should actually be displayed depends on the `label-state` flag."
         offset (* group-offset |labels|)
         primary-start (+ offset (if sublist.autojump? 2 1))
         primary-end (+ primary-start (dec |labels|))
+        secondary-start (inc primary-end)
         secondary-end (+ primary-end |labels|)]
     (each [i target (ipairs sublist)]
       (when target.label
         (tset target :label-state
-              (if (or (< i primary-start) (> i secondary-end)) :inactive
-                  (<= i primary-end) :active-primary
-                  :active-secondary))))))
+              (if (<= primary-start i primary-end) :active-primary
+                  (<= secondary-start i secondary-end) :active-secondary
+                  (> i secondary-end) :inactive))))))
 
 
 (fn set-initial-label-states [targets]
@@ -632,69 +633,71 @@ should actually be displayed depends on the `label-state` flag."
 
 ; Display ///1
 
-(fn set-beacon [target force-no-labels?]
-  (let [{:pair [ch1 ch2] : label : label-state : edge-pos?} target
-        offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))]  ; multibyte
-    (tset target :beacon
-          (if (or (not label-state) force-no-labels?) :match-highlight
-              (match label-state
-                :active-primary [offset [[label hl.group.label-primary]]]
-                :active-secondary [offset [[label hl.group.label-secondary]]]
-                :inactive nil)))))
-
-
 (fn set-beacons [target-list {: force-no-labels?}]
-  (each [_ target (ipairs target-list)]
-    (set-beacon target force-no-labels?)))
+
+  (macro unlabeled-beacon [target]
+    `[0 [[(.. (. ,target :pair 1) (. ,target :pair 2)) hl.group.match]]])
+
+  (macro ->key [bufnr winid lnum col]
+    `(.. ,bufnr " " ,winid " " ,lnum " " ,col))
+
+  (if force-no-labels?
+      (each [_ target (ipairs target-list)]
+        (tset target :beacon (unlabeled-beacon target)))
+      (do
+        ; Set labels.
+        (each [_ target (ipairs target-list)]
+          (local {:pair [ch1 ch2] : label : label-state : edge-pos?} target)  
+          (when label-state
+            (let [offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handle multibyte
+                  beacon [offset
+                          [(match label-state
+                             :active-primary [label hl.group.label-primary]
+                             :active-secondary [label hl.group.label-secondary]
+                             :inactive [" " hl.group.label-secondary])]]]
+              (tset target :beacon beacon))))
+        ; Handle conflicts.
+        (local label-positions {})  ; "<bufnr> <winid> <lnum> <col>" : target-ref
+        (each [i {:pair [ch1 ch2] : label &as target} (ipairs target-list)]
+          (let [[lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
+                bufnr (or (?. target.wininfo :bufnr) 0)
+                winid (or (?. target.wininfo :winid) 0)]
+            (match target.beacon
+              nil
+              ; Unlabeled match covers a label?
+              (let [k1 (->key bufnr winid lnum col)
+                    k2 (->key bufnr winid lnum (+ col (ch1:len)))]
+                (each [_ k (ipairs [k1 k2])]
+                  (match (. label-positions k)
+                    ; Remove the label, and turn on the match highlight
+                    ; (indicating that a label is covered underneath).
+                    target* (do (tset target* :beacon nil)
+                                (tset target :beacon (unlabeled-beacon target))))))
+
+              [offset _]
+              ; Label covers another label? (Potentially at EOL or window edge.)
+              (let [col (+ col offset)
+                    k (->key bufnr winid lnum col)]
+                (match (. label-positions k)
+                  ; Remove the other label, and set the current one to empty.
+                  target* (do (tset target* :beacon nil)
+                              ; beacon = [offset [[label hl-group]]]
+                              (tset target :beacon 2 1 1 " ")))
+                (tset label-positions k target))))))))
 
 
 (fn light-up-beacons [target-list ?start-from]
-  (local match-hl-positions {})  ; "<bufnr> <lnum> <col>" : true
-  (local label-positions {})     ; "<bufnr> <lnum> <col>" : extmark-id
-
-  (macro make-key [bufnr winid lnum col]
-    `(.. ,bufnr " " ,winid " " ,lnum " " ,col))
-
   (for [i (or ?start-from 1) (length target-list)]
     (local target (. target-list i))
-    (when target.beacon
-      (let [[lnum col] (map dec target.pos)  ; 1/1 -> 0/0 idx
-            bufnr (or (?. target.wininfo :bufnr) 0)
-            winid (or (?. target.wininfo :winid) 0)]
-        (match target.beacon
-          :match-highlight
-          (let [[ch1 ch2] target.pair
-                k1 (make-key bufnr winid lnum col)
-                k2 (make-key bufnr winid lnum (+ col (ch1:len)))]
-            (each [_ k (ipairs [k1 k2])]
-              (tset match-hl-positions k true)
-              ; Match highlights always win; remove any label already set.
-              (match (. label-positions k)
-                id (api.nvim_buf_del_extmark bufnr hl.ns id)))
-            (api.nvim_buf_set_extmark bufnr hl.ns lnum col
-                                      {:virt_text [[(.. ch1 ch2) hl.group.match]]
-                                       :virt_text_pos "overlay"
-                                       :hl_mode "combine"
-                                       :priority hl.priority.label}))
-
-          [label-offset [[label hl-group]]]
-          (let [col (+ col label-offset)
-                k (make-key bufnr winid lnum col)]
-            ; If the position is occupied by a match highlight, that takes
-            ; priority - do nothing.
-            (when-not (. match-hl-positions k)
-              (let [id (. label-positions k)]
-                ; Remove the conflicting extmark.
-                (when id (api.nvim_buf_del_extmark bufnr hl.ns id))
-                ; An empty label indicates a conflict.
-                (local virt_text [[(if id " " label) hl-group]])
-                ; Set the label, and record its position.
-                (tset label-positions k
-                      (api.nvim_buf_set_extmark bufnr hl.ns lnum col
-                                                {: virt_text
-                                                 :virt_text_pos "overlay"
-                                                 :hl_mode "combine"
-                                                 :priority hl.priority.label}))))))))))
+    (match target.beacon
+      [offset virttext]
+      (let [[lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
+            bufnr (or (?. target.wininfo :bufnr) 0)]
+        (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
+                                  {:virt_text virttext
+                                   :virt_text_pos "overlay"
+                                   :hl_mode "combine"
+                                   :priority hl.priority.label})))))
 
 
 ; Main ///1

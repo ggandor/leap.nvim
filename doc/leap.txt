@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 April 02
+Last change: 2022 April 07
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -263,6 +263,8 @@ liking:
 
     *LeapMatch*
         Matches that can be reached directly, without having to use a label.
+        (By default, this is only used for traversal mode, or when a match
+        covers a label, indicating the conflict.)
 
     *LeapLabelPrimary*
         The character needed to be pressed to jump to the match position,
