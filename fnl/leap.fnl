@@ -677,22 +677,24 @@ should actually be displayed depends on the `label-state` flag."
                                        :hl_mode "combine"
                                        :priority hl.priority.label}))
 
-          [label-offset virttext]
+          [label-offset [[label hl-group]]]
           (let [col (+ col label-offset)
                 k (make-key bufnr winid lnum col)]
-            (match (or (. match-hl-positions k) (. label-positions k))
-              ; If the position is occupied by a match highlight, that takes
-              ; priority - do nothing.
-              true nil
-              ; If the position is occupied by another label, remove that.
-              id (api.nvim_buf_del_extmark bufnr hl.ns id)
-              ; Else set the label, and record its position.
-              _ (tset label-positions k
+            ; If the position is occupied by a match highlight, that takes
+            ; priority - do nothing.
+            (when-not (. match-hl-positions k)
+              (let [id (. label-positions k)]
+                ; Remove the conflicting extmark.
+                (when id (api.nvim_buf_del_extmark bufnr hl.ns id))
+                ; An empty label indicates a conflict.
+                (local virt_text [[(if id " " label) hl-group]])
+                ; Set the label, and record its position.
+                (tset label-positions k
                       (api.nvim_buf_set_extmark bufnr hl.ns lnum col
-                                                {:virt_text virttext
+                                                {: virt_text
                                                  :virt_text_pos "overlay"
                                                  :hl_mode "combine"
-                                                 :priority hl.priority.label})))))))))
+                                                 :priority hl.priority.label}))))))))))
 
 
 ; Main ///1

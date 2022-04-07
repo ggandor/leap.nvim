@@ -115,10 +115,11 @@ leap-config`.
 
 ### Resolving conflicts in the first phase
 
-If a label gets positioned over a directly reachable match or another label
-(this latter might occur when a label needs to be shifted left for a match
-before EOL/window edge), it will not be shown until entering the second input,
-that resolves the ambiguity.
+A directly reachable match always takes priority over a label, in that case the
+label will only be displayed after the second input, that resolves the
+ambiguity. If a label gets positioned over another label (this might occur
+before EOL or the window edge, when the labels need to be shifted left), an
+empty label will be displayed until entering the second input. 
 
 ### Operator-pending mode
 
