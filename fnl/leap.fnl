@@ -647,15 +647,14 @@ should actually be displayed depends on the `label-state` flag."
       (do
         ; Set labels.
         (each [_ target (ipairs target-list)]
-          (local {:pair [ch1 ch2] : label : label-state : edge-pos?} target)  
-          (when label-state
-            (let [offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handle multibyte
-                  beacon [offset
-                          [(match label-state
-                             :active-primary [label hl.group.label-primary]
-                             :active-secondary [label hl.group.label-secondary]
-                             :inactive [" " hl.group.label-secondary])]]]
-              (tset target :beacon beacon))))
+          (local {:pair [ch1 ch2] : label : label-state : edge-pos?} target)
+          (let [offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handle multibyte
+                virttext (match label-state
+                           :active-primary [[label hl.group.label-primary]]
+                           :active-secondary [[label hl.group.label-secondary]]
+                           :inactive [[" " hl.group.label-secondary]])
+                beacon (when virttext [offset virttext])]
+            (tset target :beacon beacon)))
         ; Handle conflicts.
         (local label-positions {})  ; "<bufnr> <winid> <lnum> <col>" : target-ref
         (each [i {:pair [ch1 ch2] : label &as target} (ipairs target-list)]
