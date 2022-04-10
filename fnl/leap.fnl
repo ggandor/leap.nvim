@@ -590,24 +590,20 @@ forced implicitly, regardless of using safe labels."
 
 (fn set-labels [targets]
   "Assign label characters to each target, by going through the sublists
-one by one, using the given sublist's `label-set` repeated indefinitely,
-and skipping the first target if `autojump?` is set.
+one by one, using the given sublist's `label-set` repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
   (each [_ sublist (pairs targets.sublists)]
-    (when (> (length sublist) 1)  ; else we'll jump automatically anyway
-      (let [autojump? sublist.autojump?
-            labels sublist.label-set]
-        (each [i target (ipairs sublist)]
+    (when (> (length sublist) 1)  ; else we jump unconditionally
+      (each [i target (ipairs sublist)]
+        ; Skip labeling the first target if autojump is set.
+        (local i (if sublist.autojump? (dec i) i))
+        (when (> i 0)
+          (local labels sublist.label-set)
           (tset target :label
-                (when-not (and autojump? (= i 1))
-                  ; In case of `autojump?`, the i-th label is assigned
-                  ; to the i+1th position (we skipped the first one).
-                  (match (% (if autojump? (dec i) i)
-                            (length labels))
-                    ; 1-indexing is not a great match for modulo arithmetic.
-                    0 (. labels (length labels))
-                    n (. labels n)))))))))
+                (match (% i (length labels))
+                  0 (. labels (length labels))
+                  n (. labels n))))))))
 
 
 (fn set-label-states [sublist {: group-offset}]
