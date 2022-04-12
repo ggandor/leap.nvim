@@ -804,51 +804,49 @@ should actually be displayed depends on the `label-state` flag."
           (when (and dot-repeat dot-repeatable-op?)
             (set state.dot-repeat (doto dot-repeat (tset :in1 in1)))))))
 
-    ; `first-jump?` should only be persisted inside `to` (i.e. the
-    ; lifetime is one invocation), and better be managed by the function
-    ; itself, so setting up a closure here.
     (local jump-to!
-           (do (var first-jump? true)
-               (fn [target]
-                 (when target.wininfo
-                   (api.nvim_set_current_win target.wininfo.winid))
-                 (jump-to!* target.pos
-                            {: mode : reverse?
-                             :inclusive-motion? (and x-mode? (not reverse?))
-                             :add-to-jumplist? (and first-jump? (not traversal?))
-                             :adjust #(when x-mode?
-                                        (push-cursor! :fwd)
-                                        (when reverse? (push-cursor! :fwd)))})
-                 (set first-jump? false))))
+      (do
+        ; Better be managed by the function itself, hence the closure.
+        (var first-jump? true)
+        (fn [target]
+          (when target.wininfo
+            (api.nvim_set_current_win target.wininfo.winid))
+          (jump-to!* target.pos
+                     {: mode : reverse?
+                      :inclusive-motion? (and x-mode? (not reverse?))
+                      :add-to-jumplist? (and first-jump? (not traversal?))
+                      :adjust #(when x-mode?
+                                 (push-cursor! :fwd)
+                                 (when reverse? (push-cursor! :fwd)))})
+          (set first-jump? false))))
 
     (fn get-last-input [sublist {: display-targets-from}]
       (fn recur [group-offset initial-invoc?]
+        (when-not initial-invoc?
+          (set-label-states sublist {: group-offset}))
         (set-beacons sublist {: force-no-labels?})
         (with-highlight-chores
           (light-up-beacons sublist display-targets-from))
         (match (with-highlight-cleanup (get-input))
           input
-          (if (and sublist.autojump? (not (user-forced-autojump?)))
-              ; If auto-jump has been set heuristically (not forced),
-              ; it implies that there are no subsequent groups.
-              [input 0]
+          (if
+            (or traversal?
+                ; If auto-jump has been set heuristically (not forced),
+                ; it implies that there are no subsequent groups.
+                (and sublist.autojump? (not (user-forced-autojump?))))
+            [input 0]
 
-              (and (not traversal?)
-                   (one-of? input
-                     spec-keys.next_group
-                     (when-not initial-invoc? spec-keys.prev_group)))
-              (let [labels sublist.label-set
-                    num-of-groups (ceil (/ (length sublist) (length labels)))
-                    max-offset (dec num-of-groups)
-                    new-group-offset (-> group-offset
-                                         ((match input
-                                            spec-keys.next_group inc
-                                            _ dec))
-                                         (clamp 0 max-offset))]
-                (set-label-states sublist {:group-offset new-group-offset})
-                (recur new-group-offset))
+            (one-of? input
+              spec-keys.next_group
+              (when-not initial-invoc? spec-keys.prev_group))
+            (let [|groups| (ceil (/ (length sublist)
+                                    (length sublist.label-set)))
+                  max-offset (dec |groups|)]
+              (recur (-> group-offset
+                         ((if (= input spec-keys.next_group) inc dec))
+                         (clamp 0 max-offset))))
 
-              [input group-offset])))
+            [input group-offset])))
       (recur 0 true))
 
     (fn get-traversal-action [in]
@@ -881,26 +879,26 @@ should actually be displayed depends on the `label-state` flag."
         (match (or (?. traversal-state :targets)
                    (get-targets in1 {: reverse? :target-windows ?target-windows})
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
-          [first &as targets]
+          targets
           (do
             (when-not traversal?
               (doto targets
                 (populate-sublists)
                 (set-sublist-attributes {: force-no-autojump?})
                 (set-labels)
-                (set-initial-label-states)))
-            (when new-search?
-              (set-beacons targets {})
-              (with-highlight-chores (light-up-beacons targets)))
+                (set-initial-label-states))
+              (when new-search?
+                (set-beacons targets {})
+                (with-highlight-chores (light-up-beacons targets))))
             (match (or prev-in2
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               ; Accept first match.
               (where spec-keys.next_match
                      (and (not traversal?) (not omni?)))
-              (do (jump-to! first)
+              (do (jump-to! (. targets 1))
                   (if op-mode?
-                      (exit (update-state {:dot-repeat {:in2 (. first :pair 2)
+                      (exit (update-state {:dot-repeat {:in2 (. targets 1 :pair 2)
                                                         :target-idx 1}}))
                       ; Enter traversal mode with all targets and no labels kept.
                       (do (set-beacons targets {:force-no-labels? true})
@@ -912,7 +910,6 @@ should actually be displayed depends on the `label-state` flag."
                   (match (. targets.sublists in2 state.dot-repeat.target-idx)
                     target (exit (jump-to! target))
                     _ (exit-early))
-
                   (do
                     ; Should be saved right here; a repeated search might have a match.
                     (update-state {:repeat {:in2 (if traversal?
@@ -927,13 +924,13 @@ should actually be displayed depends on the `label-state` flag."
 
                       ; Note: If started traversal after the first input, then
                       ; sublist = all targets.
-                      [sublist-first &as sublist]
+                      sublist
                       (do
                         ; Our current position on the sublist.
                         (var curr-idx (or (?. traversal-state :idx) 0))
                         (when-not traversal?
                           (when sublist.autojump?
-                            (jump-to! sublist-first)
+                            (jump-to! (. sublist 1))
                             (set curr-idx 1)))
                         (match (or (get-last-input sublist {:display-targets-from (inc curr-idx)})
                                    (exit-early))
