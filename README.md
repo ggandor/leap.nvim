@@ -153,15 +153,9 @@ A character at the end of a line can be targeted by pressing `<space>` after it.
 
 ### Cross-window motions
 
-`gs` searches in all the other windows on the tab page.
-
-### Bidirectional search
-
-By mapping to the special key `<Plug>(leap-omni)`, you can search in the whole
-window, instead of just a given direction. In this case, the matches are sorted
-by their screen distance from the cursor, advancing in concentric circles. This
-is a very different mental model, but has its own merits too. The cross-window
-motion (`gs`) behaves this way by default.
+`gs` searches in all the other windows on the tab page. In this case, the
+matches are sorted by their screen distance from the cursor, advancing in
+concentric circles.
 
 ### Repeating motions
 
@@ -187,7 +181,7 @@ target (this is relevant for x-motions).
 If the safe label set is in use, the labels will remain available during the
 whole time, even after entering traversal mode.
 
-For bidirecional and cross-window search, traversal mode is not supported.
+For cross-window search, traversal mode is not supported.
 
 ## Configuration
 
@@ -221,6 +215,35 @@ overwite them, unless explicitly told so (called with a `true` argument).
 
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 leap-custom-keymaps`.
+
+### Search mode tweaks
+
+For further customization you can call the `leap` function directly. The
+`target-windows` argument allows you to pass in a list of `wininfo`
+dictionaries.
+
+Searching in all windows (including the current one) on the tab page:
+
+```lua
+local function get_windows_on_tabpage()
+  local t = {}
+  local ids = string.gmatch(vim.fn.string(vim.fn.winlayout()), "%d+")
+  for id in ids do t[#t + 1] = id end
+  return vim.tbl_map(function (id) return vim.fn.getwininfo(id)[1] end, t)
+end
+-- Map this call to your preferred key.
+require'leap'.leap { ['target-windows'] = get_windows_on_tabpage() }
+```
+
+Bidirectional search in the current window is just a specific case of the
+multi-window mode - set `target-windows` to a table containing the current
+window as the only element:
+
+```lua
+require'leap'.leap {
+  ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
+}
+```
 
 ### User events
 

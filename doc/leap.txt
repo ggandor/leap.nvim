@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 April 07
+Last change: 2022 April 12
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -68,14 +68,9 @@ A character at the end of a line can be targeted by pressing `<space>`
 (`opts.special_keys.eol`) after it.
 
                                                              *leap-cross-window*
-`gs` searches in all the other windows on the tab page.
-
-                                                  *leap-omni* *leap-bidirectional*
-By mapping to the special key `<Plug>(leap-omni)`, you can search in the whole
-window, instead of just a given direction. In this case, the matches are
-sorted by their screen distance from the cursor, advancing in concentric
-circles. This is a very different mental model, but has its own merits too.
-The cross-window motion (`gs`) behaves this way by default.
+`gs` searches in all the other windows on the tab page. In this case, the
+matches are sorted by their screen distance from the cursor, advancing in
+concentric circles.
 
                                                                    *leap-repeat*
 Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
@@ -99,8 +94,7 @@ target (this is relevant for x-motions).
 If the safe label set is in use (|leap-config|), the labels will remain
 available during the whole time, even after entering traversal mode.
 
-Note: For bidirecional and cross-window search, traversal mode is not
-      supported.
+Note: For cross-window search, traversal mode is not supported.
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
@@ -249,7 +243,6 @@ Available <Plug> keys:
 *<Plug>(leap-backward)*       ?-like (offset: 0; as operation: exclusive)
 *<Plug>(leap-forward-x)*             (offset: 1; as operation: inclusive)
 *<Plug>(leap-backward-x)*            (offset: 2; as operation: exclusive)
-*<Plug>(leap-omni)*
 *<Plug>(leap-cross-window)*
 
 The keys for repeating the search, and for switching between groups of matches

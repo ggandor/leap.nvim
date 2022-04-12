@@ -11,11 +11,8 @@ local plug_mappings = {
   ['<Plug>(leap-backward-x)'] = function()
     require'leap'.leap { ['reverse?'] = true, ['x-mode?'] = true }
   end,
-  ['<Plug>(leap-omni)'] = function()
-    require'leap'.leap { ['omni?'] = true }
-  end,
-  ['<Plug>(leap-cross-window)'] = function() 
-    require'leap'.leap { ['omni?'] = true, ['cross-window?'] = true }
+  ['<Plug>(leap-cross-window)'] = function()
+    require'leap'.leap { ['target-windows'] = true }
   end,
 }
 

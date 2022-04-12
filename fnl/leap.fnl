@@ -318,7 +318,7 @@ interrupted change-operation."
 ; Getting targets ///1
 
 ; Returns wininfo dicts.
-(fn get-targetable-windows []
+(fn get-other-windows-on-tabpage []
   (let [visual-or-OP-mode? (not= (vim.fn.mode) :n)
         get-wininfo #(. (vim.fn.getwininfo $) 1)
         get-buf api.nvim_win_get_buf
@@ -716,24 +716,25 @@ should actually be displayed depends on the `label-state` flag."
               :repeat {:in1 nil :in2 nil}})
 
 
-(fn leap [{: reverse? : x-mode? : omni? : cross-window?
-           : dot-repeat? : traversal-state}]
+(fn leap [{: reverse? : x-mode? : dot-repeat? : target-windows : traversal-state}]
   "Entry point for Leap motions."
-  (let [omni? (or cross-window? omni?)
+  (let [?target-windows (match target-windows
+                          [&as t] t
+                          true (get-other-windows-on-tabpage))
+        bidirectional? ?target-windows
+        traversal? traversal-state
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
         visual-mode? (one-of? mode <ctrl-v> :V :v)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
-        dot-repeatable-op? (and op-mode? (not omni?) (not= vim.v.operator :y))
-        traversal? traversal-state
+        dot-repeatable-op? (and op-mode? (not bidirectional?)
+                                (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-no-autojump? (or op-mode? (and omni? visual-mode?) cross-window?)
+        force-no-autojump? (or op-mode? bidirectional?)
         force-no-labels? (and traversal? (not traversal-state.targets.autojump?))
-        ?target-windows (if cross-window? (get-targetable-windows)
-                            omni? [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)])
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
@@ -895,7 +896,7 @@ should actually be displayed depends on the `label-state` flag."
                        (exit-early))
               ; Accept first match.
               (where spec-keys.next_match
-                     (and (not traversal?) (not omni?)))
+                     (and (not traversal?) (not bidirectional?)))
               (do (jump-to! (. targets 1))
                   (if op-mode?
                       (exit (update-state {:dot-repeat {:in2 (. targets 1 :pair 2)
@@ -935,7 +936,7 @@ should actually be displayed depends on the `label-state` flag."
                         (match (or (get-last-input sublist {:display-targets-from (inc curr-idx)})
                                    (exit-early))
                           [in3 group-offset]
-                          (match (when-not (or omni? (> group-offset 0))
+                          (match (when-not (or bidirectional? (> group-offset 0))
                                    (get-traversal-action in3))
                             action
                             (let [new-idx (match action
