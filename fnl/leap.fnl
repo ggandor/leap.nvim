@@ -290,29 +290,21 @@ interrupted change-operation."
 ; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
-(fn set-dot-repeat [cmd ?count]
+(fn set-dot-repeat []
   ; Note: dot-repeatable (i.e. non-yank) operation is assumed, we're not
   ; checking it here.
   (let [op vim.v.operator
+        cmd (replace-keycodes
+              "<cmd>lua require'leap'.leap {['dot-repeat?'] = true}<cr>")
         ; We cannot getreg('.') at this point, since the change has not
         ; happened yet - therefore the below hack (thx Sneak).
         change (when (= op :c) (replace-keycodes "<c-r>.<esc>"))
-        seq (.. op (or ?count "") cmd (or change ""))]
+        seq (.. op cmd (or change ""))]
     ; Using pcall, since vim-repeat might not be installed.
     ; Use the same register for the repeated operation.
     (pcall vim.fn.repeat#setreg seq vim.v.register)
     ; Note: we're feeding count inside the seq itself.
     (pcall vim.fn.repeat#set seq -1)))
-
-
-(fn get-plug-key [reverse? x-mode? dot-repeat?]
-  (.. "<Plug>(leap-" (if dot-repeat? "dotrepeat-" "")
-      ; Forcing to bools with not-not, as those values can be nils.
-      (match [(not (not reverse?)) (not (not x-mode?))]
-        [false false] "forward)"
-        [true  false] "backward)"
-        [false true]  "forward-x)"
-        [true  true]  "backward-x)")))
 
 
 ; Getting targets ///1
@@ -710,15 +702,16 @@ should actually be displayed depends on the `label-state` flag."
 ; Main ///1
 
 ; State that is persisted between invocations.
-; (Note: we don't need to save `reverse?` and `x-mode?` for the dot
-; state, since we hardcode them into the dot-repeat command.)
-(local state {:dot-repeat {:in1 nil :in2 nil :target-idx nil}
-              :repeat {:in1 nil :in2 nil}})
+(local state {:repeat {:in1 nil :in2 nil}
+              :dot-repeat {:in1 nil :in2 nil :reverse? nil :x-mode? nil
+                           :target-idx nil}})
 
 
 (fn leap [{: reverse? : x-mode? : dot-repeat? : target-windows : traversal-state}]
   "Entry point for Leap motions."
-  (let [?target-windows (match target-windows
+  (let [reverse? (if dot-repeat? state.dot-repeat.reverse? reverse?)
+        x-mode? (if dot-repeat? state.dot-repeat.x-mode? x-mode?)
+        ?target-windows (match target-windows
                           [&as t] t
                           true (get-other-windows-on-tabpage))
         bidirectional? ?target-windows
@@ -752,9 +745,7 @@ should actually be displayed depends on the `label-state` flag."
     ; with that they can screw up Fennel match forms in a breeze,
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit [...]
-      `(do (when dot-repeatable-op?
-             (set-dot-repeat
-               (replace-keycodes (get-plug-key reverse? x-mode? true))))
+      `(do (when dot-repeatable-op? (set-dot-repeat))
            (do ,...)
            (exec-autocmds :LeapLeave)
            nil))
@@ -798,12 +789,17 @@ should actually be displayed depends on the `label-state` flag."
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
       (fn [{: repeat : dot-repeat}]
-        ; We might need to update the state if traversing _all_ matches.
+        ; Do not short-circuit on regular repeat: we need to update the repeat
+        ; state continuously if we have entered traversal mode after the first
+        ; input (i.e., traversing all matches, not just a given sublist).
         (when-not dot-repeat?
           (when repeat
             (set state.repeat (doto repeat (tset :in1 in1))))
           (when (and dot-repeat dot-repeatable-op?)
-            (set state.dot-repeat (doto dot-repeat (tset :in1 in1)))))))
+            (set state.dot-repeat (doto dot-repeat
+                                    (tset :in1 in1)
+                                    (tset :reverse? reverse?)
+                                    (tset :x-mode? x-mode?)))))))
 
     (local jump-to!
       (do
@@ -987,20 +983,6 @@ should actually be displayed depends on the `label-state` flag."
               (and (= (vim.fn.mapcheck lhs mode) "")
                    (= (vim.fn.hasmapto rhs mode) 0)))
       (vim.keymap.set mode lhs rhs {:silent true}))))
-
-
-; Just for our convenience, to be used here in the script.
-(each [lhs rhs
-       (pairs
-         {"<Plug>(leap-dotrepeat-forward)"
-          #(leap {:dot-repeat? true})
-          "<Plug>(leap-dotrepeat-backward)"
-          #(leap {:dot-repeat? true :reverse? true})
-          "<Plug>(leap-dotrepeat-forward-x)"
-          #(leap {:dot-repeat? true :x-mode? true})
-          "<Plug>(leap-dotrepeat-backward-x)"
-          #(leap {:dot-repeat? true :reverse? true :x-mode? true})})]
-  (vim.keymap.set :o lhs rhs {:silent true}))
 
 
 ; Handling editor options ///1
