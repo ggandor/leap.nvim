@@ -783,7 +783,7 @@ should actually be displayed depends on the `label-state` flag."
          (hl:cleanup ?target-windows)
          res#))
 
-    (fn get-first-input []
+    (fn get-first-pattern-input []
       (if traversal? state.repeat.in1
           dot-repeat? state.dot-repeat.in1
           (match (or (with-highlight-cleanup (get-input))
@@ -821,14 +821,15 @@ should actually be displayed depends on the `label-state` flag."
                                  (when reverse? (push-cursor! :fwd)))})
           (set first-jump? false))))
 
-    (fn get-last-input [sublist {: display-targets-from}]
+    (fn post-pattern-input-loop [sublist {: display-targets-from}]
       (fn recur [group-offset initial-invoc?]
         (when-not initial-invoc?
           (set-label-states sublist {: group-offset}))
         (set-beacons sublist {: force-no-labels?})
         (with-highlight-chores
           (light-up-beacons sublist display-targets-from))
-        (match (with-highlight-cleanup (get-input))
+        (match (or (with-highlight-cleanup (get-input))
+                   (exit-early))
           input
           (if
             (or traversal?
@@ -872,11 +873,12 @@ should actually be displayed depends on the `label-state` flag."
       (echo "")  ; clean up the command line
       (with-highlight-chores nil))
 
-    (match (get-first-input)
+    (match (get-first-pattern-input)
       in1
       (let [update-state (update-state* in1)
             prev-in2 (when-not new-search?
-                       (if dot-repeat? state.dot-repeat.in2 state.repeat.in2))]
+                       (if dot-repeat? state.dot-repeat.in2
+                           state.repeat.in2))]
         (match (or (?. traversal-state :targets)
                    (get-targets in1 {: reverse? :target-windows ?target-windows})
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
@@ -891,16 +893,17 @@ should actually be displayed depends on the `label-state` flag."
               (when new-search?
                 (set-beacons targets {})
                 (with-highlight-chores (light-up-beacons targets))))
+            ; Get second pattern input.
             (match (or prev-in2
                        (with-highlight-cleanup (get-input))
                        (exit-early))
-              ; Accept first match.
+              ; Accept first match?
               (where spec-keys.next_match
                      (and (not traversal?) (not bidirectional?)))
               (do (jump-to! (. targets 1))
                   (if op-mode?
-                      (exit (update-state {:dot-repeat {:in2 (. targets 1 :pair 2)
-                                                        :target-idx 1}}))
+                      (exit (update-state
+                              {:dot-repeat {:in2 (. targets 1 :pair 2) :target-idx 1}}))
                       ; Enter traversal mode with all targets and no labels kept.
                       (do (set-beacons targets {:force-no-labels? true})
                           (leap {: reverse? : x-mode?
@@ -933,8 +936,8 @@ should actually be displayed depends on the `label-state` flag."
                           (when sublist.autojump?
                             (jump-to! (. sublist 1))
                             (set curr-idx 1)))
-                        (match (or (get-last-input sublist {:display-targets-from (inc curr-idx)})
-                                   (exit-early))
+                        (match (post-pattern-input-loop
+                                 sublist {:display-targets-from (inc curr-idx)})
                           [in3 group-offset]
                           (match (when-not (or bidirectional? (> group-offset 0))
                                    (get-traversal-action in3))
