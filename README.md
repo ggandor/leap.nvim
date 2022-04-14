@@ -14,6 +14,13 @@ simplicity, sane defaults, and maintainability. Leap aims to be a common
 denominator, its goal being to establish a new standard interface for
 moving around in the visible editor area in Vim-like editors.
 
+Compared to Lightspeed, Leap
+
+* is just as efficient in the common case, and almost as efficient generally;
+  all the really important features are there
+* has less complexity and configuration options
+* has a smaller and simpler visual footprint; it feels like using Sneak
+
 ## Status
 
 Leap is not stable yet - expect breaking changes in the API from time to time.
@@ -129,9 +136,9 @@ providing the necessary additional comfort and precision, since in that case we
 are targeting exact positions, and can only aim once, without the means of easy
 correction.
 
-`z`/`Z` are the equivalents of `s`/`S`, and they follow the semantics of `/` and
-`?` in terms of cursor placement and inclusive/exclusive operational behaviour,
-including forced motion types (`:h forced-motion`).
+`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and they follow the
+semantics of `/` and `?` in terms of cursor placement and inclusive/exclusive
+operational behaviour, including forced motion types (`:h forced-motion`).
 
 The mnemonic for **X-mode** could be **extend/exclude** (corresponding to
 `x`/`X`). It provides missing variants for the two directions:
@@ -149,7 +156,8 @@ in X-mode, the relevant edge of the operated area gets an offset of +2.
 
 ### Jumping to the last character on a line
 
-A character at the end of a line can be targeted by pressing `<space>` after it.
+A character at the end of a line can be targeted by pressing `<space>`
+(`opts.special_keys.eol`) after it.
 
 ### Cross-window motions
 
