@@ -115,37 +115,27 @@ character instead."
 
 (fn init-highlight [force?]
   (local bg vim.o.background)
-  (each [name def-map
-         (pairs
-          {hl.group.backdrop        {:gui "none"
-                                     :cterm "none"}
-           hl.group.match           {:guifg (match bg
-                                             :light "#222222"
-                                             _ "#ccff88")
-                                     :guibg "none"
-                                     :gui "underline,nocombine"
-                                     :ctermfg "red"
-                                     :ctermbg "none"
-                                     :cterm "underline,nocombine" }
-           hl.group.label-primary   {:guifg "black"
-                                     :guibg (match bg
-                                              :light "#ff8877"
-                                              _ "#ccff88")
-                                     :gui "none"
-                                     :ctermfg "black"
-                                     :ctermbg "red"
-                                     :cterm "none"}
-           hl.group.label-secondary {:guifg "black"
-                                     :guibg (match bg
-                                              :light "#77aaff"
-                                              _ "#99ccff")
-                                     :gui "none"
-                                     :ctermfg "black"
-                                     :ctermbg "blue"
-                                     :cterm "none"}})]
-    (let [attr-str (-> (icollect [k v (pairs def-map)] (.. k "=" v))
-                       (table.concat " "))]
-      (vim.cmd (.. "highlight " (if force? "" "default ") name " " attr-str)))))
+  (local def-maps
+         {hl.group.match
+          {:fg (match bg :light "#222222" _ "#ccff88")
+           :ctermfg "red"
+           :underline true
+           :nocombine true}
+          hl.group.label-primary
+          {:fg "black"
+           :bg (match bg :light "#ff8877" _ "#ccff88")
+           :ctermfg "black"
+           :ctermbg "red"
+           :nocombine true}
+          hl.group.label-secondary
+          {:fg "black"
+           :bg (match bg :light "#77aaff" _ "#99ccff")
+           :ctermfg "black"
+           :ctermbg "blue"
+           :nocombine true}})
+  (each [name def-map (pairs def-maps)]
+    (when force? (tset def-map :default true))
+    (api.nvim_set_hl 0 name def-map)))
 
 
 (fn apply-backdrop [reverse? ?target-windows]
