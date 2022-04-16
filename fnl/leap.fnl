@@ -889,14 +889,17 @@ should actually be displayed depends on the `label-state` flag."
             (and (= in2 spec-keys.next_match)
                  (not traversal?)
                  (not bidirectional?))
-            (do (jump-to! (. targets 1))
-                (if op-mode? (exit (update-state
-                                     {:dot-repeat {:in2 (. targets 1 :pair 2)
-                                                   :target-idx 1}}))
-                    ; Enter traversal mode with all targets and no labels kept.
-                    (do (set-beacons targets {:force-no-labels? true})
-                        (leap {: reverse? : x-mode?
-                               :traversal-state {: targets :idx 1}}))))
+            (let [in2 (. targets 1 :pair 2)]
+              (update-state {:repeat {: in2}})
+              (jump-to! (. targets 1))
+              (if op-mode?
+                  (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
+                  ; Enter traversal mode with all targets and no labels kept.
+                  (leap {: reverse? : x-mode?
+                         :traversal-state
+                         {:targets (doto targets
+                                     (set-beacons {:force-no-labels? true}))
+                          :idx 1}})))
 
             (do
               ; Should be saved right here; a repeated search might have a match.
