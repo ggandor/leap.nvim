@@ -775,8 +775,7 @@ should actually be displayed depends on the `label-state` flag."
          res#))
 
     (fn get-first-pattern-input []
-      (if traversal? state.repeat.in1
-          dot-repeat? state.dot-repeat.in1
+      (if dot-repeat? state.dot-repeat.in1
           (match (or (with-highlight-cleanup (get-input))
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
@@ -785,6 +784,10 @@ should actually be displayed depends on the `label-state` flag."
                                         (or state.repeat.in1
                                             (exit-early (echo-no-prev-search))))
             in in)))
+
+    (fn get-prev-in2 []
+      (when-not new-search?
+        (. state (if dot-repeat? :dot-repeat :repeat) :in2)))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
@@ -869,94 +872,89 @@ should actually be displayed depends on the `label-state` flag."
       (echo "")  ; clean up the command line
       (with-highlight-chores nil))
 
-    (match (get-first-pattern-input)
-      in1
-      (let [update-state (update-state* in1)
-            prev-in2 (when-not new-search?
-                       (if dot-repeat? state.dot-repeat.in2
-                           state.repeat.in2))]
-        (match (or (?. traversal-state :targets)
-                   (get-targets in1 {: reverse? :target-windows ?target-windows})
-                   (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
-          targets
-          (do
-            (when-not traversal?
-              (doto targets
-                (populate-sublists)
-                (set-sublist-attributes {: force-no-autojump?})
-                (set-labels)
-                (set-initial-label-states))
-              (when new-search?
-                (set-beacons targets {})
-                (with-highlight-chores (light-up-beacons targets))))
-            ; Get second pattern input.
-            (match (or prev-in2
-                       (with-highlight-cleanup (get-input))
-                       (exit-early))
-              ; Accept first match?
-              (where spec-keys.next_match
-                     (and (not traversal?) (not bidirectional?)))
-              (do (jump-to! (. targets 1))
-                  (if op-mode?
-                      (exit (update-state
-                              {:dot-repeat {:in2 (. targets 1 :pair 2) :target-idx 1}}))
-                      ; Enter traversal mode with all targets and no labels kept.
-                      (do (set-beacons targets {:force-no-labels? true})
-                          (leap {: reverse? : x-mode?
-                                 :traversal-state {: targets :idx 1}}))))
+    (match (if traversal? [state.repeat.in1 state.repeat.in2 traversal-state.targets]
+               (match-try (get-first-pattern-input)
+                 in1 (or (get-targets in1 {: reverse? :target-windows ?target-windows})
+                         (exit-early (echo-not-found (.. in1 (or (get-prev-in2) "")))))
+                 targets (do (doto targets
+                               (populate-sublists)
+                               (set-sublist-attributes {: force-no-autojump?})
+                               (set-labels)
+                               (set-initial-label-states))
+                             (when new-search?
+                               (set-beacons targets {})
+                               (with-highlight-chores (light-up-beacons targets)))
+                             (or (get-prev-in2)
+                                 (with-highlight-cleanup (get-input))
+                                 (exit-early)))
+                 in2 [in1 in2 targets]))
+      [in1 in2 targets]
+      (let [update-state (update-state* in1)]
+        (if dot-repeat?
+            (match (. targets.sublists in2 state.dot-repeat.target-idx)
+              target (exit (jump-to! target))
+              _ (exit-early))
 
-              in2
-              (if dot-repeat?
-                  (match (. targets.sublists in2 state.dot-repeat.target-idx)
-                    target (exit (jump-to! target))
-                    _ (exit-early))
-                  (do
-                    ; Should be saved right here; a repeated search might have a match.
-                    (update-state {:repeat {:in2 (if traversal?
-                                                     (. targets traversal-state.idx :pair 2)
-                                                     in2)}})
-                    (match (or (?. traversal-state :targets)
-                               (. targets.sublists in2)
-                               (exit-early (echo-not-found (.. in1 in2))))
-                      [only nil]
-                      (exit (update-state {:dot-repeat {: in2 :target-idx 1}})
-                            (jump-to! only))
+            ; Accept first match?
+            (and (= in2 spec-keys.next_match)
+                 (not traversal?)
+                 (not bidirectional?))
+            (do (jump-to! (. targets 1))
+                (if op-mode? (exit (update-state
+                                     {:dot-repeat {:in2 (. targets 1 :pair 2)
+                                                   :target-idx 1}}))
+                    ; Enter traversal mode with all targets and no labels kept.
+                    (do (set-beacons targets {:force-no-labels? true})
+                        (leap {: reverse? : x-mode?
+                               :traversal-state {: targets :idx 1}}))))
 
-                      ; Note: If started traversal after the first input, then
-                      ; sublist = all targets.
-                      sublist
-                      (do
-                        ; Our current position on the sublist.
-                        (var curr-idx (or (?. traversal-state :idx) 0))
-                        (when-not traversal?
-                          (when sublist.autojump?
-                            (jump-to! (. sublist 1))
-                            (set curr-idx 1)))
-                        (match (post-pattern-input-loop
-                                 sublist {:display-targets-from (inc curr-idx)})
-                          [in3 group-offset]
-                          (match (when-not (or bidirectional? (> group-offset 0))
-                                   (get-traversal-action in3))
-                            action
-                            (let [new-idx (match action
-                                            :to-next (min (inc curr-idx) (length targets))
-                                            :to-prev (max (dec curr-idx) 1))]
-                              (jump-to! (. sublist new-idx))
-                              (if op-mode?
-                                  (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
-                                  ; Enter or continue traversal mode on the current sublist.
-                                  (leap {: reverse? : x-mode?
-                                         :traversal-state {:targets sublist :idx new-idx}})))
+            (do
+              ; Should be saved right here; a repeated search might have a match.
+              (update-state {:repeat {:in2 (if traversal?
+                                               (. targets traversal-state.idx :pair 2)
+                                               in2)}})
+              (match (or (?. traversal-state :targets)
+                         (. targets.sublists in2)
+                         (exit-early (echo-not-found (.. in1 in2))))
+                [only nil]
+                (exit (update-state {:dot-repeat {: in2 :target-idx 1}})
+                      (jump-to! only))
 
-                            _ (match (when-not force-no-labels?
-                                       (get-target-with-active-primary-label sublist in3))
-                                [idx target]
-                                (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
-                                      (jump-to! target))
+                ; Note: If started traversal after the first input, then
+                ; sublist = all targets.
+                sublist
+                (do
+                  ; Our current position on the sublist.
+                  (var curr-idx (or (?. traversal-state :idx) 0))
+                  (when-not traversal?
+                    (when sublist.autojump?
+                      (jump-to! (. sublist 1))
+                      (set curr-idx 1)))
+                  (match (post-pattern-input-loop
+                           sublist {:display-targets-from (inc curr-idx)})
+                    [in3 group-offset]
+                    (match (when-not (or bidirectional? (> group-offset 0))
+                             (get-traversal-action in3))
+                      action
+                      (let [new-idx (match action
+                                      :to-next (min (inc curr-idx) (length targets))
+                                      :to-prev (max (dec curr-idx) 1))]
+                        (jump-to! (. sublist new-idx))
+                        (if op-mode? (exit (update-state
+                                             {:dot-repeat {: in2 :target-idx 1}}))
+                            ; Enter or continue traversal mode on the current sublist.
+                            (leap {: reverse? : x-mode?
+                                   :traversal-state {:targets sublist :idx new-idx}})))
 
-                                _ (if (or sublist.autojump? traversal?)
-                                      (exit (vim.fn.feedkeys in3 :i))
-                                      (exit-early))))))))))))))))
+                      _ (match (when-not force-no-labels?
+                                 (get-target-with-active-primary-label sublist in3))
+                          [idx target]
+                          (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
+                                (jump-to! target))
+
+                          _ (if (or sublist.autojump? traversal?)
+                                (exit (vim.fn.feedkeys in3 :i))
+                                (exit-early)))))))))))))
 
 
 ; Keymaps ///1
