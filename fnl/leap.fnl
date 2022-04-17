@@ -134,7 +134,7 @@ character instead."
            :ctermbg "blue"
            :nocombine true}})
   (each [name def-map (pairs def-maps)]
-    (when (not force?) (tset def-map :default true))
+    (when-not force? (tset def-map :default true))
     (api.nvim_set_hl 0 name def-map)))
 
 
