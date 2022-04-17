@@ -152,7 +152,7 @@ local function init_highlight(force_3f)
   end
   def_maps = {[hl.group.match] = {fg = _19_, ctermfg = "red", underline = true, nocombine = true}, [hl.group["label-primary"]] = {fg = "black", bg = _24_, ctermfg = "black", ctermbg = "red", nocombine = true}, [hl.group["label-secondary"]] = {fg = "black", bg = _29_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
   for name, def_map in pairs(def_maps) do
-    if force_3f then
+    if not force_3f then
       def_map["default"] = true
     else
     end
