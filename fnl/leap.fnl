@@ -765,19 +765,26 @@ should actually be displayed depends on the `label-state` flag."
          res#))
 
     (fn get-first-pattern-input []
-      (if dot-repeat? state.dot-repeat.in1
-          (match (or (with-highlight-cleanup (get-input))
-                     (exit-early))
-            ; Here we can handle any other modifier key as "zeroth" input,
-            ; if the need arises.
-            spec-keys.repeat_search (do (set new-search? false)
-                                        (or state.repeat.in1
-                                            (exit-early (echo-no-prev-search))))
-            in in)))
+      (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
+                     (with-highlight-cleanup (get-input)))
+                 (exit-early))
+        ; Here we can handle any other modifier key as "zeroth" input,
+        ; if the need arises.
+        spec-keys.repeat_search
+        (do (set new-search? false)
+            (if state.repeat.in1
+                (values state.repeat.in1 state.repeat.in2)
+                (exit-early (echo-no-prev-search))))
 
-    (fn get-prev-in2 []
-      (when-not new-search?
-        (. state (if dot-repeat? :dot-repeat :repeat) :in2)))
+        in1 in1))
+
+    (fn get-second-pattern-input [targets]
+      (or (do (doto targets
+                (set-initial-label-states)
+                (set-beacons {}))
+              (with-highlight-chores (light-up-beacons targets))
+              (with-highlight-cleanup (get-input)))
+          (exit-early)))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
@@ -812,7 +819,9 @@ should actually be displayed depends on the `label-state` flag."
 
     (fn post-pattern-input-loop [sublist {: display-targets-from}]
       (fn recur [group-offset initial-invoc?]
-        (when-not initial-invoc?
+        (when-not traversal?
+          ; Do _not_ skip if `initial-invoc?`: we might have skipped this step
+          ; in case of <enter>-repeat (= getting `in2` directly from `state`)!
           (set-label-states sublist {: group-offset}))
         (set-beacons sublist {: force-no-labels?})
         (with-highlight-chores
@@ -858,34 +867,34 @@ should actually be displayed depends on the `label-state` flag."
     ; waiting for:
 
     (when-not (or dot-repeat? traversal?)
-      (exec-autocmds :LeapEnter)
-      (echo "")  ; clean up the command line
-      (with-highlight-chores nil))
+      (exec-autocmds :LeapEnter))
 
     (match (if traversal? [state.repeat.in1 state.repeat.in2 traversal-state.targets]
-               (match-try (get-first-pattern-input)
-                 in1 (or (get-targets in1 {: reverse? :target-windows ?target-windows})
-                         (exit-early (echo-not-found (.. in1 (or (get-prev-in2) "")))))
+               (match-try (if dot-repeat?
+                              (values state.dot-repeat.in1 state.dot-repeat.in2)
+                              ; This might also return in2 too (<enter>-repeat).
+                              (get-first-pattern-input))
+                 ; For the sake of simplicity, we're always getting all targets,
+                 ; regardless of potentially already having in2.
+                 (in1 ?in2) (or (get-targets in1 {: reverse?
+                                                  :target-windows ?target-windows})
+                                (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
                  targets (do (doto targets
+                               ; Prepare targets (set all fixed attributes).
                                (populate-sublists)
                                (set-sublist-attributes {: force-no-autojump?})
-                               (set-labels)
-                               (set-initial-label-states))
-                             (when new-search?
-                               (set-beacons targets {})
-                               (with-highlight-chores (light-up-beacons targets)))
-                             (or (get-prev-in2)
-                                 (with-highlight-cleanup (get-input))
-                                 (exit-early)))
+                               (set-labels))
+                             (or ?in2 (get-second-pattern-input targets)))
                  in2 [in1 in2 targets]))
       [in1 in2 targets]
+      ; From here on, successful exit (jumping to a target) is possible.
       (let [update-state (update-state* in1)]
         (if dot-repeat?
             (match (. targets.sublists in2 state.dot-repeat.target-idx)
               target (exit (jump-to! target))
               _ (exit-early))
 
-            ; Accept first match?
+            ; Accept the very first match?
             (and (= in2 spec-keys.next_match)
                  (not traversal?)
                  (not bidirectional?))
@@ -923,10 +932,14 @@ should actually be displayed depends on the `label-state` flag."
                     (when sublist.autojump?
                       (jump-to! (. sublist 1))
                       (set curr-idx 1)))
+                  ; If we've not exited (or recursed) yet (meaning we might want
+                  ; to select a group/label), then now's the time to refresh the
+                  ; beacons and get input(s) again.
                   (match (post-pattern-input-loop
-                           sublist {:display-targets-from (inc curr-idx)})
+                           sublist
+                           {:display-targets-from (inc curr-idx)})
                     [in3 group-offset]
-                    (match (when-not (or bidirectional? (> group-offset 0))
+                    (match (when (and (= group-offset 0) (not bidirectional?))
                              (get-traversal-action in3))
                       action
                       (let [new-idx (match action
