@@ -788,18 +788,18 @@ should actually be displayed depends on the `label-state` flag."
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
-      (fn [{: repeat : dot-repeat}]
+      (fn [t]
         ; Do not short-circuit on regular repeat: we need to update the repeat
         ; state continuously if we have entered traversal mode after the first
         ; input (i.e., traversing all matches, not just a given sublist).
         (when-not dot-repeat?
-          (when repeat
-            (set state.repeat (doto repeat (tset :in1 in1))))
-          (when (and dot-repeat dot-repeatable-op?)
-            (set state.dot-repeat (doto dot-repeat
-                                    (tset :in1 in1)
-                                    (tset :reverse? reverse?)
-                                    (tset :x-mode? x-mode?)))))))
+          (match t
+            {:repeat {: in2}} (tset state :repeat {: in1 : in2}))
+          (when dot-repeatable-op?
+            (match t
+              {:dot-repeat {: in2 : target-idx}}
+              (tset state :dot-repeat {: in1 : in2 : target-idx
+                                       : reverse? : x-mode?}))))))
 
     (local jump-to!
       (do
