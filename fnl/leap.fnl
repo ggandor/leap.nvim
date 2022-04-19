@@ -721,9 +721,6 @@ should actually be displayed depends on the `label-state` flag."
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
 
-    ; Could be set later by `special_keys.repeat_search` as first input.
-    (var new-search? (not (or dot-repeat? traversal?)))
-
     ; Helpers ///
 
     ; Note: One of the main purpose of these macros, besides wrapping
@@ -752,8 +749,7 @@ should actually be displayed depends on the `label-state` flag."
          nil))
 
     (macro with-highlight-chores [...]
-      `(do (when new-search?
-             (apply-backdrop reverse? ?target-windows))
+      `(do (apply-backdrop reverse? ?target-windows)
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
@@ -821,12 +817,9 @@ should actually be displayed depends on the `label-state` flag."
                  (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
-        spec-keys.repeat_search
-        (do (set new-search? false)
-            (if state.repeat.in1
-                (values state.repeat.in1 state.repeat.in2)
-                (exit-early (echo-no-prev-search))))
-
+        spec-keys.repeat_search (if state.repeat.in1
+                                    (values state.repeat.in1 state.repeat.in2)
+                                    (exit-early (echo-no-prev-search)))
         in1 in1))
 
     (fn get-second-pattern-input [targets]
@@ -882,14 +875,16 @@ should actually be displayed depends on the `label-state` flag."
     ; Traversal mode is a special case: we do not need to search for targets, as
     ; we got the target list as argument - we can only move back and forth on
     ; the provided list, or exit.
-    (when traversal? (traverse) (lua :return))  ; REDRAW, EARLY RETURN
+    (when traversal?
+      (traverse)  ; REDRAW
+      (lua :return))  ; EARLY RETURN
 
     (when-not dot-repeat?
       (exec-autocmds :LeapEnter))
 
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too (if <enter>-repeat).
-                   (get-first-pattern-input))  ; REDRAW, (?)sets `new-search?`
+                   (get-first-pattern-input))  ; REDRAW
                      ; For the sake of simplicity, we're always getting all
                      ; targets, regardless of potentially already having in2.
       (in1 ?in2) (or (get-targets in1 {: reverse? :target-windows ?target-windows})
