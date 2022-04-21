@@ -791,25 +791,23 @@ should actually be displayed depends on the `label-state` flag."
           (set first-jump? false))))
 
     (fn traverse []
-      (let [{: targets :idx curr-idx} traversal-state]
+      (let [{: targets : idx} traversal-state]
         (set-beacons targets {:force-no-labels? (not targets.autojump?)})
-        (with-highlight-chores (light-up-beacons targets (inc curr-idx)))
+        (with-highlight-chores (light-up-beacons targets (inc idx)))
         (match (or (with-highlight-cleanup (get-input))
                    (exit))
-          (where input
-                 (one-of? input spec-keys.next_match spec-keys.prev_match))
-          (let [new-idx
-                (match input
-                  spec-keys.next_match (min (inc curr-idx) (length targets))
-                  spec-keys.prev_match (max (dec curr-idx) 1))]
-            ; Need to save now - we might <esc> next time, exiting above.
-            ((update-state* state.repeat.in1)
-             {:repeat {:in2 (. targets new-idx :pair 2)}})
-            (jump-to! (. targets new-idx))
-            (leap {: reverse? : x-mode?
-                   :traversal-state {: targets :idx new-idx}}))
-
-          input (exit (vim.fn.feedkeys input :i)))))
+          input
+          (if (one-of? input spec-keys.next_match spec-keys.prev_match)
+              (let [update-state (update-state* state.repeat.in1)
+                    new-idx (match input
+                              spec-keys.next_match (min (inc idx) (length targets))
+                              spec-keys.prev_match (max (dec idx) 1))]
+                ; Need to save now - we might <esc> next time, exiting above.
+                (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
+                (jump-to! (. targets new-idx))
+                (leap {: reverse? : x-mode?
+                       :traversal-state {: targets :idx new-idx}}))
+              (exit (vim.fn.feedkeys input :i))))))
 
     (fn get-first-pattern-input []
       (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
@@ -831,7 +829,7 @@ should actually be displayed depends on the `label-state` flag."
           (exit-early)))
 
     (fn post-pattern-input-loop [sublist]
-      (fn recur [group-offset initial-invoc?]
+      (fn loop [group-offset initial-invoc?]
         (doto sublist
           ; Do _not_ skip this on initial invocation - we might have skipped
           ; setting the initial label states in case of <enter>-repeat.
@@ -840,24 +838,20 @@ should actually be displayed depends on the `label-state` flag."
         (with-highlight-chores (light-up-beacons sublist))
         (match (or (with-highlight-cleanup (get-input))
                    (exit-early))
-          (where input (and sublist.autojump? (not (user-forced-autojump?))))
-          ; If auto-jump has been set heuristically (not forced), it implies
-          ; that there are no subsequent groups.
-          [input 0]
+          input
+          (if (and (or (= input spec-keys.next_group)
+                       (and (= input spec-keys.prev_group) (not initial-invoc?)))
+                   ; If auto-jump has been set heuristically (not forced), it
+                   ; implies that there are no subsequent groups.
+                   (or (not sublist.autojump?) user-forced-autojump?))
+              (let [|groups| (ceil (/ (length sublist) (length sublist.label-set)))
+                    max-offset (dec |groups|)
+                    inc/dec (if (= input spec-keys.next_group) inc dec)
+                    new-offset (-> group-offset inc/dec (clamp 0 max-offset))]
+                (loop new-offset false))
+              input)))
+      (loop 0 true))
 
-          (where input
-                 (one-of? input
-                   spec-keys.next_group
-                   (when-not initial-invoc? spec-keys.prev_group)))
-          (let [|groups| (ceil (/ (length sublist) (length sublist.label-set)))
-                max-offset (dec |groups|)
-                new-offset (-> group-offset
-                               ((if (= input spec-keys.next_group) inc dec))
-                               (clamp 0 max-offset))]
-            (recur new-offset))
-
-          input [input group-offset]))
-      (recur 0 true))
 
     (fn get-target-with-active-primary-label [target-list input]
       (var res nil)
@@ -889,7 +883,8 @@ should actually be displayed depends on the `label-state` flag."
                      ; targets, regardless of potentially already having in2.
       (in1 ?in2) (or (get-targets in1 {: reverse? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
-      targets (do (doto targets  ; prepare targets (set all fixed attributes)
+      targets (do (doto targets
+                    ; Prepare targets (set fixed attributes).
                     (populate-sublists)
                     (set-sublist-attributes {: force-no-autojump?})
                     (set-labels))
@@ -902,7 +897,7 @@ should actually be displayed depends on the `label-state` flag."
                 target (exit (jump-to! target))
                 _ (exit-early))
 
-              ; Accept the very first match?
+              ; Jump to the very first match?
               (and (= in2 spec-keys.next_match) (not bidirectional?))
               (let [in2 (. targets 1 :pair 2)]
                 (update-state {:repeat {: in2}})
@@ -928,26 +923,27 @@ should actually be displayed depends on the `label-state` flag."
                   sublist
                   (do
                     (when sublist.autojump? (jump-to! (. sublist 1)))
+                    ; Sets label states!
                     (match (post-pattern-input-loop sublist)  ; REDRAW
-                      ; Accept the first match on the sublist?
-                      (where [spec-keys.next_match 0] (not bidirectional?))
-                      (if op-mode?
-                          (do (jump-to! (. sublist 1))
-                              (exit (update-state {:dot-repeat {: in2 :target-idx 1}})))
-                          (let [new-idx (if sublist.autojump? 2 1)]
-                            (jump-to! (. sublist new-idx))
+                      ; Jump to the first match on the [rest of the] sublist?
+                      (where spec-keys.next_match (not bidirectional?))
+                      (let [new-idx (if sublist.autojump? 2 1)]
+                        (jump-to! (. sublist new-idx))
+                        (if op-mode?
+                            ; Implies no-autojump.
+                            (exit (update-state {:dot-repeat {: in2 :target-idx 1}})))
                             ; Enter traversal mode on the current sublist.
                             (leap {: reverse? : x-mode?
-                                   :traversal-state {:targets sublist :idx new-idx}})))
+                                   :traversal-state {:targets sublist :idx new-idx}}))
 
-                      [input _]
+                      input
                       (match (get-target-with-active-primary-label sublist input)
                         [idx target]
                         (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
                               (jump-to! target))
 
                         _ (if sublist.autojump? (exit (vim.fn.feedkeys input :i))
-                            (exit-early))))))))))))
+                              (exit-early))))))))))))
 
 
 ; Keymaps ///1
