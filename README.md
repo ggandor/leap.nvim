@@ -96,7 +96,7 @@ after one more `<space>`, green.
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
 
-`s|S char1 char2 (<space>|<tab>)* label?`
+`s|S char1 char2 <space>? (<space>|<tab>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -157,7 +157,7 @@ in X-mode, the relevant edge of the operated area gets an offset of +2.
 ### Jumping to the last character on a line
 
 A character at the end of a line can be targeted by pressing `<space>`
-(`opts.special_keys.eol`) after it.
+(`special_keys.eol`) after it.
 
 ### Cross-window motions
 
@@ -165,26 +165,33 @@ A character at the end of a line can be targeted by pressing `<space>`
 matches are sorted by their screen distance from the cursor, advancing in
 concentric circles.
 
-### Repeating motions
+### Repeating the search and traversing through the matches
 
-Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
+Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
 motions searches with the previous input.
 
-### Traversal mode
+`s|S <enter> <space>? (<space>|<tab>)* label?`
 
 After entering at least one input character, `<enter>`
-(`opts.special_keys.next_match`) moves on to the immediate next match.
+(`special_keys.next_match`) moves on to the immediate next match (enters
+traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`) can
+revert the previous jump. That is, it puts the cursor back to its previous
+position, allowing for an easy correction when you accidentally overshoot your
+target.
+
+`s|S char1 <enter> (<enter>|<tab>)*`
+
+`s|S char1 char2 <enter>? (<enter>|<tab>)*`
+
+Of course, the two can be combined - you can immediately move on after a
+repeated search:
+
+`s|S <enter> <enter>? (<enter>|<tab>)*`
 
 Entering traversal mode after the first input is a useful shortcut, especially
 in operator-pending mode, but it can also be used as a substitute for
 normal-mode `f`/`t` motions. `s{char}<enter>` is the same as `f{char}`, but
 works over multiple lines.
-
-Once in traversal mode, `<tab>` (`opts.special_keys.prev_match`) can revert the
-previous jump. Note that it does _not_ start a new search in the reverse
-direction (like the native `,`), but puts the cursor back to its previous
-position, allowing for an easy correction when you accidentally overshoot your
-target (this is relevant for x-motions).
 
 If the safe label set is in use, the labels will remain available during the
 whole time, even after entering traversal mode.

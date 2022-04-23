@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 April 12
+Last change: 2022 April 23
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -17,16 +17,15 @@ USAGE                                                               *leap-usage*
 
 Command sequence in Normal mode, with the default settings:
 
-`s|S char1 char2? (<space>|<tab>)* label?`
+`s|S char1 char2 <space>? (<space>|<tab>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
 
+- enter the first character of the search pattern
+
   | the "beacons" are lit at this point; all potential matches (`char1` + `?`)
   | are labeled
-
-- enter the first character of the search pattern (might short-circuit after
-  this, if the character is unique in the search direction)
 
 - enter the second character of the search pattern (might short-circuit after
   this, if there is only one match)
@@ -65,31 +64,39 @@ terms: in X-mode, the relevant edge of the operated area gets an offset of +2.
 
                                                                 *leap-match-eol*
 A character at the end of a line can be targeted by pressing `<space>`
-(`opts.special_keys.eol`) after it.
+(`special_keys.eol`) after it.
 
                                                              *leap-cross-window*
 `gs` searches in all the other windows on the tab page. In this case, the
 matches are sorted by their screen distance from the cursor, advancing in
 concentric circles.
 
-                                                                   *leap-repeat*
-Pressing `<enter>` (`opts.special_keys.repeat`) after invoking any of Leap's
+                                                    *leap-repeat* *leap-traversal*
+Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
 motions searches with the previous input.
 
-                                                                *leap-traversal*
+`s|S <enter> <space>? (<space>|<tab>)* label?`
+
 After entering at least one input character, `<enter>`
-(`opts.special_keys.next_match`) moves on to the immediate next match.
+(`special_keys.next_match`) moves on to the immediate next match (enters
+traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`)
+can revert the previous jump. That is, it puts the cursor back to its previous
+position, allowing for an easy correction when you accidentally overshoot your
+target.
+
+`s|S char1 <enter> (<enter>|<tab>)*`
+
+`s|S char1 char2 <enter>? (<enter>|<tab>)*`
+
+Of course, the two can be combined - you can immediately move on after a
+repeated search:
+
+`s|S <enter> <enter>? (<enter>|<tab>)*`
 
 Entering traversal mode after the first input is a useful shortcut, especially
 in operator-pending mode, but it can also be used as a substitute for
 normal-mode |f|/|t| motions. `s{char}<enter>` is the same as `f{char}`, but
 works over multiple lines.
-
-Once in traversal mode, `<tab>` (`opts.special_keys.prev_match`) can revert
-the previous jump. Note that it does _not_ start a new search in the reverse
-direction (like the native `,`), but puts the cursor back to its previous
-position, allowing for an easy correction when you accidentally overshoot your
-target (this is relevant for x-motions).
 
 If the safe label set is in use (|leap-config|), the labels will remain
 available during the whole time, even after entering traversal mode.
