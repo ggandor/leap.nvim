@@ -212,23 +212,42 @@ end
 local function cursor_before_eof_3f()
   return ((vim.fn.line(".") == vim.fn.line("$")) and (vim.fn.virtcol(".") == dec(vim.fn.virtcol("$"))))
 end
-local function add_restore_virtualedit_autocmd(saved_val)
+local function create_restore_virtualedit_autocmd(saved_val)
   local function _42_()
     vim.o.virtualedit = saved_val
     return nil
   end
   return api.nvim_create_autocmd({"CursorMoved", "WinLeave", "BufLeave", "InsertEnter", "CmdlineEnter", "CmdwinEnter"}, {callback = _42_, once = true})
 end
-local function jump_to_21_2a(target, _43_)
-  local _arg_44_ = _43_
-  local mode = _arg_44_["mode"]
-  local reverse_3f = _arg_44_["reverse?"]
-  local inclusive_motion_3f = _arg_44_["inclusive-motion?"]
-  local add_to_jumplist_3f = _arg_44_["add-to-jumplist?"]
-  local adjust = _arg_44_["adjust"]
+local function adjust_inclusive(motion_force)
+  local _43_ = motion_force
+  if (_43_ == nil) then
+    if cursor_before_eof_3f() then
+      local virtualedit_saved = vim.o.virtualedit
+      vim.o.virtualedit = "onemore"
+      vim.cmd("norm! l")
+      return create_restore_virtualedit_autocmd(virtualedit_saved)
+    else
+      return push_cursor_21("fwd")
+    end
+  elseif (_43_ == "v") then
+    return push_cursor_21("bwd")
+  elseif (_43_ == "V") then
+    return nil
+  elseif (_43_ == _3cctrl_v_3e) then
+    return nil
+  else
+    return nil
+  end
+end
+local function jump_to_21_2a(target, _46_)
+  local _arg_47_ = _46_
+  local mode = _arg_47_["mode"]
+  local reverse_3f = _arg_47_["reverse?"]
+  local inclusive_op_3f = _arg_47_["inclusive-op?"]
+  local add_to_jumplist_3f = _arg_47_["add-to-jumplist?"]
+  local adjust = _arg_47_["adjust"]
   local op_mode_3f = string.match(mode, "o")
-  local motion_force = get_motion_force(mode)
-  local virtualedit_saved = vim.o.virtualedit
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
   else
@@ -239,25 +258,8 @@ local function jump_to_21_2a(target, _43_)
     force_matchparen_refresh()
   else
   end
-  if (op_mode_3f and not reverse_3f and inclusive_motion_3f) then
-    local _47_ = motion_force
-    if (_47_ == nil) then
-      if not cursor_before_eof_3f() then
-        return push_cursor_21("fwd")
-      else
-        vim.o.virtualedit = "onemore"
-        vim.cmd("norm! l")
-        return add_restore_virtualedit_autocmd(virtualedit_saved)
-      end
-    elseif (_47_ == "V") then
-      return nil
-    elseif (_47_ == _3cctrl_v_3e) then
-      return nil
-    elseif (_47_ == "v") then
-      return push_cursor_21("bwd")
-    else
-      return nil
-    end
+  if (op_mode_3f and inclusive_op_3f and not reverse_3f) then
+    return adjust_inclusive(get_motion_force(mode))
   else
     return nil
   end
@@ -1027,9 +1029,9 @@ local function leap(_200_)
         end
         if dot_repeatable_op_3f then
           local _210_ = t
-          if ((_G.type(_210_) == "table") and ((_G.type((_210_)["dot-repeat"]) == "table") and (nil ~= ((_210_)["dot-repeat"]).in2) and (nil ~= ((_210_)["dot-repeat"])["target-idx"]))) then
-            local in2 = ((_210_)["dot-repeat"]).in2
+          if ((_G.type(_210_) == "table") and ((_G.type((_210_)["dot-repeat"]) == "table") and (nil ~= ((_210_)["dot-repeat"])["target-idx"]) and (nil ~= ((_210_)["dot-repeat"]).in2))) then
             local target_idx = ((_210_)["dot-repeat"])["target-idx"]
+            local in2 = ((_210_)["dot-repeat"]).in2
             state["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = target_idx, ["reverse?"] = reverse_3f0, ["x-mode?"] = x_mode_3f0}
             return nil
           else
@@ -1064,7 +1066,7 @@ local function leap(_200_)
           return nil
         end
       end
-      jump_to_21_2a(target.pos, {mode = mode, ["reverse?"] = reverse_3f0, ["inclusive-motion?"] = (x_mode_3f0 and not reverse_3f0), ["add-to-jumplist?"] = (first_jump_3f and not traversal_3f), adjust = _216_})
+      jump_to_21_2a(target.pos, {mode = mode, ["reverse?"] = reverse_3f0, ["inclusive-op?"] = (x_mode_3f0 and not reverse_3f0), ["add-to-jumplist?"] = (first_jump_3f and not traversal_3f), adjust = _216_})
       first_jump_3f = false
       return nil
     end
