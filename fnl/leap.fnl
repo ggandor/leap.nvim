@@ -790,6 +790,17 @@ should actually be displayed depends on the `label-state` flag."
                                  (when reverse? (push-cursor! :fwd)))})
           (set first-jump? false))))
 
+    (fn dot-repeat []
+      (let [{: in1 : in2 : target-idx} state.dot-repeat
+            pattern (.. "\\V" (if opts.case_insensitive "\\c" "\\C")
+                        (string.gsub (.. in1 in2) "\\" "\\\\"))
+            next-pos (get-match-positions
+                       pattern {:bounds (get-horizontal-bounds) : reverse?})]
+        (for [_ 1 (dec target-idx)]
+          (next-pos))
+        (match (next-pos)
+          pos (jump-to! {: pos}))))
+
     (fn traverse []
       (let [{: targets : idx} traversal-state]
         (set-beacons targets {:force-no-labels? (not targets.autojump?)})
@@ -852,7 +863,6 @@ should actually be displayed depends on the `label-state` flag."
               input)))
       (loop 0 true))
 
-
     (fn get-target-with-active-primary-label [target-list input]
       (var res nil)
       (each [idx {: label : label-state &as target} (ipairs target-list)
@@ -866,21 +876,23 @@ should actually be displayed depends on the `label-state` flag."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
-    ; Traversal mode is a special case: we do not need to search for targets, as
-    ; we got the target list as argument - we can only move back and forth on
-    ; the provided list, or exit.
+    ; Dot-repeat simply searches for the `state.dot-repeat.target-idx`-th
+    ; target, and jumps there, skipping everything else.
+    (when dot-repeat?
+      (dot-repeat)
+      (lua :return))
+
+    ; In traversal mode we do not need to search for targets, as we got the
+    ; target list as argument - we can only move back and forth on the provided
+    ; list, or exit.
     (when traversal?
-      (traverse)  ; REDRAW
-      (lua :return))  ; EARLY RETURN
+      (traverse)
+      (lua :return))
 
-    (when-not dot-repeat?
-      (exec-autocmds :LeapEnter))
-
-    (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
-                   ; This might also return in2 too (if <enter>-repeat).
-                   (get-first-pattern-input))  ; REDRAW
-                     ; For the sake of simplicity, we're always getting all
-                     ; targets, regardless of potentially already having in2.
+    ; Otherwise...
+    (exec-autocmds :LeapEnter)
+    (match-try (get-first-pattern-input)  ; REDRAW
+      ; We might already have in2 too, if <enter>-repeating.
       (in1 ?in2) (or (get-targets in1 {: reverse? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (do (doto targets
@@ -888,15 +900,11 @@ should actually be displayed depends on the `label-state` flag."
                     (populate-sublists)
                     (set-sublist-attributes {: force-no-autojump?})
                     (set-labels))
-                  (or ?in2 (get-second-pattern-input targets)))  ; (?)REDRAW
+                  (or ?in2
+                      (get-second-pattern-input targets)))  ; REDRAW
       in2 (let [update-state (update-state* in1)]
             ; From here on, successful exit (jumping to a target) is possible.
             (if
-              dot-repeat?
-              (match (. targets.sublists in2 state.dot-repeat.target-idx)
-                target (exit (jump-to! target))
-                _ (exit-early))
-
               ; Jump to the very first match?
               (and (= in2 spec-keys.next_match) (not bidirectional?))
               (let [in2 (. targets 1 :pair 2)]
@@ -910,7 +918,6 @@ should actually be displayed depends on the `label-state` flag."
                            {:targets (doto targets
                                        (set-beacons {:force-no-labels? true}))
                             :idx 1}})))
-
               (do
                 ; Should be saved right here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
