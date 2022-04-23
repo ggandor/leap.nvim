@@ -170,14 +170,12 @@ concentric circles.
 Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
 motions searches with the previous input.
 
-`s|S <enter> <space>? (<space>|<tab>)* label?`
-
 After entering at least one input character, `<enter>`
 (`special_keys.next_match`) moves on to the immediate next match (enters
 traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`) can
-revert the previous jump. That is, it puts the cursor back to its previous
-position, allowing for an easy correction when you accidentally overshoot your
-target.
+revert the previous jump - that is, it puts the cursor back to its
+previous position, allowing for an easy correction when you accidentally
+overshoot your target.
 
 `s|S char1 <enter> (<enter>|<tab>)*`
 
@@ -231,33 +229,32 @@ overwite them, unless explicitly told so (called with a `true` argument).
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 leap-custom-keymaps`.
 
-### Search mode tweaks
+### Search mode tweaks (bidirectional and all-windows search)
 
 For further customization you can call the `leap` function directly. The
 `target-windows` argument allows you to pass in a list of `wininfo`
-dictionaries.
-
-Searching in all windows (including the current one) on the tab page:
+dictionaries (`:h getwininfo()`).
 
 ```lua
+-- Searching in all windows (including the current one) on the tab page:
 local function get_windows_on_tabpage()
   local t = {}
   local ids = string.gmatch(vim.fn.string(vim.fn.winlayout()), "%d+")
-  for id in ids do t[#t + 1] = id end
-  return vim.tbl_map(function (id) return vim.fn.getwininfo(id)[1] end, t)
+  for id in ids do t[#t + 1] = vim.fn.getwininfo(id)[1] end
+  return t
 end
--- Map this call to your preferred key.
-require'leap'.leap { ['target-windows'] = get_windows_on_tabpage() }
-```
+function leap_all_windows()
+  require('leap').leap { ['target-windows'] = get_windows_on_tabpage() }
+end
 
-Bidirectional search in the current window is just a specific case of the
-multi-window mode - set `target-windows` to a table containing the current
-window as the only element:
-
-```lua
-require'leap'.leap {
-  ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
-}
+-- Bidirectional search in the current window is just a specific case of the
+-- multi-window mode - set `target-windows` to a table containing the current
+-- window as the only element:
+function leap_bidirectional()
+  require('leap').leap {
+    ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
+  }
+end
 ```
 
 ### User events

@@ -20,8 +20,8 @@ Command sequence in Normal mode, with the default settings:
 `s|S char1 char2 <space>? (<space>|<tab>)* label?`
 
 That is,
-- invoke in the forward (`s`) or backward (`S`) direction
 
+- invoke in the forward (`s`) or backward (`S`) direction
 - enter the first character of the search pattern
 
   | the "beacons" are lit at this point; all potential matches (`char1` + `?`)
@@ -37,7 +37,6 @@ That is,
   | or a target label exits the plugin now
 
 - optionally cycle through the groups of matches that can be labeled at once
-
 - choose a labeled target to jump to (in the current group)
 
                                                                    *leap-x-mode*
@@ -75,14 +74,12 @@ concentric circles.
 Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
 motions searches with the previous input.
 
-`s|S <enter> <space>? (<space>|<tab>)* label?`
-
 After entering at least one input character, `<enter>`
 (`special_keys.next_match`) moves on to the immediate next match (enters
 traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`)
-can revert the previous jump. That is, it puts the cursor back to its previous
-position, allowing for an easy correction when you accidentally overshoot your
-target.
+can revert the previous jump - that is, it puts the cursor back to its
+previous position, allowing for an easy correction when you accidentally
+overshoot your target.
 
 `s|S char1 <enter> (<enter>|<tab>)*`
 
@@ -259,7 +256,7 @@ can be set via `opts.special_keys` (|leap-config|).
 HIGHLIGHTING                                                    *leap-highlight*
 
 Leap uses the following highlight groups that you can configure to your own
-liking:
+liking (using |nvim_set_hl()|):
 
     *LeapMatch*
         Matches that can be reached directly, without having to use a label.
