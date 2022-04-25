@@ -807,17 +807,6 @@ should actually be displayed depends on the `label-state` flag."
                                  (when reverse? (push-cursor! :fwd)))})
           (set first-jump? false))))
 
-    (fn dot-repeat []
-      (let [{: in1 : in2 : target-idx} state.dot-repeat
-            pattern (.. "\\V" (if opts.case_insensitive "\\c" "\\C")
-                        (string.gsub (.. in1 in2) "\\" "\\\\"))
-            next-pos (get-match-positions
-                       pattern {:bounds (get-horizontal-bounds) : reverse?})]
-        (for [_ 1 (dec target-idx)]
-          (next-pos))
-        (match (next-pos)
-          pos (jump-to! {: pos}))))
-
     (fn traverse [targets idx {: force-no-labels?}]
       (when force-no-labels? (inactivate-labels targets))
       (set-beacons targets {: force-no-labels?})
@@ -887,15 +876,10 @@ should actually be displayed depends on the `label-state` flag."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
-    ; Dot-repeat simply searches for the `state.dot-repeat.target-idx`-th
-    ; target, and jumps there, skipping everything else.
-    (when dot-repeat?
-      (dot-repeat)
-      (lua :return))
-
     (exec-autocmds :LeapEnter)
-    (match-try (get-first-pattern-input)  ; REDRAW
-      ; We might already have in2 too, if <enter>-repeating.
+    (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
+                   ; This might also return in2 too, if <enter>-repeating.
+                   (get-first-pattern-input))  ; REDRAW
       (in1 ?in2) (or (get-targets in1 {: reverse? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (do (doto targets
@@ -908,6 +892,11 @@ should actually be displayed depends on the `label-state` flag."
       in2 (let [update-state (update-state* in1)]
             ; From here on, successful exit (jumping to a target) is possible.
             (if
+              dot-repeat?
+              (match (. targets state.dot-repeat.target-idx)
+                target (exit (jump-to! target))
+                _ (exit-early))
+
               ; Jump to the very first match?
               (and (= in2 spec-keys.next_match) (not bidirectional?))
               (let [in2 (. targets 1 :pair 2)]
