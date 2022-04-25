@@ -614,9 +614,9 @@ should actually be displayed depends on the `label-state` flag."
     (set-label-states sublist {:group-offset 0})))
 
 
-(fn disable-labels [target-list]
+(fn inactivate-labels [target-list]
   (each [_ target (ipairs target-list)]
-    (tset target :label-state nil)))
+    (tset target :label-state :inactive)))
 
 
 ; Display ///1
@@ -707,7 +707,7 @@ should actually be displayed depends on the `label-state` flag."
                            :target-idx nil}})
 
 
-(fn leap [{: reverse? : x-mode? : dot-repeat? : target-windows : traversal-state}]
+(fn leap [{: reverse? : x-mode? : dot-repeat? : target-windows}]
   "Entry point for Leap motions."
   (let [reverse? (if dot-repeat? state.dot-repeat.reverse? reverse?)
         x-mode? (if dot-repeat? state.dot-repeat.x-mode? x-mode?)
@@ -715,7 +715,6 @@ should actually be displayed depends on the `label-state` flag."
                           [&as t] t
                           true (get-other-windows-on-tabpage))
         bidirectional? ?target-windows
-        traversal? traversal-state
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
@@ -769,10 +768,10 @@ should actually be displayed depends on the `label-state` flag."
          (hl:cleanup ?target-windows)
          res#))
 
-    (fn get-target-with-active-primary-label [target-list input]
+    (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
-      (each [idx {: label : label-state &as target} (ipairs target-list)
-             :until (or res (not label-state))]
+      (each [idx {: label : label-state &as target} (ipairs sublist)
+             :until (or res (= label-state :inactive))]
         (when (and (= label input) (= label-state :active-primary))
           (set res [idx target])))
       res)
@@ -802,7 +801,7 @@ should actually be displayed depends on the `label-state` flag."
           (jump-to!* target.pos
                      {: mode : reverse?
                       :inclusive-op? (and x-mode? (not reverse?))
-                      :add-to-jumplist? (and first-jump? (not traversal?))
+                      :add-to-jumplist? first-jump?
                       :adjust #(when x-mode?
                                  (push-cursor! :fwd)
                                  (when reverse? (push-cursor! :fwd)))})
@@ -819,27 +818,26 @@ should actually be displayed depends on the `label-state` flag."
         (match (next-pos)
           pos (jump-to! {: pos}))))
 
-    (fn traverse []
-      (let [{: targets : idx} traversal-state]
-        (set-beacons targets {:force-no-labels? (not targets.autojump?)})
-        (with-highlight-chores (light-up-beacons targets (inc idx)))
-        (match (or (with-highlight-cleanup (get-input))
-                   (exit))
-          input
-          (if (one-of? input spec-keys.next_match spec-keys.prev_match)
-              (let [update-state (update-state* state.repeat.in1)
-                    new-idx (match input
-                              spec-keys.next_match (min (inc idx) (length targets))
-                              spec-keys.prev_match (max (dec idx) 1))]
-                ; Need to save now - we might <esc> next time, exiting above.
-                (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
-                (jump-to! (. targets new-idx))
-                (leap {: reverse? : x-mode?
-                       :traversal-state {: targets :idx new-idx}}))
-              ; We still want the labels (if there are) to function.
-              (match (get-target-with-active-primary-label targets input)
-                [_ target] (exit (jump-to! target))
-                _ (exit (vim.fn.feedkeys input :i)))))))
+    (fn traverse [targets idx {: force-no-labels?}]
+      (when force-no-labels? (inactivate-labels targets))
+      (set-beacons targets {: force-no-labels?})
+      (with-highlight-chores (light-up-beacons targets (inc idx)))
+      (match (or (with-highlight-cleanup (get-input))
+                 (exit))
+        input
+        (if (one-of? input spec-keys.next_match spec-keys.prev_match)
+          (let [update-state (update-state* state.repeat.in1)
+                new-idx (match input
+                          spec-keys.next_match (min (inc idx) (length targets))
+                          spec-keys.prev_match (max (dec idx) 1))]
+            ; Need to save now - we might <esc> next time, exiting above.
+            (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
+            (jump-to! (. targets new-idx) {:traversal? true})
+            (traverse targets new-idx {: force-no-labels?}))
+          ; We still want the labels (if there are) to function.
+          (match (get-target-with-active-primary-label targets input)
+            [_ target] (exit (jump-to! target {:traversal? true}))
+            _ (exit (vim.fn.feedkeys input :i))))))
 
     (fn get-first-pattern-input []
       (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
@@ -895,14 +893,6 @@ should actually be displayed depends on the `label-state` flag."
       (dot-repeat)
       (lua :return))
 
-    ; In traversal mode we do not need to search for targets, as we got the
-    ; target list as argument - we can only move back and forth on the provided
-    ; list, or exit.
-    (when traversal?
-      (traverse)
-      (lua :return))
-
-    ; Otherwise...
     (exec-autocmds :LeapEnter)
     (match-try (get-first-pattern-input)  ; REDRAW
       ; We might already have in2 too, if <enter>-repeating.
@@ -925,13 +915,8 @@ should actually be displayed depends on the `label-state` flag."
                 (jump-to! (. targets 1))
                 (if op-mode?
                     (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
-                    ; Enter traversal mode with all targets and no labels kept.
-                    (leap {: reverse? : x-mode?
-                           :traversal-state
-                           {:targets (doto targets
-                                       (disable-labels)
-                                       (set-beacons {:force-no-labels? true}))
-                            :idx 1}})))
+                    (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
+
               (do
                 ; Should be saved right here; a repeated search might have a match.
                 (update-state {:repeat {: in2}})
@@ -945,17 +930,15 @@ should actually be displayed depends on the `label-state` flag."
                   (do
                     (when sublist.autojump? (jump-to! (. sublist 1)))
                     ; Sets label states!
-                    (match (post-pattern-input-loop sublist)  ; REDRAW
+                    (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
                       ; Jump to the first match on the [rest of the] sublist?
                       (where spec-keys.next_match (not bidirectional?))
                       (let [new-idx (if sublist.autojump? 2 1)]
                         (jump-to! (. sublist new-idx))
-                        (if op-mode?
-                            ; Implies no-autojump.
+                        (if op-mode?  ; implies no-autojump
                             (exit (update-state {:dot-repeat {: in2 :target-idx 1}})))
-                            ; Enter traversal mode on the current sublist.
-                            (leap {: reverse? : x-mode?
-                                   :traversal-state {:targets sublist :idx new-idx}}))
+                            (traverse sublist new-idx  ; REDRAW (LOOP)
+                                      {:force-no-labels? (not sublist.autojump?)}))
 
                       input
                       (match (get-target-with-active-primary-label sublist input)
