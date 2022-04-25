@@ -640,7 +640,7 @@ local function get_targets(input, _114_)
           local line = _each_119_[1]
           local col = _each_119_[2]
           local _120_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_120_) == "table") and ((_120_).col == col) and (nil ~= (_120_).row)) then
+          if ((_G.type(_120_) == "table") and (nil ~= (_120_).row) and ((_120_).col == col)) then
             local row = (_120_).row
             cursor_positions[winid] = {row, col}
           else
@@ -658,7 +658,7 @@ local function get_targets(input, _114_)
         local t = _each_124_
         if by_screen_pos_3f then
           local _127_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_127_) == "table") and ((_127_).col == col) and (nil ~= (_127_).row)) then
+          if ((_G.type(_127_) == "table") and (nil ~= (_127_).row) and ((_127_).col == col)) then
             local row = (_127_).row
             t["screenpos"] = {row, col}
           else
@@ -1143,7 +1143,7 @@ local function leap(_200_)
           end
         end
         update_state({["repeat"] = {in2 = targets[new_idx].pair[2]}})
-        jump_to_21(targets[new_idx], {["traversal?"] = true})
+        jump_to_21(targets[new_idx])
         return traverse(targets, new_idx, {["force-no-labels?"] = force_no_labels_3f})
       else
         local _231_ = get_target_with_active_primary_label(targets, input)
@@ -1155,7 +1155,7 @@ local function leap(_200_)
           else
           end
           do
-            jump_to_21(target, {["traversal?"] = true})
+            jump_to_21(target)
           end
           exec_autocmds("LeapLeave")
           return nil

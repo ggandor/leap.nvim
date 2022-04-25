@@ -815,18 +815,18 @@ should actually be displayed depends on the `label-state` flag."
                  (exit))
         input
         (if (one-of? input spec-keys.next_match spec-keys.prev_match)
-          (let [update-state (update-state* state.repeat.in1)
-                new-idx (match input
-                          spec-keys.next_match (min (inc idx) (length targets))
-                          spec-keys.prev_match (max (dec idx) 1))]
-            ; Need to save now - we might <esc> next time, exiting above.
-            (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
-            (jump-to! (. targets new-idx) {:traversal? true})
-            (traverse targets new-idx {: force-no-labels?}))
-          ; We still want the labels (if there are) to function.
-          (match (get-target-with-active-primary-label targets input)
-            [_ target] (exit (jump-to! target {:traversal? true}))
-            _ (exit (vim.fn.feedkeys input :i))))))
+            (let [update-state (update-state* state.repeat.in1)
+                  new-idx (match input
+                            spec-keys.next_match (min (inc idx) (length targets))
+                            spec-keys.prev_match (max (dec idx) 1))]
+              ; Need to save now - we might <esc> next time, exiting above.
+              (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
+              (jump-to! (. targets new-idx))
+              (traverse targets new-idx {: force-no-labels?}))
+            ; We still want the labels (if there are) to function.
+            (match (get-target-with-active-primary-label targets input)
+              [_ target] (exit (jump-to! target))
+              _ (exit (vim.fn.feedkeys input :i))))))
 
     (fn get-first-pattern-input []
       (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
