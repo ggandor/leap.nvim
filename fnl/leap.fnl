@@ -614,6 +614,11 @@ should actually be displayed depends on the `label-state` flag."
     (set-label-states sublist {:group-offset 0})))
 
 
+(fn disable-labels [target-list]
+  (each [_ target (ipairs target-list)]
+    (tset target :label-state nil)))
+
+
 ; Display ///1
 
 (fn set-beacons [target-list {: force-no-labels?}]
@@ -764,6 +769,14 @@ should actually be displayed depends on the `label-state` flag."
          (hl:cleanup ?target-windows)
          res#))
 
+    (fn get-target-with-active-primary-label [target-list input]
+      (var res nil)
+      (each [idx {: label : label-state &as target} (ipairs target-list)
+             :until (or res (not label-state))]
+        (when (and (= label input) (= label-state :active-primary))
+          (set res [idx target])))
+      res)
+
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
       (fn [t]
@@ -823,7 +836,10 @@ should actually be displayed depends on the `label-state` flag."
                 (jump-to! (. targets new-idx))
                 (leap {: reverse? : x-mode?
                        :traversal-state {: targets :idx new-idx}}))
-              (exit (vim.fn.feedkeys input :i))))))
+              ; We still want the labels (if there are) to function.
+              (match (get-target-with-active-primary-label targets input)
+                [_ target] (exit (jump-to! target))
+                _ (exit (vim.fn.feedkeys input :i)))))))
 
     (fn get-first-pattern-input []
       (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
@@ -867,14 +883,6 @@ should actually be displayed depends on the `label-state` flag."
                 (loop new-offset false))
               input)))
       (loop 0 true))
-
-    (fn get-target-with-active-primary-label [target-list input]
-      (var res nil)
-      (each [idx {: label : label-state &as target} (ipairs target-list)
-             :until res]
-        (when (and (= label input) (= label-state :active-primary))
-          (set res [idx target])))
-      res)
 
     ; //> Helpers
 
@@ -921,6 +929,7 @@ should actually be displayed depends on the `label-state` flag."
                     (leap {: reverse? : x-mode?
                            :traversal-state
                            {:targets (doto targets
+                                       (disable-labels)
                                        (set-beacons {:force-no-labels? true}))
                             :idx 1}})))
               (do
