@@ -829,8 +829,8 @@ should actually be displayed depends on the `label-state` flag."
               _ (exit (vim.fn.feedkeys input :i))))))
 
     (fn get-first-pattern-input []
-      (match (or (do (with-highlight-chores (echo "")) ; clean up the command line
-                     (with-highlight-cleanup (get-input)))
+      (with-highlight-chores (echo ""))  ; clean up the command line
+      (match (or (with-highlight-cleanup (get-input))
                  (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
@@ -840,11 +840,11 @@ should actually be displayed depends on the `label-state` flag."
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (or (do (doto targets
-                (set-initial-label-states)
-                (set-beacons {}))
-              (with-highlight-chores (light-up-beacons targets))
-              (with-highlight-cleanup (get-input)))
+      (doto targets
+        (set-initial-label-states)
+        (set-beacons {}))
+      (with-highlight-chores (light-up-beacons targets))
+      (or (with-highlight-cleanup (get-input))
           (exit-early)))
 
     (fn post-pattern-input-loop [sublist]

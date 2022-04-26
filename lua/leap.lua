@@ -1179,16 +1179,16 @@ local function leap(_200_)
     end
   end
   local function get_first_pattern_input()
+    do
+      apply_backdrop(reverse_3f0, _3ftarget_windows)
+      do
+        echo("")
+      end
+      highlight_cursor()
+      vim.cmd("redraw")
+    end
     local _237_
     local function _238_()
-      do
-        apply_backdrop(reverse_3f0, _3ftarget_windows)
-        do
-          echo("")
-        end
-        highlight_cursor()
-        vim.cmd("redraw")
-      end
       local res_2_auto
       do
         res_2_auto = get_input()
@@ -1229,20 +1229,20 @@ local function leap(_200_)
     end
   end
   local function get_second_pattern_input(targets)
-    local function _244_()
+    do
+      local _244_ = targets
+      set_initial_label_states(_244_)
+      set_beacons(_244_, {})
+    end
+    do
+      apply_backdrop(reverse_3f0, _3ftarget_windows)
       do
-        local _245_ = targets
-        set_initial_label_states(_245_)
-        set_beacons(_245_, {})
+        light_up_beacons(targets)
       end
-      do
-        apply_backdrop(reverse_3f0, _3ftarget_windows)
-        do
-          light_up_beacons(targets)
-        end
-        highlight_cursor()
-        vim.cmd("redraw")
-      end
+      highlight_cursor()
+      vim.cmd("redraw")
+    end
+    local function _245_()
       local res_2_auto
       do
         res_2_auto = get_input()
@@ -1260,7 +1260,7 @@ local function leap(_200_)
       exec_autocmds("LeapLeave")
       return nil
     end
-    return (_244_() or _246_())
+    return (_245_() or _246_())
   end
   local function post_pattern_input_loop(sublist)
     local function loop(group_offset, initial_invoc_3f)
