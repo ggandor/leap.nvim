@@ -225,7 +225,7 @@ character instead."
 
 (fn jump-to!* [target
                {: mode : reverse? : inclusive-op? : add-to-jumplist? : adjust}]
-  (local op-mode? (string.match mode :o))
+  (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
   (vim.fn.cursor target)
@@ -535,10 +535,8 @@ char separately."
   (tset targets :sublists {})
   (when opts.case_insensitive
     (setmetatable targets.sublists
-                  {:__index (fn [self k]
-                              (rawget self (k:lower)))
-                   :__newindex (fn [self k v]
-                                 (rawset self (k:lower) v))}))
+                  {:__index (fn [t k] (rawget t (k:lower)))
+                   :__newindex (fn [t k v] (rawset t (k:lower) v))}))
   (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets :sublists ch2)
       (tset targets :sublists ch2 []))
@@ -718,7 +716,6 @@ should actually be displayed depends on the `label-state` flag."
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
-        visual-mode? (one-of? mode <ctrl-v> :V :v)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? (not bidirectional?)
@@ -860,7 +857,7 @@ should actually be displayed depends on the `label-state` flag."
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not initial-invoc?)))
-                   ; If auto-jump has been set heuristically (not forced), it
+                   ; If auto-jump has been set automatically (not forced), it
                    ; implies that there are no subsequent groups.
                    (or (not sublist.autojump?) user-forced-autojump?))
               (let [|groups| (ceil (/ (length sublist) (length sublist.label-set)))
@@ -1005,17 +1002,19 @@ should actually be displayed depends on the `label-state` flag."
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own, so we re-init the highlight on every change.
 (api.nvim_create_autocmd "ColorScheme"
-                         {:group "LeapDefault"
-                          :callback init-highlight})
+                         {:callback init-highlight
+                          :group "LeapDefault"})
+
 (api.nvim_create_autocmd "User"
-                         {:group "LeapDefault"
-                          :pattern "LeapEnter"
+                         {:pattern "LeapEnter"
                           :callback #(do (save-editor-opts)
-                                         (set-temporary-editor-opts))})
+                                         (set-temporary-editor-opts))
+                          :group "LeapDefault"})
+
 (api.nvim_create_autocmd "User"
-                         {:group "LeapDefault"
-                          :pattern "LeapLeave"
-                          :callback restore-editor-opts})
+                         {:pattern "LeapLeave"
+                          :callback restore-editor-opts
+                          :group "LeapDefault"})
 
 
 ; Module ///1

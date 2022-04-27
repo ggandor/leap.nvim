@@ -247,7 +247,7 @@ local function jump_to_21_2a(target, _46_)
   local inclusive_op_3f = _arg_47_["inclusive-op?"]
   local add_to_jumplist_3f = _arg_47_["add-to-jumplist?"]
   local adjust = _arg_47_["adjust"]
-  local op_mode_3f = string.match(mode, "o")
+  local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
   else
@@ -682,11 +682,11 @@ end
 local function populate_sublists(targets)
   targets["sublists"] = {}
   if opts.case_insensitive then
-    local function _133_(self, k)
-      return rawget(self, k:lower())
+    local function _133_(t, k)
+      return rawget(t, k:lower())
     end
-    local function _134_(self, k, v)
-      return rawset(self, k:lower(), v)
+    local function _134_(t, k, v)
+      return rawset(t, k:lower(), v)
     end
     setmetatable(targets.sublists, {__index = _133_, __newindex = _134_})
   else
@@ -1010,7 +1010,6 @@ local function leap(_200_)
   end
   local bidirectional_3f = _3ftarget_windows
   local mode = api.nvim_get_mode().mode
-  local visual_mode_3f = ((mode == _3cctrl_v_3e) or (mode == "V") or (mode == "v"))
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and not bidirectional_3f and (vim.v.operator ~= "y"))
@@ -1048,9 +1047,9 @@ local function leap(_200_)
         end
         if dot_repeatable_op_3f then
           local _213_ = t
-          if ((_G.type(_213_) == "table") and ((_G.type((_213_)["dot-repeat"]) == "table") and (nil ~= ((_213_)["dot-repeat"])["target-idx"]) and (nil ~= ((_213_)["dot-repeat"]).in2))) then
-            local target_idx = ((_213_)["dot-repeat"])["target-idx"]
+          if ((_G.type(_213_) == "table") and ((_G.type((_213_)["dot-repeat"]) == "table") and (nil ~= ((_213_)["dot-repeat"]).in2) and (nil ~= ((_213_)["dot-repeat"])["target-idx"]))) then
             local in2 = ((_213_)["dot-repeat"]).in2
+            local target_idx = ((_213_)["dot-repeat"])["target-idx"]
             state["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = target_idx, ["reverse?"] = reverse_3f0, ["x-mode?"] = x_mode_3f0}
             return nil
           else
@@ -1577,11 +1576,11 @@ local function restore_editor_opts()
 end
 init_highlight()
 api.nvim_create_augroup("LeapDefault", {})
-api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = init_highlight})
+api.nvim_create_autocmd("ColorScheme", {callback = init_highlight, group = "LeapDefault"})
 local function _301_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {group = "LeapDefault", pattern = "LeapEnter", callback = _301_})
-api.nvim_create_autocmd("User", {group = "LeapDefault", pattern = "LeapLeave", callback = restore_editor_opts})
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _301_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = restore_editor_opts, group = "LeapDefault"})
 return {opts = opts, setup = setup, state = state, leap = leap, init_highlight = init_highlight, set_default_keymaps = set_default_keymaps}
