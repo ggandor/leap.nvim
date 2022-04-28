@@ -161,10 +161,55 @@ character instead."
 
 (fn echo-not-found [s] (echo (.. "not found: " s)))
 
-
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
+
+
+; Jump ///
+
+(fn cursor-before-eol? []
+  (not= (vim.fn.search "\\_." "Wn") (vim.fn.line ".")))
+
+(fn cursor-before-eof? []
+  (and (= (vim.fn.line ".") (vim.fn.line "$"))
+       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
+
+
+(fn add-offset! [offset]
+  (if (< offset 0) (push-cursor! :bwd)
+      ; Safe first forward push for pre-EOL matches.
+      (> offset 0) (do (when-not (cursor-before-eol?) (push-cursor! :fwd))
+                       (when (> offset 1) (push-cursor! :fwd)))))
+
+
+(fn push-beyond-eof! []
+  (local saved vim.o.virtualedit)
+  (set vim.o.virtualedit :onemore)
+  ; Note: No need to undo this afterwards, the cursor will be
+  ; moved to the end of the operated area anyway.
+  (vim.cmd "norm! l")
+  (api.nvim_create_autocmd
+    [:CursorMoved :WinLeave :BufLeave :InsertEnter :CmdlineEnter :CmdwinEnter]
+    {:callback #(set vim.o.virtualedit saved)
+     :once true}))
+
+
+(fn simulate-inclusive-op! [motion-force]
+  "When applied after an exclusive motion (like setting the cursor via
+the API), make the motion appear to behave as an inclusive one."
+  (match motion-force
+    ; In the normal case (no modifier), we should push the cursor
+    ; forward. (The EOF edge case requires some hackery though.)
+    nil (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
+    ; We also want the `v` modifier to behave in the native way, that
+    ; is, to toggle between inclusive/exclusive if applied to a charwise
+    ; motion (:h o_v). As `v` will change our (technically) exclusive
+    ; motion to inclusive, we should push the cursor back to undo that.
+    :v (push-cursor! :bwd)
+    ; Blockwise (<c-v>) itself makes the motion inclusive, do nothing in
+    ; that case.
+    ))
 
 
 (fn force-matchparen-refresh []
@@ -184,62 +229,22 @@ character instead."
   (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
-(fn cursor-before-eof? []
-  (and (= (vim.fn.line ".") (vim.fn.line "$"))
-       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
-
-
-(fn create-restore-virtualedit-autocmd [saved-val]
-  (api.nvim_create_autocmd
-    [:CursorMoved :WinLeave :BufLeave :InsertEnter :CmdlineEnter :CmdwinEnter]
-    {:callback #(set vim.o.virtualedit saved-val)
-     :once true}))
-
-
-(fn adjust-inclusive [motion-force]
-  (match motion-force
-    ; In the normal case (no modifier), we should push the cursor forward
-    ; (next column as exclusive = target column as inclusive).
-    nil (if (cursor-before-eof?)
-            ; The EOF edge case requires some hackery.
-            (let [virtualedit-saved vim.o.virtualedit]
-              (set vim.o.virtualedit :onemore)
-              ; Note: No need to undo this afterwards, the cursor will be
-              ; moved to the end of the operated area anyway.
-              (vim.cmd "norm! l")
-              (create-restore-virtualedit-autocmd virtualedit-saved))
-            (push-cursor! :fwd))
-    ; We want the `v` modifier to behave in the native way, that is, to
-    ; toggle between inclusive/exclusive if applied to a charwise motion
-    ; (:h o_v). As our jump is technically - from Vim's perspective - an
-    ; exclusive motion, `v` will change it to _inclusive_, so we should
-    ; push the cursor back to "undo" that.
-    ; (Previous column as inclusive = target column as exclusive.)
-    :v (push-cursor! :bwd)
-    ; We should _never_ push the cursor in the linewise case, as we might
-    ; push it beyond EOL, and that would add another line to the selection.
-    :V nil
-    ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
-    <ctrl-v> nil))
-
-
-(fn jump-to!* [target
-               {: mode : reverse? : inclusive-op? : add-to-jumplist? : adjust}]
+(fn jump-to!* [target {: add-to-jumplist? : offset : mode
+                       : reverse? : inclusive-op?}]
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
   (vim.fn.cursor target)
-  ; Adjust position after the jump (for x-mode).
-  (adjust)
-  (when-not op-mode? (force-matchparen-refresh))
-  ; Simulating inclusive/exclusive behaviour for operator-pending mode by
-  ; adjusting the cursor position.
-  ; For operators, our jump is always interpreted by Vim as an exclusive
-  ; motion, so whenever we'd like to behave as an inclusive one, an
-  ; additional push is needed to even that out (:h inclusive).
-  ; (This is only relevant in the forward direction.)
+  (add-offset! offset)
+  ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
+  ; we need custom tweaks to behave as an inclusive one. (This is only
+  ; relevant in the forward direction, as inclusiveness applies to the
+  ; end of the selection.)
   (when (and op-mode? inclusive-op? (not reverse?))
-    (adjust-inclusive (get-motion-force mode))))
+    (simulate-inclusive-op! (get-motion-force mode)))
+  (when-not op-mode? (force-matchparen-refresh)))
+
+; //> Jump
 
 
 (fn highlight-cursor [?pos]
@@ -703,14 +708,16 @@ should actually be displayed depends on the `label-state` flag."
 
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil :in2 nil}
-              :dot-repeat {:in1 nil :in2 nil :reverse? nil :x-mode? nil
-                           :target-idx nil}})
+              :dot-repeat {:in1 nil :in2 nil :target-idx nil
+                           :reverse? nil :offset nil :inclusive-op? nil}})
 
 
-(fn leap [{: reverse? : x-mode? : dot-repeat? : target-windows}]
+(fn leap [{: reverse? : offset : inclusive-op? : dot-repeat? : target-windows}]
   "Entry point for Leap motions."
   (let [reverse? (if dot-repeat? state.dot-repeat.reverse? reverse?)
-        x-mode? (if dot-repeat? state.dot-repeat.x-mode? x-mode?)
+        offset (or (if dot-repeat? state.dot-repeat.offset offset) 0)
+        inclusive-op? (if dot-repeat? state.dot-repeat.inclusive-op?
+                          inclusive-op?)
         ?target-windows (match target-windows
                           [&as t] t
                           true (get-other-windows-on-tabpage))
@@ -787,8 +794,9 @@ should actually be displayed depends on the `label-state` flag."
           (when dot-repeatable-op?
             (match t
               {:dot-repeat {: in2 : target-idx}}
-              (tset state :dot-repeat {: in1 : in2 : target-idx
-                                       : reverse? : x-mode?}))))))
+              (tset state :dot-repeat
+                    {: in1 : in2 : target-idx
+                     : reverse? : offset : inclusive-op?}))))))
 
     (local jump-to!
       (do
@@ -798,12 +806,8 @@ should actually be displayed depends on the `label-state` flag."
           (when target.wininfo
             (api.nvim_set_current_win target.wininfo.winid))
           (jump-to!* target.pos
-                     {: mode : reverse?
-                      :inclusive-op? (and x-mode? (not reverse?))
-                      :add-to-jumplist? first-jump?
-                      :adjust #(when x-mode?
-                                 (push-cursor! :fwd)
-                                 (when reverse? (push-cursor! :fwd)))})
+                     {:add-to-jumplist? first-jump?
+                      : mode : reverse? : offset : inclusive-op?})
           (set first-jump? false))))
 
     (fn traverse [targets idx {: force-no-labels?}]
