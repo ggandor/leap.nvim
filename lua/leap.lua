@@ -1367,7 +1367,7 @@ local function leap(_201_)
                 local in20 = targets[1].pair[2]
                 update_state({["repeat"] = {in2 = in20}})
                 jump_to_21(targets[1])
-                if op_mode_3f then
+                if (op_mode_3f or (#targets == 1)) then
                   if dot_repeatable_op_3f then
                     set_dot_repeat()
                   else

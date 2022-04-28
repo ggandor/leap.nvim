@@ -901,7 +901,7 @@ should actually be displayed depends on the `label-state` flag."
               (let [in2 (. targets 1 :pair 2)]
                 (update-state {:repeat {: in2}})
                 (jump-to! (. targets 1))
-                (if op-mode?
+                (if (or op-mode? (= (length targets) 1))
                     (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
                     (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
