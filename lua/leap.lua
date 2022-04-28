@@ -640,7 +640,7 @@ local function get_targets(input, _114_)
           local line = _each_119_[1]
           local col = _each_119_[2]
           local _120_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_120_) == "table") and (nil ~= (_120_).row) and ((_120_).col == col)) then
+          if ((_G.type(_120_) == "table") and ((_120_).col == col) and (nil ~= (_120_).row)) then
             local row = (_120_).row
             cursor_positions[winid] = {row, col}
           else
@@ -658,7 +658,7 @@ local function get_targets(input, _114_)
         local t = _each_124_
         if by_screen_pos_3f then
           local _127_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_127_) == "table") and (nil ~= (_127_).row) and ((_127_).col == col)) then
+          if ((_G.type(_127_) == "table") and ((_127_).col == col) and (nil ~= (_127_).row)) then
             local row = (_127_).row
             t["screenpos"] = {row, col}
           else
@@ -860,10 +860,7 @@ local function set_beacon_to_match_hl(target)
   target["beacon"] = {0, {{(ch1 .. ch2), hl.group.match}}}
   return nil
 end
-local function set_beacons_2a(target_list)
-  for _, target in ipairs(target_list) do
-    set_beacon_for_labeled(target)
-  end
+local function resolve_conflicts(target_list)
   local unlabeled_match_positions = {}
   local label_positions = {}
   for i, target in ipairs(target_list) do
@@ -896,9 +893,8 @@ local function set_beacons_2a(target_list)
     winid = (_180_() or 0)
     local _183_ = target.beacon
     if (_183_ == nil) then
-      local k1 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. col)
-      local k2 = (bufnr .. " " .. winid .. " " .. lnum .. " " .. (col + ch1:len()))
-      for _0, k in ipairs({k1, k2}) do
+      local keys = {(bufnr .. " " .. winid .. " " .. lnum .. " " .. col), (bufnr .. " " .. winid .. " " .. lnum .. " " .. (col + ch1:len()))}
+      for _0, k in ipairs(keys) do
         do
           local _184_ = label_positions[k]
           if (nil ~= _184_) then
@@ -919,8 +915,7 @@ local function set_beacons_2a(target_list)
         return nil
       end
       set_empty_label = _186_
-      local col0 = (col + offset)
-      local k = (bufnr .. " " .. winid .. " " .. lnum .. " " .. col0)
+      local k = (bufnr .. " " .. winid .. " " .. lnum .. " " .. (col + offset))
       do
         local _187_ = unlabeled_match_positions[k]
         if (nil ~= _187_) then
@@ -954,7 +949,10 @@ local function set_beacons(target_list, _192_)
     end
     return nil
   else
-    return set_beacons_2a(target_list)
+    for _, target in ipairs(target_list) do
+      set_beacon_for_labeled(target)
+    end
+    return resolve_conflicts(target_list)
   end
 end
 local function light_up_beacons(target_list, _3fstart_from)
