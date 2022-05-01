@@ -782,21 +782,19 @@ should actually be displayed depends on the `label-state` flag."
           (set res [idx target])))
       res)
 
-    ; No need to pass in `in1` every time once we have it, so let's curry this.
-    (fn update-state* [in1]
-      (fn [t]
-        ; Do not short-circuit on regular repeat: we need to update the repeat
-        ; state continuously if we have entered traversal mode after the first
-        ; input (i.e., traversing all matches, not just a given sublist).
-        (when-not dot-repeat?
-          (match t
-            {:repeat {: in2}} (tset state :repeat {: in1 : in2}))
-          (when dot-repeatable-op?
-            (match t
-              {:dot-repeat {: in2 : target-idx}}
-              (tset state :dot-repeat
-                    {: in1 : in2 : target-idx
-                     : reverse? : offset : inclusive-op?}))))))
+    (fn update-state [state*]  ; a partial state table
+      (when-not dot-repeat?
+        ; Do not short-circuit on regular repeat: we need to update the
+        ; repeat state continuously if we have entered traversal mode
+        ; after the first input (i.e., traversing all matches, not just
+        ; a given sublist).
+        (when state*.repeat
+          (set state.repeat state*.repeat))
+        (when (and state*.dot-repeat dot-repeatable-op?)
+          (set state.dot-repeat
+               (vim.tbl_extend :error
+                               state*.dot-repeat
+                               {: reverse? : offset : inclusive-op?})))))
 
     (local jump-to!
       (do
@@ -818,12 +816,12 @@ should actually be displayed depends on the `label-state` flag."
                  (exit))
         input
         (if (one-of? input spec-keys.next_match spec-keys.prev_match)
-            (let [update-state (update-state* state.repeat.in1)
-                  new-idx (match input
+            (let [new-idx (match input
                             spec-keys.next_match (min (inc idx) (length targets))
                             spec-keys.prev_match (max (dec idx) 1))]
               ; Need to save now - we might <esc> next time, exiting above.
-              (update-state {:repeat {:in2 (. targets new-idx :pair 2)}})
+              (update-state {:repeat {:in1 state.repeat.in1
+                                      :in2 (. targets new-idx :pair 2)}})
               (jump-to! (. targets new-idx))
               (traverse targets new-idx {: force-no-labels?}))
             ; We still want the labels (if there are) to function.
@@ -892,10 +890,8 @@ should actually be displayed depends on the `label-state` flag."
                     (set-labels))
                   (or ?in2
                       (get-second-pattern-input targets)))  ; REDRAW
-      in2 (let [update-state (update-state* in1)]
-            ; From here on, successful exit (jumping to a target) is possible.
-            (if
-              dot-repeat?
+      ; From here on, successful exit (jumping to a target) is possible.
+      in2 (if dot-repeat?
               (match (. targets state.dot-repeat.target-idx)
                 target (exit (jump-to! target))
                 _ (exit-early))
@@ -903,19 +899,20 @@ should actually be displayed depends on the `label-state` flag."
               ; Jump to the very first match?
               (and (= in2 spec-keys.next_match) (not bidirectional?))
               (let [in2 (. targets 1 :pair 2)]
-                (update-state {:repeat {: in2}})
+                (update-state {:repeat {: in1 : in2}})
                 (jump-to! (. targets 1))
                 (if (or op-mode? (= (length targets) 1))
-                    (exit (update-state {:dot-repeat {: in2 :target-idx 1}}))
+                    (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
                     (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
               (do
-                ; Should be saved right here; a repeated search might have a match.
-                (update-state {:repeat {: in2}})
+                (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
+                (local update-dot-repeat-state
+                       #(update-state {:dot-repeat {: in1 : in2 :target-idx $}}))
                 (match (or (. targets.sublists in2)
                            (exit-early (echo-not-found (.. in1 in2))))
                   [only nil]
-                  (exit (update-state {:dot-repeat {: in2 :target-idx 1}})
+                  (exit (update-dot-repeat-state 1)
                         (jump-to! only))
 
                   sublist
@@ -927,19 +924,17 @@ should actually be displayed depends on the `label-state` flag."
                       (where spec-keys.next_match (not bidirectional?))
                       (let [new-idx (if sublist.autojump? 2 1)]
                         (jump-to! (. sublist new-idx))
-                        (if op-mode?  ; implies no-autojump
-                            (exit (update-state {:dot-repeat {: in2 :target-idx 1}})))
+                        (if op-mode? (exit (update-dot-repeat-state 1))  ; implies no-autojump
                             (traverse sublist new-idx  ; REDRAW (LOOP)
-                                      {:force-no-labels? (not sublist.autojump?)}))
+                                      {:force-no-labels? (not sublist.autojump?)})))
 
                       input
                       (match (get-target-with-active-primary-label sublist input)
-                        [idx target]
-                        (exit (update-state {:dot-repeat {: in2 :target-idx idx}})
-                              (jump-to! target))
-
-                        _ (if sublist.autojump? (exit (vim.fn.feedkeys input :i))
-                              (exit-early))))))))))))
+                        [idx target] (exit (update-dot-repeat-state idx)
+                                           (jump-to! target))
+                        _ (if sublist.autojump?
+                              (exit (vim.fn.feedkeys input :i))
+                              (exit-early)))))))))))
 
 
 ; Keymaps ///1
