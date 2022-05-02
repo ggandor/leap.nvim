@@ -625,11 +625,18 @@ should actually be displayed depends on the `label-state` flag."
 
 ; Display ///1
 
-(fn set-beacon-for-labeled [{: label-state &as target}]
-  (when label-state
+; "Beacon" is an umbrella term for any kind of visual overlay tied to
+; targets - in practice, either a label character, or a highlighting of
+; the match itself. Technically an [offset virtualtext] tuple, where
+; `offset` is counted from the match position, and `virtualtext` is a
+; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
+; expects).
+
+(fn set-beacon-for-labeled [target]
+  (when target.label-state
     (let [{:pair [ch1 ch2] : edge-pos? : label} target
           offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
-          virttext (match label-state
+          virttext (match target.label-state
                      :active-primary [[label hl.group.label-primary]]
                      :active-secondary [[label hl.group.label-secondary]]
                      :inactive [[" " hl.group.label-secondary]])]
@@ -641,41 +648,46 @@ should actually be displayed depends on the `label-state` flag."
     (tset target :beacon [0 [[(.. ch1 ch2) hl.group.match]]])))
 
 
+(fn set-beacon-to-empty-label [target]
+  (tset target :beacon 2 1 1 " "))
+
+
 (fn resolve-conflicts [target-list]
-  ; A. Unlabeled targets can cover labels => the overlapping match gets
-  ;    highlighted to make the user aware ("Label underneath!").
-  ; B. Two labels can occupy the same position => an "empty" label is
-  ;    displayed.
+  "After setting the beacons in a context-unaware manner, the following
+conflicts can occur:
+A: A label occupies a position that also belongs to an unlabeled match.
+   Fix: Highlight the unlabeled match to make the user aware ('Label
+   underneath!').
+B: Two labels occupy the same position (this can occur at EOL or window
+   edge, where labels need to be shifted left).
+   Fix: Display an 'empty' label at the position."
   (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>" : target}
-        label-positions {}]  ; likewise
+        label-positions {}]           ; - " -
     (each [i target (ipairs target-list)]
       (let [{:pos [lnum col] :pair [ch1 _]} target
             {: bufnr : winid} (or target.wininfo {:bufnr 0 :winid 0})]
         (macro make-key [col]
           `(.. bufnr " " winid " " lnum " " ,col))
         (match target.beacon
-          nil
+          nil  ; unlabeled
           (let [keys [(make-key col) (make-key (+ col (ch1:len)))]]
             (each [_ k (ipairs keys)]
               (match (. label-positions k)
-                ; (A1) Current covers other's label.
-                other (do (tset other :beacon nil)
+                ; A1 - current covers other's label
+                other (do (set other.beacon nil)
                           (set-beacon-to-match-hl target)))
               (tset unlabeled-match-positions k target)))
 
-          [offset _]
+          [offset _]  ; labeled
           (let [k (make-key (+ col offset))]
             (match (. unlabeled-match-positions k)
-              ; (A2) Other covers current's label.
-              other (do (tset target :beacon nil)
+              ; A2 - other covers current's label
+              other (do (set target.beacon nil)
                         (set-beacon-to-match-hl other))
               _ (match (. label-positions k)
-                  ; (B) Two conflicting labels.
-                  ;     (This can occur at EOL or window edge, where the
-                  ;     label needs to be shifted left.)
-                  other (do (tset target :beacon nil)
-                            ; Set empty label ( [offset [[label hl-group]]] ).
-                            (tset other :beacon 2 1 1 " "))))
+                  ; B - conflicting labels
+                  other (do (set target.beacon nil)
+                            (set-beacon-to-empty-label other))))
             (tset label-positions k target)))))))
 
 
@@ -683,10 +695,9 @@ should actually be displayed depends on the `label-state` flag."
   (if force-no-labels?
       (each [_ target (ipairs target-list)]
         (set-beacon-to-match-hl target))
-      (do
-        (each [_ target (ipairs target-list)]
-          (set-beacon-for-labeled target))
-        (resolve-conflicts target-list))))
+      (do (each [_ target (ipairs target-list)]
+            (set-beacon-for-labeled target))
+          (resolve-conflicts target-list))))
 
 
 (fn light-up-beacons [target-list ?start-from]
