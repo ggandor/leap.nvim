@@ -278,7 +278,7 @@ interrupted change-operation."
         (api.nvim_feedkeys :n true))))
 
 
-(fn exec-autocmds [pattern]
+(fn exec-user-autocmds [pattern]
   (api.nvim_exec_autocmds "User" {:pattern pattern :modeline false}))
 
 
@@ -749,7 +749,7 @@ should actually be displayed depends on the `label-state` flag."
     (macro exit [...]
       `(do (when dot-repeatable-op? (set-dot-repeat))
            (do ,...)
-           (exec-autocmds :LeapLeave)
+           (exec-user-autocmds :LeapLeave)
            nil))
 
     (macro exit-early [...]
@@ -761,7 +761,7 @@ should actually be displayed depends on the `label-state` flag."
          ; it might feed keys too. (Is that a valid problem? Change-op
          ; can only be interrupted by <c-c> or <esc> I guess...)
          (do ,...)
-         (exec-autocmds :LeapLeave)
+         (exec-user-autocmds :LeapLeave)
          nil))
 
     (macro with-highlight-chores [...]
@@ -877,7 +877,7 @@ should actually be displayed depends on the `label-state` flag."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
-    (exec-autocmds :LeapEnter)
+    (exec-user-autocmds :LeapEnter)
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too, if <enter>-repeating.
                    (get-first-pattern-input))  ; REDRAW

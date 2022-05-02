@@ -305,7 +305,7 @@ local function handle_interrupted_change_op_21()
   end
   return api.nvim_feedkeys(replace_keycodes(("<C-\\><C-G>" .. _3fright)), "n", true)
 end
-local function exec_autocmds(pattern)
+local function exec_user_autocmds(pattern)
   return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
 end
 local function get_input()
@@ -1140,7 +1140,7 @@ local function leap(_205_)
       end
       do
       end
-      exec_autocmds("LeapLeave")
+      exec_user_autocmds("LeapLeave")
       return nil
     end
     _227_ = (_228_() or _229_())
@@ -1173,7 +1173,7 @@ local function leap(_205_)
           do
             jump_to_21(target)
           end
-          exec_autocmds("LeapLeave")
+          exec_user_autocmds("LeapLeave")
           return nil
         elseif true then
           local _ = _233_
@@ -1184,7 +1184,7 @@ local function leap(_205_)
           do
             vim.fn.feedkeys(input, "i")
           end
-          exec_autocmds("LeapLeave")
+          exec_user_autocmds("LeapLeave")
           return nil
         else
           return nil
@@ -1219,7 +1219,7 @@ local function leap(_205_)
       end
       do
       end
-      exec_autocmds("LeapLeave")
+      exec_user_autocmds("LeapLeave")
       return nil
     end
     _239_ = (_240_() or _241_())
@@ -1234,7 +1234,7 @@ local function leap(_205_)
         do
           echo_no_prev_search()
         end
-        exec_autocmds("LeapLeave")
+        exec_user_autocmds("LeapLeave")
         return nil
       end
     elseif (nil ~= _239_) then
@@ -1273,7 +1273,7 @@ local function leap(_205_)
       end
       do
       end
-      exec_autocmds("LeapLeave")
+      exec_user_autocmds("LeapLeave")
       return nil
     end
     return (_247_() or _248_())
@@ -1309,7 +1309,7 @@ local function leap(_205_)
         end
         do
         end
-        exec_autocmds("LeapLeave")
+        exec_user_autocmds("LeapLeave")
         return nil
       end
       _251_ = (_252_() or _253_())
@@ -1335,7 +1335,7 @@ local function leap(_205_)
     end
     return loop(0, true)
   end
-  exec_autocmds("LeapEnter")
+  exec_user_autocmds("LeapEnter")
   local function _258_(...)
     local _259_, _260_ = ...
     if ((nil ~= _259_) and true) then
@@ -1360,7 +1360,7 @@ local function leap(_205_)
                   do
                     jump_to_21(target)
                   end
-                  exec_autocmds("LeapLeave")
+                  exec_user_autocmds("LeapLeave")
                   return nil
                 elseif true then
                   local _ = _265_
@@ -1370,7 +1370,7 @@ local function leap(_205_)
                   end
                   do
                   end
-                  exec_autocmds("LeapLeave")
+                  exec_user_autocmds("LeapLeave")
                   return nil
                 else
                   return nil
@@ -1387,7 +1387,7 @@ local function leap(_205_)
                   do
                     update_state({["dot-repeat"] = {in1 = in1, in2 = in20, ["target-idx"] = 1}})
                   end
-                  exec_autocmds("LeapLeave")
+                  exec_user_autocmds("LeapLeave")
                   return nil
                 else
                   return traverse(targets, 1, {["force-no-labels?"] = true})
@@ -1408,7 +1408,7 @@ local function leap(_205_)
                   do
                     echo_not_found((in1 .. in2))
                   end
-                  exec_autocmds("LeapLeave")
+                  exec_user_autocmds("LeapLeave")
                   return nil
                 end
                 _272_ = (targets.sublists[in2] or _273_(...))
@@ -1422,7 +1422,7 @@ local function leap(_205_)
                     update_dot_repeat_state(1)
                     jump_to_21(only)
                   end
-                  exec_autocmds("LeapLeave")
+                  exec_user_autocmds("LeapLeave")
                   return nil
                 elseif (nil ~= _272_) then
                   local sublist = _272_
@@ -1450,7 +1450,7 @@ local function leap(_205_)
                       do
                         update_dot_repeat_state(1)
                       end
-                      exec_autocmds("LeapLeave")
+                      exec_user_autocmds("LeapLeave")
                       return nil
                     else
                       return traverse(sublist, new_idx, {["force-no-labels?"] = not sublist["autojump?"]})
@@ -1469,7 +1469,7 @@ local function leap(_205_)
                         update_dot_repeat_state(idx)
                         jump_to_21(target)
                       end
-                      exec_autocmds("LeapLeave")
+                      exec_user_autocmds("LeapLeave")
                       return nil
                     elseif true then
                       local _ = _282_
@@ -1481,7 +1481,7 @@ local function leap(_205_)
                         do
                           vim.fn.feedkeys(input, "i")
                         end
-                        exec_autocmds("LeapLeave")
+                        exec_user_autocmds("LeapLeave")
                         return nil
                       else
                         if change_op_3f then
@@ -1490,7 +1490,7 @@ local function leap(_205_)
                         end
                         do
                         end
-                        exec_autocmds("LeapLeave")
+                        exec_user_autocmds("LeapLeave")
                         return nil
                       end
                     else
@@ -1535,7 +1535,7 @@ local function leap(_205_)
         do
           echo_not_found((in1 .. (_3fin2 or "")))
         end
-        exec_autocmds("LeapLeave")
+        exec_user_autocmds("LeapLeave")
         return nil
       end
       return _261_((get_targets(in1, {["reverse?"] = reverse_3f0, ["target-windows"] = _3ftarget_windows}) or _295_(...)))
