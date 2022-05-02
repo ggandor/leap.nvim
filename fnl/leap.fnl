@@ -229,11 +229,12 @@ the API), make the motion appear to behave as an inclusive one."
   (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
-(fn jump-to!* [target {: add-to-jumplist? : offset : mode
-                       : reverse? : inclusive-op?}]
+(fn jump-to!* [target {: winid : add-to-jumplist? : mode
+                       : offset : reverse? : inclusive-op?}]
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
+  (when winid (api.nvim_set_current_win winid))
   (vim.fn.cursor target)
   (add-offset! offset)
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
@@ -801,11 +802,10 @@ should actually be displayed depends on the `label-state` flag."
         ; Better be managed by the function itself, hence the closure.
         (var first-jump? true)
         (fn [target]
-          (when target.wininfo
-            (api.nvim_set_current_win target.wininfo.winid))
           (jump-to!* target.pos
-                     {:add-to-jumplist? first-jump?
-                      : mode : reverse? : offset : inclusive-op?})
+                     {:winid (?. target :wininfo :winid)
+                      :add-to-jumplist? first-jump?
+                      : mode : offset : reverse? : inclusive-op?})
           (set first-jump? false))))
 
     (fn traverse [targets idx {: force-no-labels?}]
