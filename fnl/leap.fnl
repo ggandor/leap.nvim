@@ -234,7 +234,8 @@ the API), make the motion appear to behave as an inclusive one."
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
-  (when winid (api.nvim_set_current_win winid))
+  (when (not= winid (vim.fn.win_getid))
+    (api.nvim_set_current_win winid))
   (vim.fn.cursor target)
   (add-offset! offset)
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
@@ -461,15 +462,16 @@ Dynamic attributes
 ?beacon      : [col-offset [[char hl-group]]] | 'match-highlight'
 "
   (local targets (or targets []))
+  (local whole-window? wininfo)
+  (local wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)))
   (var prev-match {})  ; to find overlaps
   (let [[_ right-bound &as bounds] (get-horizontal-bounds)
         pattern (.. "\\V"
                     (if opts.case_insensitive "\\c" "\\C")
                     (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                    "\\_.")]                  ; match anything after it (including EOL)
-    (each [[line col &as pos]
-           (get-match-positions pattern {: bounds : reverse? : source-winid
-                                         :whole-window? wininfo})]
+                    "\\_.")                   ; match anything after it (including EOL)
+        kwargs {: bounds : reverse? : source-winid : whole-window?}]
+    (each [[line col &as pos] (get-match-positions pattern kwargs)]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
             (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
                          char char
@@ -480,7 +482,7 @@ Dynamic attributes
         (set prev-match {: line : col : ch2})
         (when-not same-char-triplet?
           (table.insert targets
-                        {: pos :pair [ch1 ch2] :wininfo wininfo
+                        {: wininfo : pos :pair [ch1 ch2]
                          ; TODO: `right-bound` = virtcol, but `col` = byte col!
                          :edge-pos? (or eol? (= col right-bound))}))))
     (when (next targets)
@@ -664,8 +666,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
   (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>" : target}
         label-positions {}]           ; - " -
     (each [i target (ipairs target-list)]
-      (let [{:pos [lnum col] :pair [ch1 _]} target
-            {: bufnr : winid} (or target.wininfo {:bufnr 0 :winid 0})]
+      (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
         (macro make-key [col]
           `(.. bufnr " " winid " " lnum " " ,col))
         (match target.beacon
@@ -705,9 +706,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (local target (. target-list i))
     (match target.beacon
       [offset virttext]
-      (let [[lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
-            bufnr (or (?. target.wininfo :bufnr) 0)]
-        (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
+      (let [[lnum col] (map dec target.pos)]  ; 1/1 -> 0/0 indexing
+        (api.nvim_buf_set_extmark target.wininfo.bufnr hl.ns lnum (+ col offset)
                                   {:virt_text virttext
                                    :virt_text_pos "overlay"
                                    :hl_mode "combine"
@@ -812,7 +812,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (var first-jump? true)
         (fn [target]
           (jump-to!* target.pos
-                     {:winid (?. target :wininfo :winid)
+                     {:winid target.wininfo.winid
                       :add-to-jumplist? first-jump?
                       : mode : offset : reverse? : inclusive-op?})
           (set first-jump? false))))
