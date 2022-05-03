@@ -297,16 +297,16 @@ local function highlight_cursor(_3fpos)
   return api.nvim_buf_set_extmark(0, hl.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.cursor})
 end
 local function handle_interrupted_change_op_21()
-  echo("")
-  local curcol = vim.fn.col(".")
-  local endcol = vim.fn.col("$")
-  local _3fright
-  if (not vim.o.insertmode and (curcol > 1) and (curcol < endcol)) then
-    _3fright = "<RIGHT>"
-  else
-    _3fright = ""
+  local seq
+  local function _57_()
+    if (vim.fn.col(".") > 1) then
+      return "<RIGHT>"
+    else
+      return ""
+    end
   end
-  return api.nvim_feedkeys(replace_keycodes(("<C-\\><C-G>" .. _3fright)), "n", true)
+  seq = ("<C-\\><C-G>" .. _57_())
+  return api.nvim_feedkeys(replace_keycodes(seq), "n", true)
 end
 local function exec_user_autocmds(pattern)
   return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})

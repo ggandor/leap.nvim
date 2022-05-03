@@ -264,19 +264,11 @@ so we set a temporary highlight on it to see where we are."
 
 
 (fn handle-interrupted-change-op! []
-  "Return to previous mode and adjust cursor position if needed after
-interrupted change-operation."
-  ; Cannot really follow why, but this cleanup is needed here, else
-  ; there is a short blink on the command line (the cursor jumps ahead,
-  ; as if something has been echoed and then erased immediately).
-  (echo "")
-  (let [curcol (vim.fn.col ".")
-        endcol (vim.fn.col "$")
-        ?right (if (and (not vim.o.insertmode) (> curcol 1) (< curcol endcol))
-                   "<RIGHT>"
-                    "")]
-    (-> (replace-keycodes (.. "<C-\\><C-G>" ?right))  ; :h CTRL-\_CTRL-G
-        (api.nvim_feedkeys :n true))))
+  "Return to Normal mode and restore the cursor position after an
+interrupted change operation."
+  (let [seq (.. "<C-\\><C-G>"  ; :h CTRL-\_CTRL-G
+                (if (> (vim.fn.col ".") 1) "<RIGHT>" ""))]
+    (api.nvim_feedkeys (replace-keycodes seq) :n true)))
 
 
 (fn exec-user-autocmds [pattern]
