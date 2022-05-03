@@ -229,15 +229,15 @@ the API), make the motion appear to behave as an inclusive one."
   (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
-(fn jump-to!* [target {: winid : add-to-jumplist? : mode
-                       : offset : reverse? : inclusive-op?}]
+(fn jump-to!* [pos {: winid : add-to-jumplist? : mode
+                    : offset : reverse? : inclusive-op?}]
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
   (when (not= winid (vim.fn.win_getid))
     (api.nvim_set_current_win winid))
-  (vim.fn.cursor target)
-  (add-offset! offset)
+  (vim.fn.cursor pos)
+  (when offset (add-offset! offset))
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
   ; we need custom tweaks to behave as an inclusive one. (This is only
   ; relevant in the forward direction, as inclusiveness applies to the
@@ -461,16 +461,16 @@ Dynamic attributes
 ?label-state : 'active-primary' | 'active-secondary' | 'inactive'
 ?beacon      : [col-offset [[char hl-group]]] | 'match-highlight'
 "
-  (local targets (or targets []))
-  (local whole-window? wininfo)
-  (local wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)))
-  (var prev-match {})  ; to find overlaps
-  (let [[_ right-bound &as bounds] (get-horizontal-bounds)
+  (let [targets (or targets [])
+        whole-window? wininfo
+        wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
+        [_ right-bound &as bounds] (get-horizontal-bounds)
+        kwargs {: bounds : reverse? : source-winid : whole-window?}
         pattern (.. "\\V"
                     (if opts.case_insensitive "\\c" "\\C")
                     (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                    "\\_.")                   ; match anything after it (including EOL)
-        kwargs {: bounds : reverse? : source-winid : whole-window?}]
+                    "\\_.")]                  ; match anything after it (including EOL)
+    (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] (get-match-positions pattern kwargs)]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
             (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
@@ -719,15 +719,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil :in2 nil}
               :dot-repeat {:in1 nil :in2 nil :target-idx nil
-                           :reverse? nil :offset nil :inclusive-op? nil}})
+                           :reverse? nil :inclusive-op? nil :offset? nil}})
 
 
-(fn leap [{: reverse? : offset : inclusive-op? : dot-repeat? : target-windows}]
+(fn leap [{: dot-repeat? : target-windows &as kwargs}]
   "Entry point for Leap motions."
-  (let [reverse? (if dot-repeat? state.dot-repeat.reverse? reverse?)
-        offset (or (if dot-repeat? state.dot-repeat.offset offset) 0)
-        inclusive-op? (if dot-repeat? state.dot-repeat.inclusive-op?
-                          inclusive-op?)
+  (let [{: reverse? : inclusive-op? : offset} (or (when dot-repeat?
+                                                    state.dot-repeat)
+                                                  kwargs)
         ?target-windows (match target-windows
                           [&as t] t
                           true (get-other-windows-on-tabpage))
