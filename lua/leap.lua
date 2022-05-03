@@ -664,7 +664,7 @@ local function get_targets(input, _118_)
           local line = _each_123_[1]
           local col = _each_123_[2]
           local _124_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_124_) == "table") and ((_124_).col == col) and (nil ~= (_124_).row)) then
+          if ((_G.type(_124_) == "table") and (nil ~= (_124_).row) and ((_124_).col == col)) then
             local row = (_124_).row
             cursor_positions[winid] = {row, col}
           else
@@ -682,7 +682,7 @@ local function get_targets(input, _118_)
         local t = _each_128_
         if by_screen_pos_3f then
           local _131_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_131_) == "table") and ((_131_).col == col) and (nil ~= (_131_).row)) then
+          if ((_G.type(_131_) == "table") and (nil ~= (_131_).row) and ((_131_).col == col)) then
             local row = (_131_).row
             t["screenpos"] = {row, col}
           else

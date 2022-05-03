@@ -667,8 +667,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
         label-positions {}]           ; - " -
     (each [i target (ipairs target-list)]
       (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
-        (macro make-key [col]
-          `(.. bufnr " " winid " " lnum " " ,col))
+        (macro make-key [col*]
+          `(.. bufnr " " winid " " lnum " " ,col*))
         (match target.beacon
           nil  ; unlabeled
           (let [keys [(make-key col) (make-key (+ col (ch1:len)))]]
