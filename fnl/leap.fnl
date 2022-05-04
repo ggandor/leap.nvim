@@ -416,19 +416,20 @@ early termination in loops."
         (match (vim.fn.searchpos pattern flags stopline)
           [line col &as pos]
           (if (= line 0) (cleanup)  ; no match
+
+              (and (= line orig-line) (= col orig-col) skip-orig-curpos?)
+              (do (push-cursor! :fwd) (rec true))
+
+              (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
+              (match (to-next-in-window-pos!
+                       reverse? left-bound right-bound stopline)
+                :moved (rec true)
+                _ (cleanup))
+
               (match (to-closed-fold-edge! reverse?)
                 :moved (rec false)  ; skip curpos, as we're still inside the fold
-                _ (if (and skip-orig-curpos? (= line orig-line) (= col orig-col))
-                      (do (push-cursor! :fwd) (rec true))
-                      ; Horizontally offscreen?
-                      (and (not vim.wo.wrap)
-                           (< col left-bound) (> col right-bound))
-                      (match (to-next-in-window-pos!
-                               reverse? left-bound right-bound stopline)
-                        :moved (rec true)
-                        _ (cleanup))
-                      (do (set match-count (+ match-count 1))
-                          pos)))))))))
+                _ (do (set match-count (+ match-count 1))
+                      pos))))))))
 
 
 (fn get-targets* [input {: reverse? : wininfo : targets : source-winid}]
