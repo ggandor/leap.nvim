@@ -461,7 +461,7 @@ local function get_match_positions(pattern, _81_)
   local _arg_82_ = _81_
   local reverse_3f = _arg_82_["reverse?"]
   local whole_window_3f = _arg_82_["whole-window?"]
-  local source_winid = _arg_82_["source-winid"]
+  local skip_curpos_3f = _arg_82_["skip-curpos?"]
   local _arg_83_ = _arg_82_["bounds"]
   local left_bound = _arg_83_[1]
   local right_bound = _arg_83_[2]
@@ -471,10 +471,10 @@ local function get_match_positions(pattern, _81_)
   else
     reverse_3f0 = reverse_3f
   end
+  local skip_orig_curpos_3f = skip_curpos_3f
   local _let_85_ = get_cursor_pos()
   local orig_line = _let_85_[1]
   local orig_col = _let_85_[2]
-  local winid = vim.fn.win_getid()
   local saved_view = vim.fn.winsaveview()
   local saved_cpo = vim.o.cpo
   local wintop = vim.fn.line("w0")
@@ -533,7 +533,7 @@ local function get_match_positions(pattern, _81_)
           return rec(false)
         elseif true then
           local _ = _92_
-          if (whole_window_3f and (winid == source_winid) and (line == orig_line) and (col == orig_col)) then
+          if (skip_orig_curpos_3f and (line == orig_line) and (col == orig_col)) then
             push_cursor_21("fwd")
             return rec(true)
           elseif (not vim.wo.wrap and (col < left_bound) and (col > right_bound)) then
@@ -567,22 +567,23 @@ local function get_targets_2a(input, _99_)
   local targets = _arg_100_["targets"]
   local source_winid = _arg_100_["source-winid"]
   local targets0 = (targets or {})
-  local whole_window_3f = wininfo
-  local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
-  local _let_101_ = get_horizontal_bounds()
-  local _ = _let_101_[1]
-  local right_bound = _let_101_[2]
-  local bounds = _let_101_
-  local kwargs = {bounds = bounds, ["reverse?"] = reverse_3f, ["source-winid"] = source_winid, ["whole-window?"] = whole_window_3f}
   local pattern
-  local function _102_()
+  local function _101_()
     if opts.case_insensitive then
       return "\\c"
     else
       return "\\C"
     end
   end
-  pattern = ("\\V" .. _102_() .. input:gsub("\\", "\\\\") .. "\\_.")
+  pattern = ("\\V" .. _101_() .. input:gsub("\\", "\\\\") .. "\\_.")
+  local _let_102_ = get_horizontal_bounds()
+  local _ = _let_102_[1]
+  local right_bound = _let_102_[2]
+  local bounds = _let_102_
+  local whole_window_3f = wininfo
+  local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
+  local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
+  local kwargs = {bounds = bounds, ["reverse?"] = reverse_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f}
   local prev_match = {}
   for _103_ in get_match_positions(pattern, kwargs) do
     local _each_104_ = _103_
@@ -702,7 +703,7 @@ local function get_targets(input, _116_)
       return nil
     end
   else
-    return get_targets_2a(input, {["reverse?"] = reverse_3f})
+    return get_targets_2a(input, {["reverse?"] = reverse_3f, ["source-winid"] = vim.fn.win_getid()})
   end
 end
 local function populate_sublists(targets)

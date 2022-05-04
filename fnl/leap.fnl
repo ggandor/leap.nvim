@@ -384,7 +384,7 @@ interrupted change operation."
       :moved)))
 
 
-(fn get-match-positions [pattern {: reverse? : whole-window? : source-winid
+(fn get-match-positions [pattern {: reverse? : whole-window? : skip-curpos?
                                   :bounds [left-bound right-bound]}]
   "Return an iterator streaming all visible positions of `pattern` in the
 current window.
@@ -392,8 +392,8 @@ Caveat: side-effects take place here (cursor movement, &cpo), and the
 clean-up happens only when the iterator is exhausted, so be careful with
 early termination in loops."
   (let [reverse? (if whole-window? false reverse?)
+        skip-orig-curpos? skip-curpos?
         [orig-line orig-col] (get-cursor-pos)
-        winid (vim.fn.win_getid)
         saved-view (vim.fn.winsaveview)
         saved-cpo vim.o.cpo
         wintop (vim.fn.line "w0")
@@ -417,11 +417,8 @@ early termination in loops."
           [line col &as pos]
           (if (= line 0) (cleanup)  ; no match
               (match (to-closed-fold-edge! reverse?)
-                :moved (rec false)  ; false, as we're still inside the fold
-                _ (if (and whole-window? (= winid source-winid)
-                           ; When scanning the whole window, skip the
-                           ; original cursor position.
-                           (= line orig-line) (= col orig-col))
+                :moved (rec false)  ; skip curpos, as we're still inside the fold
+                _ (if (and skip-orig-curpos? (= line orig-line) (= col orig-col))
                       (do (push-cursor! :fwd) (rec true))
                       ; Horizontally offscreen?
                       (and (not vim.wo.wrap)
@@ -452,14 +449,15 @@ Dynamic attributes
 ?beacon      : [col-offset [[char hl-group]]] | 'match-highlight'
 "
   (let [targets (or targets [])
-        whole-window? wininfo
-        wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
-        [_ right-bound &as bounds] (get-horizontal-bounds)
-        kwargs {: bounds : reverse? : source-winid : whole-window?}
         pattern (.. "\\V"
                     (if opts.case_insensitive "\\c" "\\C")
                     (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                    "\\_.")]                  ; match anything after it (including EOL)
+                    "\\_.")                   ; match anything after it (including EOL)
+        [_ right-bound &as bounds] (get-horizontal-bounds)
+        whole-window? wininfo
+        wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
+        skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
+        kwargs {: bounds : reverse? : skip-curpos? : whole-window?}]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] (get-match-positions pattern kwargs)]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
@@ -521,7 +519,7 @@ Dynamic attributes
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))
 
-      (get-targets* input {: reverse?})))
+      (get-targets* input {: reverse? :source-winid (vim.fn.win_getid)})))
 
 
 ; Processing targets ///1
