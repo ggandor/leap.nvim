@@ -105,8 +105,9 @@ character instead."
    :ns (api.nvim_create_namespace "")
    :cleanup (fn [self ?target-windows]
               (when ?target-windows
-                (each [_ w (ipairs ?target-windows)]
-                  (api.nvim_buf_clear_namespace w.bufnr self.ns (dec w.topline) w.botline)))
+                (each [_ wininfo (ipairs ?target-windows)]
+                  (api.nvim_buf_clear_namespace
+                    wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
               ; We need to clean up the cursor highlight in the current window anyway.
               (api.nvim_buf_clear_namespace 0 self.ns
                                             (dec (vim.fn.line "w0"))
@@ -447,7 +448,7 @@ edge-pos?    : bool
 
 Dynamic attributes
 ?label-state : 'active-primary' | 'active-secondary' | 'inactive'
-?beacon      : [col-offset [[char hl-group]]] | 'match-highlight'
+?beacon      : [col-offset [[char hl-group]]]
 "
   (let [targets (or targets [])
         pattern (.. "\\V"
@@ -489,21 +490,24 @@ Dynamic attributes
   (if target-windows
       (let [targets []
             cursor-positions {}
-            cross-win? (not (and (= (length target-windows) 1)
-                                 (= (. target-windows 1 :winid)
-                                    (vim.fn.win_getid))))
-            source-winid (vim.fn.win_getid)]
-        (each [_ w (ipairs target-windows)]
-          (when cross-win? (api.nvim_set_current_win w.winid))
-          (tset cursor-positions w.winid (get-cursor-pos))
-          (get-targets* input {:wininfo w : source-winid : targets}))
-        (when cross-win? (api.nvim_set_current_win source-winid))
+            source-winid (vim.fn.win_getid)
+            curr-win-only? (match target-windows
+                             [{:winid source-winid} nil] true)
+            cross-win? (not curr-win-only?)]
+        (each [_ {: winid &as wininfo} (ipairs target-windows)]
+          (when cross-win?
+            (api.nvim_set_current_win winid))
+          (tset cursor-positions winid (get-cursor-pos))
+          (get-targets* input {: wininfo : source-winid : targets}))
+        (when cross-win?
+          (api.nvim_set_current_win source-winid))
         (when-not (empty? targets)
           ; Sort targets by their distance from the cursor.
-          ; TODO: Performance: vim.fn.screenpos is very costly for a large number of targets
-          ; - only get them when at least one line is actually wrapped?
-          ; - some FFI magic?
           ; TODO: Check vim.wo.wrap for each window, and calculate accordingly.
+          ; TODO: (Performance) vim.fn.screenpos is very costly for a large
+          ;       number of targets...
+          ;       -> Only get them when at least one line is actually wrapped?
+          ;       -> Some FFI magic?
           (local by-screen-pos? (and vim.o.wrap (< (length targets) 200)))
           (when by-screen-pos?
             ; Update cursor positions to screen positions.
@@ -520,7 +524,7 @@ Dynamic attributes
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))
 
-      (get-targets* input {: reverse? :source-winid (vim.fn.win_getid)})))
+      (get-targets* input {: reverse?})))
 
 
 ; Processing targets ///1
@@ -577,25 +581,24 @@ Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
   (each [_ sublist (pairs targets.sublists)]
     (when (> (length sublist) 1)  ; else we jump unconditionally
+      (local {: autojump? : label-set} sublist)
       (each [i target (ipairs sublist)]
         ; Skip labeling the first target if autojump is set.
-        (local i (if sublist.autojump? (dec i) i))
-        (when (> i 0)
-          (local labels sublist.label-set)
+        (local i* (if autojump? (dec i) i))
+        (when (> i* 0)
           (tset target :label
-                (match (% i (length labels))
-                  0 (. labels (length labels))
-                  n (. labels n))))))))
+                (match (% i* (length label-set))
+                  0 (. label-set (length label-set))
+                  n (. label-set n))))))))
 
 
 (fn set-label-states [sublist {: group-offset}]
-  (let [labels sublist.label-set
-        |labels| (length labels)
-        offset (* group-offset |labels|)
+  (let [|label-set| (length sublist.label-set)
+        offset (* group-offset |label-set|)
         primary-start (+ offset (if sublist.autojump? 2 1))
-        primary-end (+ primary-start (dec |labels|))
+        primary-end (+ primary-start (dec |label-set|))
         secondary-start (inc primary-end)
-        secondary-end (+ primary-end |labels|)]
+        secondary-end (+ primary-end |label-set|)]
     (each [i target (ipairs sublist)]
       (when target.label
         (tset target :label-state
@@ -690,8 +693,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
           (resolve-conflicts target-list))))
 
 
-(fn light-up-beacons [target-list ?start-from]
-  (for [i (or ?start-from 1) (length target-list)]
+(fn light-up-beacons [target-list ?start]
+  (for [i (or ?start 1) (length target-list)]
     (local target (. target-list i))
     (match target.beacon
       [offset virttext]
@@ -713,8 +716,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 (fn leap [{: dot-repeat? : target-windows &as kwargs}]
   "Entry point for Leap motions."
-  (let [{: reverse? : inclusive-op? : offset} (or (when dot-repeat?
-                                                    state.dot-repeat)
+  (let [{: reverse? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                   kwargs)
         ?target-windows (match target-windows
                           [&as t] t
