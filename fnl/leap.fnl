@@ -54,11 +54,6 @@ character instead."
     (when (not= char-nr -1)
       (vim.fn.nr2char char-nr))))
 
-(fn get-fold-edge [lnum reverse?]
-  (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) lnum)
-    -1 nil
-    fold-edge fold-edge))
-
 
 ; Setup ///1
 
