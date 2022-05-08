@@ -1540,11 +1540,14 @@ local function restore_editor_opts()
 end
 init_highlight()
 api.nvim_create_augroup("LeapDefault", {})
-api.nvim_create_autocmd("ColorScheme", {callback = init_highlight, group = "LeapDefault"})
 local function _286_()
+  return init_highlight()
+end
+api.nvim_create_autocmd("ColorScheme", {callback = _286_, group = "LeapDefault"})
+local function _287_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _286_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _287_, group = "LeapDefault"})
 api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = restore_editor_opts, group = "LeapDefault"})
 return {opts = opts, setup = setup, state = state, leap = leap, init_highlight = init_highlight, set_default_keymaps = set_default_keymaps}

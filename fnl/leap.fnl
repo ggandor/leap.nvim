@@ -997,7 +997,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own, so we re-init the highlight on every change.
 (api.nvim_create_autocmd "ColorScheme"
-                         {:callback init-highlight
+                         {:callback #(init-highlight)
                           :group "LeapDefault"})
 
 (api.nvim_create_autocmd "User"
