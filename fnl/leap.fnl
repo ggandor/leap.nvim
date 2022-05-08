@@ -335,14 +335,17 @@ interrupted change operation."
     [left-bound right-bound]))  ; screen columns
 
 
+(fn skip-one! [reverse?]
+  (match (push-cursor! (if reverse? :bwd :fwd))
+    0 :dead-end))
+
+
+; Assumes being in a closed fold!
 (fn to-closed-fold-edge! [reverse?]
   (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
           (vim.fn.line "."))
-    -1 nil
-    edge-line (do (vim.fn.cursor edge-line 0)
-                  (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
-                  ; ...regardless of whether the cursor actually moved
-                  :moved)))
+    line (do (vim.fn.cursor line 0)
+             (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$"))))))
 
 
 ; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
@@ -352,7 +355,7 @@ interrupted change operation."
 ; always <= the bytecol of it -, but in that case it's no problem,
 ; just some unnecessary work afterwards, as we're still outside the
 ; on-screen area).
-(fn reach-right-bound []
+(fn reach-right-bound! [right-bound]
   (while (and (< (vim.fn.virtcol ".") right-bound)
               (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
     (vim.cmd "norm! l")))
@@ -362,22 +365,20 @@ interrupted change operation."
   ; virtcol = like `col`, starting from the beginning of the line in the
   ; buffer, but every char counts as the #of screen columns it occupies
   ; (or would occupy), instead of the #of bytes.
-  (local [line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")])
-  (match (if (< virtcol left-bound)
-             (if reverse?
-                 (when (>= (dec line) stopline)
-                   [(dec line) right-bound])
-                 [line left-bound])
-
-             (> virtcol right-bound)
-             (if reverse? [line right-bound]
-                 (when (<= (inc line) stopline)
-                   [(inc line) left-bound])))
-    to-pos
-    (when (not= from-pos to-pos)
-      (vim.fn.cursor to-pos)
-      (when reverse? (reach-right-bound))
-      :moved)))
+  (let [[line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")]
+        left-off? (< virtcol left-bound)
+        right-off? (> virtcol right-bound)]
+    (match (if (and left-off? reverse?) (when (>= (dec line) stopline)
+                                          [(dec line) right-bound])
+               (and left-off? (not reverse?)) [line left-bound]
+               (and right-off? reverse?) [line right-bound]
+               (and right-off? (not reverse?)) (when (<= (inc line) stopline)
+                                                 [(inc line) left-bound]))
+      to-pos
+      (if (= from-pos to-pos) :dead-end
+          (do (vim.fn.cursor to-pos)
+              (when reverse?
+                (reach-right-bound! right-bound)))))))
 
 
 (fn get-match-positions [pattern {: reverse? : whole-window? : skip-curpos?
@@ -387,45 +388,53 @@ current window.
 Caveat: side-effects take place here (cursor movement, &cpo), and the
 clean-up happens only when the iterator is exhausted, so be careful with
 early termination in loops."
-  (let [reverse? (if whole-window? false reverse?)
-        skip-orig-curpos? skip-curpos?
-        [orig-line orig-col] (get-cursor-pos)
-        saved-view (vim.fn.winsaveview)
-        saved-cpo vim.o.cpo
+  (let [skip-orig-curpos? skip-curpos?
+        [orig-curline orig-curcol] (get-cursor-pos)
         wintop (vim.fn.line "w0")
         winbot (vim.fn.line "w$")
         stopline (if reverse? wintop winbot)
+        saved-view (vim.fn.winsaveview)
+        saved-cpo vim.o.cpo
         cleanup #(do (vim.fn.winrestview saved-view)
                      (set vim.o.cpo saved-cpo)
                      nil)]
 
-    (set vim.o.cpo (saved-cpo:gsub "c" ""))  ; do not skip overlapping matches
+    (set vim.o.cpo (vim.o.cpo:gsub "c" ""))  ; do not skip overlapping matches
     (var match-count 0)
-    (var set-to-topleft? (when whole-window?
-                           (vim.fn.cursor [wintop left-bound])
-                           true))
+    (var moved-to-topleft? (when whole-window?
+                             (vim.fn.cursor [wintop left-bound])
+                             true))
 
-    (fn rec [match-at-curpos?]
-      (let [match-at-curpos? (or match-at-curpos? set-to-topleft?)
+    (fn iter [match-at-curpos?]
+      (let [match-at-curpos? (or match-at-curpos? moved-to-topleft?)
             flags (.. (if reverse? "b" "") (if match-at-curpos? "c" ""))]
-        (set set-to-topleft? false)
+        (set moved-to-topleft? false)
         (match (vim.fn.searchpos pattern flags stopline)
           [line col &as pos]
           (if (= line 0) (cleanup)  ; no match
 
-              (and (= line orig-line) (= col orig-col) skip-orig-curpos?)
-              (do (push-cursor! :fwd) (rec true))
+              ; At the original cursor position (bidirectional search).
+              (and (= line orig-curline) (= col orig-curcol) skip-orig-curpos?)
+              (match (skip-one!)
+                :dead-end (cleanup)  ; before EOF
+                _ (iter true))
 
+              ; Horizontally offscreen.
               (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
               (match (to-next-in-window-pos!
                        reverse? left-bound right-bound stopline)
-                :moved (rec true)
-                _ (cleanup))
+                :dead-end (cleanup)  ; on the first/last line in the window
+                _ (iter true))
 
-              (match (to-closed-fold-edge! reverse?)
-                :moved (rec false)  ; skip curpos, as we're still inside the fold
-                _ (do (set match-count (+ match-count 1))
-                      pos))))))))
+              ; In a closed fold.
+              (not= (vim.fn.foldclosed line) -1)
+              (do (to-closed-fold-edge! reverse?)
+                  (match (skip-one! reverse?)  ; to actually get out of the fold
+                    :dead-end (cleanup)  ; fold starts at the beginning, or reaches till EOF
+                    _ (iter true)))
+
+              (do (set match-count (+ match-count 1))
+                  pos)))))))
 
 
 (fn get-targets* [input {: reverse? : wininfo : targets : source-winid}]
