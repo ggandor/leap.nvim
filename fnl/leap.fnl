@@ -631,13 +631,14 @@ should actually be displayed depends on the `label-state` flag."
 ; expects).
 
 (fn set-beacon-for-labeled [target]
-  (let [{:pair [ch1 ch2] : edge-pos? : label} target
-        offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
-        virttext (match target.label-state
-                   :active-primary [[label hl.group.label-primary]]
-                   :active-secondary [[label hl.group.label-secondary]]
-                   :inactive [[" " hl.group.label-secondary]])]
-    (tset target :beacon (when virttext [offset virttext]))))
+  (when target.label
+    (let [{:pair [ch1 ch2] : edge-pos? : label} target
+          offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
+          virttext (match target.label-state
+                     :active-primary [[label hl.group.label-primary]]
+                     :active-secondary [[label hl.group.label-secondary]]
+                     :inactive [[" " hl.group.label-secondary]])]
+      (tset target :beacon (when virttext [offset virttext])))))
 
 
 (fn set-beacon-to-match-hl [target]
