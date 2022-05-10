@@ -259,7 +259,9 @@ end
 
 Then set a keymap to use the function defined. For example, the following will set `s` in normal mode to trigger `leap_bidirectional`:
 
-`vim.api.nvim_set_keymap("n", "s", ":lua leap_bidirectional()<CR>", { noremap = true, silent = true })`
+```lua
+vim.api.nvim_set_keymap("n", "s", ":lua leap_bidirectional()<CR>", { noremap = true, silent = true })
+```
 
 ### User events
 
