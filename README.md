@@ -257,6 +257,10 @@ function leap_bidirectional()
 end
 ```
 
+Then set a keymap to use the function defined. For example, the following will set `s` in normal mode to trigger `leap_bidirectional`:
+
+`vim.api.nvim_set_keymap("n", "s", ":lua leap_bidirectional()<CR>", { noremap = true, silent = true })`
+
 ### User events
 
 Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
