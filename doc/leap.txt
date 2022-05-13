@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 April 23
+Last change: 2022 May 13
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -284,9 +284,12 @@ In order to preserve your custom settings after changing the colorscheme, you
 might want to wrap them in a function, and define an autocommand like below.
 (Leap does the same, but with |:hi-default|, so it will not overwrite yours.)
 >
-    vim.api.nvim_create_autocmd('ColorScheme', {callback = function ()
-      < my settings here >
-    end})
+    vim.api.nvim_create_autocmd('ColorScheme', {
+      callback = function ()
+        vim.api.nvim_set_hl(0, 'LeapMatch', { <def. map> })
+        -- etc.
+      end
+    })
 
 ==============================================================================
 EVENTS                                                             *leap-events*
@@ -298,8 +301,14 @@ Leap (not in traversal mode):
 *LeapLeave*
 
 Example: >
-    vim.api.nvim_create_autocmd('User LeapEnter', {command = 'nohlsearch'})
-    vim.api.nvim_create_autocmd('User LeapLeave', {command = 'let &hlsearch=&hlsearch'})
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'LeapEnter',
+      command = 'nohlsearch',
+    })
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'LeapLeave',
+      command = 'let &hlsearch=&hlsearch',
+    })
 <
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
