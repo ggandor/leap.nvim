@@ -381,8 +381,8 @@ interrupted change operation."
                 (reach-right-bound! right-bound)))))))
 
 
-(fn get-match-positions [pattern {: reverse? : whole-window? : skip-curpos?
-                                  :bounds [left-bound right-bound]}]
+(fn get-match-positions [pattern [left-bound right-bound]
+                         {: reverse? : whole-window? : skip-curpos?}]
   "Return an iterator streaming all visible positions of `pattern` in the
 current window.
 Caveat: side-effects take place here (cursor movement, &cpo), and the
@@ -460,9 +460,9 @@ Dynamic attributes
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
         skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
-        kwargs {: bounds : reverse? : skip-curpos? : whole-window?}]
+        kwargs {: reverse? : skip-curpos? : whole-window?}]
     (var prev-match {})  ; to find overlaps
-    (each [[line col &as pos] (get-match-positions pattern kwargs)]
+    (each [[line col &as pos] (get-match-positions pattern bounds kwargs)]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
             (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
                          char char
