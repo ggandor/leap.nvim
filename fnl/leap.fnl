@@ -437,10 +437,11 @@ early termination in loops."
                   pos)))))))
 
 
-(fn get-targets* [input {: reverse? : wininfo : targets : source-winid}]
+(fn get-targets* [pattern  ; assumed to match 2 logical/multibyte chars
+                  {: reverse? : wininfo : targets : source-winid}]
   "Return a table that will store the positions and other metadata of
-all on-screen pairs that start with `input`, in the order of discovery.
-A target element in its final form has the following fields (the latter
+all in-window pairs that match `pattern`, in the order of discovery. A
+target element in its final form has the following fields (the latter
 ones might be set by subsequent functions):
 
 Static attributes (set once and for all)
@@ -455,10 +456,6 @@ Dynamic attributes
 ?beacon      : [col-offset [[char hl-group]]]
 "
   (let [targets (or targets [])
-        pattern (.. "\\V"
-                    (if opts.case_insensitive "\\c" "\\C")
-                    (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                    "\\_.")                   ; match anything after it (including EOL)
         [_ right-bound &as bounds] (get-horizontal-bounds)
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
@@ -490,7 +487,7 @@ Dynamic attributes
     (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
 
-(fn get-targets [input {: reverse? : target-windows}]
+(fn get-targets [pattern {: reverse? : target-windows}]
   (if target-windows
       (let [targets []
             cursor-positions {}
@@ -502,7 +499,7 @@ Dynamic attributes
           (when cross-win?
             (api.nvim_set_current_win winid))
           (tset cursor-positions winid (get-cursor-pos))
-          (get-targets* input {: wininfo : source-winid : targets}))
+          (get-targets* pattern {: wininfo : source-winid : targets}))
         (when cross-win?
           (api.nvim_set_current_win source-winid))
         (when-not (empty? targets)
@@ -528,7 +525,7 @@ Dynamic attributes
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))
 
-      (get-targets* input {: reverse?})))
+      (get-targets* pattern {: reverse?})))
 
 
 ; Processing targets ///1
@@ -778,6 +775,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
          (hl:cleanup ?target-windows)
          res#))
 
+    (fn prepare-pattern [in1 ?in2]
+      (.. "\\V"
+          (if opts.case_insensitive "\\c" "\\C")
+          (in1:gsub "\\" "\\\\")  ; backslash needs to be escaped even for \V
+          (match ?in2  ; but not here (no arbitrary input after this)
+            spec-keys.eol (.. "\\(" ?in2 "\\|\\r\\?\\n\\)")
+            _ (or ?in2 "\\_."))))  ; or match anything after it (including EOL)
+
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
       (each [idx {: label : label-state &as target} (ipairs sublist)
@@ -884,7 +889,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too, if <enter>-repeating.
                    (get-first-pattern-input))  ; REDRAW
-      (in1 ?in2) (or (get-targets in1 {: reverse? :target-windows ?target-windows})
+      (in1 ?in2) (or (get-targets (prepare-pattern in1 ?in2)
+                                  {: reverse? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (do (doto targets
                     ; Prepare targets (set fixed attributes).
