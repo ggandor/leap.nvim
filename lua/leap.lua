@@ -569,9 +569,9 @@ local function get_targets_2a(pattern, _97_)
   local whole_window_3f = wininfo
   local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
   local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
-  local kwargs = {["reverse?"] = reverse_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f}
+  local match_positions = get_match_positions(pattern, bounds, {["reverse?"] = reverse_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
-  for _100_ in get_match_positions(pattern, bounds, kwargs) do
+  for _100_ in match_positions do
     local _each_101_ = _100_
     local line = _each_101_[1]
     local col = _each_101_[2]
@@ -628,7 +628,9 @@ local function get_targets(pattern, _113_)
   local _arg_114_ = _113_
   local reverse_3f = _arg_114_["reverse?"]
   local target_windows = _arg_114_["target-windows"]
-  if target_windows then
+  if not target_windows then
+    return get_targets_2a(pattern, {["reverse?"] = reverse_3f})
+  else
     local targets = {}
     local cursor_positions = {}
     local source_winid = vim.fn.win_getid()
@@ -651,7 +653,7 @@ local function get_targets(pattern, _113_)
       else
       end
       cursor_positions[winid] = get_cursor_pos()
-      get_targets_2a(pattern, {wininfo = wininfo, ["source-winid"] = source_winid, targets = targets})
+      get_targets_2a(pattern, {targets = targets, wininfo = wininfo, ["source-winid"] = source_winid})
     end
     if cross_win_3f then
       api.nvim_set_current_win(source_winid)
@@ -700,8 +702,6 @@ local function get_targets(pattern, _113_)
     else
       return nil
     end
-  else
-    return get_targets_2a(pattern, {["reverse?"] = reverse_3f})
   end
 end
 local function populate_sublists(targets)

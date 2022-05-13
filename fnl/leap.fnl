@@ -268,7 +268,7 @@ interrupted change operation."
 
 
 (fn exec-user-autocmds [pattern]
-  (api.nvim_exec_autocmds "User" {:pattern pattern :modeline false}))
+  (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
 
 (fn get-input []
@@ -413,20 +413,20 @@ early termination in loops."
           [line col &as pos]
           (if (= line 0) (cleanup)  ; no match
 
-              ; At the original cursor position (bidirectional search).
+              ; At the original cursor position (bidirectional search)?
               (and (= line orig-curline) (= col orig-curcol) skip-orig-curpos?)
               (match (skip-one!)
                 :dead-end (cleanup)  ; before EOF
                 _ (iter true))
 
-              ; Horizontally offscreen.
+              ; Horizontally offscreen?
               (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
               (match (to-next-in-window-pos!
                        reverse? left-bound right-bound stopline)
                 :dead-end (cleanup)  ; on the first/last line in the window
                 _ (iter true))
 
-              ; In a closed fold.
+              ; In a closed fold?
               (not= (vim.fn.foldclosed line) -1)
               (do (to-closed-fold-edge! reverse?)
                   (match (skip-one! reverse?)  ; to actually get out of the fold
@@ -460,9 +460,10 @@ Dynamic attributes
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
         skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
-        kwargs {: reverse? : skip-curpos? : whole-window?}]
+        match-positions (get-match-positions
+                          pattern bounds {: reverse? : skip-curpos? : whole-window?})]
     (var prev-match {})  ; to find overlaps
-    (each [[line col &as pos] (get-match-positions pattern bounds kwargs)]
+    (each [[line col &as pos] match-positions]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
             (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
                          char char
@@ -472,10 +473,9 @@ Dynamic attributes
                                     (= col ((if reverse? dec inc) prev-match.col)))]
         (set prev-match {: line : col : ch2})
         (when-not same-char-triplet?
-          (table.insert targets
-                        {: wininfo : pos :pair [ch1 ch2]
-                         ; TODO: `right-bound` = virtcol, but `col` = byte col!
-                         :edge-pos? (or eol? (= col right-bound))}))))
+          (table.insert targets {: wininfo : pos :pair [ch1 ch2]
+                                 ; TODO: `right-bound` = virtcol, but `col` = byte col!
+                                 :edge-pos? (or eol? (= col right-bound))}))))
     (when (next targets)
       targets)))
 
@@ -488,7 +488,7 @@ Dynamic attributes
 
 
 (fn get-targets [pattern {: reverse? : target-windows}]
-  (if target-windows
+  (if (not target-windows) (get-targets* pattern {: reverse?})
       (let [targets []
             cursor-positions {}
             source-winid (vim.fn.win_getid)
@@ -499,7 +499,8 @@ Dynamic attributes
           (when cross-win?
             (api.nvim_set_current_win winid))
           (tset cursor-positions winid (get-cursor-pos))
-          (get-targets* pattern {: wininfo : source-winid : targets}))
+          ; Fill up the provided `targets`, instead of returning a new table.
+          (get-targets* pattern {: targets : wininfo : source-winid}))
         (when cross-win?
           (api.nvim_set_current_win source-winid))
         (when-not (empty? targets)
@@ -523,9 +524,7 @@ Dynamic attributes
             (tset t :rank (distance (or t.screenpos t.pos)
                                     (. cursor-positions winid))))
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
-          targets))
-
-      (get-targets* pattern {: reverse?})))
+          targets))))
 
 
 ; Processing targets ///1
@@ -781,7 +780,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
           (in1:gsub "\\" "\\\\")  ; backslash needs to be escaped even for \V
           (match ?in2  ; but not here (no arbitrary input after this)
             spec-keys.eol (.. "\\(" ?in2 "\\|\\r\\?\\n\\)")
-            _ (or ?in2 "\\_."))))  ; or match anything after it (including EOL)
+            _ (or ?in2 "\\_."))))  ; or match anything (including EOL)
 
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
