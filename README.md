@@ -255,12 +255,9 @@ function leap_bidirectional()
     ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
   }
 end
-```
 
-Then set a keymap to use the function defined. For example, the following will set `s` in normal mode to trigger `leap_bidirectional`:
-
-```lua
-vim.api.nvim_set_keymap("n", "s", ":lua leap_bidirectional()<CR>", { noremap = true, silent = true })
+-- Map them to your preferred key, like:
+vim.keymap.set('n', 's', leap_all_windows, { silent = true })
 ```
 
 ### User events
