@@ -255,6 +255,9 @@ function leap_bidirectional()
     ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
   }
 end
+
+-- Map them to your preferred key, like:
+vim.keymap.set('n', 's', leap_all_windows, { silent = true })
 ```
 
 ### User events
