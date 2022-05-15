@@ -7,15 +7,13 @@ local ceil = _local_1_["ceil"]
 local max = _local_1_["max"]
 local min = _local_1_["min"]
 local pow = _local_1_["pow"]
-local function clamp(val, min0, max0)
-  if (val < min0) then
+local function clamp(x, min0, max0)
+  if (x < min0) then
     return min0
-  elseif (val > max0) then
+  elseif (x > max0) then
     return max0
-  elseif "else" then
-    return val
   else
-    return nil
+    return x
   end
 end
 local function inc(x)
@@ -1009,12 +1007,12 @@ local function leap(_196_)
       _3ftarget_windows = nil
     end
   end
-  local bidirectional_3f = _3ftarget_windows
+  local directional_3f = not _3ftarget_windows
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
-  local dot_repeatable_op_3f = (op_mode_3f and not bidirectional_3f and (vim.v.operator ~= "y"))
-  local force_no_autojump_3f = (op_mode_3f or bidirectional_3f)
+  local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
+  local force_no_autojump_3f = (op_mode_3f or not directional_3f)
   local spec_keys
   local function _202_(_, k)
     return replace_keycodes(opts.special_keys[k])
@@ -1330,7 +1328,7 @@ local function leap(_196_)
                 else
                   return nil
                 end
-              elseif ((in2 == spec_keys.next_match) and not bidirectional_3f) then
+              elseif (directional_3f and (in2 == spec_keys.next_match)) then
                 local in20 = targets[1].pair[2]
                 update_state({["repeat"] = {in1 = in1, in2 = in20}})
                 jump_to_21(targets[1])
@@ -1389,74 +1387,73 @@ local function leap(_196_)
                   else
                   end
                   local _263_ = post_pattern_input_loop(sublist)
-                  local function _264_(...)
-                    return not bidirectional_3f
-                  end
-                  if ((_263_ == spec_keys.next_match) and _264_(...)) then
-                    local new_idx
-                    if sublist["autojump?"] then
-                      new_idx = 2
-                    else
-                      new_idx = 1
-                    end
-                    jump_to_21(sublist[new_idx])
-                    if op_mode_3f then
-                      if dot_repeatable_op_3f then
-                        set_dot_repeat()
-                      else
-                      end
-                      do
-                        update_dot_repeat_state(1)
-                      end
-                      hl:cleanup(_3ftarget_windows)
-                      exec_user_autocmds("LeapLeave")
-                      return nil
-                    else
-                      return traverse(sublist, new_idx, {["force-no-labels?"] = not sublist["autojump?"]})
-                    end
-                  elseif (nil ~= _263_) then
-                    local input = _263_
-                    local _268_ = get_target_with_active_primary_label(sublist, input)
-                    if ((_G.type(_268_) == "table") and (nil ~= (_268_)[1]) and (nil ~= (_268_)[2])) then
-                      local idx = (_268_)[1]
-                      local target = (_268_)[2]
-                      if dot_repeatable_op_3f then
-                        set_dot_repeat()
-                      else
-                      end
-                      do
-                        update_dot_repeat_state(idx)
-                        jump_to_21(target)
-                      end
-                      hl:cleanup(_3ftarget_windows)
-                      exec_user_autocmds("LeapLeave")
-                      return nil
-                    elseif true then
-                      local _ = _268_
+                  if (nil ~= _263_) then
+                    local in_final = _263_
+                    if (directional_3f and (in_final == spec_keys.next_match)) then
+                      local new_idx
                       if sublist["autojump?"] then
+                        new_idx = 2
+                      else
+                        new_idx = 1
+                      end
+                      jump_to_21(sublist[new_idx])
+                      if op_mode_3f then
                         if dot_repeatable_op_3f then
                           set_dot_repeat()
                         else
                         end
                         do
-                          vim.fn.feedkeys(input, "i")
+                          update_dot_repeat_state(1)
                         end
                         hl:cleanup(_3ftarget_windows)
                         exec_user_autocmds("LeapLeave")
                         return nil
                       else
-                        if change_op_3f then
-                          handle_interrupted_change_op_21()
+                        return traverse(sublist, new_idx, {["force-no-labels?"] = not sublist["autojump?"]})
+                      end
+                    else
+                      local _267_ = get_target_with_active_primary_label(sublist, in_final)
+                      if ((_G.type(_267_) == "table") and (nil ~= (_267_)[1]) and (nil ~= (_267_)[2])) then
+                        local idx = (_267_)[1]
+                        local target = (_267_)[2]
+                        if dot_repeatable_op_3f then
+                          set_dot_repeat()
                         else
                         end
                         do
+                          update_dot_repeat_state(idx)
+                          jump_to_21(target)
                         end
                         hl:cleanup(_3ftarget_windows)
                         exec_user_autocmds("LeapLeave")
                         return nil
+                      elseif true then
+                        local _ = _267_
+                        if sublist["autojump?"] then
+                          if dot_repeatable_op_3f then
+                            set_dot_repeat()
+                          else
+                          end
+                          do
+                            vim.fn.feedkeys(in_final, "i")
+                          end
+                          hl:cleanup(_3ftarget_windows)
+                          exec_user_autocmds("LeapLeave")
+                          return nil
+                        else
+                          if change_op_3f then
+                            handle_interrupted_change_op_21()
+                          else
+                          end
+                          do
+                          end
+                          hl:cleanup(_3ftarget_windows)
+                          exec_user_autocmds("LeapLeave")
+                          return nil
+                        end
+                      else
+                        return nil
                       end
-                    else
-                      return nil
                     end
                   else
                     return nil

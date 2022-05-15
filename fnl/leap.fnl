@@ -17,10 +17,10 @@
 (macro when-not [cond ...]
   `(when (not ,cond) ,...))
 
-(fn clamp [val min max]
-  (if (< val min) min
-      (> val max) max
-      :else val))
+(fn clamp [x min max]
+  (if (< x min) min
+      (> x max) max
+      x))
 
 (fn inc [x] (+ x 1))
 
@@ -42,14 +42,16 @@
   (match (when (mode:match :o) (mode:sub -1))
     last-ch (when (one-of? last-ch <ctrl-v> :V :v) last-ch)))
 
-(fn get-cursor-pos [] [(vim.fn.line ".") (vim.fn.col ".")])
+(fn get-cursor-pos []
+  [(vim.fn.line ".") (vim.fn.col ".")])
+
 
 (fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
   "Get character at the given position in a multibyte-aware manner.
 An optional offset argument can be given to get the nth-next screen
 character instead."
   (let [line-str (vim.fn.getline line)
-        char-idx (vim.fn.charidx line-str (dec byte-col))  ; charidx expects 0-indexed col
+        char-idx (vim.fn.charidx line-str (dec byte-col))  ; expects 0-indexed col
         char-nr (vim.fn.strgetchar line-str (+ char-idx (or char-offset 0)))]
     (when (not= char-nr -1)
       (vim.fn.nr2char char-nr))))
@@ -153,9 +155,11 @@ character instead."
 
 ; Utils ///1
 
-(fn echo-no-prev-search [] (echo "no previous search"))
+(fn echo-no-prev-search []
+  (echo "no previous search"))
 
-(fn echo-not-found [s] (echo (.. "not found: " s)))
+(fn echo-not-found [s]
+  (echo (.. "not found: " s)))
 
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
@@ -721,17 +725,16 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ?target-windows (match target-windows
                           [&as t] t
                           true (get-other-windows-on-tabpage))
-        bidirectional? ?target-windows
+        directional? (not ?target-windows)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
-        dot-repeatable-op? (and op-mode? (not bidirectional?)
-                                (not= vim.v.operator :y))
+        dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-no-autojump? (or op-mode? bidirectional?)
+        force-no-autojump? (or op-mode? (not directional?))
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
@@ -751,14 +754,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (exec-user-autocmds :LeapLeave)
            nil))
 
-    (macro exit [...]
-      `(do (when dot-repeatable-op? (set-dot-repeat))
-           (exit* ,...)))
-
     ; Be sure not to call the macro twice accidentally,
     ; `handle-interrupted-change-op!` moves the cursor!
     (macro exit-early [...]
       `(do (when change-op? (handle-interrupted-change-op!))
+           (exit* ,...)))
+
+    (macro exit [...]
+      `(do (when dot-repeatable-op? (set-dot-repeat))
            (exit* ,...)))
 
     (macro with-highlight-chores [...]
@@ -799,15 +802,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                {: reverse? : offset : inclusive-op?})))))
 
     (local jump-to!
-      (do
-        ; Better be managed by the function itself, hence the closure.
-        (var first-jump? true)
-        (fn [target]
-          (jump-to!* target.pos
-                     {:winid target.wininfo.winid
-                      :add-to-jumplist? first-jump?
-                      : mode : offset : reverse? : inclusive-op?})
-          (set first-jump? false))))
+      (do (var first-jump? true)  ; better be managed by the function itself
+          (fn [target]
+            (jump-to!* target.pos
+                       {:winid target.wininfo.winid
+                        :add-to-jumplist? first-jump?
+                        : mode : offset : reverse? : inclusive-op?})
+            (set first-jump? false))))
 
     (fn traverse [targets idx {: force-no-labels?}]
       (when force-no-labels? (inactivate-labels targets))
@@ -895,7 +896,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                 _ (exit-early))
 
               ; Jump to the very first match?
-              (and (= in2 spec-keys.next_match) (not bidirectional?))
+              (and directional? (= in2 spec-keys.next_match))
               (let [in2 (. targets 1 :pair 2)]
                 (update-state {:repeat {: in1 : in2}})
                 (jump-to! (. targets 1))
@@ -918,21 +919,22 @@ B: Two labels occupy the same position (this can occur at EOL or window
                     (when sublist.autojump? (jump-to! (. sublist 1)))
                     ; Sets label states!
                     (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
-                      ; Jump to the first match on the [rest of the] sublist?
-                      (where spec-keys.next_match (not bidirectional?))
-                      (let [new-idx (if sublist.autojump? 2 1)]
-                        (jump-to! (. sublist new-idx))
-                        (if op-mode? (exit (update-dot-repeat-state 1))  ; implies no-autojump
-                            (traverse sublist new-idx  ; REDRAW (LOOP)
-                                      {:force-no-labels? (not sublist.autojump?)})))
+                      in-final
+                      (if
+                        ; Jump to the first match on the [rest of the] sublist?
+                        (and directional? (= in-final spec-keys.next_match))
+                        (let [new-idx (if sublist.autojump? 2 1)]
+                          (jump-to! (. sublist new-idx))
+                          (if op-mode? (exit (update-dot-repeat-state 1))  ; implies no-autojump
+                              (traverse sublist new-idx  ; REDRAW (LOOP)
+                                        {:force-no-labels? (not sublist.autojump?)})))
 
-                      input
-                      (match (get-target-with-active-primary-label sublist input)
-                        [idx target] (exit (update-dot-repeat-state idx)
-                                           (jump-to! target))
-                        _ (if sublist.autojump?
-                              (exit (vim.fn.feedkeys input :i))
-                              (exit-early)))))))))))
+                        (match (get-target-with-active-primary-label sublist in-final)
+                          [idx target] (exit (update-dot-repeat-state idx)
+                                             (jump-to! target))
+                          _ (if sublist.autojump?
+                                (exit (vim.fn.feedkeys in-final :i))
+                                (exit-early))))))))))))
 
 
 ; Keymaps ///1
