@@ -745,23 +745,20 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; dangerous, they might return 0 for example, like `feedkey`, and
     ; with that they can screw up Fennel match forms in a breeze,
     ; resulting in misterious bugs, so it's better to be paranoid.)
-    (macro exit [...]
-      `(do (when dot-repeatable-op? (set-dot-repeat))
-           (do ,...)
+    (macro exit* [...]
+      `(do (do ,...)
            (exec-user-autocmds :LeapLeave)
            nil))
 
+    (macro exit [...]
+      `(do (when dot-repeatable-op? (set-dot-repeat))
+           (exit* ,...)))
+
+    ; Be sure not to call the macro twice accidentally,
+    ; `handle-interrupted-change-op!` moves the cursor!
     (macro exit-early [...]
-      `(do
-         ; Be sure _not_ to call the macro twice accidentally,
-         ; `handle-interrupted-change-op!` might move the cursor twice!
-         (when change-op? (handle-interrupted-change-op!))
-         ; Putting the form here, after the change-op handler, because
-         ; it might feed keys too. (Is that a valid problem? Change-op
-         ; can only be interrupted by <c-c> or <esc> I guess...)
-         (do ,...)
-         (exec-user-autocmds :LeapLeave)
-         nil))
+      `(do (when change-op? (handle-interrupted-change-op!))
+           (exit* ,...)))
 
     (macro with-highlight-chores [...]
       `(do (apply-backdrop reverse? ?target-windows)
