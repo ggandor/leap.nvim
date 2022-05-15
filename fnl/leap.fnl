@@ -747,6 +747,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit* [...]
       `(do (do ,...)
+           (hl:cleanup ?target-windows)
            (exec-user-autocmds :LeapLeave)
            nil))
 
@@ -761,15 +762,11 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (exit* ,...)))
 
     (macro with-highlight-chores [...]
-      `(do (apply-backdrop reverse? ?target-windows)
+      `(do (hl:cleanup ?target-windows)
+           (apply-backdrop reverse? ?target-windows)
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
-
-    (macro with-highlight-cleanup [...]
-      `(let [res# (do ,...)]
-         (hl:cleanup ?target-windows)
-         res#))
 
     (fn prepare-pattern [in1 ?in2]
       (.. "\\V"
@@ -816,8 +813,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (when force-no-labels? (inactivate-labels targets))
       (set-beacons targets {: force-no-labels?})
       (with-highlight-chores (light-up-beacons targets (inc idx)))
-      (match (or (with-highlight-cleanup (get-input))
-                 (exit))
+      (match (or (get-input) (exit))
         input
         (if (one-of? input spec-keys.next_match spec-keys.prev_match)
             (let [new-idx (match input
@@ -835,8 +831,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
-      (match (or (with-highlight-cleanup (get-input))
-                 (exit-early))
+      (match (or (get-input) (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
         spec-keys.repeat_search (if state.repeat.in1
@@ -849,8 +844,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (set-initial-label-states)
         (set-beacons {}))
       (with-highlight-chores (light-up-beacons targets))
-      (or (with-highlight-cleanup (get-input))
-          (exit-early)))
+      (or (get-input) (exit-early)))
 
     (fn post-pattern-input-loop [sublist]
       (fn loop [group-offset initial-invoc?]
@@ -860,8 +854,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
           (set-label-states {: group-offset})
           (set-beacons {}))
         (with-highlight-chores (light-up-beacons sublist))
-        (match (or (with-highlight-cleanup (get-input))
-                   (exit-early))
+        (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not initial-invoc?)))
