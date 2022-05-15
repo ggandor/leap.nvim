@@ -30,7 +30,7 @@
 ; Nvim utils ///1
 
 (fn echo [msg]
-  (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
+  (api.nvim_echo [[msg]] false []))
 
 (fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))

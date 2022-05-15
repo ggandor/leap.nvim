@@ -25,7 +25,6 @@ local function dec(x)
   return (x - 1)
 end
 local function echo(msg)
-  vim.cmd("redraw")
   return api.nvim_echo({{msg}}, false, {})
 end
 local function replace_keycodes(s)
