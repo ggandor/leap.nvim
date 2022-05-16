@@ -8,12 +8,6 @@
 
 ; Fennel utils ///1
 
-(macro one-of? [x ...]
-  "Expands to an `or` form, like (or (= x y1) (= x y2) ...)"
-  `(or ,(unpack
-          (icollect [_ y (ipairs [...])]
-            `(= ,x ,y)))))
-
 (macro when-not [cond ...]
   `(when (not ,cond) ,...))
 
@@ -35,16 +29,8 @@
 (fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))
 
-(local <ctrl-v> (replace-keycodes "<c-v>"))
-(local <esc> (replace-keycodes "<esc>"))
-
-(fn get-motion-force [mode]
-  (match (when (mode:match :o) (mode:sub -1))
-    last-ch (when (one-of? last-ch <ctrl-v> :V :v) last-ch)))
-
 (fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
-
 
 (fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
   "Get character at the given position in a multibyte-aware manner.
@@ -195,13 +181,13 @@ character instead."
      :once true}))
 
 
-(fn simulate-inclusive-op! [motion-force]
+(fn simulate-inclusive-op! [mode]
   "When applied after an exclusive motion (like setting the cursor via
 the API), make the motion appear to behave as an inclusive one."
-  (match motion-force
+  (match (vim.fn.matchstr mode "^no\\zs.")  ; get forcing modifier
     ; In the normal case (no modifier), we should push the cursor
     ; forward. (The EOF edge case requires some hackery though.)
-    nil (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
+    "" (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
     ; We also want the `v` modifier to behave in the native way, that
     ; is, to toggle between inclusive/exclusive if applied to a charwise
     ; motion (:h o_v). As `v` will change our (technically) exclusive
@@ -243,7 +229,7 @@ the API), make the motion appear to behave as an inclusive one."
   ; relevant in the forward direction, as inclusiveness applies to the
   ; end of the selection.)
   (when (and op-mode? inclusive-op? (not reverse?))
-    (simulate-inclusive-op! (get-motion-force mode)))
+    (simulate-inclusive-op! mode))
   (when-not op-mode? (force-matchparen-refresh)))
 
 ; //> Jump
@@ -276,9 +262,9 @@ interrupted change operation."
 
 
 (fn get-input []
-  (match (pcall vim.fn.getcharstr)     ; pcall for <C-c>
-    (where (true ch) (not= ch <esc>))  ; <esc> should cleanly exit anytime
-    ch))
+  (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
+  ; <esc> should cleanly exit anytime.
+  (when (and ok? (not= ch (replace-keycodes "<esc>"))) ch))
 
 
 ; repeat.vim support
@@ -340,16 +326,17 @@ interrupted change operation."
 
 
 (fn skip-one! [reverse?]
-  (match (push-cursor! (if reverse? :bwd :fwd))
-    0 :dead-end))
+  (local new-line (push-cursor! (if reverse? :bwd :fwd)))
+  (when (= new-line 0) :dead-end))
 
 
-; Assumes being in a closed fold!
+; Assumes being in a closed fold, no checks!
 (fn to-closed-fold-edge! [reverse?]
-  (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
-          (vim.fn.line "."))
-    line (do (vim.fn.cursor line 0)
-             (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$"))))))
+  (local edge-line ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
+                    (vim.fn.line ".")))
+  (vim.fn.cursor edge-line 0)
+  (local edge-col (if reverse? 1 (vim.fn.col "$")))
+  (vim.fn.cursor 0 edge-col))
 
 
 ; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
@@ -816,7 +803,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (with-highlight-chores (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
         input
-        (if (one-of? input spec-keys.next_match spec-keys.prev_match)
+        (if (or (= input spec-keys.next_match) (= input spec-keys.prev_match))
             (let [new-idx (match input
                             spec-keys.next_match (min (inc idx) (length targets))
                             spec-keys.prev_match (max (dec idx) 1))]
