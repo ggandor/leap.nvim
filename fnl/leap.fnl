@@ -712,6 +712,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ?target-windows (match target-windows
                           [&as t] t
                           true (get-other-windows-on-tabpage))
+        source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         directional? (not ?target-windows)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
@@ -737,7 +738,11 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit* [...]
       `(do (do ,...)
-           (hl:cleanup ?target-windows)
+           ; Quick fix: make sure to clean the source window too,
+           ; when jumping to another window.
+           (hl:cleanup (when ?target-windows
+                         (doto ?target-windows
+                           (table.insert source-window))))
            (exec-user-autocmds :LeapLeave)
            nil))
 
