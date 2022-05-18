@@ -123,20 +123,22 @@ character instead."
 
 
 (fn apply-backdrop [reverse? ?target-windows]
-  (if ?target-windows
-      (each [_ win (ipairs ?target-windows)]
-        (vim.highlight.range win.bufnr hl.ns hl.group.backdrop
-                             [(dec win.topline) 0]
-                             [(dec win.botline) -1]
-                             {:priority hl.priority.backdrop}))
-      (let [[curline curcol] (map dec (get-cursor-pos))
-            [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-            [start finish] (if reverse?
-                               [[win-top 0] [curline curcol]]
-                               [[curline (inc curcol)] [win-bot -1]])]
-        ; Expects 0,0-indexed args; `finish` is exclusive.
-        (vim.highlight.range 0 hl.ns hl.group.backdrop start finish
-                             {:priority hl.priority.backdrop}))))
+  (match (pcall api.nvim_get_hl_by_name hl.group.backdrop nil)  ; group exists?
+    (true _)
+    (if ?target-windows
+        (each [_ win (ipairs ?target-windows)]
+          (vim.highlight.range win.bufnr hl.ns hl.group.backdrop
+                               [(dec win.topline) 0]
+                               [(dec win.botline) -1]
+                               {:priority hl.priority.backdrop}))
+        (let [[curline curcol] (map dec (get-cursor-pos))
+              [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
+              [start finish] (if reverse?
+                                 [[win-top 0] [curline curcol]]
+                                 [[curline (inc curcol)] [win-bot -1]])]
+          ; Expects 0,0-indexed args; `finish` is exclusive.
+          (vim.highlight.range 0 hl.ns hl.group.backdrop start finish
+                               {:priority hl.priority.backdrop})))))
 
 
 ; Utils ///1
