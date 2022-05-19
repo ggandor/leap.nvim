@@ -232,28 +232,20 @@ leap-custom-keymaps`.
 ### Search mode tweaks (bidirectional and all-windows search)
 
 For further customization you can call the `leap` function directly. The
-`target-windows` argument allows you to pass in a list of `wininfo`
-dictionaries (`:h getwininfo()`).
+`target-windows` argument allows you to pass in a list of window ID-s (`:h
+winid`).
 
 ```lua
 -- Searching in all windows (including the current one) on the tab page:
-local function get_windows_on_tabpage()
-  local t = {}
-  local ids = string.gmatch(vim.fn.string(vim.fn.winlayout()), "%d+")
-  for id in ids do t[#t + 1] = vim.fn.getwininfo(id)[1] end
-  return t
-end
 function leap_all_windows()
-  require('leap').leap { ['target-windows'] = get_windows_on_tabpage() }
+  require'leap'.leap { ['target-windows'] = vim.api.nvim_tabpage_list_wins(0) }
 end
 
 -- Bidirectional search in the current window is just a specific case of the
 -- multi-window mode - set `target-windows` to a table containing the current
 -- window as the only element:
 function leap_bidirectional()
-  require('leap').leap {
-    ['target-windows'] = { vim.fn.getwininfo(vim.fn.win_getid())[1] }
-  }
+  require'leap'.leap { ['target-windows'] = {vim.api.nvim_get_current_win()} }
 end
 
 -- Map them to your preferred key, like:

@@ -2,6 +2,7 @@
 
 (local api vim.api)
 (local empty? vim.tbl_isempty)
+(local filter vim.tbl_filter)
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
 
@@ -291,27 +292,16 @@ interrupted change operation."
 
 ; Getting targets ///1
 
-; Returns wininfo dicts.
-(fn get-other-windows-on-tabpage []
-  (let [visual-or-OP-mode? (not= (vim.fn.mode) :n)
-        get-wininfo #(. (vim.fn.getwininfo $) 1)
-        get-buf api.nvim_win_get_buf
-        curr-winid (vim.fn.win_getid)
-        ; HACK! The output of vim.fn.winlayout looks sg like:
-        ; ['col', [['leaf', 1002], ['row', [['leaf', 1003], ['leaf', 1001]]], ['leaf', 1000]]]
-        ; Instead of traversing the window tree, we simply extract the id-s from
-        ; the flat string representation.
-        ids (string.gmatch (vim.fn.string (vim.fn.winlayout)) "%d+")
-        ; TODO: filter on certain window types?
-        ids (icollect [id ids]
-              (when-not (or (= (tonumber id) curr-winid)
-                            ; Targeting a different buffer doesn't make
-                            ; sense in these modes.
-                            (and visual-or-OP-mode?
-                                 (not= (get-buf (tonumber id))
-                                       (get-buf curr-winid))))
-                id))]
-    (map get-wininfo ids)))
+(fn get-other-windows-on-tabpage [mode]
+  (let [visual-or-OP-mode? (not= mode :n)
+        curr-win (api.nvim_get_current_win)
+        curr-buf (api.nvim_get_current_buf)
+        wins (api.nvim_tabpage_list_wins 0)]
+    ; TODO: filter on certain window types?
+    (filter #(not (or (= $ curr-win)
+                      (and visual-or-OP-mode?  ; -> no sense in buffer switching
+                           (not= (api.nvim_win_get_buf $) curr-buf))))
+            wins)))
 
 
 (fn get-horizontal-bounds []
@@ -711,14 +701,15 @@ B: Two labels occupy the same position (this can occur at EOL or window
   "Entry point for Leap motions."
   (let [{: reverse? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                   kwargs)
-        ?target-windows (match target-windows
-                          [&as t] t
-                          true (get-other-windows-on-tabpage))
-        source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
-        directional? (not ?target-windows)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
+        ?target-windows (-?>> (match target-windows
+                                [&as t] t
+                                true (get-other-windows-on-tabpage mode))
+                              (map #(. (vim.fn.getwininfo $) 1)))
+        source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
+        directional? (not ?target-windows)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
