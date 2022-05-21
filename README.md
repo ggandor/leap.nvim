@@ -23,7 +23,8 @@ Compared to Lightspeed, Leap
 
 ## Status
 
-Leap is not stable yet - expect breaking changes in the API from time to time.
+Leap is not stable yet - to follow breaking changes, subscribe to the
+corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ## Getting started
 
