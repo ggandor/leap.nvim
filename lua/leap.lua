@@ -299,12 +299,12 @@ local function set_dot_repeat()
   return pcall(vim.fn["repeat#set"], seq, -1)
 end
 local function get_other_windows_on_tabpage(mode)
-  local visual_or_OP_mode_3f = (mode ~= "n")
+  local wins = api.nvim_tabpage_list_wins(0)
   local curr_win = api.nvim_get_current_win()
   local curr_buf = api.nvim_get_current_buf()
-  local wins = api.nvim_tabpage_list_wins(0)
+  local visual_7cop_mode_3f = (mode ~= "n")
   local function _55_(_241)
-    return not ((_241 == curr_win) or (visual_or_OP_mode_3f and (api.nvim_win_get_buf(_241) ~= curr_buf)))
+    return ((api.nvim_win_get_config(_241)).focusable and (_241 ~= curr_win) and not (visual_7cop_mode_3f and (api.nvim_win_get_buf(_241) ~= curr_buf)))
   end
   return filter(_55_, wins)
 end
@@ -619,7 +619,7 @@ local function get_targets(pattern, _104_)
           local line = _each_113_[1]
           local col = _each_113_[2]
           local _114_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_114_) == "table") and (nil ~= (_114_).row) and ((_114_).col == col)) then
+          if ((_G.type(_114_) == "table") and ((_114_).col == col) and (nil ~= (_114_).row)) then
             local row = (_114_).row
             cursor_positions[winid] = {row, col}
           else
@@ -637,7 +637,7 @@ local function get_targets(pattern, _104_)
         local t = _each_118_
         if by_screen_pos_3f then
           local _121_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_121_) == "table") and (nil ~= (_121_).row) and ((_121_).col == col)) then
+          if ((_G.type(_121_) == "table") and ((_121_).col == col) and (nil ~= (_121_).row)) then
             local row = (_121_).row
             t["screenpos"] = {row, col}
           else

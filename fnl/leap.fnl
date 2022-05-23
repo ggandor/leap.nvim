@@ -293,14 +293,14 @@ interrupted change operation."
 ; Getting targets ///1
 
 (fn get-other-windows-on-tabpage [mode]
-  (let [visual-or-OP-mode? (not= mode :n)
+  (let [wins (api.nvim_tabpage_list_wins 0)
         curr-win (api.nvim_get_current_win)
         curr-buf (api.nvim_get_current_buf)
-        wins (api.nvim_tabpage_list_wins 0)]
-    ; TODO: filter on certain window types?
-    (filter #(not (or (= $ curr-win)
-                      (and visual-or-OP-mode?  ; -> no sense in buffer switching
-                           (not= (api.nvim_win_get_buf $) curr-buf))))
+        visual|op-mode? (not= mode :n)]
+    (filter #(and (. (api.nvim_win_get_config $) :focusable)
+                  (not= $ curr-win)
+                  (not (and visual|op-mode?  ; no sense in buffer switching then
+                            (not= (api.nvim_win_get_buf $) curr-buf))))
             wins)))
 
 
