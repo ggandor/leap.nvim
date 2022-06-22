@@ -6,6 +6,9 @@
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
 
+(local hl (require "leap.highlight"))
+(local opts (require "leap.opts"))
+
 
 ; Fennel utils ///1
 
@@ -44,30 +47,7 @@ character instead."
       (vim.fn.nr2char char-nr))))
 
 
-; Setup ///1
-
-(local safe-labels ["s" "f" "n"
-                    "u" "t"
-                    "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-
-(local labels ["s" "f" "n"
-               "j" "k" "l" "o" "d" "w" "e" "h" "m" "v" "g"
-               "u" "t"
-               "c" "." "z"
-               "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-
-(var opts {:case_insensitive true
-           :safe_labels safe-labels
-           :labels labels
-           :special_keys {:repeat_search "<enter>"
-                          :next_match "<enter>"
-                          :prev_match "<tab>"
-                          :next_group "<space>"
-                          :prev_group "<tab>"
-                          :eol "<space>"}})
-
-(fn setup [user-opts]
-  (set opts (-> user-opts (setmetatable {:__index opts}))))
+; Utils ///1
 
 (fn user-forced-autojump? []
   (or (not opts.labels) (empty? opts.labels)))
@@ -75,74 +55,6 @@ character instead."
 (fn user-forced-no-autojump? []
   (or (not opts.safe_labels) (empty? opts.safe_labels)))
 
-
-; Highlight ///1
-
-(local hl
-  {:group {:label-primary "LeapLabelPrimary"
-           :label-secondary "LeapLabelSecondary"
-           :match "LeapMatch"
-           :backdrop "LeapBackdrop"}
-   :priority {:label 65535
-              :cursor 65534
-              :backdrop 65533}
-   :ns (api.nvim_create_namespace "")
-   :cleanup (fn [self ?target-windows]
-              (when ?target-windows
-                (each [_ wininfo (ipairs ?target-windows)]
-                  (api.nvim_buf_clear_namespace
-                    wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
-              ; We need to clean up the cursor highlight in the current window anyway.
-              (api.nvim_buf_clear_namespace 0 self.ns
-                                            (dec (vim.fn.line "w0"))
-                                            (vim.fn.line "w$")))})
-
-
-(fn init-highlight [force?]
-  (local bg vim.o.background)
-  (local def-maps
-         {hl.group.match
-          {:fg (match bg :light "#222222" _ "#ccff88")
-           :ctermfg "red"
-           :underline true
-           :nocombine true}
-          hl.group.label-primary
-          {:fg "black"
-           :bg (match bg :light "#ff8877" _ "#ccff88")
-           :ctermfg "black"
-           :ctermbg "red"
-           :nocombine true}
-          hl.group.label-secondary
-          {:fg "black"
-           :bg (match bg :light "#77aaff" _ "#99ccff")
-           :ctermfg "black"
-           :ctermbg "blue"
-           :nocombine true}})
-  (each [name def-map (pairs def-maps)]
-    (when-not force? (tset def-map :default true))
-    (api.nvim_set_hl 0 name def-map)))
-
-
-(fn apply-backdrop [reverse? ?target-windows]
-  (match (pcall api.nvim_get_hl_by_name hl.group.backdrop nil)  ; group exists?
-    (true _)
-    (if ?target-windows
-        (each [_ win (ipairs ?target-windows)]
-          (vim.highlight.range win.bufnr hl.ns hl.group.backdrop
-                               [(dec win.topline) 0]
-                               [(dec win.botline) -1]
-                               {:priority hl.priority.backdrop}))
-        (let [[curline curcol] (map dec (get-cursor-pos))
-              [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-              [start finish] (if reverse?
-                                 [[win-top 0] [curline curcol]]
-                                 [[curline (inc curcol)] [win-bot -1]])]
-          ; Expects 0,0-indexed args; `finish` is exclusive.
-          (vim.highlight.range 0 hl.ns hl.group.backdrop start finish
-                               {:priority hl.priority.backdrop})))))
-
-
-; Utils ///1
 
 (fn echo-no-prev-search []
   (echo "no previous search"))
@@ -751,7 +663,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup ?target-windows)
-           (apply-backdrop reverse? ?target-windows)
+           (hl:apply-backdrop reverse? ?target-windows)
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
@@ -922,32 +834,6 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                 (exit-early))))))))))))
 
 
-; Keymaps ///1
-
-(fn set-default-keymaps [force?]
-  (each [_ [mode lhs rhs]
-         (ipairs
-          [[:n "s"  "<Plug>(leap-forward)"]
-           [:n "S"  "<Plug>(leap-backward)"]
-           [:x "s"  "<Plug>(leap-forward)"]
-           [:x "S"  "<Plug>(leap-backward)"]
-           [:o "z"  "<Plug>(leap-forward)"]
-           [:o "Z"  "<Plug>(leap-backward)"]
-           [:o "x"  "<Plug>(leap-forward-x)"]
-           [:o "X"  "<Plug>(leap-backward-x)"]
-           [:n "gs" "<Plug>(leap-cross-window)"]
-           [:x "gs" "<Plug>(leap-cross-window)"]
-           [:o "gs" "<Plug>(leap-cross-window)"]])]
-    (when (or force?
-              ; Otherwise only set the keymaps if:
-              ; 1. (A keyseq starting with) `lhs` is not already mapped
-              ;    to something else.
-              ; 2. There is no existing mapping to the <Plug> key.
-              (and (= (vim.fn.mapcheck lhs mode) "")
-                   (= (vim.fn.hasmapto rhs mode) 0)))
-      (vim.keymap.set mode lhs rhs {:silent true}))))
-
-
 ; Handling editor options ///1
 
 ; TODO: For cross-window mode, we have to rethink how to handle
@@ -981,14 +867,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 ; Init ///1
 
-(init-highlight)
+(hl:init-highlight)
 
 (api.nvim_create_augroup "LeapDefault" {})
 
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own, so we re-init the highlight on every change.
 (api.nvim_create_autocmd "ColorScheme"
-                         {:callback #(init-highlight)
+                         {:callback #(hl:init-highlight)
                           :group "LeapDefault"})
 
 (api.nvim_create_autocmd "User"
@@ -1005,12 +891,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 ; Module ///1
 
-{: opts
- : setup
- : state
- : leap
- :init_highlight init-highlight
- :set_default_keymaps set-default-keymaps}
+{: state : leap}
 
 
 ; vim: foldmethod=marker foldmarker=///,//>

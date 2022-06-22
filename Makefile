@@ -1,13 +1,14 @@
-src_files = $(wildcard fnl/*.fnl)
-out_files = $(src_files:fnl/%.fnl=lua/%.lua)
+src_files = $(wildcard fnl/leap/*.fnl)
+out_files = $(src_files:fnl/leap/%.fnl=lua/leap/%.lua)
 
 compile: $(out_files)
 
-lua/%.lua: fnl/%.fnl lua/
+lua/leap/%.lua: fnl/leap/%.fnl lua/leap/
 	fennel --compile $< > $@
 
-lua/:
-	mkdir -p lua
+lua/leap/:
+	rm -rf lua
+	mkdir -p lua/leap/
 
 clean:
 	rm -rf lua
