@@ -756,9 +756,10 @@ B: Two labels occupy the same position (this can occur at EOL or window
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not initial-invoc?)))
-                   ; If auto-jump has been set automatically (not forced), it
-                   ; implies that there are no subsequent groups.
-                   (or (not sublist.autojump?) user-forced-autojump?))
+                   (or (not sublist.autojump?)
+                       ; If auto-jump has been set automatically (not forced),
+                       ; it implies that there are no subsequent groups.
+                       (user-forced-autojump?)))
               (let [|groups| (ceil (/ (length sublist) (length sublist.label-set)))
                     max-offset (dec |groups|)
                     inc/dec (if (= input spec-keys.next_group) inc dec)

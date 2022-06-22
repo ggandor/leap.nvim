@@ -522,7 +522,7 @@ local function get_targets(pattern, _78_)
           local line = _each_87_[1]
           local col = _each_87_[2]
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
+          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
             local row = (_88_).row
             cursor_positions[winid] = {row, col}
           else
@@ -540,7 +540,7 @@ local function get_targets(pattern, _78_)
         local t = _each_92_
         if by_screen_pos_3f then
           local _95_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_95_) == "table") and ((_95_).col == col) and (nil ~= (_95_).row)) then
+          if ((_G.type(_95_) == "table") and (nil ~= (_95_).row) and ((_95_).col == col)) then
             local row = (_95_).row
             t["screenpos"] = {row, col}
           else
@@ -1199,7 +1199,7 @@ local function leap(_161_)
       _218_ = (get_input() or _219_())
       if (nil ~= _218_) then
         local input = _218_
-        if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not initial_invoc_3f)) and (not sublist["autojump?"] or user_forced_autojump_3f)) then
+        if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not initial_invoc_3f)) and (not sublist["autojump?"] or user_forced_autojump_3f())) then
           local _7cgroups_7c = ceil((#sublist / #sublist["label-set"]))
           local max_offset = dec(_7cgroups_7c)
           local inc_2fdec
