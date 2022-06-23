@@ -429,7 +429,7 @@ Dynamic attributes
 easy iteration through each subset of targets with a given successor
 char separately."
   (tset targets :sublists {})
-  (when opts.case_insensitive
+  (when-not opts.case_sensitive
     (setmetatable targets.sublists
                   {:__index (fn [t k] (rawget t (k:lower)))
                    :__newindex (fn [t k v] (rawset t (k:lower) v))}))
@@ -674,7 +674,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn prepare-pattern [in1 ?in2]
       (.. "\\V"
-          (if opts.case_insensitive "\\c" "\\C")
+          (if opts.case_sensitive "\\C" "\\c")
           (in1:gsub "\\" "\\\\")  ; backslash needs to be escaped even for \V
           (match ?in2  ; but not here (no arbitrary input after this)
             spec-keys.eol (.. "\\(" ?in2 "\\|\\r\\?\\n\\)")

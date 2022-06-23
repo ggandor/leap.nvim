@@ -123,9 +123,9 @@ Setting multiple options via the `setup` function: >
 
 Available options~
 
-`case_insensitive = true`
+`case_sensitive = false`
 
-    Ignore case in search patterns.
+    Whether to consider case in search patterns.
 
 `highlight_unlabeled = false`
 

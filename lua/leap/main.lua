@@ -522,7 +522,7 @@ local function get_targets(pattern, _78_)
           local line = _each_87_[1]
           local col = _each_87_[2]
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
+          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
             local row = (_88_).row
             cursor_positions[winid] = {row, col}
           else
@@ -540,7 +540,7 @@ local function get_targets(pattern, _78_)
         local t = _each_92_
         if by_screen_pos_3f then
           local _95_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_95_) == "table") and ((_95_).col == col) and (nil ~= (_95_).row)) then
+          if ((_G.type(_95_) == "table") and (nil ~= (_95_).row) and ((_95_).col == col)) then
             local row = (_95_).row
             t["screenpos"] = {row, col}
           else
@@ -561,7 +561,7 @@ local function get_targets(pattern, _78_)
 end
 local function populate_sublists(targets)
   targets["sublists"] = {}
-  if opts.case_insensitive then
+  if not opts.case_sensitive then
     local function _101_(t, k)
       return rawget(t, k:lower())
     end
@@ -893,10 +893,10 @@ local function leap(_161_)
   spec_keys = setmetatable({}, {__index = _170_})
   local function prepare_pattern(in1, _3fin2)
     local function _171_()
-      if opts.case_insensitive then
-        return "\\c"
-      else
+      if opts.case_sensitive then
         return "\\C"
+      else
+        return "\\c"
       end
     end
     local function _173_()

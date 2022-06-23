@@ -201,7 +201,7 @@ For cross-window search, traversal mode is not supported.
 
 ```Lua
 require('leap').setup {
-  case_insensitive = true,
+  case_sensitive = false,
   highlight_unlabeled = false,
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.

@@ -1,4 +1,4 @@
-{:case_insensitive true
+{:case_sensitive false
  :highlight_unlabeled false
  :safe_labels ["s" "f" "n"
                "u" "t"
