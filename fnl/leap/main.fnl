@@ -522,19 +522,20 @@ should actually be displayed depends on the `label-state` flag."
 ; expects).
 
 (fn set-beacon-for-labeled [target]
-  (when target.label
-    (let [{:pair [ch1 ch2] : edge-pos? : label} target
-          offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
-          virttext (match target.label-state
-                     :active-primary [[label hl.group.label-primary]]
-                     :active-secondary [[label hl.group.label-secondary]]
-                     :inactive [[" " hl.group.label-secondary]])]
-      (tset target :beacon (when virttext [offset virttext])))))
+  (let [{:pair [ch1 ch2] : edge-pos? : label} target
+        offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
+        virttext (match target.label-state
+                   :active-primary [[label hl.group.label-primary]]
+                   :active-secondary [[label hl.group.label-secondary]]
+                   :inactive (when-not opts.highlight_unlabeled
+                               [[" " hl.group.label-secondary]]))]
+    (tset target :beacon (when virttext [offset virttext]))))
 
 
 (fn set-beacon-to-match-hl [target]
-  (let [{:pair [ch1 ch2]} target]
-    (tset target :beacon [0 [[(.. ch1 ch2) hl.group.match]]])))
+  (let [{:pair [ch1 ch2]} target
+        virttext [[(.. ch1 ch2) hl.group.match]]]
+    (tset target :beacon [0 virttext])))
 
 
 (fn set-beacon-to-empty-label [target]
@@ -556,27 +557,29 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
         (macro make-key [col*]
           `(.. bufnr " " winid " " lnum " " ,col*))
-        (match target.beacon
-          nil  ; unlabeled
-          (let [keys [(make-key col) (make-key (+ col (ch1:len)))]]
-            (each [_ k (ipairs keys)]
-              (match (. label-positions k)
-                ; A1 - current covers other's label
-                other (do (set other.beacon nil)
-                          (set-beacon-to-match-hl target)))
-              (tset unlabeled-match-positions k target)))
-
-          [offset _]  ; labeled
-          (let [k (make-key (+ col offset))]
-            (match (. unlabeled-match-positions k)
-              ; A2 - other covers current's label
-              other (do (set target.beacon nil)
-                        (set-beacon-to-match-hl other))
-              _ (match (. label-positions k)
-                  ; B - conflicting labels
-                  other (do (set target.beacon nil)
-                            (set-beacon-to-empty-label other))))
-            (tset label-positions k target)))))))
+        (if (or (not target.beacon)
+                (and opts.highlight_unlabeled
+                     (= (. target.beacon 2 1 2) hl.group.match)))
+            ; Unlabeled target.
+            (let [keys [(make-key col) (make-key (+ col (ch1:len)))]]
+              (each [_ k (ipairs keys)]
+                (match (. label-positions k)
+                  ; A1 - current covers other's label
+                  other (do (set other.beacon nil)
+                            (set-beacon-to-match-hl target)))
+                (tset unlabeled-match-positions k target)))
+            ; Labeled target.
+            (let [label-offset (. target.beacon 1)
+                  k (make-key (+ col label-offset))]
+              (match (. unlabeled-match-positions k)
+                ; A2 - unlabeled covers current's label
+                other (do (set target.beacon nil)
+                          (set-beacon-to-match-hl other))
+                _ (match (. label-positions k)
+                    ; B - conflicting labels
+                    other (do (set target.beacon nil)
+                              (set-beacon-to-empty-label other))))
+              (tset label-positions k target)))))))
 
 
 (fn set-beacons [target-list {: force-no-labels?}]
@@ -584,7 +587,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (each [_ target (ipairs target-list)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs target-list)]
-            (set-beacon-for-labeled target))
+            (if target.label (set-beacon-for-labeled target)
+                opts.highlight_unlabeled (set-beacon-to-match-hl target)))
           (resolve-conflicts target-list))))
 
 
@@ -751,7 +755,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
           ; setting the initial label states in case of <enter>-repeat.
           (set-label-states {: group-offset})
           (set-beacons {}))
-        (with-highlight-chores (light-up-beacons sublist))
+        (with-highlight-chores
+          (light-up-beacons sublist (when sublist.autojump? 2)))
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)

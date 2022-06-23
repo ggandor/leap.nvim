@@ -1,4 +1,5 @@
 {:case_insensitive true
+ :highlight_unlabeled false
  :safe_labels ["s" "f" "n"
                "u" "t"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"]

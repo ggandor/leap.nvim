@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 May 13
+Last change: 2022 June 23
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -126,6 +126,11 @@ Available options~
 `case_insensitive = true`
 
     Ignore case in search patterns.
+
+`highlight_unlabeled = false`
+
+    Whether to highlight all unlabeled matches. (Matches covering labels will
+    get highlighted anyway.)
 
 `safe_labels` >
     {"s", "f", "n",
