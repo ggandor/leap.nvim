@@ -1,5 +1,7 @@
 (local api vim.api)
+(local map vim.tbl_map)
 
+(fn inc [x] (+ x 1))
 (fn dec [x] (- x 1))
 
 (local M {:group {:label-primary "LeapLabelPrimary"
@@ -30,7 +32,7 @@
                                [(dec win.topline) 0]
                                [(dec win.botline) -1]
                                {:priority self.priority.backdrop}))
-        (let [[curline curcol] (map dec (get-cursor-pos))
+        (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
               [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
               [start finish] (if reverse?
                                  [[win-top 0] [curline curcol]]

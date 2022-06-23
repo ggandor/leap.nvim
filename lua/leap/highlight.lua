@@ -1,4 +1,8 @@
 local api = vim.api
+local map = vim.tbl_map
+local function inc(x)
+  return (x + 1)
+end
 local function dec(x)
   return (x - 1)
 end
@@ -22,7 +26,7 @@ M["apply-backdrop"] = function(self, reverse_3f, _3ftarget_windows)
       end
       return nil
     else
-      local _let_4_ = map(dec, __fnl_global__get_2dcursor_2dpos())
+      local _let_4_ = map(dec, {vim.fn.line("."), vim.fn.col(".")})
       local curline = _let_4_[1]
       local curcol = _let_4_[2]
       local _let_5_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
