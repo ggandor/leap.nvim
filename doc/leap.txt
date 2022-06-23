@@ -109,12 +109,12 @@ CONFIGURATION                                                      *leap-config*
 
 Setting an individual option via the `opts` table directly:
 
-`   require('leap').opts.case_insensitive = false`
+`   require('leap').opts.case_sensitive = true`
 
 Setting multiple options via the `setup` function: >
 
     require('leap').setup {
-        case_insensitive = false,
+        case_sensitive = true,
         labels = { ... }
     }
 <
@@ -193,7 +193,7 @@ Note that the function will check for conflicts with any custom mappings
 created by you or other plugins, and will not overwite them, unless explicitly
 told so (called with a `true` argument).
 
-Search trigger keys~
+Trigger keys~
 
 Normal mode
 

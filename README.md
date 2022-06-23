@@ -199,6 +199,11 @@ For cross-window search, traversal mode is not supported.
 
 ## Configuration
 
+Note: `setup` has no implicit side effects, it is just a convenience function
+for changing the values in the configuration table (which can also be accessed
+directly as `require('leap').opts`). There is no need to call it if you're fine
+with the defaults.
+
 ```Lua
 require('leap').setup {
   case_sensitive = false,
