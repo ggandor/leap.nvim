@@ -1,13 +1,13 @@
 ; Imports & aliases ///1
 
+(local hl (require "leap.highlight"))
+(local opts (require "leap.opts"))
+
 (local api vim.api)
 (local empty? vim.tbl_isempty)
 (local filter vim.tbl_filter)
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
-
-(local hl (require "leap.highlight"))
-(local opts (require "leap.opts"))
 
 
 ; Fennel utils ///1
@@ -15,14 +15,14 @@
 (macro when-not [cond ...]
   `(when (not ,cond) ,...))
 
+(fn inc [x] (+ x 1))
+
+(fn dec [x] (- x 1))
+
 (fn clamp [x min max]
   (if (< x min) min
       (> x max) max
       x))
-
-(fn inc [x] (+ x 1))
-
-(fn dec [x] (- x 1))
 
 
 ; Nvim utils ///1
@@ -52,7 +52,7 @@ character instead."
 (fn user-forced-autojump? []
   (or (not opts.labels) (empty? opts.labels)))
 
-(fn user-forced-no-autojump? []
+(fn user-forced-noautojump? []
   (or (not opts.safe_labels) (empty? opts.safe_labels)))
 
 
@@ -439,15 +439,15 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn set-autojump [sublist force-no-autojump?]
+(fn set-autojump [sublist force-noautojump?]
   "Set a flag indicating whether we should autojump to the first target
 if selecting `sublist` with the 2nd input character.
 Note that there is no one-to-one correspondence between this flag and
 the `label-set` field set by `attach-label-set`. No-autojump might be
 forced implicitly, regardless of using safe labels."
   (tset sublist :autojump?
-        (and (not (or force-no-autojump?
-                      (user-forced-no-autojump?)))
+        (and (not (or force-noautojump?
+                      (user-forced-noautojump?)))
              (or (user-forced-autojump?)
                  (>= (length opts.safe_labels)
                      (dec (length sublist)))))))  ; skipping the first if autojumping
@@ -458,14 +458,14 @@ forced implicitly, regardless of using safe labels."
 `sublist`. `set-autojump` should be called before this function."
   (tset sublist :label-set
         (if (user-forced-autojump?) opts.safe_labels
-            (user-forced-no-autojump?) opts.labels
+            (user-forced-noautojump?) opts.labels
             sublist.autojump? opts.safe_labels
             opts.labels)))
 
 
-(fn set-sublist-attributes [targets {: force-no-autojump?}]
+(fn set-sublist-attributes [targets {: force-noautojump?}]
   (each [_ sublist (pairs targets.sublists)]
-    (set-autojump sublist force-no-autojump?)
+    (set-autojump sublist force-noautojump?)
     (attach-label-set sublist)))
 
 
@@ -616,7 +616,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 (fn leap [{: dot-repeat? : target-windows &as kwargs}]
   "Entry point for Leap motions."
   (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
-                                                  kwargs)
+                                                   kwargs)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
@@ -631,7 +631,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-no-autojump? (or op-mode? (not directional?))
+        force-noautojump? (or op-mode? (not directional?))
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
@@ -788,7 +788,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       targets (do (doto targets
                     ; Prepare targets (set fixed attributes).
                     (populate-sublists)
-                    (set-sublist-attributes {: force-no-autojump?})
+                    (set-sublist-attributes {: force-noautojump?})
                     (set-labels))
                   (or ?in2
                       (get-second-pattern-input targets)))  ; REDRAW

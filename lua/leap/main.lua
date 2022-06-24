@@ -1,3 +1,5 @@
+local hl = require("leap.highlight")
+local opts = require("leap.opts")
 local api = vim.api
 local empty_3f = vim.tbl_isempty
 local filter = vim.tbl_filter
@@ -8,8 +10,12 @@ local ceil = _local_1_["ceil"]
 local max = _local_1_["max"]
 local min = _local_1_["min"]
 local pow = _local_1_["pow"]
-local hl = require("leap.highlight")
-local opts = require("leap.opts")
+local function inc(x)
+  return (x + 1)
+end
+local function dec(x)
+  return (x - 1)
+end
 local function clamp(x, min0, max0)
   if (x < min0) then
     return min0
@@ -18,12 +24,6 @@ local function clamp(x, min0, max0)
   else
     return x
   end
-end
-local function inc(x)
-  return (x + 1)
-end
-local function dec(x)
-  return (x - 1)
 end
 local function echo(msg)
   return api.nvim_echo({{msg}}, false, {})
@@ -52,7 +52,7 @@ end
 local function user_forced_autojump_3f()
   return (not opts.labels or empty_3f(opts.labels))
 end
-local function user_forced_no_autojump_3f()
+local function user_forced_noautojump_3f()
   return (not opts.safe_labels or empty_3f(opts.safe_labels))
 end
 local function echo_no_prev_search()
@@ -522,7 +522,7 @@ local function get_targets(pattern, _78_)
           local line = _each_87_[1]
           local col = _each_87_[2]
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
+          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
             local row = (_88_).row
             cursor_positions[winid] = {row, col}
           else
@@ -540,7 +540,7 @@ local function get_targets(pattern, _78_)
         local t = _each_92_
         if by_screen_pos_3f then
           local _95_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_95_) == "table") and ((_95_).col == col) and (nil ~= (_95_).row)) then
+          if ((_G.type(_95_) == "table") and (nil ~= (_95_).row) and ((_95_).col == col)) then
             local row = (_95_).row
             t["screenpos"] = {row, col}
           else
@@ -585,15 +585,15 @@ local function populate_sublists(targets)
   end
   return nil
 end
-local function set_autojump(sublist, force_no_autojump_3f)
-  sublist["autojump?"] = (not (force_no_autojump_3f or user_forced_no_autojump_3f()) and (user_forced_autojump_3f() or (#opts.safe_labels >= dec(#sublist))))
+local function set_autojump(sublist, force_noautojump_3f)
+  sublist["autojump?"] = (not (force_noautojump_3f or user_forced_noautojump_3f()) and (user_forced_autojump_3f() or (#opts.safe_labels >= dec(#sublist))))
   return nil
 end
 local function attach_label_set(sublist)
   local _108_
   if user_forced_autojump_3f() then
     _108_ = opts.safe_labels
-  elseif user_forced_no_autojump_3f() then
+  elseif user_forced_noautojump_3f() then
     _108_ = opts.labels
   elseif sublist["autojump?"] then
     _108_ = opts.safe_labels
@@ -605,9 +605,9 @@ local function attach_label_set(sublist)
 end
 local function set_sublist_attributes(targets, _110_)
   local _arg_111_ = _110_
-  local force_no_autojump_3f = _arg_111_["force-no-autojump?"]
+  local force_noautojump_3f = _arg_111_["force-noautojump?"]
   for _, sublist in pairs(targets.sublists) do
-    set_autojump(sublist, force_no_autojump_3f)
+    set_autojump(sublist, force_noautojump_3f)
     attach_label_set(sublist)
   end
   return nil
@@ -885,7 +885,7 @@ local function leap(_161_)
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
-  local force_no_autojump_3f = (op_mode_3f or not directional_3f)
+  local force_noautojump_3f = (op_mode_3f or not directional_3f)
   local spec_keys
   local function _170_(_, k)
     return replace_keycodes(opts.special_keys[k])
@@ -1497,7 +1497,7 @@ local function leap(_161_)
             do
               local _280_ = targets
               populate_sublists(_280_)
-              set_sublist_attributes(_280_, {["force-no-autojump?"] = force_no_autojump_3f})
+              set_sublist_attributes(_280_, {["force-noautojump?"] = force_noautojump_3f})
               set_labels(_280_)
             end
             return (_3fin2 or get_second_pattern_input(targets))

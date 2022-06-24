@@ -4,14 +4,14 @@
 (fn inc [x] (+ x 1))
 (fn dec [x] (- x 1))
 
-(local M {:group {:label-primary "LeapLabelPrimary"
+(local M {:ns (api.nvim_create_namespace "")
+          :group {:label-primary "LeapLabelPrimary"
                   :label-secondary "LeapLabelSecondary"
                   :match "LeapMatch"
                   :backdrop "LeapBackdrop"}
           :priority {:label 65535
                      :cursor 65534
-                     :backdrop 65533}
-          :ns (api.nvim_create_namespace "")})
+                     :backdrop 65533}})
 
 (fn M.cleanup [self ?target-windows]
   (when ?target-windows
@@ -42,27 +42,29 @@
                                {:priority self.priority.backdrop})))))
 
 (fn M.init-highlight [self force?]
-  (local bg vim.o.background)
-  (local def-maps
-         {self.group.match
-          {:fg (match bg :light "#222222" _ "#ccff88")
-           :ctermfg "red"
-           :underline true
-           :nocombine true}
-          self.group.label-primary
-          {:fg "black"
-           :bg (match bg :light "#ff8877" _ "#ccff88")
-           :ctermfg "black"
-           :ctermbg "red"
-           :nocombine true}
-          self.group.label-secondary
-          {:fg "black"
-           :bg (match bg :light "#77aaff" _ "#99ccff")
-           :ctermfg "black"
-           :ctermbg "blue"
-           :nocombine true}})
-  (each [name def-map (pairs def-maps)]
-    (when (not force?) (tset def-map :default true))
-    (api.nvim_set_hl 0 name def-map)))
+  (let [bg vim.o.background
+        defaults {self.group.match {:fg (match bg
+                                          :light "#222222"
+                                          _ "#ccff88")
+                                    :ctermfg "red"
+                                    :underline true
+                                    :nocombine true}
+                  self.group.label-primary {:fg "black"
+                                            :bg (match bg
+                                                  :light "#ff8877"
+                                                  _ "#ccff88")
+                                            :ctermfg "black"
+                                            :ctermbg "red"
+                                            :nocombine true}
+                  self.group.label-secondary {:fg "black"
+                                              :bg (match bg
+                                                    :light "#77aaff"
+                                                    _ "#99ccff")
+                                              :ctermfg "black"
+                                              :ctermbg "blue"
+                                              :nocombine true}}]
+    (each [group-name def-map (pairs defaults)]
+      (when (not force?) (tset def-map :default true))
+      (api.nvim_set_hl 0 group-name def-map))))
 
 M

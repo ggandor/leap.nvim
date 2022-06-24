@@ -4,11 +4,11 @@
 
 (setmetatable {}
   {:__index
-   (fn [t k]
+   (fn [_ k]
      (match k
+       :opts (require "leap.opts")
        :leap (. (require "leap.main") :leap)
        :state (. (require "leap.main") :state)
        :setup (. (require "leap.user") :setup)
-       :opts (require "leap.opts")
        :set_default_keymaps (. (require "leap.user") :set_default_keymaps)
        :init_highlight (fn [...] (: (require "leap.highlight") :init-highlight ...))))})

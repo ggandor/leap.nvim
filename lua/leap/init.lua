@@ -1,13 +1,13 @@
-local function _1_(t, k)
+local function _1_(_, k)
   local _2_ = k
-  if (_2_ == "leap") then
+  if (_2_ == "opts") then
+    return require("leap.opts")
+  elseif (_2_ == "leap") then
     return (require("leap.main")).leap
   elseif (_2_ == "state") then
     return (require("leap.main")).state
   elseif (_2_ == "setup") then
     return (require("leap.user")).setup
-  elseif (_2_ == "opts") then
-    return require("leap.opts")
   elseif (_2_ == "set_default_keymaps") then
     return (require("leap.user")).set_default_keymaps
   elseif (_2_ == "init_highlight") then

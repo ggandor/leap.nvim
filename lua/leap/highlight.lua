@@ -6,7 +6,7 @@ end
 local function dec(x)
   return (x - 1)
 end
-local M = {group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}, ns = api.nvim_create_namespace("")}
+local M = {ns = api.nvim_create_namespace(""), group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
 M.cleanup = function(self, _3ftarget_windows)
   if _3ftarget_windows then
     for _, wininfo in ipairs(_3ftarget_windows) do
@@ -50,7 +50,7 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
 end
 M["init-highlight"] = function(self, force_3f)
   local bg = vim.o.background
-  local def_maps
+  local defaults
   local _11_
   do
     local _10_ = bg
@@ -87,13 +87,13 @@ M["init-highlight"] = function(self, force_3f)
       _21_ = nil
     end
   end
-  def_maps = {[self.group.match] = {fg = _11_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _16_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _21_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
-  for name, def_map in pairs(def_maps) do
+  defaults = {[self.group.match] = {fg = _11_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _16_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _21_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
+  for group_name, def_map in pairs(defaults) do
     if not force_3f then
       def_map["default"] = true
     else
     end
-    api.nvim_set_hl(0, name, def_map)
+    api.nvim_set_hl(0, group_name, def_map)
   end
   return nil
 end
