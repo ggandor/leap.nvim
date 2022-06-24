@@ -311,21 +311,22 @@ early termination in loops."
               ; At the original cursor position (bidirectional search)?
               (and (= line orig-curline) (= col orig-curcol) skip-orig-curpos?)
               (match (skip-one!)
-                :dead-end (cleanup)  ; before EOF
+                :dead-end (cleanup)  ; = right before EOF
                 _ (iter true))
 
               ; Horizontally offscreen?
               (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
               (match (to-next-in-window-pos!
                        backward? left-bound right-bound stopline)
-                :dead-end (cleanup)  ; on the first/last line in the window
+                :dead-end (cleanup)  ; = on the first/last line in the window
                 _ (iter true))
 
               ; In a closed fold?
               (not= (vim.fn.foldclosed line) -1)
               (do (to-closed-fold-edge! backward?)
                   (match (skip-one! backward?)  ; to actually get out of the fold
-                    :dead-end (cleanup)  ; fold starts at the beginning, or reaches till EOF
+                    :dead-end (cleanup)  ; = fold starts at the beginning of the buffer,
+                                         ;   or reaches till the end
                     _ (iter true)))
 
               (do (set match-count (+ match-count 1))
@@ -528,6 +529,10 @@ should actually be displayed depends on the `label-state` flag."
                    :active-primary [[label hl.group.label-primary]]
                    :active-secondary [[label hl.group.label-secondary]]
                    :inactive (when-not opts.highlight_unlabeled
+                               ; In this case, "no highlight" should
+                               ; unambiguously signal "no further keystrokes
+                               ; needed", so it is mandatory to show all labeled
+                               ; positions in some way.
                                [[" " hl.group.label-secondary]]))]
     (tset target :beacon (when virttext [offset virttext]))))
 
