@@ -23,7 +23,7 @@
                                 (dec (vim.fn.line "w0"))
                                 (vim.fn.line "w$")))
 
-(fn M.apply-backdrop [self reverse? ?target-windows]
+(fn M.apply-backdrop [self backward? ?target-windows]
   (match (pcall api.nvim_get_hl_by_name self.group.backdrop nil)  ; group exists?
     (true _)
     (if ?target-windows
@@ -34,7 +34,7 @@
                                {:priority self.priority.backdrop}))
         (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
               [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-              [start finish] (if reverse?
+              [start finish] (if backward?
                                  [[win-top 0] [curline curcol]]
                                  [[curline (inc curcol)] [win-bot -1]])]
           ; Expects 0,0-indexed args; `finish` is exclusive.

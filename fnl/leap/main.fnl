@@ -131,7 +131,7 @@ the API), make the motion appear to behave as an inclusive one."
 
 
 (fn jump-to!* [pos {: winid : add-to-jumplist? : mode
-                    : offset : reverse? : inclusive-op?}]
+                    : offset : backward? : inclusive-op?}]
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
@@ -143,7 +143,7 @@ the API), make the motion appear to behave as an inclusive one."
   ; we need custom tweaks to behave as an inclusive one. (This is only
   ; relevant in the forward direction, as inclusiveness applies to the
   ; end of the selection.)
-  (when (and op-mode? inclusive-op? (not reverse?))
+  (when (and op-mode? inclusive-op? (not backward?))
     (simulate-inclusive-op! mode))
   (when-not op-mode? (force-matchparen-refresh)))
 
@@ -229,17 +229,17 @@ interrupted change operation."
     [left-bound right-bound]))  ; screen columns
 
 
-(fn skip-one! [reverse?]
-  (local new-line (push-cursor! (if reverse? :bwd :fwd)))
+(fn skip-one! [backward?]
+  (local new-line (push-cursor! (if backward? :bwd :fwd)))
   (when (= new-line 0) :dead-end))
 
 
 ; Assumes being in a closed fold, no checks!
-(fn to-closed-fold-edge! [reverse?]
-  (local edge-line ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
+(fn to-closed-fold-edge! [backward?]
+  (local edge-line ((if backward? vim.fn.foldclosed vim.fn.foldclosedend)
                     (vim.fn.line ".")))
   (vim.fn.cursor edge-line 0)
-  (local edge-col (if reverse? 1 (vim.fn.col "$")))
+  (local edge-col (if backward? 1 (vim.fn.col "$")))
   (vim.fn.cursor 0 edge-col))
 
 
@@ -256,28 +256,28 @@ interrupted change operation."
     (vim.cmd "norm! l")))
 
 
-(fn to-next-in-window-pos! [reverse? left-bound right-bound stopline]
+(fn to-next-in-window-pos! [backward? left-bound right-bound stopline]
   ; virtcol = like `col`, starting from the beginning of the line in the
   ; buffer, but every char counts as the #of screen columns it occupies
   ; (or would occupy), instead of the #of bytes.
   (let [[line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")]
         left-off? (< virtcol left-bound)
         right-off? (> virtcol right-bound)]
-    (match (if (and left-off? reverse?) (when (>= (dec line) stopline)
-                                          [(dec line) right-bound])
-               (and left-off? (not reverse?)) [line left-bound]
-               (and right-off? reverse?) [line right-bound]
-               (and right-off? (not reverse?)) (when (<= (inc line) stopline)
-                                                 [(inc line) left-bound]))
+    (match (if (and left-off? backward?) (when (>= (dec line) stopline)
+                                           [(dec line) right-bound])
+               (and left-off? (not backward?)) [line left-bound]
+               (and right-off? backward?) [line right-bound]
+               (and right-off? (not backward?)) (when (<= (inc line) stopline)
+                                                  [(inc line) left-bound]))
       to-pos
       (if (= from-pos to-pos) :dead-end
           (do (vim.fn.cursor to-pos)
-              (when reverse?
+              (when backward?
                 (reach-right-bound! right-bound)))))))
 
 
 (fn get-match-positions [pattern [left-bound right-bound]
-                         {: reverse? : whole-window? : skip-curpos?}]
+                         {: backward? : whole-window? : skip-curpos?}]
   "Return an iterator streaming all visible positions of `pattern` in the
 current window.
 Caveat: side-effects take place here (cursor movement, &cpo), and the
@@ -287,7 +287,7 @@ early termination in loops."
         [orig-curline orig-curcol] (get-cursor-pos)
         wintop (vim.fn.line "w0")
         winbot (vim.fn.line "w$")
-        stopline (if reverse? wintop winbot)
+        stopline (if backward? wintop winbot)
         saved-view (vim.fn.winsaveview)
         saved-cpo vim.o.cpo
         cleanup #(do (vim.fn.winrestview saved-view)
@@ -302,7 +302,7 @@ early termination in loops."
 
     (fn iter [match-at-curpos?]
       (let [match-at-curpos? (or match-at-curpos? moved-to-topleft?)
-            flags (.. (if reverse? "b" "") (if match-at-curpos? "c" ""))]
+            flags (.. (if backward? "b" "") (if match-at-curpos? "c" ""))]
         (set moved-to-topleft? false)
         (match (vim.fn.searchpos pattern flags stopline)
           [line col &as pos]
@@ -317,14 +317,14 @@ early termination in loops."
               ; Horizontally offscreen?
               (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
               (match (to-next-in-window-pos!
-                       reverse? left-bound right-bound stopline)
+                       backward? left-bound right-bound stopline)
                 :dead-end (cleanup)  ; on the first/last line in the window
                 _ (iter true))
 
               ; In a closed fold?
               (not= (vim.fn.foldclosed line) -1)
-              (do (to-closed-fold-edge! reverse?)
-                  (match (skip-one! reverse?)  ; to actually get out of the fold
+              (do (to-closed-fold-edge! backward?)
+                  (match (skip-one! backward?)  ; to actually get out of the fold
                     :dead-end (cleanup)  ; fold starts at the beginning, or reaches till EOF
                     _ (iter true)))
 
@@ -333,7 +333,7 @@ early termination in loops."
 
 
 (fn get-targets* [pattern  ; assumed to match 2 logical/multibyte chars
-                  {: reverse? : wininfo : targets : source-winid}]
+                  {: backward? : wininfo : targets : source-winid}]
   "Return a table that will store the positions and other metadata of
 all in-window pairs that match `pattern`, in the order of discovery. A
 target element in its final form has the following fields (the latter
@@ -356,7 +356,7 @@ Dynamic attributes
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
         skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
         match-positions (get-match-positions
-                          pattern bounds {: reverse? : skip-curpos? : whole-window?})]
+                          pattern bounds {: backward? : skip-curpos? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
       (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
@@ -365,7 +365,7 @@ Dynamic attributes
                          _ (values (replace-keycodes opts.special_keys.eol) true))
             same-char-triplet? (and (= ch2 prev-match.ch2)
                                     (= line prev-match.line)
-                                    (= col ((if reverse? dec inc) prev-match.col)))]
+                                    (= col ((if backward? dec inc) prev-match.col)))]
         (set prev-match {: line : col : ch2})
         (when-not same-char-triplet?
           (table.insert targets {: wininfo : pos :pair [ch1 ch2]
@@ -382,8 +382,8 @@ Dynamic attributes
     (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
 
-(fn get-targets [pattern {: reverse? : target-windows}]
-  (if (not target-windows) (get-targets* pattern {: reverse?})
+(fn get-targets [pattern {: backward? : target-windows}]
+  (if (not target-windows) (get-targets* pattern {: backward?})
       (let [targets []
             cursor-positions {}
             source-winid (vim.fn.win_getid)
@@ -610,12 +610,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil :in2 nil}
               :dot-repeat {:in1 nil :in2 nil :target-idx nil
-                           :reverse? nil :inclusive-op? nil :offset? nil}})
+                           :backward? nil :inclusive-op? nil :offset? nil}})
 
 
 (fn leap [{: dot-repeat? : target-windows &as kwargs}]
   "Entry point for Leap motions."
-  (let [{: reverse? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
+  (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                   kwargs)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
@@ -667,7 +667,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup ?target-windows)
-           (hl:apply-backdrop reverse? ?target-windows)
+           (hl:apply-backdrop backward? ?target-windows)
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
@@ -700,7 +700,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
           (set state.dot-repeat
                (vim.tbl_extend :error
                                state*.dot-repeat
-                               {: reverse? : offset : inclusive-op?})))))
+                               {: backward? : offset : inclusive-op?})))))
 
     (local jump-to!
       (do (var first-jump? true)  ; better be managed by the function itself
@@ -708,7 +708,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
             (jump-to!* target.pos
                        {:winid target.wininfo.winid
                         :add-to-jumplist? first-jump?
-                        : mode : offset : reverse? : inclusive-op?})
+                        : mode : offset : backward? : inclusive-op?})
             (set first-jump? false))))
 
     (fn traverse [targets idx {: force-no-labels?}]
@@ -783,7 +783,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                    ; This might also return in2 too, if <enter>-repeating.
                    (get-first-pattern-input))  ; REDRAW
       (in1 ?in2) (or (get-targets (prepare-pattern in1 ?in2)
-                                  {: reverse? :target-windows ?target-windows})
+                                  {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (do (doto targets
                     ; Prepare targets (set fixed attributes).

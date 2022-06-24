@@ -131,7 +131,7 @@ local function jump_to_21_2a(pos, _18_)
   local add_to_jumplist_3f = _arg_19_["add-to-jumplist?"]
   local mode = _arg_19_["mode"]
   local offset = _arg_19_["offset"]
-  local reverse_3f = _arg_19_["reverse?"]
+  local backward_3f = _arg_19_["backward?"]
   local inclusive_op_3f = _arg_19_["inclusive-op?"]
   local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
@@ -147,7 +147,7 @@ local function jump_to_21_2a(pos, _18_)
     add_offset_21(offset)
   else
   end
-  if (op_mode_3f and inclusive_op_3f and not reverse_3f) then
+  if (op_mode_3f and inclusive_op_3f and not backward_3f) then
     simulate_inclusive_op_21(mode)
   else
   end
@@ -222,10 +222,10 @@ local function get_horizontal_bounds()
   local right_bound = (right_edge - dec(match_length))
   return {left_bound, right_bound}
 end
-local function skip_one_21(reverse_3f)
+local function skip_one_21(backward_3f)
   local new_line
   local function _30_()
-    if reverse_3f then
+    if backward_3f then
       return "bwd"
     else
       return "fwd"
@@ -238,10 +238,10 @@ local function skip_one_21(reverse_3f)
     return nil
   end
 end
-local function to_closed_fold_edge_21(reverse_3f)
+local function to_closed_fold_edge_21(backward_3f)
   local edge_line
   local _32_
-  if reverse_3f then
+  if backward_3f then
     _32_ = vim.fn.foldclosed
   else
     _32_ = vim.fn.foldclosedend
@@ -249,7 +249,7 @@ local function to_closed_fold_edge_21(reverse_3f)
   edge_line = _32_(vim.fn.line("."))
   vim.fn.cursor(edge_line, 0)
   local edge_col
-  if reverse_3f then
+  if backward_3f then
     edge_col = 1
   else
     edge_col = vim.fn.col("$")
@@ -262,7 +262,7 @@ local function reach_right_bound_21(right_bound)
   end
   return nil
 end
-local function to_next_in_window_pos_21(reverse_3f, left_bound, right_bound, stopline)
+local function to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
   local _let_35_ = {vim.fn.line("."), vim.fn.virtcol(".")}
   local line = _let_35_[1]
   local virtcol = _let_35_[2]
@@ -270,17 +270,17 @@ local function to_next_in_window_pos_21(reverse_3f, left_bound, right_bound, sto
   local left_off_3f = (virtcol < left_bound)
   local right_off_3f = (virtcol > right_bound)
   local _36_
-  if (left_off_3f and reverse_3f) then
+  if (left_off_3f and backward_3f) then
     if (dec(line) >= stopline) then
       _36_ = {dec(line), right_bound}
     else
       _36_ = nil
     end
-  elseif (left_off_3f and not reverse_3f) then
+  elseif (left_off_3f and not backward_3f) then
     _36_ = {line, left_bound}
-  elseif (right_off_3f and reverse_3f) then
+  elseif (right_off_3f and backward_3f) then
     _36_ = {line, right_bound}
-  elseif (right_off_3f and not reverse_3f) then
+  elseif (right_off_3f and not backward_3f) then
     if (inc(line) <= stopline) then
       _36_ = {inc(line), left_bound}
     else
@@ -295,7 +295,7 @@ local function to_next_in_window_pos_21(reverse_3f, left_bound, right_bound, sto
       return "dead-end"
     else
       vim.fn.cursor(to_pos)
-      if reverse_3f then
+      if backward_3f then
         return reach_right_bound_21(right_bound)
       else
         return nil
@@ -310,7 +310,7 @@ local function get_match_positions(pattern, _43_, _45_)
   local left_bound = _arg_44_[1]
   local right_bound = _arg_44_[2]
   local _arg_46_ = _45_
-  local reverse_3f = _arg_46_["reverse?"]
+  local backward_3f = _arg_46_["backward?"]
   local whole_window_3f = _arg_46_["whole-window?"]
   local skip_curpos_3f = _arg_46_["skip-curpos?"]
   local skip_orig_curpos_3f = skip_curpos_3f
@@ -320,7 +320,7 @@ local function get_match_positions(pattern, _43_, _45_)
   local wintop = vim.fn.line("w0")
   local winbot = vim.fn.line("w$")
   local stopline
-  if reverse_3f then
+  if backward_3f then
     stopline = wintop
   else
     stopline = winbot
@@ -347,7 +347,7 @@ local function get_match_positions(pattern, _43_, _45_)
     local match_at_curpos_3f0 = (match_at_curpos_3f or moved_to_topleft_3f)
     local flags
     local function _51_()
-      if reverse_3f then
+      if backward_3f then
         return "b"
       else
         return ""
@@ -380,7 +380,7 @@ local function get_match_positions(pattern, _43_, _45_)
           return nil
         end
       elseif ((col < left_bound) and (col > right_bound) and not vim.wo.wrap) then
-        local _56_ = to_next_in_window_pos_21(reverse_3f, left_bound, right_bound, stopline)
+        local _56_ = to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
         if (_56_ == "dead-end") then
           return cleanup()
         elseif true then
@@ -390,8 +390,8 @@ local function get_match_positions(pattern, _43_, _45_)
           return nil
         end
       elseif (vim.fn.foldclosed(line) ~= -1) then
-        to_closed_fold_edge_21(reverse_3f)
-        local _58_ = skip_one_21(reverse_3f)
+        to_closed_fold_edge_21(backward_3f)
+        local _58_ = skip_one_21(backward_3f)
         if (_58_ == "dead-end") then
           return cleanup()
         elseif true then
@@ -412,7 +412,7 @@ local function get_match_positions(pattern, _43_, _45_)
 end
 local function get_targets_2a(pattern, _62_)
   local _arg_63_ = _62_
-  local reverse_3f = _arg_63_["reverse?"]
+  local backward_3f = _arg_63_["backward?"]
   local wininfo = _arg_63_["wininfo"]
   local targets = _arg_63_["targets"]
   local source_winid = _arg_63_["source-winid"]
@@ -424,7 +424,7 @@ local function get_targets_2a(pattern, _62_)
   local whole_window_3f = wininfo
   local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
   local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
-  local match_positions = get_match_positions(pattern, bounds, {["reverse?"] = reverse_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
+  local match_positions = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
   for _65_ in match_positions do
     local _each_66_ = _65_
@@ -447,7 +447,7 @@ local function get_targets_2a(pattern, _62_)
     end
     local same_char_triplet_3f
     local _69_
-    if reverse_3f then
+    if backward_3f then
       _69_ = dec
     else
       _69_ = inc
@@ -481,10 +481,10 @@ local function distance(_73_, _75_)
 end
 local function get_targets(pattern, _78_)
   local _arg_79_ = _78_
-  local reverse_3f = _arg_79_["reverse?"]
+  local backward_3f = _arg_79_["backward?"]
   local target_windows = _arg_79_["target-windows"]
   if not target_windows then
-    return get_targets_2a(pattern, {["reverse?"] = reverse_3f})
+    return get_targets_2a(pattern, {["backward?"] = backward_3f})
   else
     local targets = {}
     local cursor_positions = {}
@@ -522,7 +522,7 @@ local function get_targets(pattern, _78_)
           local line = _each_87_[1]
           local col = _each_87_[2]
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
+          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
             local row = (_88_).row
             cursor_positions[winid] = {row, col}
           else
@@ -540,7 +540,7 @@ local function get_targets(pattern, _78_)
         local t = _each_92_
         if by_screen_pos_3f then
           local _95_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_95_) == "table") and (nil ~= (_95_).row) and ((_95_).col == col)) then
+          if ((_G.type(_95_) == "table") and ((_95_).col == col) and (nil ~= (_95_).row)) then
             local row = (_95_).row
             t["screenpos"] = {row, col}
           else
@@ -839,7 +839,7 @@ local function light_up_beacons(target_list, _3fstart)
   end
   return nil
 end
-local state = {["repeat"] = {in1 = nil, in2 = nil}, ["dot-repeat"] = {in1 = nil, in2 = nil, ["target-idx"] = nil, ["reverse?"] = nil, ["inclusive-op?"] = nil, ["offset?"] = nil}}
+local state = {["repeat"] = {in1 = nil, in2 = nil}, ["dot-repeat"] = {in1 = nil, in2 = nil, ["target-idx"] = nil, ["backward?"] = nil, ["inclusive-op?"] = nil, ["offset?"] = nil}}
 local function leap(_161_)
   local _arg_162_ = _161_
   local dot_repeat_3f = _arg_162_["dot-repeat?"]
@@ -853,7 +853,7 @@ local function leap(_161_)
     end
   end
   local _let_163_ = _164_()
-  local reverse_3f = _let_163_["reverse?"]
+  local backward_3f = _let_163_["backward?"]
   local inclusive_op_3f = _let_163_["inclusive-op?"]
   local offset = _let_163_["offset"]
   local mode = api.nvim_get_mode().mode
@@ -934,7 +934,7 @@ local function leap(_161_)
       else
       end
       if (state_2a["dot-repeat"] and dot_repeatable_op_3f) then
-        state["dot-repeat"] = vim.tbl_extend("error", state_2a["dot-repeat"], {["reverse?"] = reverse_3f, offset = offset, ["inclusive-op?"] = inclusive_op_3f})
+        state["dot-repeat"] = vim.tbl_extend("error", state_2a["dot-repeat"], {["backward?"] = backward_3f, offset = offset, ["inclusive-op?"] = inclusive_op_3f})
         return nil
       else
         return nil
@@ -947,7 +947,7 @@ local function leap(_161_)
   do
     local first_jump_3f = true
     local function _181_(target)
-      jump_to_21_2a(target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["reverse?"] = reverse_3f, ["inclusive-op?"] = inclusive_op_3f})
+      jump_to_21_2a(target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = backward_3f, ["inclusive-op?"] = inclusive_op_3f})
       first_jump_3f = false
       return nil
     end
@@ -963,7 +963,7 @@ local function leap(_161_)
     set_beacons(targets, {["force-no-labels?"] = force_no_labels_3f})
     do
       hl:cleanup(_3ftarget_windows)
-      hl["apply-backdrop"](hl, reverse_3f, _3ftarget_windows)
+      hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
       do
         light_up_beacons(targets, inc(idx))
       end
@@ -1065,7 +1065,7 @@ local function leap(_161_)
   local function get_first_pattern_input()
     do
       hl:cleanup(_3ftarget_windows)
-      hl["apply-backdrop"](hl, reverse_3f, _3ftarget_windows)
+      hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
       do
         echo("")
       end
@@ -1133,7 +1133,7 @@ local function leap(_161_)
     end
     do
       hl:cleanup(_3ftarget_windows)
-      hl["apply-backdrop"](hl, reverse_3f, _3ftarget_windows)
+      hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
       do
         light_up_beacons(targets)
       end
@@ -1171,7 +1171,7 @@ local function leap(_161_)
       end
       do
         hl:cleanup(_3ftarget_windows)
-        hl["apply-backdrop"](hl, reverse_3f, _3ftarget_windows)
+        hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
         do
           local function _218_()
             if sublist["autojump?"] then
@@ -1531,7 +1531,7 @@ local function leap(_161_)
         exec_user_autocmds("LeapLeave")
         return nil
       end
-      return _230_((get_targets(prepare_pattern(in1, _3fin2), {["reverse?"] = reverse_3f, ["target-windows"] = _3ftarget_windows}) or _282_(...)))
+      return _230_((get_targets(prepare_pattern(in1, _3fin2), {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}) or _282_(...)))
     elseif true then
       local __60_auto = _228_
       return ...

@@ -16,7 +16,7 @@ M.cleanup = function(self, _3ftarget_windows)
   end
   return api.nvim_buf_clear_namespace(0, self.ns, dec(vim.fn.line("w0")), vim.fn.line("w$"))
 end
-M["apply-backdrop"] = function(self, reverse_3f, _3ftarget_windows)
+M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   local _2_, _3_ = pcall(api.nvim_get_hl_by_name, self.group.backdrop, nil)
   if ((_2_ == true) and true) then
     local _ = _3_
@@ -33,7 +33,7 @@ M["apply-backdrop"] = function(self, reverse_3f, _3ftarget_windows)
       local win_top = _let_5_[1]
       local win_bot = _let_5_[2]
       local function _7_()
-        if reverse_3f then
+        if backward_3f then
           return {{win_top, 0}, {curline, curcol}}
         else
           return {{curline, inc(curcol)}, {win_bot, -1}}
