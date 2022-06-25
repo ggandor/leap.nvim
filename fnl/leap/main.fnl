@@ -753,6 +753,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (with-highlight-chores (light-up-beacons targets))
       (or (get-input) (exit-early)))
 
+    (fn get-full-pattern-input []
+      (match (get-first-pattern-input)
+        (in1 in2) (values in1 in2)
+        (in1 nil) (match (get-input)
+                    in2 (values in1 in2)
+                    _ (exit-early))))
+
     (fn post-pattern-input-loop [sublist]
       (fn loop [group-offset initial-invoc?]
         (doto sublist
@@ -786,7 +793,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (exec-user-autocmds :LeapEnter)
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too, if <enter>-repeating.
-                   (get-first-pattern-input))  ; REDRAW
+                   opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
+                   (get-full-pattern-input))  ; REDRAW
       (in1 ?in2) (or (get-targets (prepare-pattern in1 ?in2)
                                   {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))

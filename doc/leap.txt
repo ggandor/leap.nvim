@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 June 23
+Last change: 2022 June 25
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -123,14 +123,21 @@ Setting multiple options via the `setup` function: >
 
 Available options~
 
-`case_sensitive = false`
+`highlight_ahead_of_time = true`
 
-    Whether to consider case in search patterns.
+    Enable two-step processing: show labels and/or highlight matches right
+    after the first input character.
 
 `highlight_unlabeled = false`
 
     Whether to highlight all unlabeled matches. (Matches covering labels will
     get highlighted anyway.)
+
+    Note: This is only relevant if `highlight_ahead_of_time` is enabled.
+
+`case_sensitive = false`
+
+    Whether to consider case in search patterns.
 
 `safe_labels` >
     {"s", "f", "n",

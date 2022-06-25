@@ -522,7 +522,7 @@ local function get_targets(pattern, _78_)
           local line = _each_87_[1]
           local col = _each_87_[2]
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
+          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
             local row = (_88_).row
             cursor_positions[winid] = {row, col}
           else
@@ -540,7 +540,7 @@ local function get_targets(pattern, _78_)
         local t = _each_92_
         if by_screen_pos_3f then
           local _95_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_95_) == "table") and (nil ~= (_95_).row) and ((_95_).col == col)) then
+          if ((_G.type(_95_) == "table") and ((_95_).col == col) and (nil ~= (_95_).row)) then
             local row = (_95_).row
             t["screenpos"] = {row, col}
           else
@@ -1162,53 +1162,92 @@ local function leap(_161_)
     end
     return (get_input() or _213_())
   end
-  local function post_pattern_input_loop(sublist)
-    local function loop(group_offset, initial_invoc_3f)
-      do
-        local _217_ = sublist
-        set_label_states(_217_, {["group-offset"] = group_offset})
-        set_beacons(_217_, {})
-      end
-      do
-        hl:cleanup(_3ftarget_windows)
-        hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
-        do
-          local function _218_()
-            if sublist["autojump?"] then
-              return 2
-            else
-              return nil
-            end
-          end
-          light_up_beacons(sublist, _218_())
-        end
-        highlight_cursor()
-        vim.cmd("redraw")
-      end
-      local _219_
-      local function _220_()
+  local function get_full_pattern_input()
+    local _217_, _218_ = get_first_pattern_input()
+    if ((nil ~= _217_) and (nil ~= _218_)) then
+      local in1 = _217_
+      local in2 = _218_
+      return in1, in2
+    elseif ((nil ~= _217_) and (_218_ == nil)) then
+      local in1 = _217_
+      local _219_ = get_input()
+      if (nil ~= _219_) then
+        local in2 = _219_
+        return in1, in2
+      elseif true then
+        local _ = _219_
         if change_op_3f then
           handle_interrupted_change_op_21()
         else
         end
         do
         end
-        local function _223_()
+        local function _222_()
           if _3ftarget_windows then
-            local _222_ = _3ftarget_windows
-            table.insert(_222_, source_window)
-            return _222_
+            local _221_ = _3ftarget_windows
+            table.insert(_221_, source_window)
+            return _221_
           else
             return nil
           end
         end
-        hl:cleanup(_223_())
+        hl:cleanup(_222_())
+        exec_user_autocmds("LeapLeave")
+        return nil
+      else
+        return nil
+      end
+    else
+      return nil
+    end
+  end
+  local function post_pattern_input_loop(sublist)
+    local function loop(group_offset, initial_invoc_3f)
+      do
+        local _225_ = sublist
+        set_label_states(_225_, {["group-offset"] = group_offset})
+        set_beacons(_225_, {})
+      end
+      do
+        hl:cleanup(_3ftarget_windows)
+        hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
+        do
+          local function _226_()
+            if sublist["autojump?"] then
+              return 2
+            else
+              return nil
+            end
+          end
+          light_up_beacons(sublist, _226_())
+        end
+        highlight_cursor()
+        vim.cmd("redraw")
+      end
+      local _227_
+      local function _228_()
+        if change_op_3f then
+          handle_interrupted_change_op_21()
+        else
+        end
+        do
+        end
+        local function _231_()
+          if _3ftarget_windows then
+            local _230_ = _3ftarget_windows
+            table.insert(_230_, source_window)
+            return _230_
+          else
+            return nil
+          end
+        end
+        hl:cleanup(_231_())
         exec_user_autocmds("LeapLeave")
         return nil
       end
-      _219_ = (get_input() or _220_())
-      if (nil ~= _219_) then
-        local input = _219_
+      _227_ = (get_input() or _228_())
+      if (nil ~= _227_) then
+        local input = _227_
         if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not initial_invoc_3f)) and (not sublist["autojump?"] or user_forced_autojump_3f())) then
           local _7cgroups_7c = ceil((#sublist / #sublist["label-set"]))
           local max_offset = dec(_7cgroups_7c)
@@ -1230,23 +1269,23 @@ local function leap(_161_)
     return loop(0, true)
   end
   exec_user_autocmds("LeapEnter")
-  local function _227_(...)
-    local _228_, _229_ = ...
-    if ((nil ~= _228_) and true) then
-      local in1 = _228_
-      local _3fin2 = _229_
-      local function _230_(...)
-        local _231_ = ...
-        if (nil ~= _231_) then
-          local targets = _231_
-          local function _232_(...)
-            local _233_ = ...
-            if (nil ~= _233_) then
-              local in2 = _233_
+  local function _235_(...)
+    local _236_, _237_ = ...
+    if ((nil ~= _236_) and true) then
+      local in1 = _236_
+      local _3fin2 = _237_
+      local function _238_(...)
+        local _239_ = ...
+        if (nil ~= _239_) then
+          local targets = _239_
+          local function _240_(...)
+            local _241_ = ...
+            if (nil ~= _241_) then
+              local in2 = _241_
               if dot_repeat_3f then
-                local _234_ = targets[state["dot-repeat"]["target-idx"]]
-                if (nil ~= _234_) then
-                  local target = _234_
+                local _242_ = targets[state["dot-repeat"]["target-idx"]]
+                if (nil ~= _242_) then
+                  local target = _242_
                   if dot_repeatable_op_3f then
                     set_dot_repeat()
                   else
@@ -1254,36 +1293,36 @@ local function leap(_161_)
                   do
                     jump_to_21(target)
                   end
-                  local function _237_(...)
+                  local function _245_(...)
                     if _3ftarget_windows then
-                      local _236_ = _3ftarget_windows
-                      table.insert(_236_, source_window)
-                      return _236_
+                      local _244_ = _3ftarget_windows
+                      table.insert(_244_, source_window)
+                      return _244_
                     else
                       return nil
                     end
                   end
-                  hl:cleanup(_237_(...))
+                  hl:cleanup(_245_(...))
                   exec_user_autocmds("LeapLeave")
                   return nil
                 elseif true then
-                  local _ = _234_
+                  local _ = _242_
                   if change_op_3f then
                     handle_interrupted_change_op_21()
                   else
                   end
                   do
                   end
-                  local function _240_(...)
+                  local function _248_(...)
                     if _3ftarget_windows then
-                      local _239_ = _3ftarget_windows
-                      table.insert(_239_, source_window)
-                      return _239_
+                      local _247_ = _3ftarget_windows
+                      table.insert(_247_, source_window)
+                      return _247_
                     else
                       return nil
                     end
                   end
-                  hl:cleanup(_240_(...))
+                  hl:cleanup(_248_(...))
                   exec_user_autocmds("LeapLeave")
                   return nil
                 else
@@ -1301,16 +1340,16 @@ local function leap(_161_)
                   do
                     update_state({["dot-repeat"] = {in1 = in1, in2 = in20, ["target-idx"] = 1}})
                   end
-                  local function _244_(...)
+                  local function _252_(...)
                     if _3ftarget_windows then
-                      local _243_ = _3ftarget_windows
-                      table.insert(_243_, source_window)
-                      return _243_
+                      local _251_ = _3ftarget_windows
+                      table.insert(_251_, source_window)
+                      return _251_
                     else
                       return nil
                     end
                   end
-                  hl:cleanup(_244_(...))
+                  hl:cleanup(_252_(...))
                   exec_user_autocmds("LeapLeave")
                   return nil
                 else
@@ -1319,12 +1358,12 @@ local function leap(_161_)
               else
                 update_state({["repeat"] = {in1 = in1, in2 = in2}})
                 local update_dot_repeat_state
-                local function _246_(_241)
+                local function _254_(_241)
                   return update_state({["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = _241}})
                 end
-                update_dot_repeat_state = _246_
-                local _247_
-                local function _248_(...)
+                update_dot_repeat_state = _254_
+                local _255_
+                local function _256_(...)
                   if change_op_3f then
                     handle_interrupted_change_op_21()
                   else
@@ -1332,22 +1371,22 @@ local function leap(_161_)
                   do
                     echo_not_found((in1 .. in2))
                   end
-                  local function _251_(...)
+                  local function _259_(...)
                     if _3ftarget_windows then
-                      local _250_ = _3ftarget_windows
-                      table.insert(_250_, source_window)
-                      return _250_
+                      local _258_ = _3ftarget_windows
+                      table.insert(_258_, source_window)
+                      return _258_
                     else
                       return nil
                     end
                   end
-                  hl:cleanup(_251_(...))
+                  hl:cleanup(_259_(...))
                   exec_user_autocmds("LeapLeave")
                   return nil
                 end
-                _247_ = (targets.sublists[in2] or _248_(...))
-                if ((_G.type(_247_) == "table") and (nil ~= (_247_)[1]) and ((_247_)[2] == nil)) then
-                  local only = (_247_)[1]
+                _255_ = (targets.sublists[in2] or _256_(...))
+                if ((_G.type(_255_) == "table") and (nil ~= (_255_)[1]) and ((_255_)[2] == nil)) then
+                  local only = (_255_)[1]
                   if dot_repeatable_op_3f then
                     set_dot_repeat()
                   else
@@ -1356,27 +1395,27 @@ local function leap(_161_)
                     update_dot_repeat_state(1)
                     jump_to_21(only)
                   end
-                  local function _254_(...)
+                  local function _262_(...)
                     if _3ftarget_windows then
-                      local _253_ = _3ftarget_windows
-                      table.insert(_253_, source_window)
-                      return _253_
+                      local _261_ = _3ftarget_windows
+                      table.insert(_261_, source_window)
+                      return _261_
                     else
                       return nil
                     end
                   end
-                  hl:cleanup(_254_(...))
+                  hl:cleanup(_262_(...))
                   exec_user_autocmds("LeapLeave")
                   return nil
-                elseif (nil ~= _247_) then
-                  local sublist = _247_
+                elseif (nil ~= _255_) then
+                  local sublist = _255_
                   if sublist["autojump?"] then
                     jump_to_21(sublist[1])
                   else
                   end
-                  local _256_ = post_pattern_input_loop(sublist)
-                  if (nil ~= _256_) then
-                    local in_final = _256_
+                  local _264_ = post_pattern_input_loop(sublist)
+                  if (nil ~= _264_) then
+                    local in_final = _264_
                     if (directional_3f and (in_final == spec_keys.next_match)) then
                       local new_idx
                       if sublist["autojump?"] then
@@ -1393,26 +1432,26 @@ local function leap(_161_)
                         do
                           update_dot_repeat_state(1)
                         end
-                        local function _260_(...)
+                        local function _268_(...)
                           if _3ftarget_windows then
-                            local _259_ = _3ftarget_windows
-                            table.insert(_259_, source_window)
-                            return _259_
+                            local _267_ = _3ftarget_windows
+                            table.insert(_267_, source_window)
+                            return _267_
                           else
                             return nil
                           end
                         end
-                        hl:cleanup(_260_(...))
+                        hl:cleanup(_268_(...))
                         exec_user_autocmds("LeapLeave")
                         return nil
                       else
                         return traverse(sublist, new_idx, {["force-no-labels?"] = not sublist["autojump?"]})
                       end
                     else
-                      local _262_ = get_target_with_active_primary_label(sublist, in_final)
-                      if ((_G.type(_262_) == "table") and (nil ~= (_262_)[1]) and (nil ~= (_262_)[2])) then
-                        local idx = (_262_)[1]
-                        local target = (_262_)[2]
+                      local _270_ = get_target_with_active_primary_label(sublist, in_final)
+                      if ((_G.type(_270_) == "table") and (nil ~= (_270_)[1]) and (nil ~= (_270_)[2])) then
+                        local idx = (_270_)[1]
+                        local target = (_270_)[2]
                         if dot_repeatable_op_3f then
                           set_dot_repeat()
                         else
@@ -1421,20 +1460,20 @@ local function leap(_161_)
                           update_dot_repeat_state(idx)
                           jump_to_21(target)
                         end
-                        local function _265_(...)
+                        local function _273_(...)
                           if _3ftarget_windows then
-                            local _264_ = _3ftarget_windows
-                            table.insert(_264_, source_window)
-                            return _264_
+                            local _272_ = _3ftarget_windows
+                            table.insert(_272_, source_window)
+                            return _272_
                           else
                             return nil
                           end
                         end
-                        hl:cleanup(_265_(...))
+                        hl:cleanup(_273_(...))
                         exec_user_autocmds("LeapLeave")
                         return nil
                       elseif true then
-                        local _ = _262_
+                        local _ = _270_
                         if sublist["autojump?"] then
                           if dot_repeatable_op_3f then
                             set_dot_repeat()
@@ -1443,16 +1482,16 @@ local function leap(_161_)
                           do
                             vim.fn.feedkeys(in_final, "i")
                           end
-                          local function _268_(...)
+                          local function _276_(...)
                             if _3ftarget_windows then
-                              local _267_ = _3ftarget_windows
-                              table.insert(_267_, source_window)
-                              return _267_
+                              local _275_ = _3ftarget_windows
+                              table.insert(_275_, source_window)
+                              return _275_
                             else
                               return nil
                             end
                           end
-                          hl:cleanup(_268_(...))
+                          hl:cleanup(_276_(...))
                           exec_user_autocmds("LeapLeave")
                           return nil
                         else
@@ -1462,16 +1501,16 @@ local function leap(_161_)
                           end
                           do
                           end
-                          local function _271_(...)
+                          local function _279_(...)
                             if _3ftarget_windows then
-                              local _270_ = _3ftarget_windows
-                              table.insert(_270_, source_window)
-                              return _270_
+                              local _278_ = _3ftarget_windows
+                              table.insert(_278_, source_window)
+                              return _278_
                             else
                               return nil
                             end
                           end
-                          hl:cleanup(_271_(...))
+                          hl:cleanup(_279_(...))
                           exec_user_autocmds("LeapLeave")
                           return nil
                         end
@@ -1487,30 +1526,30 @@ local function leap(_161_)
                 end
               end
             elseif true then
-              local __60_auto = _233_
+              local __60_auto = _241_
               return ...
             else
               return nil
             end
           end
-          local function _279_(...)
+          local function _287_(...)
             do
-              local _280_ = targets
-              populate_sublists(_280_)
-              set_sublist_attributes(_280_, {["force-noautojump?"] = force_noautojump_3f})
-              set_labels(_280_)
+              local _288_ = targets
+              populate_sublists(_288_)
+              set_sublist_attributes(_288_, {["force-noautojump?"] = force_noautojump_3f})
+              set_labels(_288_)
             end
             return (_3fin2 or get_second_pattern_input(targets))
           end
-          return _232_(_279_(...))
+          return _240_(_287_(...))
         elseif true then
-          local __60_auto = _231_
+          local __60_auto = _239_
           return ...
         else
           return nil
         end
       end
-      local function _282_(...)
+      local function _290_(...)
         if change_op_3f then
           handle_interrupted_change_op_21()
         else
@@ -1518,54 +1557,56 @@ local function leap(_161_)
         do
           echo_not_found((in1 .. (_3fin2 or "")))
         end
-        local function _285_(...)
+        local function _293_(...)
           if _3ftarget_windows then
-            local _284_ = _3ftarget_windows
-            table.insert(_284_, source_window)
-            return _284_
+            local _292_ = _3ftarget_windows
+            table.insert(_292_, source_window)
+            return _292_
           else
             return nil
           end
         end
-        hl:cleanup(_285_(...))
+        hl:cleanup(_293_(...))
         exec_user_autocmds("LeapLeave")
         return nil
       end
-      return _230_((get_targets(prepare_pattern(in1, _3fin2), {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}) or _282_(...)))
+      return _238_((get_targets(prepare_pattern(in1, _3fin2), {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}) or _290_(...)))
     elseif true then
-      local __60_auto = _228_
+      local __60_auto = _236_
       return ...
     else
       return nil
     end
   end
-  local function _287_()
+  local function _295_()
     if dot_repeat_3f then
       return state["dot-repeat"].in1, state["dot-repeat"].in2
-    else
+    elseif opts.highlight_ahead_of_time then
       return get_first_pattern_input()
+    else
+      return get_full_pattern_input()
     end
   end
-  return _227_(_287_())
+  return _235_(_295_())
 end
 local temporary_editor_opts = {["vim.bo.modeline"] = false}
 local saved_editor_opts = {}
 local function save_editor_opts()
   for opt, _ in pairs(temporary_editor_opts) do
-    local _let_288_ = vim.split(opt, ".", true)
-    local _0 = _let_288_[1]
-    local scope = _let_288_[2]
-    local name = _let_288_[3]
+    local _let_296_ = vim.split(opt, ".", true)
+    local _0 = _let_296_[1]
+    local scope = _let_296_[2]
+    local name = _let_296_[3]
     saved_editor_opts[opt] = _G.vim[scope][name]
   end
   return nil
 end
 local function set_editor_opts(opts0)
   for opt, val in pairs(opts0) do
-    local _let_289_ = vim.split(opt, ".", true)
-    local _ = _let_289_[1]
-    local scope = _let_289_[2]
-    local name = _let_289_[3]
+    local _let_297_ = vim.split(opt, ".", true)
+    local _ = _let_297_[1]
+    local scope = _let_297_[2]
+    local name = _let_297_[3]
     _G.vim[scope][name] = val
   end
   return nil
@@ -1578,14 +1619,14 @@ local function restore_editor_opts()
 end
 hl["init-highlight"](hl)
 api.nvim_create_augroup("LeapDefault", {})
-local function _290_()
+local function _298_()
   return hl["init-highlight"](hl)
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _290_, group = "LeapDefault"})
-local function _291_()
+api.nvim_create_autocmd("ColorScheme", {callback = _298_, group = "LeapDefault"})
+local function _299_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _291_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _299_, group = "LeapDefault"})
 api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = restore_editor_opts, group = "LeapDefault"})
 return {state = state, leap = leap}

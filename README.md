@@ -206,8 +206,9 @@ with the defaults.
 
 ```Lua
 require('leap').setup {
-  case_sensitive = false,
+  highlight_ahead_of_time = true,
   highlight_unlabeled = false,
+  case_sensitive = false,
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
