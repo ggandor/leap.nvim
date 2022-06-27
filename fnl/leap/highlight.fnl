@@ -1,8 +1,6 @@
 (local api vim.api)
 (local map vim.tbl_map)
-
-(fn inc [x] (+ x 1))
-(fn dec [x] (- x 1))
+(local {: inc : dec} (require "leap.util"))
 
 (local M {:ns (api.nvim_create_namespace "")
           :group {:label-primary "LeapLabelPrimary"

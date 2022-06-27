@@ -2,10 +2,11 @@
 
 (local hl (require "leap.highlight"))
 (local opts (require "leap.opts"))
+(local util (require "leap.util"))
+(local {: inc : dec : clamp} util)
 
 (local api vim.api)
 (local empty? vim.tbl_isempty)
-(local filter vim.tbl_filter)
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
 
@@ -14,15 +15,6 @@
 
 (macro when-not [cond ...]
   `(when (not ,cond) ,...))
-
-(fn inc [x] (+ x 1))
-
-(fn dec [x] (- x 1))
-
-(fn clamp [x min max]
-  (if (< x min) min
-      (> x max) max
-      x))
 
 
 ; Nvim utils ///1
@@ -35,16 +27,6 @@
 
 (fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
-
-(fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
-  "Get character at the given position in a multibyte-aware manner.
-An optional offset argument can be given to get the nth-next screen
-character instead."
-  (let [line-str (vim.fn.getline line)
-        char-idx (vim.fn.charidx line-str (dec byte-col))  ; expects 0-indexed col
-        char-nr (vim.fn.strgetchar line-str (+ char-idx (or char-offset 0)))]
-    (when (not= char-nr -1)
-      (vim.fn.nr2char char-nr))))
 
 
 ; Utils ///1
@@ -155,7 +137,7 @@ the API), make the motion appear to behave as an inclusive one."
 so we set a temporary highlight on it to see where we are."
   (let [[line col &as pos] (or ?pos (get-cursor-pos))
         ; nil means the cursor is on an empty line.
-        ch-at-curpos (or (char-at-pos pos {}) " ")]  ; char-at-pos needs 1,1-idx
+        ch-at-curpos (or (util.get-char-at pos {}) " ")]  ; get-char-at needs 1,1-idx
     ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
     (api.nvim_buf_set_extmark 0 hl.ns (dec line) (dec col)
                               {:virt_text [[ch-at-curpos :Cursor]]
@@ -203,18 +185,6 @@ interrupted change operation."
 
 
 ; Getting targets ///1
-
-(fn get-other-windows-on-tabpage [mode]
-  (let [wins (api.nvim_tabpage_list_wins 0)
-        curr-win (api.nvim_get_current_win)
-        curr-buf (api.nvim_get_current_buf)
-        visual|op-mode? (not= mode :n)]
-    (filter #(and (. (api.nvim_win_get_config $) :focusable)
-                  (not= $ curr-win)
-                  (not (and visual|op-mode?  ; no sense in buffer switching then
-                            (not= (api.nvim_win_get_buf $) curr-buf))))
-            wins)))
-
 
 (fn get-horizontal-bounds []
   (let [match-length 2  ; screen columns
@@ -360,8 +330,8 @@ Dynamic attributes
                           pattern bounds {: backward? : skip-curpos? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
-      (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
-            (ch2 eol?) (match (char-at-pos pos {:char-offset 1})
+      (let [ch1 (util.get-char-at pos {})  ; not necessarily = `input` (if case-insensitive)
+            (ch2 eol?) (match (util.get-char-at pos {:char-offset +1})
                          char char
                          _ (values (replace-keycodes opts.special_keys.eol) true))
             same-char-triplet? (and (= ch2 prev-match.ch2)
@@ -627,7 +597,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         mode (. (api.nvim_get_mode) :mode)
         ?target-windows (-?>> (match target-windows
                                 [&as t] t
-                                true (get-other-windows-on-tabpage mode))
+                                true (util.get_enterable_windows))
                               (map #(. (vim.fn.getwininfo $) 1)))
         source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         directional? (not ?target-windows)
