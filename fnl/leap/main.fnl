@@ -592,13 +592,17 @@ B: Two labels occupy the same position (this can occur at EOL or window
   "Entry point for Leap motions."
   (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                    kwargs)
+        directional? (not target-windows)
+        ->wininfo #(. (vim.fn.getwininfo $) 1)
+        ?target-windows (-?>> target-windows (map ->wininfo))
+        current-window (->wininfo (vim.fn.win_getid))
+        hl-affected-windows (let [t [current-window]]  ; cursor is always highlighted
+                              (each [_ w (ipairs (or ?target-windows []))]
+                                (table.insert t w))
+                              t)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
-        ?target-windows (-?>> target-windows
-                              (map #(. (vim.fn.getwininfo $) 1)))
-        source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
-        directional? (not ?target-windows)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
@@ -622,9 +626,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       `(do (do ,...)
            ; Quick fix: make sure to clean the source window too,
            ; when jumping to another window.
-           (hl:cleanup (when ?target-windows
-                         (doto ?target-windows
-                           (table.insert source-window))))
+           (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
            nil))
 
@@ -639,7 +641,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (exit* ,...)))
 
     (macro with-highlight-chores [...]
-      `(do (hl:cleanup ?target-windows)
+      `(do (hl:cleanup hl-affected-windows)
            (hl:apply-backdrop backward? ?target-windows)
            (do ,...)
            (highlight-cursor)
