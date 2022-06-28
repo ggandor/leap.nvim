@@ -595,9 +595,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
-        ?target-windows (-?>> (match target-windows
-                                [&as t] t
-                                true (util.get_enterable_windows))
+        ?target-windows (-?>> target-windows
                               (map #(. (vim.fn.getwininfo $) 1)))
         source-window (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         directional? (not ?target-windows)

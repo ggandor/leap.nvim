@@ -12,7 +12,9 @@ local plug_mappings = {
     require'leap'.leap { offset = 2, ['backward?'] = true }
   end,
   ['<Plug>(leap-cross-window)'] = function()
-    require'leap'.leap { ['target-windows'] = true }
+    require'leap'.leap {
+      ['target-windows'] = require'leap.util'.get_enterable_windows()
+    }
   end,
 }
 
