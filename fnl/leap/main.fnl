@@ -184,10 +184,18 @@ interrupted change operation."
 
 (fn get-input-by-keymap []
   (var input (get-input))
-  (when (= vim.bo.iminsert 1) ; keymap is enabled
-    (let [converted (vim.fn.mapcheck input :l)]
-      (when (> (length converted) 0) ; keymap can return an empty string
-        (set input converted))))
+  (when (and (not= input nil) (= vim.bo.iminsert 1)) ; keymap is enabled
+    (var has-chars? true)
+    (while (and has-chars? (<= (length input) 4)) ; maximum number of bytes per character in UTF-8
+      (local partial-keymap (vim.fn.mapcheck input :l))
+      (local full-keymap (vim.fn.maparg input :l))
+      (set has-chars? false)
+      (when (not= partial-keymap "") ; mapcheck isn't invalid
+        (if (= full-keymap partial-keymap) (set input full-keymap)
+            (let [c (get-input)]
+              (when (not= c nil)
+                (set has-chars? true)
+                (set input (.. input c))))))))
   input)
 
 
