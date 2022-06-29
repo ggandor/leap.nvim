@@ -166,21 +166,23 @@ interrupted change operation."
 
 ; :help mbyte-keymap
 (fn get-input-by-keymap []
-  (var input (get-input))
-  (when (and input (= vim.bo.iminsert 1))  ; keymap is enabled
-    (var loop? true)
-    ; Arbitrary limit on the allowed length of the keymap LHS (supposed
-    ; to be ASCII, so it is also == |max. logical user inputs|).
-    (while (and loop? (< (length input) 3))
-      (set loop? false)
-      (let [rhs-candidate (vim.fn.mapcheck input :l)
-            rhs (vim.fn.maparg input :l)]
-        (when (not= rhs-candidate "")
-          (if (= rhs rhs-candidate) (set input rhs)
-              (match (get-input)
-                ch (do (set loop? true)
-                       (set input (.. input ch)))))))))
-  input)
+  (local <cr> (replace-keycodes "<cr>"))
+
+  (fn loop [seq]
+    ; Arbitrary limit on the allowed length of the LHS sequence
+    ; (supposed to be ASCII, so it is also == |logical user inputs|).
+    (when (and seq (<= (length seq) 4))
+      (let [rhs-candidate (vim.fn.mapcheck seq :l)
+            rhs (vim.fn.maparg seq :l)]
+        (if (= rhs-candidate "") seq
+            (= rhs rhs-candidate) rhs
+            (match (get-input)
+              ; <enter> can accept the RHS for the current sequence
+              <cr> (if (not= rhs "") rhs seq)
+              ch (loop (.. seq ch)))))))
+
+  (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
+      (loop (get-input))))
 
 
 ; repeat.vim support
