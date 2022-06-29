@@ -164,20 +164,22 @@ interrupted change operation."
   (when (and ok? (not= ch (replace-keycodes "<esc>"))) ch))
 
 
+; :help mbyte-keymap
 (fn get-input-by-keymap []
   (var input (get-input))
-  (when (and (not= input nil) (= vim.bo.iminsert 1)) ; keymap is enabled
-    (var has-chars? true)
-    (while (and has-chars? (<= (length input) 4)) ; maximum number of bytes per character in UTF-8
-      (local partial-keymap (vim.fn.mapcheck input :l))
-      (local full-keymap (vim.fn.maparg input :l))
-      (set has-chars? false)
-      (when (not= partial-keymap "") ; mapcheck isn't invalid
-        (if (= full-keymap partial-keymap) (set input full-keymap)
-            (let [c (get-input)]
-              (when (not= c nil)
-                (set has-chars? true)
-                (set input (.. input c))))))))
+  (when (and input (= vim.bo.iminsert 1))  ; keymap is enabled
+    (var loop? true)
+    ; Arbitrary limit on the allowed length of the keymap LHS (supposed
+    ; to be ASCII, so it is also == |max. logical user inputs|).
+    (while (and loop? (< (length input) 3))
+      (set loop? false)
+      (let [rhs-candidate (vim.fn.mapcheck input :l)
+            rhs (vim.fn.maparg input :l)]
+        (when (not= rhs-candidate "")
+          (if (= rhs rhs-candidate) (set input rhs)
+              (match (get-input)
+                ch (do (set loop? true)
+                       (set input (.. input ch)))))))))
   input)
 
 
