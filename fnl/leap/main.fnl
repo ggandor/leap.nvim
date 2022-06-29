@@ -709,7 +709,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (when force-no-labels? (inactivate-labels targets))
       (set-beacons targets {: force-no-labels?})
       (with-highlight-chores (light-up-beacons targets (inc idx)))
-      (match (or (get-input-by-keymap) (exit))
+      (match (or (get-input) (exit))
         input
         (if (or (= input spec-keys.next_match) (= input spec-keys.prev_match))
             (let [new-idx (match input

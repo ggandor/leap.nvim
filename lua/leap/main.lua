@@ -513,7 +513,7 @@ local function get_targets(pattern, _77_)
           local line = _each_86_[1]
           local col = _each_86_[2]
           local _87_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_87_) == "table") and (nil ~= (_87_).row) and ((_87_).col == col)) then
+          if ((_G.type(_87_) == "table") and ((_87_).col == col) and (nil ~= (_87_).row)) then
             local row = (_87_).row
             cursor_positions[winid] = {row, col}
           else
@@ -531,7 +531,7 @@ local function get_targets(pattern, _77_)
         local t = _each_91_
         if by_screen_pos_3f then
           local _94_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_94_) == "table") and (nil ~= (_94_).row) and ((_94_).col == col)) then
+          if ((_G.type(_94_) == "table") and ((_94_).col == col) and (nil ~= (_94_).row)) then
             local row = (_94_).row
             t["screenpos"] = {row, col}
           else
@@ -972,7 +972,7 @@ local function leap(_160_)
       exec_user_autocmds("LeapLeave")
       return nil
     end
-    _182_ = (get_input_by_keymap() or _183_())
+    _182_ = (get_input() or _183_())
     if (nil ~= _182_) then
       local input = _182_
       if ((input == spec_keys.next_match) or (input == spec_keys.prev_match)) then
