@@ -1,8 +1,6 @@
 (local api vim.api)
 (local map vim.tbl_map)
-
-(fn inc [x] (+ x 1))
-(fn dec [x] (- x 1))
+(local {: inc : dec} (require "leap.util"))
 
 (local M {:ns (api.nvim_create_namespace "")
           :group {:label-primary "LeapLabelPrimary"
@@ -13,12 +11,11 @@
                      :cursor 65534
                      :backdrop 65533}})
 
-(fn M.cleanup [self ?target-windows]
-  (when ?target-windows
-    (each [_ wininfo (ipairs ?target-windows)]
-      (api.nvim_buf_clear_namespace
-        wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
-  ; We need to clean up the cursor highlight in the current window anyway.
+(fn M.cleanup [self affected-windows]
+  (each [_ wininfo (ipairs affected-windows)]
+    (api.nvim_buf_clear_namespace
+      wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline))
+  ; Safety measure for scrolloff > 0: we always clean up the current view too.
   (api.nvim_buf_clear_namespace 0 self.ns
                                 (dec (vim.fn.line "w0"))
                                 (vim.fn.line "w$")))

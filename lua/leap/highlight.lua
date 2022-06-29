@@ -1,18 +1,12 @@
 local api = vim.api
 local map = vim.tbl_map
-local function inc(x)
-  return (x + 1)
-end
-local function dec(x)
-  return (x - 1)
-end
+local _local_1_ = require("leap.util")
+local inc = _local_1_["inc"]
+local dec = _local_1_["dec"]
 local M = {ns = api.nvim_create_namespace(""), group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
-M.cleanup = function(self, _3ftarget_windows)
-  if _3ftarget_windows then
-    for _, wininfo in ipairs(_3ftarget_windows) do
-      api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
-    end
-  else
+M.cleanup = function(self, affected_windows)
+  for _, wininfo in ipairs(affected_windows) do
+    api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
   end
   return api.nvim_buf_clear_namespace(0, self.ns, dec(vim.fn.line("w0")), vim.fn.line("w$"))
 end
