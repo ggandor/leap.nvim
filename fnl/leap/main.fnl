@@ -164,6 +164,25 @@ interrupted change operation."
   (when (and ok? (not= ch (replace-keycodes "<esc>"))) ch))
 
 
+; :help mbyte-keymap
+(fn get-input-by-keymap []
+  (var input (get-input))
+  (when (and input (= vim.bo.iminsert 1))  ; keymap is enabled
+    (var loop? true)
+    ; Arbitrary limit on the allowed length of the keymap LHS (supposed
+    ; to be ASCII, so it is also == |max. logical user inputs|).
+    (while (and loop? (< (length input) 3))
+      (set loop? false)
+      (let [rhs-candidate (vim.fn.mapcheck input :l)
+            rhs (vim.fn.maparg input :l)]
+        (when (not= rhs-candidate "")
+          (if (= rhs rhs-candidate) (set input rhs)
+              (match (get-input)
+                ch (do (set loop? true)
+                       (set input (.. input ch)))))))))
+  input)
+
+
 ; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
@@ -708,7 +727,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
-      (match (or (get-input) (exit-early))
+      (match (or (get-input-by-keymap) (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
         spec-keys.repeat_search (if state.repeat.in1
@@ -721,12 +740,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (set-initial-label-states)
         (set-beacons {}))
       (with-highlight-chores (light-up-beacons targets))
-      (or (get-input) (exit-early)))
+      (or (get-input-by-keymap) (exit-early)))
 
     (fn get-full-pattern-input []
       (match (get-first-pattern-input)
         (in1 in2) (values in1 in2)
-        (in1 nil) (match (get-input)
+        (in1 nil) (match (get-input-by-keymap)
                     in2 (values in1 in2)
                     _ (exit-early))))
 
