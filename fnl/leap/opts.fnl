@@ -1,6 +1,7 @@
 {:highlight_ahead_of_time true
  :highlight_unlabeled false
  :case_sensitive false
+ :character_classes []
  :safe_labels ["s" "f" "n"
                "u" "t"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"]

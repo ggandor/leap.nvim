@@ -351,18 +351,19 @@ Dynamic attributes
                           pattern bounds {: backward? : skip-curpos? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
-      (let [ch1 (util.get-char-at pos {})  ; not necessarily = `input` (if case-insensitive)
-            (ch2 eol?) (match (util.get-char-at pos {:char-offset +1})
-                         char char
-                         _ (values (replace-keycodes opts.special_keys.eol) true))
-            same-char-triplet? (and (= ch2 prev-match.ch2)
-                                    (= line prev-match.line)
-                                    (= col ((if backward? dec inc) prev-match.col)))]
-        (set prev-match {: line : col : ch2})
-        (when-not same-char-triplet?
-          (table.insert targets {: wininfo : pos :pair [ch1 ch2]
-                                 ; TODO: `right-bound` = virtcol, but `col` = byte col!
-                                 :edge-pos? (or eol? (= col right-bound))}))))
+      (match (util.get-char-at pos {})  ; EOL might fail (make this future-proof)
+        ch1  ; not necessarily = `input` (if case-insensitive or input mapping)
+        (let [(ch2 eol?) (match (util.get-char-at pos {:char-offset +1})
+                           char char
+                           _ (values (replace-keycodes opts.special_keys.eol) true))
+              same-char-triplet? (and (= ch2 prev-match.ch2)
+                                      (= line prev-match.line)
+                                      (= col ((if backward? dec inc) prev-match.col)))]
+          (set prev-match {: line : col : ch2})
+          (when-not same-char-triplet?
+            (table.insert targets {: wininfo : pos :pair [ch1 ch2]
+                                   ; TODO: `right-bound` = virtcol, but `col` = byte col!
+                                   :edge-pos? (or eol? (= col right-bound))})))))
     (when (next targets)
       targets)))
 
@@ -420,11 +421,22 @@ Dynamic attributes
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
 char separately."
-  (tset targets :sublists {})
-  (when-not opts.case_sensitive
-    (setmetatable targets.sublists
-                  {:__index (fn [t k] (rawget t (k:lower)))
-                   :__newindex (fn [t k v] (rawset t (k:lower) v))}))
+  (set targets.sublists {})
+  ; Setting a metatable to handle case insensitivity and user-defined
+  ; character classes (in both cases: multiple keys -> one value).
+  (fn ->common-key [k]
+    (or (. opts.character_class_of k)  ; the common key will be the table itself
+        (when-not opts.case_sensitive (k:lower))
+        k))
+  (setmetatable targets.sublists
+    ; If the key is not found, try to get the sublist for a common key:
+    ; the character class that k belongs to (if there is one), or the
+    ; lowercased verison of k (if case insensivity is set).
+    {:__index (fn [t k] (rawget t (->common-key k)))
+    ; And it will not be found in the above cases, since we also
+    ; redirect to the common keys when inserting a new sublist:
+     :__newindex (fn [t k v] (rawset t (->common-key k) v))})
+  ; Filling the sublists.
   (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets :sublists ch2)
       (tset targets :sublists ch2 []))
@@ -666,13 +678,18 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (highlight-cursor)
            (vim.cmd :redraw)))
 
+    (fn expand-to-user-defined-character-class [in]
+      (match (. opts.character_class_of in)
+        chars (.. "\\(" (table.concat chars "\\|") "\\)")))
+
     (fn prepare-pattern [in1 ?in2]
       (.. "\\V"
           (if opts.case_sensitive "\\C" "\\c")
-          (in1:gsub "\\" "\\\\")  ; backslash needs to be escaped even for \V
-          (match ?in2  ; but not here (no arbitrary input after this)
-            spec-keys.eol (.. "\\(" ?in2 "\\|\\r\\?\\n\\)")
-            _ (or ?in2 "\\_."))))  ; or match anything (including EOL)
+          (or (expand-to-user-defined-character-class in1)
+              (string.gsub in1 "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
+          (or (expand-to-user-defined-character-class ?in2)
+              ?in2
+              "\\_.")))  ; match anything, including EOL
 
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
@@ -874,6 +891,17 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 
 ; Init ///1
+
+; Add a char -> char-class lookup table (the relevant one for us).
+(tset opts :character_class_of
+      (do (local t {})
+          (each [_ cc (ipairs (or opts.character_classes []))]
+            (local cc* (if (= (type cc) :string)
+                           (icollect [char (cc:gmatch ".")] char)
+                           cc))
+            (each [_ char (ipairs cc*)]
+              (tset t char cc*)))
+          t))
 
 (hl:init-highlight)
 

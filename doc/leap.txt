@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 June 25
+Last change: 2022 July 01
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -139,6 +139,19 @@ Available options~
 
     Whether to consider case in search patterns.
 
+`character_classes = {}`
+
+    User defined character classes to be used in search patterns. A character
+    will match any other in its class. The classes can either be defined as
+    strings or tables.
+
+    Example: >
+    {
+      ")]}>",
+      "([{<", 
+      { '"', "'", "`" },
+    }
+<
 `safe_labels` >
     {"s", "f", "n",
      "u", "t",
