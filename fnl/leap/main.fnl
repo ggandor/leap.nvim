@@ -645,8 +645,6 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit* [...]
       `(do (do ,...)
-           ; Quick fix: make sure to clean the source window too,
-           ; when jumping to another window.
            (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
            nil))

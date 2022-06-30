@@ -2,17 +2,32 @@
 
 # leap.nvim
 
-Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), that
-unites the strengths and aims of various similar plugins like
-[Sneak](https://github.com/justinmk/vim-sneak) (minimalism, speed, convenience),
+Leap is a compact, general-purpose motion plugin for
+[Neovim](https://neovim.io/), with the ultimate goal of establishing a new
+standard interface for moving around in the visible editor area in Vim-like
+editors.
+
+The aim is: to be a common denominator, and unite the strengths of various
+similar plugins like [Sneak](https://github.com/justinmk/vim-sneak) (minimalism,
+speed, convenience),
 [EasyMotion](https://github.com/easymotion/vim-easymotion)/[Hop](https://github.com/phaazon/hop.nvim)
 (scaling well for lots of targets), and
 [Pounce](https://github.com/rlane/pounce.nvim) (incremental search + dynamic
-feedback). It is essentially a streamlined version of
-[Lightspeed](https://github.com/ggandor/lightspeed.nvim), with a focus on
-simplicity, sane defaults, and maintainability. Leap aims to be a common
-denominator, its goal being to establish a new standard interface for
-moving around in the visible editor area in Vim-like editors.
+feedback). To reach a level of sophistication where one does not have to think
+much about motion commands as such anymore.
+
+The motto is: [sharpen the
+saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/), and enhance the
+native interface as seamlessly as possible. Leap works across windows, supports
+operators, inclusive/exclusive toggle (`v`), dot-repeat (`.`), multibyte text
+and [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap),
+among others, and intends to continuously improve in this respect.
+
+## Background
+
+The plugin is essentially a streamlined, refactored fork of
+[Lightspeed](https://github.com/ggandor/lightspeed.nvim), with more focus on
+simplicity, intuitiveness, and maintainability.
 
 Compared to Lightspeed, Leap
 
@@ -23,7 +38,8 @@ Compared to Lightspeed, Leap
 
 ## Status
 
-Leap is not stable yet - to follow breaking changes, subscribe to the
+Leap is not fully stable yet, but don't let that stop you - the usage basics are
+extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ## Getting started
@@ -31,9 +47,6 @@ corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 ### Requirements
 
 * Neovim >= 0.7.0
-
-Leap follows the actual latest nightly release - always update Neovim before
-submitting issues.
 
 ### Dependencies
 
@@ -229,10 +242,11 @@ For details, see `:h leap-config`.
 
 ### Keymaps
 
-You can set the defaults keymaps (`:h leap-default-keymaps`) by calling
-`require('leap').set_default_keymaps()`. Note that the function will check for
-conflicts with any custom mappings created by you or other plugins, and will not
-overwite them, unless explicitly told so (called with a `true` argument).
+You can set the defaults keymaps (listed in `:h leap-default-keymaps`) by
+calling `require('leap').set_default_keymaps()`. Note that the function will
+check for conflicts with any custom mappings created by you or other plugins,
+and will not overwite them, unless explicitly told so (called with a `true`
+argument).
 
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 leap-custom-keymaps`.
