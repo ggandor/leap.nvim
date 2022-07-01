@@ -25,6 +25,10 @@
 (fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))
 
+(local <bs> (replace-keycodes "<bs>"))
+(local <cr> (replace-keycodes "<cr>"))
+(local <esc> (replace-keycodes "<esc>"))
+
 (fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
 
@@ -158,33 +162,6 @@ interrupted change operation."
   (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
 
-(fn get-input []
-  (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
-  ; <esc> should cleanly exit anytime.
-  (when (and ok? (not= ch (replace-keycodes "<esc>"))) ch))
-
-
-; :help mbyte-keymap
-(fn get-input-by-keymap []
-  (local <cr> (replace-keycodes "<cr>"))
-
-  (fn loop [seq]
-    ; Arbitrary limit on the allowed length of the LHS sequence
-    ; (supposed to be ASCII, so it is also == |logical user inputs|).
-    (when (and seq (<= (length seq) 4))
-      (let [rhs-candidate (vim.fn.mapcheck seq :l)
-            rhs (vim.fn.maparg seq :l)]
-        (if (= rhs-candidate "") seq
-            (= rhs rhs-candidate) rhs
-            (match (get-input)
-              ; <enter> can accept the RHS for the current sequence
-              <cr> (if (not= rhs "") rhs seq)
-              ch (loop (.. seq ch)))))))
-
-  (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
-      (loop (get-input))))
-
-
 ; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
@@ -203,6 +180,50 @@ interrupted change operation."
     (pcall vim.fn.repeat#setreg seq vim.v.register)
     ; Note: we're feeding count inside the seq itself.
     (pcall vim.fn.repeat#set seq -1)))
+
+
+; Input ///1
+
+(fn get-input []
+  (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
+  ; <esc> should cleanly exit anytime.
+  (when (and ok? (not= ch <esc>)) ch))
+
+
+; :help mbyte-keymap
+; prompt = {:str <val>} (pass by reference hack)
+(fn get-input-by-keymap [prompt]
+
+  (fn echo-prompt [seq]
+    (api.nvim_echo [[prompt.str] [(or seq "") :ErrorMsg]] false []))
+
+  (fn accept [ch]
+    (set prompt.str (.. prompt.str ch))
+    (echo-prompt)
+    ch)
+
+  (fn loop [seq]
+    (local |seq| (length (or seq "")))
+    ; Arbitrary limit (`mapcheck` will continue to give back a candidate
+    ; if the start of `seq` matches, need to cut the gibberish somewhere).
+    (when (<= 1 |seq| 5)
+      (echo-prompt seq)
+      (let [rhs-candidate (vim.fn.mapcheck seq :l)
+            rhs (vim.fn.maparg seq :l)]
+        (if (= rhs-candidate "") (accept seq)   ; implies |seq|=1 (no recursion here)
+            (= rhs rhs-candidate) (accept rhs)  ; seq is the longest LHS match
+            (match (get-input)
+              <bs> (loop (if (> |seq| 1) (seq:sub 1 (dec |seq|)) seq))
+              <cr> (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
+                       (= |seq| 1) (accept seq)
+                       (loop seq))
+              ch (loop (.. seq ch)))))))
+
+  (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
+      (do (echo-prompt)
+          (match (loop (get-input))
+            in in
+            _ (echo "")))))
 
 
 ; Getting targets ///1
@@ -642,6 +663,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
         force-noautojump? (or op-mode? (not directional?))
+        default-prompt ">"
+        prompt {:str default-prompt}  ; pass by reference hack
+        restore-prompt #(set prompt.str default-prompt)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
@@ -657,6 +681,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit* [...]
       `(do (do ,...)
+           (restore-prompt)
            (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
            nil))
@@ -744,7 +769,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
-      (match (or (get-input-by-keymap) (exit-early))
+      (match (or (get-input-by-keymap prompt) (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
         spec-keys.repeat_search (if state.repeat.in1
@@ -754,12 +779,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn get-second-pattern-input [targets]
       (with-highlight-chores (light-up-beacons targets))
-      (or (get-input-by-keymap) (exit-early)))
+      (or (get-input-by-keymap prompt) (exit-early)))
 
     (fn get-full-pattern-input []
       (match (get-first-pattern-input)
         (in1 in2) (values in1 in2)
-        (in1 nil) (match (get-input-by-keymap)
+        (in1 nil) (match (get-input-by-keymap prompt)
                     in2 (values in1 in2)
                     _ (exit-early))))
 
