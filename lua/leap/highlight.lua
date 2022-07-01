@@ -1,8 +1,9 @@
-local api = vim.api
-local map = vim.tbl_map
-local _local_1_ = require("leap.util")
+local util = require("leap.util")
+local _local_1_ = util
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
+local api = vim.api
+local map = vim.tbl_map
 local M = {ns = api.nvim_create_namespace(""), group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
 M.cleanup = function(self, affected_windows)
   for _, wininfo in ipairs(affected_windows) do
@@ -42,46 +43,54 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
     return nil
   end
 end
+M["highlight-cursor"] = function(self, _3fpos)
+  local _let_10_ = (_3fpos or util["get-cursor-pos"]())
+  local line = _let_10_[1]
+  local col = _let_10_[2]
+  local pos = _let_10_
+  local ch_at_curpos = (util["get-char-at"](pos, {}) or " ")
+  return api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
+end
 M["init-highlight"] = function(self, force_3f)
   local bg = vim.o.background
   local defaults
-  local _11_
+  local _12_
   do
-    local _10_ = bg
-    if (_10_ == "light") then
-      _11_ = "#222222"
+    local _11_ = bg
+    if (_11_ == "light") then
+      _12_ = "#222222"
     elseif true then
-      local _ = _10_
-      _11_ = "#ccff88"
+      local _ = _11_
+      _12_ = "#ccff88"
     else
-      _11_ = nil
+      _12_ = nil
     end
   end
-  local _16_
+  local _17_
   do
-    local _15_ = bg
-    if (_15_ == "light") then
-      _16_ = "#ff8877"
+    local _16_ = bg
+    if (_16_ == "light") then
+      _17_ = "#ff8877"
     elseif true then
-      local _ = _15_
-      _16_ = "#ccff88"
+      local _ = _16_
+      _17_ = "#ccff88"
     else
-      _16_ = nil
+      _17_ = nil
     end
   end
-  local _21_
+  local _22_
   do
-    local _20_ = bg
-    if (_20_ == "light") then
-      _21_ = "#77aaff"
+    local _21_ = bg
+    if (_21_ == "light") then
+      _22_ = "#77aaff"
     elseif true then
-      local _ = _20_
-      _21_ = "#99ccff"
+      local _ = _21_
+      _22_ = "#99ccff"
     else
-      _21_ = nil
+      _22_ = nil
     end
   end
-  defaults = {[self.group.match] = {fg = _11_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _16_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _21_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
+  defaults = {[self.group.match] = {fg = _12_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _17_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _22_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
   for group_name, def_map in pairs(defaults) do
     if not force_3f then
       def_map["default"] = true

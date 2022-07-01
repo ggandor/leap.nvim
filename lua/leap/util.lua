@@ -15,6 +15,15 @@ local function clamp(x, min, max)
     return x
   end
 end
+local function echo(msg)
+  return api.nvim_echo({{msg}}, false, {})
+end
+local function replace_keycodes(s)
+  return api.nvim_replace_termcodes(s, true, false, true)
+end
+local function get_cursor_pos()
+  return {vim.fn.line("."), vim.fn.col(".")}
+end
 local function get_char_at(_2_, _4_)
   local _arg_3_ = _2_
   local line = _arg_3_[1]
@@ -41,4 +50,4 @@ local function get_enterable_windows()
   end
   return filter(_7_, wins)
 end
-return {inc = inc, dec = dec, clamp = clamp, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows}

@@ -3,34 +3,29 @@
 (local hl (require "leap.highlight"))
 (local opts (require "leap.opts"))
 (local util (require "leap.util"))
-(local {: inc : dec : clamp} util)
+
+(local {: inc
+        : dec
+        : clamp
+        : echo
+        : replace-keycodes
+        : get-cursor-pos}
+       util)
 
 (local api vim.api)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
 
+(local <bs> (replace-keycodes "<bs>"))
+(local <cr> (replace-keycodes "<cr>"))
+(local <esc> (replace-keycodes "<esc>"))
+
 
 ; Fennel utils ///1
 
 (macro when-not [cond ...]
   `(when (not ,cond) ,...))
-
-
-; Nvim utils ///1
-
-(fn echo [msg]
-  (api.nvim_echo [[msg]] false []))
-
-(fn replace-keycodes [s]
-  (api.nvim_replace_termcodes s true false true))
-
-(local <bs> (replace-keycodes "<bs>"))
-(local <cr> (replace-keycodes "<cr>"))
-(local <esc> (replace-keycodes "<esc>"))
-
-(fn get-cursor-pos []
-  [(vim.fn.line ".") (vim.fn.col ".")])
 
 
 ; Utils ///1
@@ -41,7 +36,6 @@
 (fn user-forced-noautojump? []
   (or (not opts.safe_labels) (empty? opts.safe_labels)))
 
-
 (fn echo-no-prev-search []
   (echo "no previous search"))
 
@@ -51,6 +45,9 @@
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
+
+(fn exec-user-autocmds [pattern]
+  (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
 
 ; Jump ///
@@ -136,30 +133,12 @@ the API), make the motion appear to behave as an inclusive one."
 ; //> Jump
 
 
-(fn highlight-cursor [?pos]
-  "The cursor is down on the command line during `getchar`,
-so we set a temporary highlight on it to see where we are."
-  (let [[line col &as pos] (or ?pos (get-cursor-pos))
-        ; nil means the cursor is on an empty line.
-        ch-at-curpos (or (util.get-char-at pos {}) " ")]  ; get-char-at needs 1,1-idx
-    ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
-    (api.nvim_buf_set_extmark 0 hl.ns (dec line) (dec col)
-                              {:virt_text [[ch-at-curpos :Cursor]]
-                               :virt_text_pos "overlay"
-                               :hl_mode "combine"
-                               :priority hl.priority.cursor})))
-
-
 (fn handle-interrupted-change-op! []
   "Return to Normal mode and restore the cursor position after an
 interrupted change operation."
   (let [seq (.. "<C-\\><C-G>"  ; :h CTRL-\_CTRL-G
                 (if (> (vim.fn.col ".") 1) "<RIGHT>" ""))]
     (api.nvim_feedkeys (replace-keycodes seq) :n true)))
-
-
-(fn exec-user-autocmds [pattern]
-  (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
 
 ; repeat.vim support
@@ -700,7 +679,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
       `(do (hl:cleanup hl-affected-windows)
            (hl:apply-backdrop backward? ?target-windows)
            (do ,...)
-           (highlight-cursor)
+           (hl:highlight-cursor)
            (vim.cmd :redraw)))
 
     (fn expand-to-user-defined-character-class [in]

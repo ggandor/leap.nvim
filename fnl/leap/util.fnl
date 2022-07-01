@@ -1,6 +1,7 @@
 (local api vim.api)
 (local filter vim.tbl_filter)
 
+
 (fn inc [x] (+ x 1))
 
 (fn dec [x] (- x 1))
@@ -9,6 +10,15 @@
   (if (< x min) min
       (> x max) max
       x))
+
+(fn echo [msg]
+  (api.nvim_echo [[msg]] false []))
+
+(fn replace-keycodes [s]
+  (api.nvim_replace_termcodes s true false true))
+
+(fn get-cursor-pos []
+  [(vim.fn.line ".") (vim.fn.col ".")])
 
 
 (fn get-char-at [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
@@ -38,5 +48,8 @@ character instead."
 {: inc
  : dec
  : clamp
+ : echo
+ : replace-keycodes
+ : get-cursor-pos
  : get-char-at
  :get_enterable_windows get-enterable-windows}
