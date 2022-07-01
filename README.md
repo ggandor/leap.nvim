@@ -2,10 +2,9 @@
 
 # leap.nvim
 
-Leap is a compact, general-purpose motion plugin for
-[Neovim](https://neovim.io/), with the ultimate goal of establishing a new
-standard interface for moving around in the visible editor area in Vim-like
-editors.
+Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
+the ultimate goal of establishing a new standard interface for moving around in
+the visible editor area in Vim-like editors.
 
 The aim is: to be a common denominator, and unite the strengths of various
 similar plugins like [Sneak](https://github.com/justinmk/vim-sneak) (minimalism,
@@ -14,18 +13,21 @@ speed, convenience),
 (scaling well for lots of targets), and
 [Pounce](https://github.com/rlane/pounce.nvim) (incremental search + dynamic
 feedback). To reach a level of sophistication where one does not have to think
-much about motion commands as such anymore.
+much about motion commands anymore - just be able to reach any target in a
+blink, while keeping the required mental effort close to zero.
 
-The motto is: [sharpen the
+Leap's motto is to [sharpen the
 saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/), and enhance the
-native interface as seamlessly as possible. Leap works across windows, supports
-operators, inclusive/exclusive toggle (`v`), dot-repeat (`.`), multibyte text
-and [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap),
-among others, and intends to continuously improve in this respect.
+native interface as seamlessly as possible. The plugin works across windows,
+supports operators, inclusive/exclusive toggle (`v`), dot-repeat (`.`),
+multibyte text and
+[keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
+(language mapping), among others, and intends to continuously improve in this
+respect.
 
-## Background
+### Background
 
-The plugin is essentially a streamlined, refactored fork of
+Leap is essentially a streamlined, refactored fork of
 [Lightspeed](https://github.com/ggandor/lightspeed.nvim), with more focus on
 simplicity, intuitiveness, and maintainability.
 
@@ -36,7 +38,7 @@ Compared to Lightspeed, Leap
 * has less complexity and configuration options
 * has a smaller and simpler visual footprint; it feels like using Sneak
 
-## Status
+### Status
 
 Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
@@ -223,7 +225,7 @@ require('leap').setup {
   highlight_unlabeled = false,
   case_sensitive = false,
   -- Groups of characters that should match each other.
-  -- E.g.: { "([{<", ")]}>", ""'`", }
+  -- E.g.: { "([{<", ")]}>", "'\"`", }
   character_classes = {},
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
