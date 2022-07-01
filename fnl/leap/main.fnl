@@ -753,9 +753,6 @@ B: Two labels occupy the same position (this can occur at EOL or window
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (doto targets
-        (set-initial-label-states)
-        (set-beacons {}))
       (with-highlight-chores (light-up-beacons targets))
       (or (get-input-by-keymap) (exit-early)))
 
@@ -798,65 +795,71 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (exec-user-autocmds :LeapEnter)
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
-                   ; This might also return in2 too, if <enter>-repeating.
+                   ; This might also return in2 too, if using the `repeat_search` key.
                    opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
                    (get-full-pattern-input))  ; REDRAW
       (in1 ?in2) (or (get-targets (prepare-pattern in1 ?in2)
                                   {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
-      targets (do (doto targets
-                    ; Prepare targets (set fixed attributes).
-                    (populate-sublists)
-                    (set-sublist-attributes {: force-noautojump?})
-                    (set-labels))
-                  (or ?in2
-                      (get-second-pattern-input targets)))  ; REDRAW
-      ; From here on, successful exit (jumping to a target) is possible.
-      in2 (if dot-repeat?
-              (match (. targets state.dot-repeat.target-idx)
-                target (exit (jump-to! target))
-                _ (exit-early))
+      targets (if dot-repeat? (match (. targets state.dot-repeat.target-idx)
+                                target (exit (jump-to! target))
+                                _ (exit-early))
+                  (do (doto targets
+                        ; Prepare targets (set fixed attributes).
+                        (populate-sublists)
+                        (set-sublist-attributes {: force-noautojump?})
+                        (set-labels))
+                      (or ?in2
+                          (do (doto targets
+                                (set-initial-label-states)
+                                (set-beacons {}))
+                              (get-second-pattern-input targets)))))  ; REDRAW
+      in2 (if
+            ; Jump to the very first match?
+            (and directional? (= in2 spec-keys.next_match))
+            (let [in2 (. targets 1 :pair 2)]
+              (update-state {:repeat {: in1 : in2}})
+              (jump-to! (. targets 1))
+              (if (or op-mode? (= (length targets) 1))
+                  (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
+                  (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
-              ; Jump to the very first match?
-              (and directional? (= in2 spec-keys.next_match))
-              (let [in2 (. targets 1 :pair 2)]
-                (update-state {:repeat {: in1 : in2}})
-                (jump-to! (. targets 1))
-                (if (or op-mode? (= (length targets) 1))
-                    (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
-                    (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
+            (do
+              (fn update-dot-repeat-state []
+                (update-state {:dot-repeat {: in1 : in2 :target-idx $}}))
 
-              (do
-                (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
-                (local update-dot-repeat-state
-                       #(update-state {:dot-repeat {: in1 : in2 :target-idx $}}))
-                (match (or (. targets.sublists in2)
-                           (exit-early (echo-not-found (.. in1 in2))))
-                  [only nil]
-                  (exit (update-dot-repeat-state 1)
-                        (jump-to! only))
+              (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
 
-                  sublist
-                  (do
-                    (when sublist.autojump? (jump-to! (. sublist 1)))
-                    ; Sets label states!
-                    (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
-                      in-final
-                      (if
-                        ; Jump to the first match on the [rest of the] sublist?
-                        (and directional? (= in-final spec-keys.next_match))
-                        (let [new-idx (if sublist.autojump? 2 1)]
-                          (jump-to! (. sublist new-idx))
-                          (if op-mode? (exit (update-dot-repeat-state 1))  ; implies no-autojump
-                              (traverse sublist new-idx  ; REDRAW (LOOP)
-                                        {:force-no-labels? (not sublist.autojump?)})))
+              (match (or (. targets.sublists in2)
+                         (exit-early (echo-not-found (.. in1 in2))))
+                [only nil]
+                (exit (update-dot-repeat-state 1)
+                      (jump-to! only))
 
-                        (match (get-target-with-active-primary-label sublist in-final)
-                          [idx target] (exit (update-dot-repeat-state idx)
-                                             (jump-to! target))
-                          _ (if sublist.autojump?
-                                (exit (vim.fn.feedkeys in-final :i))
-                                (exit-early))))))))))))
+                sublist
+                (do
+                  (when sublist.autojump? (jump-to! (. sublist 1)))
+                  ; Sets label states (modifies the sublist) in each cycle!
+                  (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
+                    in-final
+                    (if
+                      ; Jump to the first match on the [rest of the] sublist?
+                      (and directional? (= in-final spec-keys.next_match))
+                      (let [new-idx (if sublist.autojump? 2 1)]
+                        (jump-to! (. sublist new-idx))
+                        (if op-mode? 
+                            (exit (update-dot-repeat-state 1))  ; implies no-autojump
+                            (traverse sublist new-idx {:force-no-labels?
+                                                       (not sublist.autojump?)})))  ; REDRAW (LOOP)
+
+                      (match (get-target-with-active-primary-label sublist in-final)
+                        [idx target]
+                        (exit (update-dot-repeat-state idx)
+                              (jump-to! target))
+
+                        _ (if sublist.autojump?
+                              (exit (vim.fn.feedkeys in-final :i))
+                              (exit-early))))))))))))
 
 
 ; Handling editor options ///1
