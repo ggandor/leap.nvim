@@ -642,9 +642,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
         force-noautojump? (or op-mode? (not directional?))
-        default-prompt ">"
-        prompt {:str default-prompt}  ; pass by reference hack
-        restore-prompt #(set prompt.str default-prompt)
+        prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
@@ -660,7 +658,6 @@ B: Two labels occupy the same position (this can occur at EOL or window
     ; resulting in misterious bugs, so it's better to be paranoid.)
     (macro exit* [...]
       `(do (do ,...)
-           (restore-prompt)
            (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
            nil))
