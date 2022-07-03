@@ -827,8 +827,8 @@ the API), make the motion appear to behave as an inclusive one."
                   (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
             (do
-              (fn update-dot-repeat-state []
-                (update-state {:dot-repeat {: in1 : in2 :target-idx $}}))
+              (fn update-dot-repeat-state [target-idx]
+                (update-state {:dot-repeat {: in1 : in2 : target-idx}}))
 
               (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
 

@@ -461,7 +461,7 @@ local function get_targets(pattern, _71_)
           local line = _each_80_[1]
           local col = _each_80_[2]
           local _81_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_81_) == "table") and (nil ~= (_81_).row) and ((_81_).col == col)) then
+          if ((_G.type(_81_) == "table") and ((_81_).col == col) and (nil ~= (_81_).row)) then
             local row = (_81_).row
             cursor_positions[winid] = {row, col}
           else
@@ -479,7 +479,7 @@ local function get_targets(pattern, _71_)
         local t = _each_85_
         if by_screen_pos_3f then
           local _88_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_88_) == "table") and (nil ~= (_88_).row) and ((_88_).col == col)) then
+          if ((_G.type(_88_) == "table") and ((_88_).col == col) and (nil ~= (_88_).row)) then
             local row = (_88_).row
             t["screenpos"] = {row, col}
           else
@@ -1251,8 +1251,8 @@ local function leap(_169_)
                   return traverse(targets, 1, {["force-no-labels?"] = true})
                 end
               else
-                local function update_dot_repeat_state()
-                  return update_state({["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = __fnl_global___24}})
+                local function update_dot_repeat_state(target_idx)
+                  return update_state({["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = target_idx}})
                 end
                 update_state({["repeat"] = {in1 = in1, in2 = in2}})
                 local _232_
