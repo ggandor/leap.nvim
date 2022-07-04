@@ -4,7 +4,6 @@ import glob
 import os
 from pathlib import Path
 
-
 FNL_ROOT = 'fnl'
 LUA_ROOT = 'lua'
 
@@ -29,9 +28,9 @@ for src in fnlfiles:
         print(cmd)
         os.system(cmd)
 if not changes:
-    print("no source files were changed or added since the last build")
+    print("nothing to compile")
 
-# Remove leftover files with non-existing sources.
+# Remove leftover files whose sources have been deleted.
 for out in luafiles:
     if out not in map(lambda f: f
             .replace(FNL_ROOT, LUA_ROOT, 1)
@@ -39,4 +38,6 @@ for out in luafiles:
             fnlfiles):
         print("removing output file with missing source: " + out)
         os.remove(out)
+        # Remove parent directories if they have become empty.
+        os.removedirs(os.path.dirname(out))
 
