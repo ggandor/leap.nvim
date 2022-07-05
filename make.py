@@ -39,5 +39,8 @@ for out in luafiles:
         print("removing output file with missing source: " + out)
         os.remove(out)
         # Remove parent directories if they have become empty.
-        os.removedirs(os.path.dirname(out))
+        try:
+            os.removedirs(os.path.dirname(out))
+        except OSError:
+            pass
 
