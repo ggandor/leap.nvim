@@ -510,6 +510,7 @@ local function leap(_94_)
   local _arg_95_ = _94_
   local dot_repeat_3f = _arg_95_["dot-repeat?"]
   local target_windows = _arg_95_["target-windows"]
+  local action = _arg_95_["action"]
   local kwargs = _arg_95_
   local function _97_()
     if dot_repeat_3f then
@@ -550,7 +551,7 @@ local function leap(_94_)
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
-  local force_noautojump_3f = (op_mode_3f or not directional_3f)
+  local force_noautojump_3f = (action or op_mode_3f or not directional_3f)
   local prompt = {str = ">"}
   local spec_keys
   local function _101_(_, k)
@@ -856,6 +857,7 @@ local function leap(_94_)
     return loop(0, true)
   end
   exec_user_autocmds("LeapEnter")
+  local do_action = (action or jump_to_21)
   local function _148_(...)
     local _149_, _150_ = ...
     if ((nil ~= _149_) and true) then
@@ -872,7 +874,7 @@ local function leap(_94_)
               if (directional_3f and (in2 == spec_keys.next_match)) then
                 local in20 = targets[1].pair[2]
                 update_state({["repeat"] = {in1 = in1, in2 = in20}})
-                jump_to_21(targets[1])
+                do_action(targets[1])
                 if (op_mode_3f or (#targets == 1)) then
                   if dot_repeatable_op_3f then
                     set_dot_repeat()
@@ -914,7 +916,7 @@ local function leap(_94_)
                   end
                   do
                     update_dot_repeat_state(1)
-                    jump_to_21(only)
+                    do_action(only)
                   end
                   hl:cleanup(hl_affected_windows)
                   exec_user_autocmds("LeapLeave")
@@ -922,7 +924,7 @@ local function leap(_94_)
                 elseif (nil ~= _157_) then
                   local sublist = _157_
                   if sublist["autojump?"] then
-                    jump_to_21(sublist[1])
+                    do_action(sublist[1])
                   else
                   end
                   local _162_ = post_pattern_input_loop(sublist)
@@ -935,7 +937,7 @@ local function leap(_94_)
                       else
                         new_idx = 1
                       end
-                      jump_to_21(sublist[new_idx])
+                      do_action(sublist[new_idx])
                       if op_mode_3f then
                         if dot_repeatable_op_3f then
                           set_dot_repeat()
@@ -961,7 +963,7 @@ local function leap(_94_)
                         end
                         do
                           update_dot_repeat_state(idx)
-                          jump_to_21(target)
+                          do_action(target)
                         end
                         hl:cleanup(hl_affected_windows)
                         exec_user_autocmds("LeapLeave")
@@ -1018,7 +1020,7 @@ local function leap(_94_)
                 else
                 end
                 do
-                  jump_to_21(target)
+                  do_action(target)
                 end
                 hl:cleanup(hl_affected_windows)
                 exec_user_autocmds("LeapLeave")

@@ -410,7 +410,7 @@ the API), make the motion appear to behave as an inclusive one."
                            :backward? nil :inclusive-op? nil :offset? nil}})
 
 
-(fn leap [{: dot-repeat? : target-windows &as kwargs}]
+(fn leap [{: dot-repeat? : target-windows : action &as kwargs}]
   "Entry point for Leap motions."
   (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                    kwargs)
@@ -430,7 +430,7 @@ the API), make the motion appear to behave as an inclusive one."
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-noautojump? (or op-mode? (not directional?))
+        force-noautojump? (or action op-mode? (not directional?))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
@@ -584,6 +584,8 @@ the API), make the motion appear to behave as an inclusive one."
     ; waiting for:
 
     (exec-user-autocmds :LeapEnter)
+
+    (local do-action (or action jump-to!))
     (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
@@ -592,7 +594,7 @@ the API), make the motion appear to behave as an inclusive one."
                                   {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (if dot-repeat? (match (. targets state.dot-repeat.target-idx)
-                                target (exit (jump-to! target))
+                                target (exit (do-action target))
                                 _ (exit-early))
                   (do (doto targets
                         ; Prepare targets (set fixed attributes).
@@ -609,7 +611,7 @@ the API), make the motion appear to behave as an inclusive one."
             (and directional? (= in2 spec-keys.next_match))
             (let [in2 (. targets 1 :pair 2)]
               (update-state {:repeat {: in1 : in2}})
-              (jump-to! (. targets 1))
+              (do-action (. targets 1))
               (if (or op-mode? (= (length targets) 1))
                   (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
                   (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
@@ -624,11 +626,11 @@ the API), make the motion appear to behave as an inclusive one."
                          (exit-early (echo-not-found (.. in1 in2))))
                 [only nil]
                 (exit (update-dot-repeat-state 1)
-                      (jump-to! only))
+                      (do-action only))
 
                 sublist
                 (do
-                  (when sublist.autojump? (jump-to! (. sublist 1)))
+                  (when sublist.autojump? (do-action (. sublist 1)))
                   ; Sets label states (modifies the sublist) in each cycle!
                   (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
                     in-final
@@ -636,7 +638,7 @@ the API), make the motion appear to behave as an inclusive one."
                       ; Jump to the first match on the [rest of the] sublist?
                       (and directional? (= in-final spec-keys.next_match))
                       (let [new-idx (if sublist.autojump? 2 1)]
-                        (jump-to! (. sublist new-idx))
+                        (do-action (. sublist new-idx))
                         (if op-mode? 
                             (exit (update-dot-repeat-state 1))  ; implies no-autojump
                             (traverse sublist new-idx {:force-no-labels?
@@ -645,7 +647,7 @@ the API), make the motion appear to behave as an inclusive one."
                       (match (get-target-with-active-primary-label sublist in-final)
                         [idx target]
                         (exit (update-dot-repeat-state idx)
-                              (jump-to! target))
+                              (do-action target))
 
                         _ (if sublist.autojump?
                               (exit (vim.fn.feedkeys in-final :i))
