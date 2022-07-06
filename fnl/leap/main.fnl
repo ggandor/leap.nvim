@@ -617,10 +617,9 @@ the API), make the motion appear to behave as an inclusive one."
                                 _ (exit-early))
                   (do
                     ; Prepare targets (set fixed attributes).
-                    (if user-given-targets
-                        (doto targets  ; = user-given-targets
-                          (set-sublist-attributes {: force-noautojump?})
-                          (set-labels))
+                    (if ?in2 (doto targets
+                               (set-sublist-attributes {: force-noautojump?})
+                               (set-labels))
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
                               (doto sublist
@@ -646,36 +645,34 @@ the API), make the motion appear to behave as an inclusive one."
                 (update-state {:dot-repeat {: in1 : in2 : target-idx}}))
 
               (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
-
-              (match (or user-given-targets
-                         (. targets.sublists in2)
+              (match (or (if ?in2 targets (. targets.sublists in2))
                          (exit-early (echo-not-found (.. in1 in2))))
                 [only nil]
                 (exit (update-dot-repeat-state 1)
                       (do-action only))
 
-                sublist
+                targets*
                 (do
-                  (when sublist.autojump? (do-action (. sublist 1)))
-                  ; Sets label states (modifies the sublist) in each cycle!
-                  (match (post-pattern-input-loop sublist)  ; REDRAW (LOOP)
+                  (when targets*.autojump? (do-action (. targets* 1)))
+                  ; Sets label states (modifies the target list) in each cycle!
+                  (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
                     in-final
                     (if
-                      ; Jump to the first match on the [rest of the] sublist?
+                      ; Jump to the first match on the [rest of the] targets*?
                       (and directional? (= in-final spec-keys.next_match))
-                      (let [new-idx (if sublist.autojump? 2 1)]
-                        (do-action (. sublist new-idx))
+                      (let [new-idx (if targets*.autojump? 2 1)]
+                        (do-action (. targets* new-idx))
                         (if (or op-mode? user-given-action)
                             (exit (update-dot-repeat-state 1))  ; implies no-autojump
-                            (traverse sublist new-idx {:force-no-labels?
-                                                       (not sublist.autojump?)})))  ; REDRAW (LOOP)
+                            (traverse targets* new-idx {:force-no-labels?
+                                                       (not targets*.autojump?)})))  ; REDRAW (LOOP)
 
-                      (match (get-target-with-active-primary-label sublist in-final)
+                      (match (get-target-with-active-primary-label targets* in-final)
                         [idx target]
                         (exit (update-dot-repeat-state idx)
                               (do-action target))
 
-                        _ (if sublist.autojump?
+                        _ (if targets*.autojump?
                               (exit (vim.fn.feedkeys in-final :i))
                               (exit-early))))))))))))
 
