@@ -175,28 +175,26 @@ forced implicitly, regardless of using safe labels."
             opts.labels)))
 
 
-(fn set-sublist-attributes [targets {: force-noautojump?}]
-  (each [_ sublist (pairs targets.sublists)]
-    (set-autojump sublist force-noautojump?)
-    (attach-label-set sublist)))
+(fn set-sublist-attributes [sublist {: force-noautojump?}]
+  (set-autojump sublist force-noautojump?)
+  (attach-label-set sublist))
 
 
-(fn set-labels [targets]
+(fn set-labels [sublist]
   "Assign label characters to each target, by going through the sublists
 one by one, using the given sublist's `label-set` repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
-  (each [_ sublist (pairs targets.sublists)]
-    (when (> (length sublist) 1)  ; else we jump unconditionally
-      (local {: autojump? : label-set} sublist)
-      (each [i target (ipairs sublist)]
-        ; Skip labeling the first target if autojump is set.
-        (local i* (if autojump? (dec i) i))
-        (when (> i* 0)
-          (tset target :label
-                (match (% i* (length label-set))
-                  0 (. label-set (length label-set))
-                  n (. label-set n))))))))
+  (when (> (length sublist) 1)  ; else we jump unconditionally
+    (local {: autojump? : label-set} sublist)
+    (each [i target (ipairs sublist)]
+      ; Skip labeling the first target if autojump is set.
+      (local i* (if autojump? (dec i) i))
+      (when (> i* 0)
+        (tset target :label
+              (match (% i* (length label-set))
+                0 (. label-set (length label-set))
+                n (. label-set n)))))))
 
 
 (fn set-label-states [sublist {: group-offset}]
@@ -233,12 +231,17 @@ should actually be displayed depends on the `label-state` flag."
 ; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
 ; expects).
 
-(fn set-beacon-for-labeled [target]
-  (let [{:pair [ch1 ch2] : edge-pos? : label} target
-        offset (+ (ch1:len) (if edge-pos? 0 (ch2:len)))  ; handling multibyte
+; Handling multibyte characters.
+(fn get-label-offset [target]
+  (let [{:pair [ch1 ch2] : edge-pos?} target]
+    (+ (ch1:len) (if edge-pos? 0 (ch2:len)))))
+
+
+(fn set-beacon-for-labeled [target user-given-targets?]
+  (let [offset (if user-given-targets? 0 (get-label-offset target))
         virttext (match target.label-state
-                   :active-primary [[label hl.group.label-primary]]
-                   :active-secondary [[label hl.group.label-secondary]]
+                   :active-primary [[target.label hl.group.label-primary]]
+                   :active-secondary [[target.label hl.group.label-secondary]]
                    :inactive (when-not opts.highlight_unlabeled
                                ; In this case, "no highlight" should
                                ; unambiguously signal "no further keystrokes
@@ -298,14 +301,20 @@ B: Two labels occupy the same position (this can occur at EOL or window
               (tset label-positions k target)))))))
 
 
-(fn set-beacons [target-list {: force-no-labels?}]
-  (if force-no-labels?
+; TODO: User-given targets cannot get a match highlight at the moment.
+(fn set-beacons [target-list {: force-no-labels? : user-given-targets?}]
+  (if (and force-no-labels? (not user-given-targets?))
       (each [_ target (ipairs target-list)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs target-list)]
-            (if target.label (set-beacon-for-labeled target)
-                opts.highlight_unlabeled (set-beacon-to-match-hl target)))
-          (resolve-conflicts target-list))))
+            (if target.label
+                (set-beacon-for-labeled target user-given-targets?)
+
+                (and opts.highlight_unlabeled (not user-given-targets?))
+                (set-beacon-to-match-hl target)))
+          ; User-given targets mean no two-phase processing, i.e., no conflicts.
+          (when-not user-given-targets?
+            (resolve-conflicts target-list)))))
 
 
 (fn light-up-beacons [target-list ?start]
@@ -410,7 +419,9 @@ the API), make the motion appear to behave as an inclusive one."
                            :backward? nil :inclusive-op? nil :offset? nil}})
 
 
-(fn leap [{: dot-repeat? : target-windows : action &as kwargs}]
+(fn leap [{: dot-repeat? : target-windows
+           :targets user-given-targets :action user-given-action
+           &as kwargs}]
   "Entry point for Leap motions."
   (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
                                                    kwargs)
@@ -422,6 +433,10 @@ the API), make the motion appear to behave as an inclusive one."
                               (each [_ w (ipairs (or ?target-windows []))]
                                 (table.insert t w))
                               t)
+        ; Fill in the wininfo fields if not provided.
+        _ (when (and user-given-targets (not (. user-given-targets 1 :wininfo)))
+            (->> user-given-targets
+                 (map (fn [t] (set t.wininfo current-window)))))
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
@@ -430,7 +445,7 @@ the API), make the motion appear to behave as an inclusive one."
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-noautojump? (or action op-mode? (not directional?))
+        force-noautojump? (or user-given-action op-mode? (not directional?))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
@@ -490,7 +505,7 @@ the API), make the motion appear to behave as an inclusive one."
       res)
 
     (fn update-state [state*]  ; a partial state table
-      (when-not dot-repeat?
+      (when-not (or dot-repeat? user-given-targets)
         ; Do not short-circuit on regular repeat: we need to update the
         ; repeat state continuously if we have entered traversal mode
         ; after the first input (i.e., traversing all matches, not just
@@ -514,7 +529,8 @@ the API), make the motion appear to behave as an inclusive one."
 
     (fn traverse [targets idx {: force-no-labels?}]
       (when force-no-labels? (inactivate-labels targets))
-      (set-beacons targets {: force-no-labels?})
+      (set-beacons targets {: force-no-labels?
+                            :user-given-targets? user-given-targets})
       (with-highlight-chores (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
         input
@@ -524,7 +540,8 @@ the API), make the motion appear to behave as an inclusive one."
                             spec-keys.prev_match (max (dec idx) 1))]
               ; Need to save now - we might <esc> next time, exiting above.
               (update-state {:repeat {:in1 state.repeat.in1
-                                      :in2 (. targets new-idx :pair 2)}})
+                                      ; ?. -> user-given targets might not have :pair
+                                      :in2 (?. targets new-idx :pair 2)}})
               (jump-to! (. targets new-idx))
               (traverse targets new-idx {: force-no-labels?}))
             ; We still want the labels (if there are) to function.
@@ -559,7 +576,7 @@ the API), make the motion appear to behave as an inclusive one."
           ; Do _not_ skip this on initial invocation - we might have skipped
           ; setting the initial label states in case of <enter>-repeat.
           (set-label-states {: group-offset})
-          (set-beacons {}))
+          (set-beacons {:user-given-targets? user-given-targets}))
         (with-highlight-chores
           (light-up-beacons sublist (when sublist.autojump? 2)))
         (match (or (get-input) (exit-early))
@@ -585,34 +602,42 @@ the API), make the motion appear to behave as an inclusive one."
 
     (exec-user-autocmds :LeapEnter)
 
-    (local do-action (or action jump-to!))
-    (match-try (if dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
+    (local do-action (or user-given-action jump-to!))
+    (match-try (if user-given-targets (values true true)
+                   dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
                    (get-full-pattern-input))  ; REDRAW
-      (in1 ?in2) (or (get-targets (prepare-pattern in1 ?in2)
+      (in1 ?in2) (or user-given-targets
+                     (get-targets (prepare-pattern in1 ?in2)
                                   {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (if dot-repeat? (match (. targets state.dot-repeat.target-idx)
                                 target (exit (do-action target))
                                 _ (exit-early))
-                  (do (doto targets
-                        ; Prepare targets (set fixed attributes).
-                        (populate-sublists)
-                        (set-sublist-attributes {: force-noautojump?})
-                        (set-labels))
-                      (or ?in2
-                          (do (doto targets
-                                (set-initial-label-states)
-                                (set-beacons {}))
-                              (get-second-pattern-input targets)))))  ; REDRAW
+                  (do
+                    ; Prepare targets (set fixed attributes).
+                    (if user-given-targets
+                        (doto targets  ; = user-given-targets
+                          (set-sublist-attributes {: force-noautojump?})
+                          (set-labels))
+                        (do (populate-sublists targets)
+                            (each [_ sublist (pairs targets.sublists)]
+                              (doto sublist
+                                (set-sublist-attributes {: force-noautojump?})
+                                (set-labels)))))
+                    (or ?in2
+                        (do (doto targets
+                              (set-initial-label-states)
+                              (set-beacons {}))
+                            (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
             (and directional? (= in2 spec-keys.next_match))
             (let [in2 (. targets 1 :pair 2)]
               (update-state {:repeat {: in1 : in2}})
               (do-action (. targets 1))
-              (if (or op-mode? (= (length targets) 1))
+              (if (or (= (length targets) 1) op-mode? user-given-action)
                   (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
                   (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
@@ -622,7 +647,8 @@ the API), make the motion appear to behave as an inclusive one."
 
               (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
 
-              (match (or (. targets.sublists in2)
+              (match (or user-given-targets
+                         (. targets.sublists in2)
                          (exit-early (echo-not-found (.. in1 in2))))
                 [only nil]
                 (exit (update-dot-repeat-state 1)
@@ -639,7 +665,7 @@ the API), make the motion appear to behave as an inclusive one."
                       (and directional? (= in-final spec-keys.next_match))
                       (let [new-idx (if sublist.autojump? 2 1)]
                         (do-action (. sublist new-idx))
-                        (if op-mode? 
+                        (if (or op-mode? user-given-action)
                             (exit (update-dot-repeat-state 1))  ; implies no-autojump
                             (traverse sublist new-idx {:force-no-labels?
                                                        (not sublist.autojump?)})))  ; REDRAW (LOOP)
