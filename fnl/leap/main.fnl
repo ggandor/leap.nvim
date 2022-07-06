@@ -125,6 +125,69 @@ interrupted change operation."
 
 ; Processing targets ///1
 
+(fn set-autojump [targets force-noautojump?]
+  "Set a flag indicating whether we should autojump to the first target,
+without having to select a label.
+Note that there is no one-to-one correspondence between this flag and
+the `label-set` field set by `attach-label-set`. No-autojump might be
+forced implicitly, regardless of using safe labels."
+  (tset targets :autojump?
+        (and (not (or force-noautojump?
+                      (user-forced-noautojump?)))
+             (or (user-forced-autojump?)
+                 (>= (length opts.safe_labels)
+                     (dec (length targets)))))))  ; skipping the first if autojumping
+
+
+(fn attach-label-set [targets]
+  "Set a field referencing the label set to be used for `targets`.
+NOTE: `set-autojump` should be called BEFORE this function."
+  (tset targets :label-set
+        (if (user-forced-autojump?) opts.safe_labels
+            (user-forced-noautojump?) opts.labels
+            targets.autojump? opts.safe_labels
+            opts.labels)))
+
+
+(fn set-labels [targets]
+  "Assign label characters to each target, using the given label set
+repeated indefinitely.
+Note: `label` is a once and for all fixed attribute - whether and how it
+should actually be displayed depends on the `label-state` flag."
+  (when (> (length targets) 1)  ; else we jump unconditionally
+    (local {: autojump? : label-set} targets)
+    (each [i target (ipairs targets)]
+      ; Skip labeling the first target if autojump is set.
+      (local i* (if autojump? (dec i) i))
+      (when (> i* 0)
+        (tset target :label
+              (match (% i* (length label-set))
+                0 (. label-set (length label-set))
+                n (. label-set n)))))))
+
+
+(fn set-label-states [targets {: group-offset}]
+  (let [|label-set| (length targets.label-set)
+        offset (* group-offset |label-set|)
+        primary-start (+ offset (if targets.autojump? 2 1))
+        primary-end (+ primary-start (dec |label-set|))
+        secondary-start (inc primary-end)
+        secondary-end (+ primary-end |label-set|)]
+    (each [i target (ipairs targets)]
+      (when target.label
+        (tset target :label-state
+              (if (<= primary-start i primary-end) :active-primary
+                  (<= secondary-start i secondary-end) :active-secondary
+                  (> i secondary-end) :inactive))))))
+
+
+(fn inactivate-labels [targets]
+  (each [_ target (ipairs targets)]
+    (tset target :label-state :inactive)))
+
+
+; Two-step processing
+
 (fn populate-sublists [targets]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
@@ -151,75 +214,9 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn set-autojump [sublist force-noautojump?]
-  "Set a flag indicating whether we should autojump to the first target
-if selecting `sublist` with the 2nd input character.
-Note that there is no one-to-one correspondence between this flag and
-the `label-set` field set by `attach-label-set`. No-autojump might be
-forced implicitly, regardless of using safe labels."
-  (tset sublist :autojump?
-        (and (not (or force-noautojump?
-                      (user-forced-noautojump?)))
-             (or (user-forced-autojump?)
-                 (>= (length opts.safe_labels)
-                     (dec (length sublist)))))))  ; skipping the first if autojumping
-
-
-(fn attach-label-set [sublist]
-  "Set a field referencing the target label set to be used for
-`sublist`. `set-autojump` should be called before this function."
-  (tset sublist :label-set
-        (if (user-forced-autojump?) opts.safe_labels
-            (user-forced-noautojump?) opts.labels
-            sublist.autojump? opts.safe_labels
-            opts.labels)))
-
-
-(fn set-sublist-attributes [sublist {: force-noautojump?}]
-  (set-autojump sublist force-noautojump?)
-  (attach-label-set sublist))
-
-
-(fn set-labels [sublist]
-  "Assign label characters to each target, by going through the sublists
-one by one, using the given sublist's `label-set` repeated indefinitely.
-Note: `label` is a once and for all fixed attribute - whether and how it
-should actually be displayed depends on the `label-state` flag."
-  (when (> (length sublist) 1)  ; else we jump unconditionally
-    (local {: autojump? : label-set} sublist)
-    (each [i target (ipairs sublist)]
-      ; Skip labeling the first target if autojump is set.
-      (local i* (if autojump? (dec i) i))
-      (when (> i* 0)
-        (tset target :label
-              (match (% i* (length label-set))
-                0 (. label-set (length label-set))
-                n (. label-set n)))))))
-
-
-(fn set-label-states [sublist {: group-offset}]
-  (let [|label-set| (length sublist.label-set)
-        offset (* group-offset |label-set|)
-        primary-start (+ offset (if sublist.autojump? 2 1))
-        primary-end (+ primary-start (dec |label-set|))
-        secondary-start (inc primary-end)
-        secondary-end (+ primary-end |label-set|)]
-    (each [i target (ipairs sublist)]
-      (when target.label
-        (tset target :label-state
-              (if (<= primary-start i primary-end) :active-primary
-                  (<= secondary-start i secondary-end) :active-secondary
-                  (> i secondary-end) :inactive))))))
-
-
 (fn set-initial-label-states [targets]
   (each [_ sublist (pairs targets.sublists)]
     (set-label-states sublist {:group-offset 0})))
-
-
-(fn inactivate-labels [target-list]
-  (each [_ target (ipairs target-list)]
-    (tset target :label-state :inactive)))
 
 
 ; Display ///1
@@ -230,6 +227,7 @@ should actually be displayed depends on the `label-state` flag."
 ; `offset` is counted from the match position, and `virtualtext` is a
 ; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
 ; expects).
+
 
 ; Handling multibyte characters.
 (fn get-label-offset [target]
@@ -261,7 +259,7 @@ should actually be displayed depends on the `label-state` flag."
   (tset target :beacon 2 1 1 " "))
 
 
-(fn resolve-conflicts [target-list]
+(fn resolve-conflicts [targets]
   "After setting the beacons in a context-unaware manner, the following
 conflicts can occur:
 A: A label occupies a position that also belongs to an unlabeled match.
@@ -272,7 +270,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
    Fix: Display an 'empty' label at the position."
   (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>" : target}
         label-positions {}]           ; - " -
-    (each [i target (ipairs target-list)]
+    (each [i target (ipairs targets)]
       (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
         (macro make-key [col*]
           `(.. bufnr " " winid " " lnum " " ,col*))
@@ -302,11 +300,11 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 
 ; TODO: User-given targets cannot get a match highlight at the moment.
-(fn set-beacons [target-list {: force-no-labels? : user-given-targets?}]
+(fn set-beacons [targets {: force-no-labels? : user-given-targets?}]
   (if (and force-no-labels? (not user-given-targets?))
-      (each [_ target (ipairs target-list)]
+      (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
-      (do (each [_ target (ipairs target-list)]
+      (do (each [_ target (ipairs targets)]
             (if target.label
                 (set-beacon-for-labeled target user-given-targets?)
 
@@ -314,12 +312,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
                 (set-beacon-to-match-hl target)))
           ; User-given targets mean no two-phase processing, i.e., no conflicts.
           (when-not user-given-targets?
-            (resolve-conflicts target-list)))))
+            (resolve-conflicts targets)))))
 
 
-(fn light-up-beacons [target-list ?start]
-  (for [i (or ?start 1) (length target-list)]
-    (local target (. target-list i))
+(fn light-up-beacons [targets ?start]
+  (for [i (or ?start 1) (length targets)]
+    (local target (. targets i))
     (match target.beacon
       [offset virttext]
       (let [[lnum col] (map dec target.pos)]  ; 1/1 -> 0/0 indexing
@@ -615,21 +613,20 @@ the API), make the motion appear to behave as an inclusive one."
       targets (if dot-repeat? (match (. targets state.dot-repeat.target-idx)
                                 target (exit (do-action target))
                                 _ (exit-early))
-                  (do
-                    ; Prepare targets (set fixed attributes).
-                    (if ?in2 (doto targets
-                               (set-sublist-attributes {: force-noautojump?})
-                               (set-labels))
-                        (do (populate-sublists targets)
-                            (each [_ sublist (pairs targets.sublists)]
-                              (doto sublist
-                                (set-sublist-attributes {: force-noautojump?})
-                                (set-labels)))))
-                    (or ?in2
-                        (do (doto targets
-                              (set-initial-label-states)
-                              (set-beacons {}))
-                            (get-second-pattern-input targets)))))  ; REDRAW
+                  (do (fn prepare-targets [targets]
+                        (doto targets
+                          (set-autojump force-noautojump?)
+                          (attach-label-set)
+                          (set-labels)))
+                      (if ?in2 (prepare-targets targets)
+                          (do (populate-sublists targets)
+                              (each [_ sublist (pairs targets.sublists)]
+                                (prepare-targets sublist))))
+                      (or ?in2
+                          (do (doto targets
+                                (set-initial-label-states)
+                                (set-beacons {}))
+                              (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
             (and directional? (= in2 spec-keys.next_match))
