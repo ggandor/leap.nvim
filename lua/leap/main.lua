@@ -51,7 +51,7 @@ local function handle_interrupted_change_op_21()
 end
 local function set_dot_repeat()
   local op = vim.v.operator
-  local cmd = replace_keycodes("<cmd>lua require'leap'.leap {['dot-repeat?'] = true}<cr>")
+  local cmd = replace_keycodes("<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
   local change
   if (op == "c") then
     change = replace_keycodes("<c-r>.<esc>")
@@ -506,24 +506,24 @@ local function jump_to_21_2a(pos, _87_)
     return nil
   end
 end
-local state = {["repeat"] = {in1 = nil, in2 = nil}, ["dot-repeat"] = {in1 = nil, in2 = nil, ["target-idx"] = nil, ["backward?"] = nil, ["inclusive-op?"] = nil, ["offset?"] = nil}}
+local state = {["repeat"] = {in1 = nil, in2 = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}}
 local function leap(_94_)
   local _arg_95_ = _94_
-  local dot_repeat_3f = _arg_95_["dot-repeat?"]
-  local target_windows = _arg_95_["target-windows"]
+  local dot_repeat_3f = _arg_95_["dot_repeat"]
+  local target_windows = _arg_95_["target_windows"]
   local user_given_targets = _arg_95_["targets"]
   local user_given_action = _arg_95_["action"]
   local kwargs = _arg_95_
   local function _97_()
     if dot_repeat_3f then
-      return state["dot-repeat"]
+      return state.dot_repeat
     else
       return kwargs
     end
   end
   local _let_96_ = _97_()
-  local backward_3f = _let_96_["backward?"]
-  local inclusive_op_3f = _let_96_["inclusive-op?"]
+  local backward_3f = _let_96_["backward"]
+  local inclusive_op_3f = _let_96_["inclusive_op"]
   local offset = _let_96_["offset"]
   local directional_3f = not target_windows
   local __3ewininfo
@@ -610,8 +610,8 @@ local function leap(_94_)
         state["repeat"] = state_2a["repeat"]
       else
       end
-      if (state_2a["dot-repeat"] and dot_repeatable_op_3f) then
-        state["dot-repeat"] = vim.tbl_extend("error", state_2a["dot-repeat"], {["backward?"] = backward_3f, offset = offset, ["inclusive-op?"] = inclusive_op_3f})
+      if (state_2a.dot_repeat and dot_repeatable_op_3f) then
+        state.dot_repeat = vim.tbl_extend("error", state_2a.dot_repeat, {["backward?"] = backward_3f, offset = offset, ["inclusive-op?"] = inclusive_op_3f})
         return nil
       else
         return nil
@@ -910,7 +910,7 @@ local function leap(_94_)
                   else
                   end
                   do
-                    update_state({["dot-repeat"] = {in1 = in1, in2 = in20, ["target-idx"] = 1}})
+                    update_state({dot_repeat = {in1 = in1, in2 = in20, target_idx = 1}})
                   end
                   hl:cleanup(hl_affected_windows)
                   exec_user_autocmds("LeapLeave")
@@ -920,7 +920,7 @@ local function leap(_94_)
                 end
               else
                 local function update_dot_repeat_state(target_idx)
-                  return update_state({["dot-repeat"] = {in1 = in1, in2 = in2, ["target-idx"] = target_idx}})
+                  return update_state({dot_repeat = {in1 = in1, in2 = in2, target_idx = target_idx}})
                 end
                 update_state({["repeat"] = {in1 = in1, in2 = in2}})
                 local _164_
@@ -1048,7 +1048,7 @@ local function leap(_94_)
           end
           local function _193_(...)
             if dot_repeat_3f then
-              local _185_ = targets[state["dot-repeat"]["target-idx"]]
+              local _185_ = targets[state.dot_repeat.target_idx]
               if (nil ~= _185_) then
                 local target = _185_
                 if dot_repeatable_op_3f then
@@ -1134,7 +1134,7 @@ local function leap(_94_)
     if user_given_targets then
       return true, true
     elseif dot_repeat_3f then
-      return state["dot-repeat"].in1, state["dot-repeat"].in2
+      return state.dot_repeat.in1, state.dot_repeat.in2
     elseif opts.highlight_ahead_of_time then
       return get_first_pattern_input()
     else

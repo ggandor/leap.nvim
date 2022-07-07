@@ -67,7 +67,7 @@ interrupted change operation."
   ; checking it here.
   (let [op vim.v.operator
         cmd (replace-keycodes
-              "<cmd>lua require'leap'.leap {['dot-repeat?'] = true}<cr>")
+              "<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
         ; We cannot getreg('.') at this point, since the change has not
         ; happened yet - therefore the below hack (thx Sneak).
         change (when (= op :c) (replace-keycodes "<c-r>.<esc>"))
@@ -413,16 +413,17 @@ the API), make the motion appear to behave as an inclusive one."
 
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil :in2 nil}
-              :dot-repeat {:in1 nil :in2 nil :target-idx nil
-                           :backward? nil :inclusive-op? nil :offset? nil}})
+              :dot_repeat {:in1 nil :in2 nil :target_idx nil
+                           :backward nil :inclusive_op nil :offset nil}})
 
 
-(fn leap [{: dot-repeat? : target-windows
+(fn leap [{:dot_repeat dot-repeat? :target_windows target-windows
            :targets user-given-targets :action user-given-action
            &as kwargs}]
   "Entry point for Leap motions."
-  (let [{: backward? : inclusive-op? : offset} (if dot-repeat? state.dot-repeat
-                                                   kwargs)
+  (let [{:backward backward? :inclusive_op inclusive-op? : offset}
+        (if dot-repeat? state.dot_repeat kwargs)
+
         directional? (not target-windows)
         ->wininfo #(. (vim.fn.getwininfo $) 1)
         ?target-windows (-?>> target-windows (map ->wininfo))
@@ -510,10 +511,10 @@ the API), make the motion appear to behave as an inclusive one."
         ; a given sublist).
         (when state*.repeat
           (set state.repeat state*.repeat))
-        (when (and state*.dot-repeat dot-repeatable-op?)
-          (set state.dot-repeat
+        (when (and state*.dot_repeat dot-repeatable-op?)
+          (set state.dot_repeat
                (vim.tbl_extend :error
-                               state*.dot-repeat
+                               state*.dot_repeat
                                {: backward? : offset : inclusive-op?})))))
 
     (local jump-to!
@@ -602,7 +603,7 @@ the API), make the motion appear to behave as an inclusive one."
 
     (local do-action (or user-given-action jump-to!))
     (match-try (if user-given-targets (values true true)
-                   dot-repeat? (values state.dot-repeat.in1 state.dot-repeat.in2)
+                   dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
                    (get-full-pattern-input))  ; REDRAW
@@ -610,7 +611,7 @@ the API), make the motion appear to behave as an inclusive one."
                      (get-targets (prepare-pattern in1 ?in2)
                                   {: backward? :target-windows ?target-windows})
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
-      targets (if dot-repeat? (match (. targets state.dot-repeat.target-idx)
+      targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
                                 target (exit (do-action target))
                                 _ (exit-early))
                   (do (fn prepare-targets [targets]
@@ -634,12 +635,12 @@ the API), make the motion appear to behave as an inclusive one."
               (update-state {:repeat {: in1 : in2}})
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
-                  (exit (update-state {:dot-repeat {: in1 : in2 :target-idx 1}}))
+                  (exit (update-state {:dot_repeat {: in1 : in2 :target_idx 1}}))
                   (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
 
             (do
-              (fn update-dot-repeat-state [target-idx]
-                (update-state {:dot-repeat {: in1 : in2 : target-idx}}))
+              (fn update-dot-repeat-state [target_idx]
+                (update-state {:dot_repeat {: in1 : in2 : target_idx}}))
 
               (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
               (match (or (if ?in2 targets (. targets.sublists in2))
