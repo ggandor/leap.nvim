@@ -506,7 +506,7 @@ local function jump_to_21_2a(pos, _87_)
     return nil
   end
 end
-local state = {["repeat"] = {in1 = nil, in2 = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}}
+local state = {["repeat"] = {in1 = nil, in2 = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, args = nil}
 local function leap(_94_)
   local _arg_95_ = _94_
   local dot_repeat_3f = _arg_95_["dot_repeat"]
@@ -525,6 +525,9 @@ local function leap(_94_)
   local backward_3f = _let_96_["backward"]
   local inclusive_op_3f = _let_96_["inclusive_op"]
   local offset = _let_96_["offset"]
+  local _
+  state.args = kwargs
+  _ = nil
   local directional_3f = not target_windows
   local __3ewininfo
   local function _98_(_241)
@@ -544,20 +547,20 @@ local function leap(_94_)
   local hl_affected_windows
   do
     local t = {current_window}
-    for _, w in ipairs((_3ftarget_windows or {})) do
+    for _0, w in ipairs((_3ftarget_windows or {})) do
       table.insert(t, w)
     end
     hl_affected_windows = t
   end
-  local _
+  local _0
   if (user_given_targets and not user_given_targets[1].wininfo) then
     local function _101_(t)
       t.wininfo = current_window
       return nil
     end
-    _ = map(_101_, user_given_targets)
+    _0 = map(_101_, user_given_targets)
   else
-    _ = nil
+    _0 = nil
   end
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
@@ -566,7 +569,7 @@ local function leap(_94_)
   local force_noautojump_3f = (user_given_action or op_mode_3f or not directional_3f)
   local prompt = {str = ">"}
   local spec_keys
-  local function _103_(_0, k)
+  local function _103_(_1, k)
     return replace_keycodes(opts.special_keys[k])
   end
   spec_keys = setmetatable({}, {__index = _103_})
@@ -697,7 +700,7 @@ local function leap(_94_)
       else
         local _127_ = get_target_with_active_primary_label(targets, input)
         if ((_G.type(_127_) == "table") and true and (nil ~= (_127_)[2])) then
-          local _0 = (_127_)[1]
+          local _1 = (_127_)[1]
           local target = (_127_)[2]
           if dot_repeatable_op_3f then
             set_dot_repeat()
@@ -710,7 +713,7 @@ local function leap(_94_)
           exec_user_autocmds("LeapLeave")
           return nil
         elseif true then
-          local _0 = _127_
+          local _1 = _127_
           if dot_repeatable_op_3f then
             set_dot_repeat()
           else
@@ -810,7 +813,7 @@ local function leap(_94_)
         local in2 = _143_
         return in1, in2
       elseif true then
-        local _0 = _143_
+        local _1 = _143_
         if change_op_3f then
           handle_interrupted_change_op_21()
         else
@@ -1005,7 +1008,7 @@ local function leap(_94_)
                         exec_user_autocmds("LeapLeave")
                         return nil
                       elseif true then
-                        local _0 = _174_
+                        local _1 = _174_
                         if targets_2a["autojump?"] then
                           if dot_repeatable_op_3f then
                             set_dot_repeat()
@@ -1062,7 +1065,7 @@ local function leap(_94_)
                 exec_user_autocmds("LeapLeave")
                 return nil
               elseif true then
-                local _0 = _185_
+                local _1 = _185_
                 if change_op_3f then
                   handle_interrupted_change_op_21()
                 else
@@ -1087,7 +1090,7 @@ local function leap(_94_)
                 prepare_targets(targets)
               else
                 populate_sublists(targets)
-                for _0, sublist in pairs(targets.sublists) do
+                for _1, sublist in pairs(targets.sublists) do
                   prepare_targets(sublist)
                 end
               end

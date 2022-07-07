@@ -414,7 +414,8 @@ the API), make the motion appear to behave as an inclusive one."
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil :in2 nil}
               :dot_repeat {:in1 nil :in2 nil :target_idx nil
-                           :backward nil :inclusive_op nil :offset nil}})
+                           :backward nil :inclusive_op nil :offset nil}
+              :args nil})  ; arguments passed to the current call
 
 
 (fn leap [{:dot_repeat dot-repeat? :target_windows target-windows
@@ -424,6 +425,7 @@ the API), make the motion appear to behave as an inclusive one."
   (let [{:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
 
+        _ (set state.args kwargs)
         directional? (not target-windows)
         ->wininfo #(. (vim.fn.getwininfo $) 1)
         ?target-windows (-?>> target-windows (map ->wininfo))
