@@ -6,6 +6,7 @@
 
 
 (local M {:ns (api.nvim_create_namespace "")
+          :extmarks []
           :group {:label-primary "LeapLabelPrimary"
                   :label-secondary "LeapLabelSecondary"
                   :match "LeapMatch"
@@ -16,18 +17,22 @@
 
 
 (fn M.cleanup [self affected-windows]
-  (each [_ wininfo (ipairs affected-windows)]
-    (api.nvim_buf_clear_namespace
-      wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline))
-  ; Safety measure for scrolloff > 0: we always clean up the current view too.
-  (api.nvim_buf_clear_namespace 0 self.ns
-                                (dec (vim.fn.line "w0"))
-                                (vim.fn.line "w$")))
+  ; Clear beacons & cursor.
+  (each [_ [bufnr id] (ipairs self.extmarks)]
+    (api.nvim_buf_del_extmark bufnr self.ns id))
+  ; Clear backdrop.
+  (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
+    (each [_ wininfo (ipairs affected-windows)]
+      (api.nvim_buf_clear_namespace
+        wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline))
+    ; Safety measure for scrolloff > 0: we always clean up the current view too.
+    (api.nvim_buf_clear_namespace 0 self.ns
+                                  (dec (vim.fn.line "w0"))
+                                  (vim.fn.line "w$"))))
 
 
 (fn M.apply-backdrop [self backward? ?target-windows]
-  (match (pcall api.nvim_get_hl_by_name self.group.backdrop nil)  ; group exists?
-    (true _)
+  (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
     (if ?target-windows
         (each [_ win (ipairs ?target-windows)]
           (vim.highlight.range win.bufnr self.ns self.group.backdrop
@@ -49,13 +54,14 @@
 so we set a temporary highlight on it to see where we are."
   (let [[line col &as pos] (or ?pos (util.get-cursor-pos))
         ; nil means the cursor is on an empty line.
-        ch-at-curpos (or (util.get-char-at pos {}) " ")]  ; get-char-at needs 1,1-idx
-    ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
-    (api.nvim_buf_set_extmark 0 self.ns (dec line) (dec col)
-                              {:virt_text [[ch-at-curpos :Cursor]]
-                               :virt_text_pos "overlay"
-                               :hl_mode "combine"
-                               :priority self.priority.cursor})))
+        ch-at-curpos (or (util.get-char-at pos {}) " ")  ; get-char-at needs 1,1-idx
+        ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
+        id (api.nvim_buf_set_extmark 0 self.ns (dec line) (dec col)
+                                     {:virt_text [[ch-at-curpos :Cursor]]
+                                      :virt_text_pos "overlay"
+                                      :hl_mode "combine"
+                                      :priority self.priority.cursor})]
+    (table.insert self.extmarks [0 id])))
 
 
 (fn M.init-highlight [self force?]

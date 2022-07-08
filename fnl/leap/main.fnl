@@ -320,12 +320,18 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (local target (. targets i))
     (match target.beacon
       [offset virttext]
-      (let [[lnum col] (map dec target.pos)]  ; 1/1 -> 0/0 indexing
-        (api.nvim_buf_set_extmark target.wininfo.bufnr hl.ns lnum (+ col offset)
-                                  {:virt_text virttext
-                                   :virt_text_pos "overlay"
-                                   :hl_mode "combine"
-                                   :priority hl.priority.label})))))
+      (let [bufnr target.wininfo.bufnr
+            [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
+            id (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
+                                         {:virt_text virttext
+                                          :virt_text_pos "overlay"
+                                          :hl_mode "combine"
+                                          :priority hl.priority.label})]
+        ; Register each newly set extmark in a table, so that we can
+        ; delete them one by one, without needing any further contextual
+        ; information. This is relevant if we process user-given targets
+        ; and have no knowledge about the boundaries of the search area.
+        (table.insert hl.extmarks [bufnr id])))))
 
 
 ; Jump ///1
@@ -479,7 +485,8 @@ the API), make the motion appear to behave as an inclusive one."
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
-           (hl:apply-backdrop backward? ?target-windows)
+           (when-not (and user-given-targets (not ?target-windows))
+             (hl:apply-backdrop backward? ?target-windows))
            (do ,...)
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
