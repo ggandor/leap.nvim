@@ -110,7 +110,7 @@ interrupted change operation."
         (if (= rhs-candidate "") (accept seq)   ; implies |seq|=1 (no recursion here)
             (= rhs rhs-candidate) (accept rhs)  ; seq is the longest LHS match
             (match (get-input)
-              <bs> (loop (if (> |seq| 1) (seq:sub 1 (dec |seq|)) seq))
+              <bs> (loop (if (>= |seq| 2) (seq:sub 1 (dec |seq|)) seq))
               <cr> (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
                        (= |seq| 1) (accept seq)
                        (loop seq))
@@ -195,18 +195,17 @@ char separately."
   (set targets.sublists {})
   ; Setting a metatable to handle case insensitivity and user-defined
   ; character classes (in both cases: multiple keys -> one value).
-  (fn ->common-key [k]
-    (or (. opts.character_class_of k)  ; the common key will be the table itself
-        (when-not opts.case_sensitive (k:lower))
-        k))
+  ; If `k` is not found, try to get a sublist belonging to some common
+  ; key: the character class that `k` belongs to (if there is one), or,
+  ; if case insensivity is set, the lowercased verison of `k`.
+  ; (And in the above cases, `k` will not be found, since we also
+  ; redirect to the common keys when inserting a new sublist.)
   (setmetatable targets.sublists
-    ; If the key is not found, try to get the sublist for a common key:
-    ; the character class that k belongs to (if there is one), or the
-    ; lowercased verison of k (if case insensivity is set).
-    {:__index (fn [t k] (rawget t (->common-key k)))
-    ; And it will not be found in the above cases, since we also
-    ; redirect to the common keys when inserting a new sublist:
-     :__newindex (fn [t k v] (rawset t (->common-key k) v))})
+    (let [->common-key #(or (. opts.character_class_of $)
+                            (when-not opts.case_sensitive ($:lower))
+                            $)]
+      {:__index (fn [t k] (rawget t (->common-key k)))
+       :__newindex (fn [t k v] (rawset t (->common-key k) v))}))
   ; Filling the sublists.
   (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets :sublists ch2)
@@ -499,7 +498,7 @@ the API), make the motion appear to behave as an inclusive one."
       (.. "\\V"
           (if opts.case_sensitive "\\C" "\\c")
           (or (expand-to-user-defined-character-class in1)
-              (string.gsub in1 "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
+              (in1:gsub "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
           (or (expand-to-user-defined-character-class ?in2)
               ?in2
               "\\_.")))  ; match anything, including EOL
@@ -623,20 +622,19 @@ the API), make the motion appear to behave as an inclusive one."
       targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
                                 target (exit (do-action target))
                                 _ (exit-early))
-                  (do (fn prepare-targets [targets]
-                        (doto targets
-                          (set-autojump force-noautojump?)
-                          (attach-label-set)
-                          (set-labels)))
-                      (if ?in2 (prepare-targets targets)
-                          (do (populate-sublists targets)
-                              (each [_ sublist (pairs targets.sublists)]
-                                (prepare-targets sublist))))
-                      (or ?in2
-                          (do (doto targets
-                                (set-initial-label-states)
-                                (set-beacons {}))
-                              (get-second-pattern-input targets)))))  ; REDRAW
+                  (let [prepare-targets #(doto $
+                                           (set-autojump force-noautojump?)
+                                           (attach-label-set)
+                                           (set-labels))]
+                    (if ?in2 (prepare-targets targets)
+                        (do (populate-sublists targets)
+                            (each [_ sublist (pairs targets.sublists)]
+                              (prepare-targets sublist))))
+                    (or ?in2
+                        (do (doto targets
+                              (set-initial-label-states)
+                              (set-beacons {}))
+                            (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
             (and directional? (= in2 spec-keys.next_match))
@@ -652,7 +650,7 @@ the API), make the motion appear to behave as an inclusive one."
                 (update-state {:dot_repeat {: in1 : in2 : target_idx}}))
 
               (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
-              (match (or (if ?in2 targets (. targets.sublists in2))
+              (match (or (if targets.sublists (. targets.sublists in2) targets)
                          (exit-early (echo-not-found (.. in1 in2))))
                 [only nil]
                 (exit (update-dot-repeat-state 1)
