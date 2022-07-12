@@ -44,6 +44,13 @@ Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
+## TOC
+
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Extending Leap](#extending-leap)
+
 ## Getting started
 
 ### Requirements
@@ -296,10 +303,10 @@ Examples:
 ```lua
 -- Searching in all windows (including the current one) on the tab page.
 function leap_all_windows()
-    local focusable_windows_on_tabpage = vim.tbl_filter(
-      function (win) return vim.api.nvim_win_get_config(win).focusable end,
-      vim.api.nvim_tabpage_list_wins(0)
-    )
+  local focusable_windows_on_tabpage = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
   require'leap'.leap { target_windows = focusable_windows_on_tabpage }
 end
 
