@@ -344,7 +344,7 @@ end
 vim.api.nvim_create_autocmd('User', {
   pattern = 'LeapEnter',
   callback = function ()
-    if state.args.my_custom_flag then
+    if require'leap'.state.args.my_custom_flag then
       -- Implement some special logic here, that will only apply to
       -- my_custom_leap_func() (e.g., change the style of the labels),
       -- and clean up with an analogous `LeapLeave` autocommand.
