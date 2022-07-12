@@ -16,14 +16,14 @@ feedback). To reach a level of sophistication where one does not have to think
 much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
-Leap's motto is to [sharpen the
+Our motto is to [sharpen the
 saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/), and enhance the
 native interface as seamlessly as possible. The plugin works across windows,
 supports operators, inclusive/exclusive toggle (`v`), dot-repeat (`.`),
 multibyte text and
 [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-(language mapping), among others, and intends to continuously improve in this
-respect.
+(language mapping), autocommands via `User` events, among others, and intends to
+continuously improve in this respect.
 
 ### Background
 
@@ -60,7 +60,7 @@ corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 Use your preferred plugin manager. No extra steps needed, besides optionally
 setting the default keymaps:
 
-`lua require('leap').set_default_keymaps()`
+`require('leap').set_default_keymaps()`
 
 ## Usage
 
@@ -256,40 +256,6 @@ argument).
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 leap-custom-keymaps`.
 
-### Search mode tweaks (bidirectional and all-windows search)
-
-For further customization you can call the `leap` function directly. The
-`target_windows` argument allows you to pass in a list of window ID-s (`:h
-winid`).
-
-```lua
--- Searching in all windows (including the current one) on the tab page:
-function leap_all_windows()
-  require'leap'.leap {
-    target_windows = vim.tbl_filter(
-      function (win) return vim.api.nvim_win_get_config(win).focusable end,
-      vim.api.nvim_tabpage_list_wins(0)
-    )
-  }
-end
-
--- Bidirectional search in the current window is just a specific case of the
--- multi-window mode - set `target-windows` to a table containing the current
--- window as the only element:
-function leap_bidirectional()
-  require'leap'.leap { target_windows = { vim.api.nvim_get_current_win() } }
-end
-
--- Map them to your preferred key, like:
-vim.keymap.set('n', 's', leap_all_windows, { silent = true })
-```
-
-### User events
-
-Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
-`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
-some editor options while the plugin is active (`:h leap-events`).
-
 ### Highlight groups
 
 For customizing the highlight colors, see `:h leap-highlight`.
@@ -306,3 +272,83 @@ autocmd ColorScheme * lua require('leap').init_highlight(true)
 This can be tweaked further, you could e.g. check the actual colorscheme, and
 only execute for certain ones, etc.
 
+## Extending Leap
+
+There is more to Leap than meets the eye. On a general level, you should think
+of it as less of a motion plugin and more of an engine for selecting visible
+targets on the screen (acquired by arbitrary means), and doing arbitrary things
+with them.
+
+There are lots of ways you can extend the plugin and bend it to your will, and
+the combinations of them give you almost infinite possibilities.
+
+### Calling `leap` with custom arguments
+
+Instead of using the provided `<Plug>` keys, you can also call the `leap`
+function directly. The following arguments are available:
+
+`offset`: Where to land with the cursor compared to the target position (-1, 0,
+1).
+
+`target_windows` allows you to pass in a list of windows (ID-s) to be searched.
+Examples:
+
+```lua
+-- Searching in all windows (including the current one) on the tab page.
+function leap_all_windows()
+    local focusable_windows_on_tabpage = vim.tbl_filter(
+      function (win) return vim.api.nvim_win_get_config(win).focusable end,
+      vim.api.nvim_tabpage_list_wins(0)
+    )
+  require'leap'.leap { target_windows = focusable_windows_on_tabpage }
+end
+
+-- Bidirectional search in the current window is just a specific case of the
+-- multi-window mode.
+function leap_current_window()
+  local current_window = vim.api.nvim_get_current_win()
+  require'leap'.leap { target_windows = { current_window } }
+end
+```
+
+`targets`: A list of target items: tables of arbitrary structure, with the only
+mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
+label, and also the jump target, if there is no custom `action` provided.
+Targets can represent anything that has a position in the window, like
+Tree-sitter nodes, etc.
+
+`action`: A Lua function that takes one argument (a target structure), and will
+be executed by Leap in place of the jump. (You could obviously implement some
+custom jump logic here too.)
+
+### Accessing the arguments passed to `leap`
+
+The arguments of the current call are always available at runtime, in the
+`state.args` table.
+
+### Setting up autocommands
+
+Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
+`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
+some editor options while the plugin is active (`:h leap-events`).
+
+Using these together with the `args` table, you can customize practically
+anything on a per-call basis. Keep in mind that you can even pass arbitrary
+flags when calling `leap`:
+
+```Lua
+function my_custom_leap_func()
+    require'leap'.leap { my_custom_flag = true, ... }
+end
+
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'LeapEnter',
+  callback = function ()
+    if state.args.my_custom_flag then
+      -- Implement some special logic here, that will only apply to
+      -- my_custom_leap_func() (e.g., change the style of the labels),
+      -- and clean up with an analogous `LeapLeave` autocommand.
+    end
+  end
+})
+```
