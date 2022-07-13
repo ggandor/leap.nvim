@@ -16,14 +16,37 @@ feedback). To reach a level of sophistication where one does not have to think
 much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
-Our motto is to [sharpen the
-saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/), and enhance the
-native interface as seamlessly as possible. The plugin works across windows,
-supports operators, inclusive/exclusive toggle (`v`), dot-repeat (`.`),
-multibyte text and
-[keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-(language mapping), autocommands via `User` events, among others, and intends to
-continuously improve in this respect.
+## TOC
+
+- [Introduction](#introduction)
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Extending Leap](#extending-leap)
+
+## Introduction
+
+Jumping from point A to B on the screen should not be some [exciting
+puzzle](https://www.vimgolf.com/), for which you should train yourself; it
+should be a _non-issue_. An ideal keyboard-driven interface would impose almost
+**no more cognitive burden than using a mouse**, without the constant
+context-switching required by the latter.
+
+That is, **you do not want to think about**
+
+- **the context**: it should be enough to look at the target, and nothing else
+  (↔ vanilla Vim motions)
+- **the motion**: one - or very few - magic key(s) should bring you everywhere,
+  with maximal precision (↔ EasyMotion and co.)
+- **the next step**: you should be able to type the command in one go, without
+  interruptions (↔ most motion plugins except Pounce to some degree, marred by
+  its non-determinism)
+
+And of course, all the while using as few keystrokes as possible, and getting
+distracted by as few incidental visual noise as possible.
+
+It is impossible to achieve all of these without some trade-offs at least, but
+Leap comes pretty close. Read on, and [try it yourself](#usage).
 
 ### Background
 
@@ -38,18 +61,25 @@ Compared to Lightspeed, Leap
 * has less complexity and configuration options
 * has a smaller and simpler visual footprint; it feels like using Sneak
 
+### Auxiliary design principles
+
+- [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
+  build on the native interface, and aim for synergy as much as possible. The
+  plugin supports operators, dot-repeat (`.`), inclusive/exclusive toggle (`v`),
+  multibyte text and
+  [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
+  (language mapping), autocommands via `User` events, among others, and intends
+  to continuously improve in this respect.
+
+- Be opinionated (but not stubborn): provide reasonable defaults and aim for a
+  small, maintainable core; at the same time, keep the plugin flexible and
+  future-proof via [extension points](#extending-leap).
+
 ### Status
 
 Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
-
-## TOC
-
-- [Getting started](#getting-started)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Extending Leap](#extending-leap)
 
 ## Getting started
 
@@ -295,7 +325,7 @@ Instead of using the provided `<Plug>` keys, you can also call the `leap`
 function directly. The following arguments are available:
 
 `offset`: Where to land with the cursor compared to the target position (-1, 0,
-1).
+1, 2).
 
 `target_windows` allows you to pass in a list of windows (ID-s) to be searched.
 Examples:
