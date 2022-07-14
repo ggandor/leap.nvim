@@ -61,7 +61,7 @@ so we set a temporary highlight on it to see where we are."
                                       :virt_text_pos "overlay"
                                       :hl_mode "combine"
                                       :priority self.priority.cursor})]
-    (table.insert self.extmarks [0 id])))
+    (table.insert self.extmarks [(api.nvim_get_current_buf) id])))
 
 
 (fn M.init-highlight [self force?]

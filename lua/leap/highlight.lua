@@ -58,7 +58,7 @@ M["highlight-cursor"] = function(self, _3fpos)
   local pos = _let_11_
   local ch_at_curpos = (util["get-char-at"](pos, {}) or " ")
   local id = api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
-  return table.insert(self.extmarks, {0, id})
+  return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
 end
 M["init-highlight"] = function(self, force_3f)
   local bg = vim.o.background
