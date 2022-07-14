@@ -12,6 +12,7 @@ M.cleanup = function(self, affected_windows)
     local id = _each_3_[2]
     api.nvim_buf_del_extmark(bufnr, self.ns, id)
   end
+  self.extmarks = {}
   if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
     for _, wininfo in ipairs(affected_windows) do
       api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)

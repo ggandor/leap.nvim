@@ -20,6 +20,7 @@
   ; Clear beacons & cursor.
   (each [_ [bufnr id] (ipairs self.extmarks)]
     (api.nvim_buf_del_extmark bufnr self.ns id))
+  (set self.extmarks [])
   ; Clear backdrop.
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
     (each [_ wininfo (ipairs affected-windows)]
