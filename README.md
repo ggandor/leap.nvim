@@ -258,7 +258,7 @@ with the defaults.
 
 ```Lua
 require('leap').setup {
-  highlight_ahead_of_time = true,
+  max_aot_targets = nil,
   highlight_unlabeled = false,
   case_sensitive = false,
   -- Groups of characters that should match each other.

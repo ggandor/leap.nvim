@@ -567,7 +567,8 @@ the API), make the motion appear to behave as an inclusive one."
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (with-highlight-chores (light-up-beacons targets))
+      (when (< (length targets) (or opts.max_aot_targets math.huge))
+        (with-highlight-chores (light-up-beacons targets)))
       (or (get-input-by-keymap prompt) (exit-early)))
 
     (fn get-full-pattern-input []
@@ -612,9 +613,9 @@ the API), make the motion appear to behave as an inclusive one."
     (local do-action (or user-given-action jump-to!))
     (match-try (if user-given-targets (values true true)
                    dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
+                   (= opts.max_aot_targets 0) (get-full-pattern-input)  ; REDRAW
                    ; This might also return in2 too, if using the `repeat_search` key.
-                   opts.highlight_ahead_of_time (get-first-pattern-input)  ; REDRAW
-                   (get-full-pattern-input))  ; REDRAW
+                   (get-first-pattern-input))  ; REDRAW
       (in1 ?in2) (or user-given-targets
                      (get-targets (prepare-pattern in1 ?in2)
                                   {: backward? :target-windows ?target-windows})

@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 July 01
+Last change: 2022 July 14
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
@@ -123,17 +123,26 @@ Setting multiple options via the `setup` function: >
 
 Available options~
 
-`highlight_ahead_of_time = true`
+`max_aot_targets = nil`
 
-    Enable two-step processing: show labels and/or highlight matches right
-    after the first input character.
+    By default, the plugin shows labels and/or highlights matches right after
+    the first input character. This option disables ahead-of-time displaying
+    of target beacons beyond a certain number of phase 1 targets (to mitigate
+    visual noise in extreme cases). Setting it to 0 disables two-step
+    processing altogether.
+
+    Note: If this option is set to some non-zero number, and there are
+    `safe_labels` (i.e., autojump is possible), enabling `highlight_unlabeled`
+    might be helpful: then you can be sure whether you will jump to the target
+    automatically at the next keypress or you should prepare for some label to
+    appear.
 
 `highlight_unlabeled = false`
 
     Whether to highlight all unlabeled matches. (Matches covering labels will
     get highlighted anyway.)
 
-    Note: This is only relevant if `highlight_ahead_of_time` is enabled.
+    Note: This is only relevant if `max_aot_targets` is not 0.
 
 `case_sensitive = false`
 

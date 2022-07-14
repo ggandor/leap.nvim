@@ -1,4 +1,4 @@
-{:highlight_ahead_of_time true
+{:max_aot_targets nil
  :highlight_unlabeled false
  :case_sensitive false
  :character_classes []
