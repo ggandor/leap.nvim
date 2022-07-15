@@ -427,6 +427,9 @@ the API), make the motion appear to behave as an inclusive one."
            :targets user-given-targets :action user-given-action
            &as kwargs}]
   "Entry point for Leap motions."
+  (match target-windows
+    [nil] (do (echo "no targetable windows") (lua :return)))
+
   (let [{:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
 
