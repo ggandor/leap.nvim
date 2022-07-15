@@ -43,12 +43,6 @@
 
 ; For `leap` only.
 
-(fn echo-no-prev-search []
-  (echo "no previous search"))
-
-(fn echo-not-found [s]
-  (echo (.. "not found: " s)))
-
 (fn exec-user-autocmds [pattern]
   (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
@@ -423,16 +417,20 @@ the API), make the motion appear to behave as an inclusive one."
               :args nil})  ; arguments passed to the current call
 
 
-(fn leap [{:dot_repeat dot-repeat? :target_windows target-windows
-           :targets user-given-targets :action user-given-action
-           &as kwargs}]
+(fn leap [kwargs]
   "Entry point for Leap motions."
-  (match target-windows
-    [nil] (do (echo "no targetable windows") (lua :return)))
-
-  (let [{:backward backward? :inclusive_op inclusive-op? : offset}
+  (match kwargs.target_windows
+    [nil] (do (echo "no targetable windows")
+              (lua :return)))  ; EARLY
+  (let [{:dot_repeat dot-repeat?
+         :target_windows target-windows
+         :targets user-given-targets
+         :action user-given-action}
+        kwargs
+        {:backward backward?
+         :inclusive_op inclusive-op?
+         : offset}
         (if dot-repeat? state.dot_repeat kwargs)
-
         _ (set state.args kwargs)
         directional? (not target-windows)
         ->wininfo #(. (vim.fn.getwininfo $) 1)
@@ -461,6 +459,8 @@ the API), make the motion appear to behave as an inclusive one."
                                                 (. opts.special_keys k)))})]
 
     ; Helpers ///
+
+    (fn echo-not-found [s] (echo (.. "not found: " s)))
 
     ; Note: One of the main purpose of these macros, besides wrapping
     ; cleanup stuff, is to enforce and encapsulate the requirement that
@@ -566,7 +566,7 @@ the API), make the motion appear to behave as an inclusive one."
         ; if the need arises.
         spec-keys.repeat_search (if state.repeat.in1
                                     (values state.repeat.in1 state.repeat.in2)
-                                    (exit-early (echo-no-prev-search)))
+                                    (exit-early (echo "no previous search")))
         in1 in1))
 
     (fn get-second-pattern-input [targets]
@@ -608,12 +608,13 @@ the API), make the motion appear to behave as an inclusive one."
 
     ; //> Helpers
 
+    (local do-action (or user-given-action jump-to!))
+
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
     (exec-user-autocmds :LeapEnter)
 
-    (local do-action (or user-given-action jump-to!))
     (match-try (if user-given-targets (values true true)
                    dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
                    (= opts.max_aot_targets 0) (get-full-pattern-input)  ; REDRAW
