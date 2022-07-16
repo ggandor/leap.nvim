@@ -16,8 +16,6 @@ feedback). To reach a level of sophistication where one does not have to think
 much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
-## TOC
-
 - [Introduction](#introduction)
 - [Getting started](#getting-started)
 - [Usage](#usage)
@@ -34,19 +32,22 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
+- **the motion command**: we need one fundamental targeting method, instead of a
+  smorgasbord of possibilities, having "enhanced" versions of each native
+  motion, and more (↔ EasyMotion and co.)
 - **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motions)
-- **the motion**: one - or very few - magic key(s) should bring you everywhere,
-  with maximal precision (↔ EasyMotion and co.)
-- **the next step**: you should be able to type the command in one go, without
-  interruptions (↔ most motion plugins except Pounce to some degree, marred by
-  its non-determinism)
+  (↔ vanilla Vim motion combinations, Sneak in non-labeled mode)
+- **the steps**: the motion should be atomic (↔ Vim motion combos) and you
+  should be able to type the command in one go, without interruptions (↔ most
+  "labeling" plugins except Pounce to some degree, marred by its
+  non-determinism)
 
 And of course, all the while using as few keystrokes as possible, and getting
-distracted by as few incidental visual noise as possible.
+distracted by as little incidental visual noise as possible.
 
-It is impossible to achieve all of these without some trade-offs at least, but
-Leap comes pretty close. Read on, and [try it yourself](#usage).
+It is obviously impossible to achieve all of these at the same time, without
+some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
+the design space.
 
 ### Background
 
@@ -71,7 +72,7 @@ Compared to Lightspeed, Leap
   (language mapping), autocommands via `User` events, among others, and intends
   to continuously improve in this respect.
 
-- Be opinionated (but not stubborn): provide reasonable defaults and aim for a
+- Be opinionated, but not stubborn: provide reasonable defaults and aim for a
   small, maintainable core; at the same time, keep the plugin flexible and
   future-proof via [extension points](#extending-leap).
 
