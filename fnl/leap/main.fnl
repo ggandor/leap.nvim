@@ -422,28 +422,23 @@ the API), make the motion appear to behave as an inclusive one."
   (match kwargs.target_windows
     [nil] (do (echo "no targetable windows")
               (lua :return)))  ; EARLY
-  (let [{:dot_repeat dot-repeat?
-         :target_windows target-windows
-         :targets user-given-targets
-         :action user-given-action}
+  (let [{:dot_repeat dot-repeat? :target_windows target-windows
+         :targets user-given-targets :action user-given-action}
         kwargs
-        {:backward backward?
-         :inclusive_op inclusive-op?
-         : offset}
+        {:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
-        directional? (not target-windows)
         ->wininfo #(. (vim.fn.getwininfo $) 1)
-        ?target-windows (-?>> target-windows (map ->wininfo))
         current-window (->wininfo (vim.fn.win_getid))
-        hl-affected-windows (let [t [current-window]]  ; cursor is always highlighted
-                              (each [_ w (ipairs (or ?target-windows []))]
-                                (table.insert t w))
-                              t)
         ; Fill in the wininfo fields if not provided.
         _ (when (and user-given-targets (not (. user-given-targets 1 :wininfo)))
             (->> user-given-targets
                  (map (fn [t] (set t.wininfo current-window)))))
+        ?target-windows (-?>> target-windows (map ->wininfo))
+        hl-affected-windows [current-window]  ; cursor is always highlighted
+        _ (each [_ w (ipairs (or ?target-windows []))]
+            (table.insert hl-affected-windows w))
+        directional? (not target-windows)
         ; We need to save the mode here, because the `:normal` command
         ; in `jump-to!*` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
@@ -497,6 +492,13 @@ the API), make the motion appear to behave as an inclusive one."
       (match (. opts.character_class_of in)
         chars (.. "\\(" (table.concat chars "\\|") "\\)")))
 
+    ; NOTE: If two-step processing is ebabled (AOT beacons), for any
+    ; kind of input mapping (case-insensitivity, character classes,
+    ; etc.) we need to tweak things in two different places:
+    ;   1. For the first input, we modify the search pattern itself
+    ;      (here).
+    ;   2. For the second input, we need to play with the sublist keys
+    ;      (see `populate-sublists`).
     (fn prepare-pattern [in1 ?in2]
       (.. "\\V"
           (if opts.case_sensitive "\\C" "\\c")
@@ -537,28 +539,6 @@ the API), make the motion appear to behave as an inclusive one."
                         : mode : offset : backward? : inclusive-op?})
             (set first-jump? false))))
 
-    (fn traverse [targets idx {: force-no-labels?}]
-      (when force-no-labels? (inactivate-labels targets))
-      (set-beacons targets {: force-no-labels?
-                            :user-given-targets? user-given-targets})
-      (with-highlight-chores (light-up-beacons targets (inc idx)))
-      (match (or (get-input) (exit))
-        input
-        (if (or (= input spec-keys.next_match) (= input spec-keys.prev_match))
-            (let [new-idx (match input
-                            spec-keys.next_match (min (inc idx) (length targets))
-                            spec-keys.prev_match (max (dec idx) 1))]
-              ; Need to save now - we might <esc> next time, exiting above.
-              (update-state {:repeat {:in1 state.repeat.in1
-                                      ; ?. -> user-given targets might not have :pair
-                                      :in2 (?. targets new-idx :pair 2)}})
-              (jump-to! (. targets new-idx))
-              (traverse targets new-idx {: force-no-labels?}))
-            ; We still want the labels (if there are) to function.
-            (match (get-target-with-active-primary-label targets input)
-              [_ target] (exit (jump-to! target))
-              _ (exit (vim.fn.feedkeys input :i))))))
-
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
       (match (or (get-input-by-keymap prompt) (exit-early))
@@ -570,7 +550,7 @@ the API), make the motion appear to behave as an inclusive one."
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (when (< (length targets) (or opts.max_aot_targets math.huge))
+      (when (<= (length targets) (or opts.max_aot_targets math.huge))
         (with-highlight-chores (light-up-beacons targets)))
       (or (get-input-by-keymap prompt) (exit-early)))
 
@@ -605,6 +585,28 @@ the API), make the motion appear to behave as an inclusive one."
                 (loop new-offset false))
               input)))
       (loop 0 true))
+
+    (fn traversal-loop [targets idx {: force-no-labels?}]
+      (when force-no-labels? (inactivate-labels targets))
+      (set-beacons targets {: force-no-labels?
+                            :user-given-targets? user-given-targets})
+      (with-highlight-chores (light-up-beacons targets (inc idx)))
+      (match (or (get-input) (exit))
+        input
+        (if (or (= input spec-keys.next_match) (= input spec-keys.prev_match))
+            (let [new-idx (match input
+                            spec-keys.next_match (min (inc idx) (length targets))
+                            spec-keys.prev_match (max (dec idx) 1))]
+              ; Need to save now - we might <esc> next time, exiting above.
+              (update-state {:repeat {:in1 state.repeat.in1
+                                      ; ?. -> user-given targets might not have :pair
+                                      :in2 (?. targets new-idx :pair 2)}})
+              (jump-to! (. targets new-idx))
+              (traversal-loop targets new-idx {: force-no-labels?}))
+            ; We still want the labels (if there are) to function.
+            (match (get-target-with-active-primary-label targets input)
+              [_ target] (exit (jump-to! target))
+              _ (exit (vim.fn.feedkeys input :i))))))
 
     ; //> Helpers
 
@@ -642,49 +644,45 @@ the API), make the motion appear to behave as an inclusive one."
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
-            (and directional? (= in2 spec-keys.next_match))
+            (and (= in2 spec-keys.next_match) directional?)
             (let [in2 (. targets 1 :pair 2)]
               (update-state {:repeat {: in1 : in2}})
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
                   (exit (update-state {:dot_repeat {: in1 : in2 :target_idx 1}}))
-                  (traverse targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
-
+                  ; REDRAW (LOOP)
+                  (traversal-loop targets 1 {:force-no-labels? true})))
             (do
-              (fn update-dot-repeat-state [target_idx]
-                (update-state {:dot_repeat {: in1 : in2 : target_idx}}))
-
-              (update-state {:repeat {: in1 : in2}})  ; save it here (repeat might succeed)
+              ; Do this _now_ - in any case, repeat can succeed.
+              (update-state {:repeat {: in1 : in2}})
               (match (or (if targets.sublists (. targets.sublists in2) targets)
                          (exit-early (echo-not-found (.. in1 in2))))
-                [only nil]
-                (exit (update-dot-repeat-state 1)
-                      (do-action only))
-
                 targets*
-                (do
-                  (when targets*.autojump? (do-action (. targets* 1)))
-                  ; Sets label states (modifies the target list) in each cycle!
-                  (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
-                    in-final
-                    (if
-                      ; Jump to the first match on the [rest of the] targets*?
-                      (and directional? (= in-final spec-keys.next_match))
-                      (let [new-idx (if targets*.autojump? 2 1)]
-                        (do-action (. targets* new-idx))
-                        (if (or op-mode? user-given-action)
-                            (exit (update-dot-repeat-state 1))  ; implies no-autojump
-                            (traverse targets* new-idx {:force-no-labels?
-                                                       (not targets*.autojump?)})))  ; REDRAW (LOOP)
-
-                      (match (get-target-with-active-primary-label targets* in-final)
-                        [idx target]
-                        (exit (update-dot-repeat-state idx)
-                              (do-action target))
-
-                        _ (if targets*.autojump?
-                              (exit (vim.fn.feedkeys in-final :i))
-                              (exit-early))))))))))))
+                (let [exit-with-action
+                      (fn [idx]
+                        (exit (update-state {:dot_repeat {: in1 : in2 :target_idx idx}})
+                              (do-action (. targets* idx))))]
+                  (if (= (length targets*) 1) (exit-with-action 1)
+                      (do
+                        (when targets*.autojump? (do-action (. targets* 1)))
+                        ; REDRAW (LOOP)
+                        ; This sets label states (i.e., modifies targets*) in each cycle.
+                        (match (post-pattern-input-loop targets*)
+                          in-final
+                          (if
+                            ; Jump to the first match on the [rest of the] target list?
+                            (and (= in-final spec-keys.next_match) directional?)
+                            (if (or op-mode? user-given-action) (exit-with-action 1)  ; implies no-autojump
+                                (let [new-idx (if targets*.autojump? 2 1)]
+                                  (do-action (. targets* new-idx))
+                                  ; REDRAW (LOOP)
+                                  (traversal-loop targets* new-idx
+                                                  {:force-no-labels?
+                                                   (not targets*.autojump?)})))
+                            (match (get-target-with-active-primary-label targets* in-final)
+                              [idx _] (exit-with-action idx)
+                              _ (if targets*.autojump? (exit (vim.fn.feedkeys in-final :i))
+                                    (exit-early))))))))))))))
 
 
 ; Handling editor options ///1
