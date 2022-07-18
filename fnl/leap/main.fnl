@@ -2,9 +2,6 @@
 
 (local hl (require "leap.highlight"))
 (local opts (require "leap.opts"))
-(local jump (require "leap.jump"))
-
-(local {: get-targets} (require "leap.search"))
 
 (local {: inc
         : dec
@@ -454,6 +451,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (local jump-to!
       (do (var first-jump? true)  ; better be managed by the function itself
           (fn [target]
+            (local jump (require "leap.jump"))
             (jump.jump-to! target.pos
                            {:winid target.wininfo.winid
                             :add-to-jumplist? first-jump?
@@ -544,8 +542,10 @@ B: Two labels occupy the same position (this can occur at EOL or window
                    ; This might also return in2 too, if using the `repeat_search` key.
                    (get-first-pattern-input))  ; REDRAW
       (in1 ?in2) (or user-given-targets
-                     (get-targets (prepare-pattern in1 ?in2)
-                                  {: backward? :target-windows ?target-windows})
+                     (let [search (require "leap.search")
+                           pattern (prepare-pattern in1 ?in2)
+                           kwargs {: backward? :target-windows ?target-windows}]
+                       (search.get-targets pattern kwargs))
                      (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
       targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
                                 target (exit (do-action target))
