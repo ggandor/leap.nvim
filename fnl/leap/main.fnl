@@ -56,7 +56,7 @@ interrupted change operation."
 ; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
-(fn set-dot-repeat []
+(fn set-dot-repeat* []
   ; Note: dot-repeatable (i.e. non-yank) operation is assumed, we're not
   ; checking it here.
   (let [op vim.v.operator
@@ -464,7 +464,7 @@ the API), make the motion appear to behave as an inclusive one."
     ; dangerous, they might return 0 for example, like `feedkey`, and
     ; with that they can screw up Fennel match forms in a breeze,
     ; resulting in misterious bugs, so it's better to be paranoid.)
-    (macro exit* [...]
+    (macro exit [...]
       `(do (do ,...)
            (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
@@ -474,11 +474,7 @@ the API), make the motion appear to behave as an inclusive one."
     ; `handle-interrupted-change-op!` moves the cursor!
     (macro exit-early [...]
       `(do (when change-op? (handle-interrupted-change-op!))
-           (exit* ,...)))
-
-    (macro exit [...]
-      `(do (when dot-repeatable-op? (set-dot-repeat))
-           (exit* ,...)))
+           (exit ,...)))
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
@@ -524,11 +520,16 @@ the API), make the motion appear to behave as an inclusive one."
         ; a given sublist).
         (when state*.repeat
           (set state.repeat state*.repeat))
-        (when (and state*.dot_repeat dot-repeatable-op?)
+        (when state*.dot_repeat
           (set state.dot_repeat
                (vim.tbl_extend :error
                                state*.dot_repeat
                                {: backward? : offset : inclusive-op?})))))
+
+    (fn set-dot-repeat [in1 in2 target_idx]
+      (when dot-repeatable-op?
+        (update-state {:dot_repeat {: in1 : in2 : target_idx}})
+        (set-dot-repeat*)))
 
     (local jump-to!
       (do (var first-jump? true)  ; better be managed by the function itself
@@ -649,7 +650,7 @@ the API), make the motion appear to behave as an inclusive one."
               (update-state {:repeat {: in1 : in2}})
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
-                  (exit (update-state {:dot_repeat {: in1 : in2 :target_idx 1}}))
+                  (exit (set-dot-repeat in1 in2 1))
                   ; REDRAW (LOOP)
                   (traversal-loop targets 1 {:force-no-labels? true})))
             (do
@@ -658,13 +659,13 @@ the API), make the motion appear to behave as an inclusive one."
               (match (or (if targets.sublists (. targets.sublists in2) targets)
                          (exit-early (echo-not-found (.. in1 in2))))
                 targets*
-                (let [exit-with-action
-                      (fn [idx]
-                        (exit (update-state {:dot_repeat {: in1 : in2 :target_idx idx}})
-                              (do-action (. targets* idx))))]
+                (let [exit-with-action (fn [idx]
+                                          (exit (set-dot-repeat in1 in2 idx)
+                                                (do-action (. targets* idx))))]
                   (if (= (length targets*) 1) (exit-with-action 1)
                       (do
-                        (when targets*.autojump? (do-action (. targets* 1)))
+                        (when targets*.autojump?
+                          (do-action (. targets* 1)))
                         ; REDRAW (LOOP)
                         ; This sets label states (i.e., modifies targets*) in each cycle.
                         (match (post-pattern-input-loop targets*)
@@ -672,7 +673,7 @@ the API), make the motion appear to behave as an inclusive one."
                           (if
                             ; Jump to the first match on the [rest of the] target list?
                             (and (= in-final spec-keys.next_match) directional?)
-                            (if (or op-mode? user-given-action) (exit-with-action 1)  ; implies no-autojump
+                            (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                 (let [new-idx (if targets*.autojump? 2 1)]
                                   (do-action (. targets* new-idx))
                                   ; REDRAW (LOOP)
