@@ -651,8 +651,7 @@ the API), make the motion appear to behave as an inclusive one."
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
                   (exit (set-dot-repeat in1 in2 1))
-                  ; REDRAW (LOOP)
-                  (traversal-loop targets 1 {:force-no-labels? true})))
+                  (traversal-loop targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
             (do
               ; Do this _now_ - in any case, repeat can succeed.
               (update-state {:repeat {: in1 : in2}})
@@ -660,15 +659,14 @@ the API), make the motion appear to behave as an inclusive one."
                          (exit-early (echo-not-found (.. in1 in2))))
                 targets*
                 (let [exit-with-action (fn [idx]
-                                          (exit (set-dot-repeat in1 in2 idx)
-                                                (do-action (. targets* idx))))]
+                                         (exit (set-dot-repeat in1 in2 idx)
+                                               (do-action (. targets* idx))))]
                   (if (= (length targets*) 1) (exit-with-action 1)
                       (do
                         (when targets*.autojump?
                           (do-action (. targets* 1)))
-                        ; REDRAW (LOOP)
                         ; This sets label states (i.e., modifies targets*) in each cycle.
-                        (match (post-pattern-input-loop targets*)
+                        (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
                           in-final
                           (if
                             ; Jump to the first match on the [rest of the] target list?
@@ -676,8 +674,7 @@ the API), make the motion appear to behave as an inclusive one."
                             (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                 (let [new-idx (if targets*.autojump? 2 1)]
                                   (do-action (. targets* new-idx))
-                                  ; REDRAW (LOOP)
-                                  (traversal-loop targets* new-idx
+                                  (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                                                   {:force-no-labels?
                                                    (not targets*.autojump?)})))
                             (match (get-target-with-active-primary-label targets* in-final)
