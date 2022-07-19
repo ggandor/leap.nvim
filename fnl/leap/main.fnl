@@ -226,18 +226,20 @@ char separately."
     (+ (ch1:len) (if edge-pos? 0 (ch2:len)))))
 
 
-(fn set-beacon-for-labeled [target user-given-targets?]
-  (let [offset (if user-given-targets? 0 (get-label-offset target))
+(fn set-beacon-for-labeled [target {: user-given-targets? : aot?}]
+  (let [offset (if aot? (get-label-offset target) 0)  ; user-given-targets implies (not aot)
+        pad (if (or user-given-targets? aot?) "" " ")
+        text (.. target.label pad)
         virttext (match target.label-state
-                   :selected [[target.label hl.group.label-selected]]
-                   :active-primary [[target.label hl.group.label-primary]]
-                   :active-secondary [[target.label hl.group.label-secondary]]
+                   :selected [[text hl.group.label-selected]]
+                   :active-primary [[text hl.group.label-primary]]
+                   :active-secondary [[text hl.group.label-secondary]]
                    :inactive (when-not opts.highlight_unlabeled
                                ; In this case, "no highlight" should
                                ; unambiguously signal "no further keystrokes
                                ; needed", so it is mandatory to show all labeled
                                ; positions in some way.
-                               [[" " hl.group.label-secondary]]))]
+                               [[(.. " " pad) hl.group.label-secondary]]))]
     (tset target :beacon (when virttext [offset virttext]))))
 
 
@@ -292,19 +294,17 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 
 ; TODO: User-given targets cannot get a match highlight at the moment.
-(fn set-beacons [targets {: force-no-labels? : user-given-targets?}]
+(fn set-beacons [targets {: force-no-labels? : user-given-targets? : aot?}]
   (if (and force-no-labels? (not user-given-targets?))
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs targets)]
             (if target.label
-                (set-beacon-for-labeled target user-given-targets?)
+                (set-beacon-for-labeled target {: user-given-targets? : aot?})
 
-                (and opts.highlight_unlabeled (not user-given-targets?))
+                (and aot? opts.highlight_unlabeled)
                 (set-beacon-to-match-hl target)))
-          ; User-given targets mean no two-phase processing, i.e., no conflicts.
-          (when-not user-given-targets?
-            (resolve-conflicts targets)))))
+          (when aot? (resolve-conflicts targets)))))
 
 
 (fn light-up-beacons [targets ?start]
@@ -372,6 +372,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
+
+    (var aot? (not (or multi-select? user-given-targets
+                       (= opts.max_aot_targets 0))))
 
     ; Helpers ///
 
@@ -466,9 +469,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
       (match (or (get-input-by-keymap prompt) (exit-early))
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
-        spec-keys.repeat_search (if state.repeat.in1
-                                    (values state.repeat.in1 state.repeat.in2)
-                                    (exit-early (echo "no previous search")))
+        spec-keys.repeat_search
+        (if state.repeat.in1
+            (do (set aot? false)
+                (values state.repeat.in1 state.repeat.in2))
+            (exit-early (echo "no previous search")))
+
         in1 in1))
 
     (fn get-second-pattern-input [targets]
@@ -489,7 +495,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
           ; Do _not_ skip this on initial invocation - we might have skipped
           ; setting the initial label states in case of <enter>-repeat.
           (set-label-states {: group-offset})
-          (set-beacons {:user-given-targets? user-given-targets}))
+          (set-beacons {:user-given-targets? user-given-targets : aot?}))
         (with-highlight-chores
           (light-up-beacons sublist (when sublist.autojump? 2)))
         (match (or (get-input) (exit-early))
@@ -531,7 +537,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn traversal-loop [targets idx {: force-no-labels?}]
       (when force-no-labels? (inactivate-labels targets))
-      (set-beacons targets {: force-no-labels?
+      (set-beacons targets {: force-no-labels? : aot?
                             :user-given-targets? user-given-targets})
       (with-highlight-chores (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
@@ -560,12 +566,11 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (exec-user-autocmds :LeapEnter)
 
-    (match-try (if user-given-targets (values true true)
-                   dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
-                   (or multi-select? (= opts.max_aot_targets 0))
-                   (get-full-pattern-input)  ; REDRAW
+    (match-try (if dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
+                   user-given-targets (values true true)
                    ; This might also return in2 too, if using the `repeat_search` key.
-                   (get-first-pattern-input))  ; REDRAW
+                   aot? (get-first-pattern-input)  ; REDRAW
+                   (get-full-pattern-input))  ; REDRAW
       (in1 ?in2) (or user-given-targets
                      (let [search (require "leap.search")
                            pattern (prepare-pattern in1 ?in2)
@@ -583,10 +588,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
                               (prepare-targets sublist))))
+                    (when (> (length targets) (or opts.max_aot_targets math.huge))
+                      (set aot? false))
                     (or ?in2
                         (do (doto targets
                               (set-initial-label-states)
-                              (set-beacons {}))
+                              (set-beacons {: aot?}))
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
