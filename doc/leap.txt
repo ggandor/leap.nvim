@@ -1,9 +1,9 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 July 14
+Last change: 2022 July 19
 
 ==============================================================================
-CONTENTS                                                         *leap-contents*
+CONTENTS                                               *leap.nvim* *leap-contents*
 
   Usage ··························································· |leap-usage|
   Configuration ·················································· |leap-config|
@@ -11,6 +11,7 @@ CONTENTS                                                         *leap-contents*
   Custom keymaps ········································· |leap-custom-keymaps|
   Highlighting ················································ |leap-highlight|
   Events ························································· |leap-events|
+  Extending Leap ············································· |leap-extensions|
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -199,20 +200,20 @@ Available options~
 
 `special_keys` >
     {
+      eol           = '<space>',
       repeat_search = '<enter>',
       next_match    = '<enter>',
       prev_match    = '<tab>',
       next_group    = '<space>',
       prev_group    = '<tab>',
-      eol           = '<space>',
     }
 <
     Keys captured by the plugin at runtime, to:
+    - target characters before EOL
     - repeat with the previous input after invocation (|leap-repeat|)
     - jump to the next/previous match in traversal mode (|leap-traversal|)
     - switch to the next/previous group of matches, when there are more
       matches than labels available (|leap-usage|)
-    - target characters before EOL
 
 ==============================================================================
 DEFAULT KEYMAPS                                           *leap-default-keymaps*
@@ -308,6 +309,9 @@ liking (using |nvim_set_hl()|):
         be reached by pressing `<space>` (`special_keys.next_group`)
         before the label character.
 
+    *LeapLabelSelected*
+        Labels that are selected for the action in |leap-multiselect| mode.
+
     *LeapBackdrop*
         In some cases it might be useful or even necessary to apply certain
         settings on the rest of the area, like disabling all `gui` attributes,
@@ -342,6 +346,74 @@ Example: >
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapLeave',
       command = 'let &hlsearch=&hlsearch',
+    })
+<
+==============================================================================
+EXTENDING LEAP                                                 *leap-extensions*
+
+There is more to Leap than meets the eye. On a general level, you should think
+of it as less of a motion plugin and more of an engine for selecting visible
+targets on the screen (acquired by arbitrary means), and doing arbitrary things
+with them.
+
+There are lots of ways you can extend the plugin and bend it to your will, and
+the combinations of them give you almost infinite possibilities.
+
+Instead of using the provided `<Plug>` keys, you can also call the |leap()|
+function directly:
+
+leap({opts})                                                            *leap()*
+    Entry point for all |leap.nvim| actions.
+
+    Parameters ~
+        {opts} Optional parameters.
+               • offset: Where to land with the cursor compared to the target
+                 position (-1, 0, 1, 2).
+               • inclusive_op: A flag indicating whether an operation should
+                 behave as |inclusive|. 
+               • target_windows: A list of windows (as |winid|s) to be
+                 searched.
+                                                           *leap-custom-targets*
+               • targets: A list of target items: tables of arbitrary
+                 structure, with the only mandatory field being `pos` - a
+                 (1,1)-indexed tuple; this is the position of the label, and
+                 also the jump target, if there is no custom `action`
+                 provided. Targets can represent anything that has a position
+                 in the window, like Tree-sitter nodes, etc.
+                                                            *leap-custom-action* 
+               • action: A Lua function that will be executed by Leap in place
+                 of the jump. (You could obviously implement some custom jump
+                 logic here too.) Its only argument is either a target, or a
+                 list of targets (in `multiselect` mode).
+                                                              *leap-multiselect*
+               • multiselect: A flag allowing for selecting multiple targets
+                 for `action`. In this mode, you can just start picking labels
+                 one after the other. You can revert the most recent pick with
+                 `<backspace>`, and accept the selection with `<enter>`.
+
+                                                             *leap-runtime-args*
+Accessing the arguments passed to leap() ~
+
+The arguments of the current call are always available at runtime, in the
+`state.args` table.
+
+Using |leap-events| together with the `args` table, you can customize practically
+anything on a per-call basis. Keep in mind that you can even pass arbitrary
+flags when calling |leap()|:
+>
+    function my_custom_leap_func()
+        require'leap'.leap { my_custom_flag = true, ... }
+    end
+
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'LeapEnter',
+      callback = function ()
+        if require'leap'.state.args.my_custom_flag then
+          -- Implement some special logic here, that will only apply to
+          -- my_custom_leap_func() (e.g., change the style of the labels),
+          -- and clean up with an analogous `LeapLeave` autocommand.
+        end
+      end
     })
 <
 ==============================================================================

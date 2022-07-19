@@ -271,12 +271,12 @@ require('leap').setup {
   labels = { . . . },
   -- These keys are captured directly by the plugin at runtime.
   special_keys = {
+    eol           = '<space>',
     repeat_search = '<enter>',
     next_match    = '<enter>',
     prev_match    = '<tab>',
     next_group    = '<space>',
     prev_group    = '<tab>',
-    eol           = '<space>',
   },
 }
 ```
@@ -328,6 +328,9 @@ function directly. The following arguments are available:
 `offset`: Where to land with the cursor compared to the target position (-1, 0,
 1, 2).
 
+`inclusive_op`: A flag indicating whether an operation should behave as
+inclusive (`:h inclusive`). 
+
 `target_windows` allows you to pass in a list of windows (ID-s) to be searched.
 Examples:
 
@@ -344,10 +347,11 @@ end
 -- Bidirectional search in the current window is just a specific case of the
 -- multi-window mode.
 function leap_current_window()
-  local current_window = vim.api.nvim_get_current_win()
-  require'leap'.leap { target_windows = { current_window } }
+  require'leap'.leap { target_windows = { vim.fn.win_getid() } }
 end
 ```
+
+This is where things start to become really interesting:
 
 `targets`: A list of target items: tables of arbitrary structure, with the only
 mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
@@ -355,9 +359,48 @@ label, and also the jump target, if there is no custom `action` provided.
 Targets can represent anything that has a position in the window, like
 Tree-sitter nodes, etc.
 
-`action`: A Lua function that takes one argument (a target structure), and will
-be executed by Leap in place of the jump. (You could obviously implement some
-custom jump logic here too.)
+`action`: A Lua function that will be executed by Leap in place of the jump. (You
+could obviously implement some custom jump logic here too.) Its only argument is
+either a target, or a list of targets (in multiselect mode).
+
+`multiselect`: A flag allowing for selecting multiple targets for `action`. In
+this mode, you can just start picking labels one after the other. You can revert
+the most recent pick with `<backspace>`, and accept the selection with
+`<enter>`.
+
+The following example executes a `normal!` command at each selected position
+(this could obviously be more useful if we'd pass in custom targets too):
+
+```lua
+-- For multiselect, single-window Leap calls.
+function leap_paranormal(targets)
+  input = vim.fn.input("normal! ")
+  if #input < 1 then return end
+  local ns = vim.api.nvim_create_namespace("")
+  -- Set an extmark as an anchor for each target, so that we can execute
+  -- commands that modify the positions of the others (insert/change/delete).
+  for _, target in ipairs(targets) do
+    local line, col = unpack(target.pos)
+    id = vim.api.nvim_buf_set_extmark(0, ns, line - 1, col - 1, {})
+    target.extmark_id = id
+  end
+  -- Jump to each and execute the command sequence.
+  for _, target in ipairs(targets) do
+    local id = target.extmark_id
+    local pos = vim.api.nvim_buf_get_extmark_by_id(0, ns, id, {})
+    vim.fn.cursor(pos[1] + 1, pos[2] + 1)
+    vim.cmd("normal! " .. input)
+  end
+  vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+end
+
+-- Usage:
+require'leap'.leap {
+    target_windows = {vim.fn.win_getid()},
+    multiselect = true,
+    action = leap_paranormal
+}
+```
 
 ### Accessing the arguments passed to `leap`
 

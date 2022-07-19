@@ -13,6 +13,7 @@
        (require "leap.util"))
 
 (local api vim.api)
+(local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
@@ -146,16 +147,15 @@ NOTE: `set-autojump` should be called BEFORE this function."
 repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
-  (when (> (length targets) 1)  ; else we jump unconditionally
-    (local {: autojump? : label-set} targets)
-    (each [i target (ipairs targets)]
-      ; Skip labeling the first target if autojump is set.
-      (local i* (if autojump? (dec i) i))
-      (when (> i* 0)
-        (tset target :label
-              (match (% i* (length label-set))
-                0 (. label-set (length label-set))
-                n (. label-set n)))))))
+  (local {: autojump? : label-set} targets)
+  (each [i target (ipairs targets)]
+    ; Skip labeling the first target if autojump is set.
+    (local i* (if autojump? (dec i) i))
+    (when (> i* 0)
+      (tset target :label
+            (match (% i* (length label-set))
+              0 (. label-set (length label-set))
+              n (. label-set n))))))
 
 
 (fn set-label-states [targets {: group-offset}]
@@ -166,7 +166,7 @@ should actually be displayed depends on the `label-state` flag."
         secondary-start (inc primary-end)
         secondary-end (+ primary-end |label-set|)]
     (each [i target (ipairs targets)]
-      (when target.label
+      (when (and target.label (not= target.label-state :selected))
         (tset target :label-state
               (if (<= primary-start i primary-end) :active-primary
                   (<= secondary-start i secondary-end) :active-secondary
@@ -229,6 +229,7 @@ char separately."
 (fn set-beacon-for-labeled [target user-given-targets?]
   (let [offset (if user-given-targets? 0 (get-label-offset target))
         virttext (match target.label-state
+                   :selected [[target.label hl.group.label-selected]]
                    :active-primary [[target.label hl.group.label-primary]]
                    :active-secondary [[target.label hl.group.label-secondary]]
                    :inactive (when-not opts.highlight_unlabeled
@@ -340,7 +341,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
     [nil] (do (echo "no targetable windows")
               (lua :return)))  ; EARLY
   (let [{:dot_repeat dot-repeat? :target_windows target-windows
-         :targets user-given-targets :action user-given-action}
+         :targets user-given-targets :action user-given-action
+         :multiselect multi-select?}
         kwargs
         {:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
@@ -364,7 +366,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
         ; In operator-pending mode, autojump would execute the operation
         ; without allowing us to select a labeled target.
-        force-noautojump? (or user-given-action op-mode? (not directional?))
+        force-noautojump? (or multi-select? user-given-action
+                              op-mode? (not directional?))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
@@ -480,8 +483,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
                     in2 (values in1 in2)
                     _ (exit-early))))
 
-    (fn post-pattern-input-loop [sublist]
-      (fn loop [group-offset initial-invoc?]
+    (fn post-pattern-input-loop [sublist ?group-offset first-invoc?]
+      (fn loop [group-offset first-invoc?]
         (doto sublist
           ; Do _not_ skip this on initial invocation - we might have skipped
           ; setting the initial label states in case of <enter>-repeat.
@@ -492,7 +495,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
-                       (and (= input spec-keys.prev_group) (not initial-invoc?)))
+                       (and (= input spec-keys.prev_group) (not first-invoc?)))
                    (or (not sublist.autojump?)
                        ; If auto-jump has been set automatically (not forced),
                        ; it implies that there are no subsequent groups.
@@ -502,8 +505,29 @@ B: Two labels occupy the same position (this can occur at EOL or window
                     inc/dec (if (= input spec-keys.next_group) inc dec)
                     new-offset (-> group-offset inc/dec (clamp 0 max-offset))]
                 (loop new-offset false))
-              input)))
-      (loop 0 true))
+              :else (values input group-offset))))
+      (loop (or ?group-offset 0)
+            (if (= nil first-invoc?) true first-invoc?)))
+
+    (local multi-select-loop
+      (let [res []]
+        (var group-offset 0)
+        (var first-invoc? true)
+        (fn loop [targets]
+          (match (post-pattern-input-loop targets group-offset first-invoc?)
+            spec-keys.multi_accept (if (next res) res  ; accept selection
+                                       (loop targets))
+            spec-keys.multi_revert (do (-?> (table.remove res)
+                                            (tset :label-state nil))
+                                       (loop targets))
+            (in group-offset*)
+            (do (set group-offset group-offset*)
+                (set first-invoc? false)
+                (match (get-target-with-active-primary-label targets in)
+                  [idx target] (when-not (contains? res target)
+                                 (table.insert res target)
+                                 (tset target :label-state :selected)))
+                (loop targets))))))
 
     (fn traversal-loop [targets idx {: force-no-labels?}]
       (when force-no-labels? (inactivate-labels targets))
@@ -538,7 +562,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (match-try (if user-given-targets (values true true)
                    dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
-                   (= opts.max_aot_targets 0) (get-full-pattern-input)  ; REDRAW
+                   (or multi-select? (= opts.max_aot_targets 0))
+                   (get-full-pattern-input)  ; REDRAW
                    ; This might also return in2 too, if using the `repeat_search` key.
                    (get-first-pattern-input))  ; REDRAW
       (in1 ?in2) (or user-given-targets
@@ -578,29 +603,33 @@ B: Two labels occupy the same position (this can occur at EOL or window
               (match (or (if targets.sublists (. targets.sublists in2) targets)
                          (exit-early (echo-not-found (.. in1 in2))))
                 targets*
-                (let [exit-with-action (fn [idx]
-                                         (exit (set-dot-repeat in1 in2 idx)
-                                               (do-action (. targets* idx))))]
-                  (if (= (length targets*) 1) (exit-with-action 1)
-                      (do
-                        (when targets*.autojump?
-                          (do-action (. targets* 1)))
-                        ; This sets label states (i.e., modifies targets*) in each cycle.
-                        (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
-                          in-final
-                          (if
-                            ; Jump to the first match on the [rest of the] target list?
-                            (and (= in-final spec-keys.next_match) directional?)
-                            (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
-                                (let [new-idx (if targets*.autojump? 2 1)]
-                                  (do-action (. targets* new-idx))
-                                  (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                                                  {:force-no-labels?
-                                                   (not targets*.autojump?)})))
-                            (match (get-target-with-active-primary-label targets* in-final)
-                              [idx _] (exit-with-action idx)
-                              _ (if targets*.autojump? (exit (vim.fn.feedkeys in-final :i))
-                                    (exit-early))))))))))))))
+                (if multi-select? (match (multi-select-loop targets*)
+                                    targets** (exit (with-highlight-chores
+                                                      (light-up-beacons targets**))
+                                                    (do-action targets**)))
+                    (let [exit-with-action (fn [idx]
+                                             (exit (set-dot-repeat in1 in2 idx)
+                                                   (do-action (. targets* idx))))]
+                      (if (= (length targets*) 1) (exit-with-action 1)
+                          (do
+                            (when targets*.autojump?
+                              (do-action (. targets* 1)))
+                            ; This sets label states (i.e., modifies targets*) in each cycle.
+                            (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
+                              in-final
+                              (if
+                                ; Jump to the first match on the [rest of the] target list?
+                                (and (= in-final spec-keys.next_match) directional?)
+                                (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
+                                    (let [new-idx (if targets*.autojump? 2 1)]
+                                      (do-action (. targets* new-idx))
+                                      (traversal-loop targets* new-idx  ; REDRAW (LOOP)
+                                                      {:force-no-labels?
+                                                       (not targets*.autojump?)})))
+                                (match (get-target-with-active-primary-label targets* in-final)
+                                  [idx _] (exit-with-action idx)
+                                  _ (if targets*.autojump? (exit (vim.fn.feedkeys in-final :i))
+                                        (exit-early)))))))))))))))
 
 
 ; Handling editor options ///1

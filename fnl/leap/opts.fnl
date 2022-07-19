@@ -10,9 +10,11 @@
           "u" "t"
           "c" "." "z"
           "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"]
- :special_keys {:repeat_search "<enter>"
+ :special_keys {:eol "<space>"
+                :repeat_search "<enter>"
                 :next_match "<enter>"
                 :prev_match "<tab>"
                 :next_group "<space>"
                 :prev_group "<tab>"
-                :eol "<space>"}}
+                :multi_accept "<enter>"
+                :multi_revert "<backspace>"}}

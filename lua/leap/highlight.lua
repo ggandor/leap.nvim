@@ -4,7 +4,7 @@ local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
 local api = vim.api
 local map = vim.tbl_map
-local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
+local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", ["label-selected"] = "LeapLabelSelected", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
 M.cleanup = function(self, affected_windows)
   for _, _2_ in ipairs(self.extmarks) do
     local _each_3_ = _2_
@@ -100,7 +100,7 @@ M["init-highlight"] = function(self, force_3f)
       _23_ = nil
     end
   end
-  defaults = {[self.group.match] = {fg = _13_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _18_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _23_, ctermfg = "black", ctermbg = "blue", nocombine = true}}
+  defaults = {[self.group.match] = {fg = _13_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _18_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _23_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
   for group_name, def_map in pairs(defaults) do
     if not force_3f then
       def_map["default"] = true
