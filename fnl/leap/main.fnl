@@ -142,20 +142,21 @@ NOTE: `set-autojump` should be called BEFORE this function."
             opts.labels)))
 
 
-(fn set-labels [targets]
+(fn set-labels [targets multi-select?]
   "Assign label characters to each target, using the given label set
 repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
-  (local {: autojump? : label-set} targets)
-  (each [i target (ipairs targets)]
-    ; Skip labeling the first target if autojump is set.
-    (local i* (if autojump? (dec i) i))
-    (when (> i* 0)
-      (tset target :label
-            (match (% i* (length label-set))
-              0 (. label-set (length label-set))
-              n (. label-set n))))))
+  (when (or (> (length targets) 1) multi-select?)  ; else we jump unconditionally
+    (local {: autojump? : label-set} targets)
+    (each [i target (ipairs targets)]
+      ; Skip labeling the first target if autojump is set.
+      (local i* (if autojump? (dec i) i))
+      (when (> i* 0)
+        (tset target :label
+              (match (% i* (length label-set))
+                0 (. label-set (length label-set))
+                n (. label-set n)))))))
 
 
 (fn set-label-states [targets {: group-offset}]
@@ -583,7 +584,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                   (let [prepare-targets #(doto $
                                            (set-autojump force-noautojump?)
                                            (attach-label-set)
-                                           (set-labels))]
+                                           (set-labels multi-select?))]
                     (if ?in2 (prepare-targets targets)
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
