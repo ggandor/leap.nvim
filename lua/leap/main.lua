@@ -503,13 +503,14 @@ local function leap(kwargs)
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
   local force_noautojump_3f = (multi_select_3f or user_given_action or op_mode_3f or not directional_3f)
+  local max_aot_targets = (opts.max_aot_targets or math.huge)
   local prompt = {str = ">"}
   local spec_keys
   local function _94_(_2, k)
     return replace_keycodes(opts.special_keys[k])
   end
   spec_keys = setmetatable({}, {__index = _94_})
-  local aot_3f = not (multi_select_3f or user_given_targets or (opts.max_aot_targets == 0))
+  local aot_3f = not (multi_select_3f or user_given_targets or (max_aot_targets == 0))
   local function echo_not_found(s)
     return echo(("not found: " .. s))
   end
@@ -632,7 +633,7 @@ local function leap(kwargs)
     end
   end
   local function get_second_pattern_input(targets)
-    if (#targets <= (opts.max_aot_targets or math.huge)) then
+    if (#targets <= max_aot_targets) then
       hl:cleanup(hl_affected_windows)
       if not (user_given_targets and not _3ftarget_windows) then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
@@ -1098,7 +1099,7 @@ local function leap(kwargs)
                   prepare_targets(sublist)
                 end
               end
-              if (#targets > (opts.max_aot_targets or math.huge)) then
+              if (#targets > max_aot_targets) then
                 aot_3f = false
               else
               end

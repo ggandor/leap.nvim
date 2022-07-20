@@ -369,13 +369,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; without allowing us to select a labeled target.
         force-noautojump? (or multi-select? user-given-action
                               op-mode? (not directional?))
+        max-aot-targets (or opts.max_aot_targets math.huge)
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
                                     (fn [_ k] (replace-keycodes
                                                 (. opts.special_keys k)))})]
 
-    (var aot? (not (or multi-select? user-given-targets
-                       (= opts.max_aot_targets 0))))
+    (var aot? (not (or multi-select? user-given-targets (= max-aot-targets 0))))
 
     ; Helpers ///
 
@@ -479,7 +479,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (when (<= (length targets) (or opts.max_aot_targets math.huge))
+      (when (<= (length targets) max-aot-targets)
         (with-highlight-chores (light-up-beacons targets)))
       (or (get-input-by-keymap prompt) (exit-early)))
 
@@ -589,7 +589,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
                               (prepare-targets sublist))))
-                    (when (> (length targets) (or opts.max_aot_targets math.huge))
+                    (when (> (length targets) max-aot-targets)
                       (set aot? false))
                     (or ?in2
                         (do (doto targets
