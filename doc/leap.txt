@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 July 19
+Last change: 2022 July 23
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -62,9 +62,11 @@ in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for Leap motions). In simpler
 terms: `x`/`X` both shift the relevant edge of the operated area by +2.
 
-                                                                *leap-match-eol*
-A character at the end of a line can be targeted by pressing `<space>`
-(`special_keys.eol`) after it.
+                                                            *leap-match-newline*
+A character at the end of a line can be targeted by pressing `<space>` after it.
+(There is no special mechanism behind this: you can set aliases for the
+newline character simply by defining a group in |leap.opts.character_classes|
+that contains it.)
 
                                                              *leap-cross-window*
 `gs` searches in all the other windows on the tab page. In this case, the
@@ -96,8 +98,8 @@ in operator-pending mode, but it can also be used as a substitute for
 normal-mode |f|/|t| motions. `s{char}<enter>` is the same as `f{char}`, but
 works over multiple lines.
 
-If the safe label set is in use (|leap-config|), the labels will remain
-available during the whole time, even after entering traversal mode.
+If |leap.opts.safe_labels| is in use, the labels will remain available during
+the whole time, even after entering traversal mode.
 
 Note: For cross-window search, traversal mode is not supported.
 
@@ -124,6 +126,7 @@ Setting multiple options via the `setup` function: >
 
 Available options~
 
+                                                     *leap.opts.max_aot_targets*
 `max_aot_targets = nil`
 
     By default, the plugin shows labels and/or highlights matches right after
@@ -138,6 +141,7 @@ Available options~
     automatically at the next keypress or you should prepare for some label to
     appear.
 
+                                                 *leap.opts.highlight_unlabeled*
 `highlight_unlabeled = false`
 
     Whether to highlight all unlabeled matches. (Matches covering labels will
@@ -145,27 +149,34 @@ Available options~
 
     Note: This is only relevant if `max_aot_targets` is not 0.
 
+                                                      *leap.opts.case_sensitive*
 `case_sensitive = false`
 
     Whether to consider case in search patterns.
 
-`character_classes = {}`
+                                                   *leap.opts.character_classes*
+`character_classes = { ' \t\r\n' }`
 
     User defined character classes to be used in search patterns. A character
     will match any other in its class. The classes can either be defined as
     strings or tables.
 
+    Note: Make sure to define a class containing `\n` if you want to be able
+    to target characters at the end of the line. 
+
     Example: >
     {
-      ")]}>",
-      "([{<", 
-      { '"', "'", "`" },
+      '\r\n',
+      ')]}>',
+      '([{<',
+      { '"', "'", '`' },
     }
 <
+                                                         *leap.opts.safe_labels*
 `safe_labels` >
-    {"s", "f", "n",
-     "u", "t",
-     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+    { "s", "f", "n",
+      "u", "t",
+      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z" }
 <
     When the number of matches does not exceed the number of these "safe"
     labels plus one, the plugin jumps to the first match automatically after
@@ -177,12 +188,13 @@ Available options~
     Note: Operator-pending mode ignores this, all targets (if multiple found)
           are labeled then (using the `labels` list, if not empty).
 
+                                                              *leap.opts.labels*
 `labels` >
-    {"s", "f", "n",
-     "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g",
-     "u", "t",
-     "c", ".", "z",
-     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+    { "s", "f", "n",
+      "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g",
+      "u", "t",
+      "c", ".", "z",
+      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z" }
 <
     Target labels to be used when there are more matches than the number of
     safe labels plus one.
@@ -198,9 +210,9 @@ Available options~
       default, we tend to prioritize right-hand keys to get a better balance
       for the whole sequence on average.
 
+                                                        *leap.opts.special_keys*
 `special_keys` >
     {
-      eol           = '<space>',
       repeat_search = '<enter>',
       next_match    = '<enter>',
       prev_match    = '<tab>',
@@ -209,7 +221,6 @@ Available options~
     }
 <
     Keys captured by the plugin at runtime, to:
-    - target characters before EOL
     - repeat with the previous input after invocation (|leap-repeat|)
     - jump to the next/previous match in traversal mode (|leap-traversal|)
     - switch to the next/previous group of matches, when there are more
@@ -285,7 +296,7 @@ Available <Plug> keys:
 *<Plug>(leap-cross-window)*
 
 The keys for repeating the search, and for switching between groups of matches
-can be set via `opts.special_keys` (|leap-config|).
+can be set via |leap.opts.special_keys|.
 
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*
@@ -359,10 +370,10 @@ with them.
 There are lots of ways you can extend the plugin and bend it to your will, and
 the combinations of them give you almost infinite possibilities.
 
-Instead of using the provided `<Plug>` keys, you can also call the |leap()|
+Instead of using the provided `<Plug>` keys, you can also call the `leap()`
 function directly:
 
-leap({opts})                                                            *leap()*
+leap({opts})                                                       *leap.leap()*
     Entry point for all |leap.nvim| actions.
 
     Parameters ~
@@ -391,7 +402,7 @@ leap({opts})                                                            *leap()*
                  one after the other. You can revert the most recent pick with
                  `<backspace>`, and accept the selection with `<enter>`.
 
-                                                             *leap-runtime-args*
+                                                  *leap.state* *leap-runtime-args*
 Accessing the arguments passed to leap() ~
 
 The arguments of the current call are always available at runtime, in the

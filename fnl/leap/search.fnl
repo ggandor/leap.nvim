@@ -160,8 +160,8 @@ Dynamic attributes
       (match (get-char-at pos {})  ; EOL might fail (make this future-proof)
         ch1  ; not necessarily = `input` (if case-insensitive or input mapping)
         (let [(ch2 eol?) (match (get-char-at pos {:char-offset +1})
-                           char char
-                           _ (values (replace-keycodes opts.special_keys.eol) true))
+                           nil (values "\n" true)
+                           ch ch)
               same-char-triplet? (and (= ch2 prev-match.ch2)
                                       (= line prev-match.line)
                                       (= col ((if backward? dec inc) prev-match.col)))]

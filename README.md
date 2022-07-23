@@ -210,8 +210,10 @@ terms: `x`/`X` both shift the relevant edge of the operated area by +2.
 
 ### Jumping to the last character on a line
 
-A character at the end of a line can be targeted by pressing `<space>`
-(`special_keys.eol`) after it.
+A character at the end of a line can be targeted by pressing `<space>` after it.
+(There is no special mechanism behind this: you can set aliases for the newline
+character simply by defining a group in `opts.character_classes` that contains
+it.)
 
 ### Cross-window motions
 
@@ -262,16 +264,13 @@ require('leap').setup {
   max_aot_targets = nil,
   highlight_unlabeled = false,
   case_sensitive = false,
-  -- Groups of characters that should match each other.
-  -- E.g.: { "([{<", ")]}>", "'\"`", }
-  character_classes = {},
+  character_classes = { ' \t\r\n', },
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
   labels = { . . . },
   -- These keys are captured directly by the plugin at runtime.
   special_keys = {
-    eol           = '<space>',
     repeat_search = '<enter>',
     next_match    = '<enter>',
     prev_match    = '<tab>',

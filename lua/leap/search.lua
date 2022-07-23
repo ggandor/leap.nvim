@@ -237,12 +237,11 @@ local function get_targets_2a(pattern, _35_)
       local ch2, eol_3f = nil, nil
       do
         local _41_ = get_char_at(pos, {["char-offset"] = 1})
-        if (nil ~= _41_) then
-          local char = _41_
-          ch2, eol_3f = char
-        elseif true then
-          local _0 = _41_
-          ch2, eol_3f = replace_keycodes(opts.special_keys.eol), true
+        if (_41_ == nil) then
+          ch2, eol_3f = "\n", true
+        elseif (nil ~= _41_) then
+          local ch = _41_
+          ch2, eol_3f = ch
         else
           ch2, eol_3f = nil
         end
@@ -326,7 +325,7 @@ local function get_targets(pattern, _53_)
           local line = _each_62_[1]
           local col = _each_62_[2]
           local _63_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_63_) == "table") and ((_63_).col == col) and (nil ~= (_63_).row)) then
+          if ((_G.type(_63_) == "table") and (nil ~= (_63_).row) and ((_63_).col == col)) then
             local row = (_63_).row
             cursor_positions[winid] = {row, col}
           else
@@ -344,7 +343,7 @@ local function get_targets(pattern, _53_)
         local t = _each_67_
         if by_screen_pos_3f then
           local _70_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_70_) == "table") and ((_70_).col == col) and (nil ~= (_70_).row)) then
+          if ((_G.type(_70_) == "table") and (nil ~= (_70_).row) and ((_70_).col == col)) then
             local row = (_70_).row
             t["screenpos"] = {row, col}
           else
