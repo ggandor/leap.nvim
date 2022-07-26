@@ -372,8 +372,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
         max-aot-targets (or opts.max_aot_targets math.huge)
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
-                                    (fn [_ k] (replace-keycodes
-                                                (. opts.special_keys k)))})]
+                                    (fn [_ k]
+                                      (-?> (. opts.special_keys k)
+                                           replace-keycodes))})]
 
     (var aot? (not (or multi-select? user-given-targets (= max-aot-targets 0))))
 
