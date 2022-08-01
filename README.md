@@ -52,8 +52,8 @@ the design space.
 ### Background
 
 Leap is essentially a streamlined, refactored fork of
-[Lightspeed](https://github.com/ggandor/lightspeed.nvim), with more focus on
-simplicity, intuitiveness, and maintainability.
+[Lightspeed](https://github.com/ggandor/lightspeed.nvim) (by the same author),
+with more focus on simplicity, intuitiveness, and maintainability.
 
 Compared to Lightspeed, Leap
 
@@ -72,9 +72,11 @@ Compared to Lightspeed, Leap
   (language mapping), autocommands via `User` events, among others, and intends
   to continuously improve in this respect.
 
-- Be opinionated, but not stubborn: provide reasonable defaults and aim for a
-  small, maintainable core; at the same time, keep the plugin flexible and
-  future-proof via [extension points](#extending-leap).
+- [Mechanisms instead of
+  policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext)
+  (or "be opinionated, but not stubborn"): aim for a small, maintainable core,
+  and provide reasonable defaults; at the same time, keep the plugin flexible
+  and future-proof via [extension points](#extending-leap).
 
 ### Status
 
@@ -145,7 +147,8 @@ subsequent match group. For example, to jump to the "blue" `j` target, you
 should now press `r<space>j`. In very rare cases, if the large number of matches
 cannot be covered even by two label groups, you might need to press `<space>`
 multiple times, until you see the target labeled, first with blue, and then,
-after one more `<space>`, green.
+after one more `<space>`, green. (Subsitute "green" and "blue" with the actual
+colors in the current theme.)
 
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
@@ -254,22 +257,27 @@ For cross-window search, traversal mode is not supported.
 
 ## Configuration
 
-Note: `setup` has no implicit side effects, it is just a convenience function
-for changing the values in the configuration table (which can also be accessed
-directly as `require('leap').opts`). There is no need to call it if you're fine
-with the defaults.
+`setup` has no implicit side effects, it is just a convenience function for
+changing the values in the configuration table (which can also be accessed
+directly as `require('leap').opts`). There is no need to call it if you're
+fine with the defaults. Also note that `setup` is not recursive - table values
+will simply be overwritten -, so in many cases, it might be more straightforward
+to set `opts` directly.
 
 ```Lua
 require('leap').setup {
   max_aot_targets = nil,
   highlight_unlabeled = false,
   case_sensitive = false,
+  -- Groups of characters that should match each other.
+  -- Obvious candidates are braces & quotes ('([{', ')]}', '`"\'').
   character_classes = { ' \t\r\n', },
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
   labels = { . . . },
   -- These keys are captured directly by the plugin at runtime.
+  -- (For `prev_match`, I suggest <s-enter> if possible in the terminal/GUI.)
   special_keys = {
     repeat_search = '<enter>',
     next_match    = '<enter>',
@@ -373,31 +381,38 @@ The following example executes a `normal!` command at each selected position
 ```lua
 -- For multiselect, single-window Leap calls.
 function leap_paranormal(targets)
-  input = vim.fn.input("normal! ")
+  -- Get the :normal sequence to be executed.
+  local input = vim.fn.input("normal! ")
   if #input < 1 then return end
+
   local ns = vim.api.nvim_create_namespace("")
-  -- Set an extmark as an anchor for each target, so that we can execute
-  -- commands that modify the positions of the others (insert/change/delete).
+
+  -- Set an extmark as an anchor for each target, so that we can also execute
+  -- commands that modify the positions of other targets (insert/change/delete).
   for _, target in ipairs(targets) do
     local line, col = unpack(target.pos)
     id = vim.api.nvim_buf_set_extmark(0, ns, line - 1, col - 1, {})
     target.extmark_id = id
   end
-  -- Jump to each and execute the command sequence.
+
+  -- Jump to each extmark (anchored to the "moving" targets), and execute the
+  -- command sequence.
   for _, target in ipairs(targets) do
     local id = target.extmark_id
     local pos = vim.api.nvim_buf_get_extmark_by_id(0, ns, id, {})
     vim.fn.cursor(pos[1] + 1, pos[2] + 1)
     vim.cmd("normal! " .. input)
   end
+
+  -- Clean up the extmarks.
   vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
 end
 
 -- Usage:
 require'leap'.leap {
-    target_windows = {vim.fn.win_getid()},
-    multiselect = true,
+    target_windows = { vim.fn.win_getid() },
     action = leap_paranormal
+    multiselect = true,
 }
 ```
 
