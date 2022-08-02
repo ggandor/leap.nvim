@@ -16,6 +16,8 @@ feedback). To reach a level of sophistication where one does not have to think
 much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
+![showcase](../media/showcase.gif?raw=true)
+
 - [Introduction](#introduction)
 - [Getting started](#getting-started)
 - [Usage](#usage)
