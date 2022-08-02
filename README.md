@@ -149,7 +149,7 @@ subsequent match group. For example, to jump to the "blue" `j` target, you
 should now press `r<space>j`. In very rare cases, if the large number of matches
 cannot be covered even by two label groups, you might need to press `<space>`
 multiple times, until you see the target labeled, first with blue, and then,
-after one more `<space>`, green. (Subsitute "green" and "blue" with the actual
+after one more `<space>`, green. (Substitute "green" and "blue" with the actual
 colors in the current theme.)
 
 To summarize, here is the general flow again (in Normal and Visual mode, with
@@ -338,27 +338,9 @@ function directly. The following arguments are available:
 1, 2).
 
 `inclusive_op`: A flag indicating whether an operation should behave as
-inclusive (`:h inclusive`). 
+inclusive (`:h inclusive`).
 
 `target_windows` allows you to pass in a list of windows (ID-s) to be searched.
-Examples:
-
-```lua
--- Searching in all windows (including the current one) on the tab page.
-function leap_all_windows()
-  local focusable_windows_on_tabpage = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
-  require'leap'.leap { target_windows = focusable_windows_on_tabpage }
-end
-
--- Bidirectional search in the current window is just a specific case of the
--- multi-window mode.
-function leap_current_window()
-  require'leap'.leap { target_windows = { vim.fn.win_getid() } }
-end
-```
 
 This is where things start to become really interesting:
 
@@ -377,11 +359,85 @@ this mode, you can just start picking labels one after the other. You can revert
 the most recent pick with `<backspace>`, and accept the selection with
 `<enter>`.
 
-The following example executes a `normal!` command at each selected position
-(this could obviously be more useful if we'd pass in custom targets too):
+
+<details>
+<summary>Example: bidirectional and all-windows search</summary>
 
 ```lua
--- For multiselect, single-window Leap calls.
+-- Bidirectional search in the current window is just a specific case of the
+-- multi-window mode.
+function leap_current_window()
+  require'leap'.leap { target_windows = { vim.fn.win_getid() } }
+end
+
+-- Searching in all windows (including the current one) on the tab page.
+function leap_all_windows()
+  local focusable_windows_on_tabpage = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
+  require'leap'.leap { target_windows = focusable_windows_on_tabpage }
+end
+```
+</details>
+
+<details>
+<summary>Example: linewise motions</summary>
+
+```lua
+-- Here we feed Leap with custom targets.
+
+local function get_line_starts(winid)
+  local wininfo =  vim.fn.getwininfo(winid)[1]
+  local cur_line = vim.fn.line('.')
+
+  -- Get targets.
+  local targets = {}
+  local lnum = wininfo.topline
+  while lnum <= wininfo.botline do
+    local fold_end = vim.fn.foldclosedend(lnum)
+    -- Skip folded ranges.
+    if fold_end ~= -1 then
+      lnum = fold_end + 1
+    else
+      if lnum ~= cur_line then table.insert(targets, { pos = { lnum, 1 } }) end
+      lnum = lnum + 1
+    end
+  end
+  -- Sort them by vertical screen distance from cursor.
+  local cur_screen_row = vim.fn.screenpos(winid, cur_line, 1)['row']
+  local function screen_rows_from_cur(t)
+    local t_screen_row = vim.fn.screenpos(winid, t.pos[1], t.pos[2])['row']
+    return math.abs(cur_screen_row - t_screen_row)
+  end
+  table.sort(targets, function (t1, t2)
+    return screen_rows_from_cur(t1) < screen_rows_from_cur(t2)
+  end)
+
+  if #targets >= 1 then
+    return targets
+  end
+end
+
+-- Usage:
+local function leap_lines()
+  winid = vim.api.nvim_get_current_win()
+  require('leap').leap {
+    target_windows = { winid },
+    targets = get_line_starts(winid),
+  }
+end
+```
+</details>
+
+<details>
+<summary>Example: multi-cursor `:normal`</summary>
+
+```lua
+-- The following example showcases a custom action, using `multiselect`. We're
+-- executing a `normal!` command at each selected position (this could be even
+-- more useful if we'd pass in custom targets too).
+
 function leap_paranormal(targets)
   -- Get the :normal sequence to be executed.
   local input = vim.fn.input("normal! ")
@@ -417,6 +473,7 @@ require'leap'.leap {
     multiselect = true,
 }
 ```
+</details>
 
 ### Accessing the arguments passed to `leap`
 
@@ -429,9 +486,11 @@ Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
 `LeapLeave`), so that you can set up autocommands, e.g. to change the values of
 some editor options while the plugin is active (`:h leap-events`).
 
-Using these together with the `args` table, you can customize practically
-anything on a per-call basis. Keep in mind that you can even pass arbitrary
-flags when calling `leap`:
+#### Customizing specific invocations
+
+Using autocommands together with the `args` table, you can customize practically
+anything on a per-call basis - keep in mind that nothing prevents you from
+passing arbitrary flags when calling `leap`:
 
 ```Lua
 function my_custom_leap_func()
