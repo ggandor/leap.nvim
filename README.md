@@ -132,14 +132,13 @@ require('leap').opts.safe_labels = {}
 -- temporarily.
 
 leap = require('leap')
--- For brevity I skipped the usual augroup boilerplate, but don't forget about
--- it (:h autocmd-groups).
+-- For brevity I skipped the usual augroup boilerplate (:h autocmd-groups).
 vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
   callback = function ()
-    -- Of course you can save the value anywhere else (like a vim.g variable).
+    -- Of course you can save it anywhere else (like in a vim.g variable).
     leap.state.saved_scrolloff = vim.o.scrolloff
     vim.o.scrolloff = 0
- end })
+  end })
 vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
   callback = function () vim.o.scrolloff = leap.state.saved_scrolloff end
 })
@@ -150,8 +149,14 @@ vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
 <summary>Greying out the search area</summary>
 
 ```lua
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '<some color>' })
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 ```
+</details>
+
+<details>
+<summary>How to live without 's' and 'S'?</summary>
+
+`s` = `cl`, `S` = `cc`.
 </details>
 
 ## Getting started
