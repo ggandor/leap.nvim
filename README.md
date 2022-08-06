@@ -19,6 +19,7 @@ blink, while keeping the required mental effort close to zero.
 ![showcase](../media/showcase.gif?raw=true)
 
 - [Introduction](#introduction)
+- [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
 - [Configuration](#configuration)
@@ -50,6 +51,23 @@ distracted by as little incidental visual noise as possible.
 It is obviously impossible to achieve all of these at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
+
+### How to use it (TL;DR)
+
+- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
+  the other windows (`gs`).
+- Start typing a 2-character search pattern (`xy`).
+- After typing the first character, you see "labels" appearing next to all
+  pairs starting with `x`. You cannot _use_ the labels yet.
+- At this point you can just start walking through the matches using
+  `<enter>/<tab>` ("traversal" mode). Else:
+- Enter the second pattern character (`y`).
+- If the pair was not labeled, then voilà, you're already there (no need to be
+  bothered by remaining labels, just continue editing)! Else:
+- Select a label. If there are multiple groups (indicated by differently colored
+  labels), first switch to the correct one, using `<space>/<tab>`.
+
+For further features, head to the [usage](#usage) section.
 
 ### Background
 
@@ -85,6 +103,56 @@ Compared to Lightspeed, Leap
 Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
+
+## FAQ
+
+<details>
+<summary>Bidirectional search</summary>
+
+```lua
+-- Initiate multi-window mode with the current window as the only target:
+require('leap').leap { target_windows = { vim.fn.win_getid() } }
+```
+</details>
+
+<details>
+<summary>Disable auto-jumping to the first match</summary>
+
+```lua
+require('leap').opts.safe_labels = {}
+```
+</details>
+
+<details>
+<summary>Disable scrolloff while leaping</summary>
+
+```lua
+-- As scrolloff causes the screen scrolling right after the automatic first
+-- jump, making it hard to select a label, you might want to disable it
+-- temporarily.
+
+leap = require('leap')
+-- For brevity I skipped the usual augroup boilerplate, but don't forget about
+-- it (:h autocmd-groups).
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
+  callback = function ()
+    -- Of course you can save the value anywhere else (like a vim.g variable).
+    leap.state.saved_scrolloff = vim.o.scrolloff
+    vim.o.scrolloff = 0
+ end })
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
+  callback = function () vim.o.scrolloff = leap.state.saved_scrolloff end
+})
+```
+</details>
+
+<details>
+<summary>Greying out the search area</summary>
+
+```lua
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '<some color>' })
+```
+</details>
 
 ## Getting started
 
@@ -342,24 +410,6 @@ inclusive (`:h inclusive`).
 
 `target_windows` allows you to pass in a list of windows (ID-s) to be searched.
 
-This is where things start to become really interesting:
-
-`targets`: A list of target items: tables of arbitrary structure, with the only
-mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
-label, and also the jump target, if there is no custom `action` provided.
-Targets can represent anything that has a position in the window, like
-Tree-sitter nodes, etc.
-
-`action`: A Lua function that will be executed by Leap in place of the jump. (You
-could obviously implement some custom jump logic here too.) Its only argument is
-either a target, or a list of targets (in multiselect mode).
-
-`multiselect`: A flag allowing for selecting multiple targets for `action`. In
-this mode, you can just start picking labels one after the other. You can revert
-the most recent pick with `<backspace>`, and accept the selection with
-`<enter>`.
-
-
 <details>
 <summary>Example: bidirectional and all-windows search</summary>
 
@@ -367,7 +417,7 @@ the most recent pick with `<backspace>`, and accept the selection with
 -- Bidirectional search in the current window is just a specific case of the
 -- multi-window mode.
 function leap_current_window()
-  require'leap'.leap { target_windows = { vim.fn.win_getid() } }
+  require('leap').leap { target_windows = { vim.fn.win_getid() } }
 end
 
 -- Searching in all windows (including the current one) on the tab page.
@@ -376,10 +426,18 @@ function leap_all_windows()
     function (win) return vim.api.nvim_win_get_config(win).focusable end,
     vim.api.nvim_tabpage_list_wins(0)
   )
-  require'leap'.leap { target_windows = focusable_windows_on_tabpage }
+  require('leap').leap { target_windows = focusable_windows_on_tabpage }
 end
 ```
 </details>
+
+This is where things start to become really interesting:
+
+`targets`: A list of target items: tables of arbitrary structure, with the only
+mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
+label, and also the jump target, if there is no custom `action` provided.
+Targets can represent anything that has a position in the window, like
+Tree-sitter nodes, etc.
 
 <details>
 <summary>Example: linewise motions</summary>
@@ -430,6 +488,15 @@ end
 ```
 </details>
 
+`action`: A Lua function that will be executed by Leap in place of the jump. (You
+could obviously implement some custom jump logic here too.) Its only argument is
+either a target, or a list of targets (in multiselect mode).
+
+`multiselect`: A flag allowing for selecting multiple targets for `action`. In
+this mode, you can just start picking labels one after the other. You can revert
+the most recent pick with `<backspace>`, and accept the selection with
+`<enter>`.
+
 <details>
 <summary>Example: multi-cursor `:normal`</summary>
 
@@ -467,7 +534,7 @@ function leap_paranormal(targets)
 end
 
 -- Usage:
-require'leap'.leap {
+require('leap').leap {
     target_windows = { vim.fn.win_getid() },
     action = leap_paranormal
     multiselect = true,
@@ -486,7 +553,7 @@ Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
 `LeapLeave`), so that you can set up autocommands, e.g. to change the values of
 some editor options while the plugin is active (`:h leap-events`).
 
-#### Customizing specific invocations
+### Customizing specific invocations
 
 Using autocommands together with the `args` table, you can customize practically
 anything on a per-call basis - keep in mind that nothing prevents you from
@@ -494,13 +561,13 @@ passing arbitrary flags when calling `leap`:
 
 ```Lua
 function my_custom_leap_func()
-    require'leap'.leap { my_custom_flag = true, ... }
+    require('leap').leap { my_custom_flag = true, ... }
 end
 
 vim.api.nvim_create_autocmd('User', {
   pattern = 'LeapEnter',
   callback = function ()
-    if require'leap'.state.args.my_custom_flag then
+    if require('leap').state.args.my_custom_flag then
       -- Implement some special logic here, that will only apply to
       -- my_custom_leap_func() (e.g., change the style of the labels),
       -- and clean up with an analogous `LeapLeave` autocommand.
