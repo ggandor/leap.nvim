@@ -16,8 +16,6 @@ feedback). To reach a level of sophistication where one does not have to think
 much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
-![showcase](../media/showcase.gif?raw=true)
-
 - [Introduction](#introduction)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
@@ -56,16 +54,20 @@ the design space.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
-- Start typing a 2-character search pattern (`xy`).
-- After typing the first character, you see "labels" appearing next to all
-  pairs starting with `x`. You cannot _use_ the labels yet.
-- At this point you can just start walking through the matches using
-  `<enter>/<tab>` ("traversal" mode). Else:
-- Enter the second pattern character (`y`).
+- Start typing a 2-character search pattern (`{c1}{c2}`).
+- After typing the first character, you see "labels" appearing next to some of
+  the `{c1}{?}` pairs. You cannot _use_ the labels yet.
+- As a convenience, at this point you can just start walking through the matches
+  using `<enter>/<tab>` ("traversal" mode). [**#2**]
+- Else: enter `{c2}`.
 - If the pair was not labeled, then voilà, you're already there (no need to be
-  bothered by remaining labels, just continue editing)! Else:
-- Select a label. If there are multiple groups (indicated by differently colored
-  labels), first switch to the correct one, using `<space>/<tab>`.
+  bothered by remaining labels, just continue editing). [**#1**]
+- Else: select a label. In case of multiple groups, first switch to the desired
+  one, using `<space>/<tab>`. [**#3**, **#4**]
+
+![showcase](../media/showcase.gif?raw=true)
+
+(1: `sha`; 2: `s,<cr><cr><cr>`; 3: `sanN`; 4: `gshe<space>m`)
 
 For further features, head to the [usage](#usage) section.
 
