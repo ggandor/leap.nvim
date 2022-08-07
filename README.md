@@ -126,28 +126,6 @@ require('leap').opts.safe_labels = {}
 </details>
 
 <details>
-<summary>Disable scrolloff while leaping</summary>
-
-```lua
--- As scrolloff causes the screen scrolling right after the automatic first
--- jump, making it hard to select a label, you might want to disable it
--- temporarily.
-
-leap = require('leap')
--- For brevity I skipped the usual augroup boilerplate (:h autocmd-groups).
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
-  callback = function ()
-    -- Of course you can save it anywhere else (like in a vim.g variable).
-    leap.state.saved_scrolloff = vim.o.scrolloff
-    vim.o.scrolloff = 0
-  end })
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
-  callback = function () vim.o.scrolloff = leap.state.saved_scrolloff end
-})
-```
-</details>
-
-<details>
 <summary>Greying out the search area</summary>
 
 ```lua

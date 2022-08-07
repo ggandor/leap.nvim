@@ -330,10 +330,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
 ; Main ///1
 
 ; State that is persisted between invocations.
-(local state {:repeat {:in1 nil :in2 nil}
+(local state {:args nil  ; arguments passed to the current call
+              :source_window nil
+              :repeat {:in1 nil :in2 nil}
               :dot_repeat {:in1 nil :in2 nil :target_idx nil
                            :backward nil :inclusive_op nil :offset nil}
-              :args nil})  ; arguments passed to the current call
+              :saved_editor_opts {}
+              })
 
 
 (fn leap [kwargs]
@@ -349,13 +352,15 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
         ->wininfo #(. (vim.fn.getwininfo $) 1)
-        current-window (->wininfo (vim.fn.win_getid))
+        curr-winid (vim.fn.win_getid)
+        _ (set state.source_window curr-winid)
+        curr-win (->wininfo curr-winid)
         ; Fill in the wininfo fields if not provided.
         _ (when (and user-given-targets (not (. user-given-targets 1 :wininfo)))
             (->> user-given-targets
-                 (map (fn [t] (set t.wininfo current-window)))))
+                 (map (fn [t] (set t.wininfo curr-win)))))
         ?target-windows (-?>> target-windows (map ->wininfo))
-        hl-affected-windows [current-window]  ; cursor is always highlighted
+        hl-affected-windows [curr-win]  ; cursor is always highlighted
         _ (each [_ w (ipairs (or ?target-windows []))]
             (table.insert hl-affected-windows w))
         directional? (not target-windows)
@@ -645,37 +650,6 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                         (exit-early)))))))))))))))
 
 
-; Handling editor options ///1
-
-; TODO: For cross-window mode, we have to rethink how to handle
-;       window-local options.
-(local temporary-editor-opts {
-                              ; :vim.wo.conceallevel 0
-                              ; :vim.wo.scrolloff 0
-                              ; :vim.wo.sidescrolloff 0
-                              ; :vim.o.scrolloff 0
-                              ; :vim.o.sidescrolloff 0
-                              :vim.bo.modeline false})  ; lightspeed#81
-
-(local saved-editor-opts {})
-
-(fn save-editor-opts []
-  (each [opt _ (pairs temporary-editor-opts)]
-    (let [[_ scope name] (vim.split opt "." true)]
-      (tset saved-editor-opts opt (. _G.vim scope name)))))
-
-(fn set-editor-opts [opts]
-  (each [opt val (pairs opts)]
-    (let [[_ scope name] (vim.split opt "." true)]
-      (tset _G.vim scope name val))))
-
-(fn set-temporary-editor-opts []
-  (set-editor-opts temporary-editor-opts))
-
-(fn restore-editor-opts []
-  (set-editor-opts saved-editor-opts))
-
-
 ; Init ///1
 
 ; Add a char -> char-class lookup table (the relevant one for us).
@@ -689,26 +663,63 @@ B: Two labels occupy the same position (this can occur at EOL or window
               (tset t char cc*)))
           t))
 
-(hl:init-highlight)
 
 (api.nvim_create_augroup "LeapDefault" {})
 
+
+; Highlight
+
+(hl:init-highlight)
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own, so we re-init the highlight on every change.
-(api.nvim_create_autocmd "ColorScheme"
-                         {:callback #(hl:init-highlight)
-                          :group "LeapDefault"})
+(api.nvim_create_autocmd "ColorScheme" {:callback #(hl:init-highlight)
+                                        :group "LeapDefault"})
 
-(api.nvim_create_autocmd "User"
-                         {:pattern "LeapEnter"
-                          :callback #(do (save-editor-opts)
-                                         (set-temporary-editor-opts))
-                          :group "LeapDefault"})
 
-(api.nvim_create_autocmd "User"
-                         {:pattern "LeapLeave"
-                          :callback restore-editor-opts
-                          :group "LeapDefault"})
+; Editor options
+
+(fn set-editor-opts [t]
+  (set state.saved_editor_opts {})
+  (local wins (or state.args.target_windows [state.source_window]))
+  (each [opt val (pairs t)]
+    (let [[scope name] (vim.split opt "." {:plain true})]
+      (match scope
+        :w (each [_ w (ipairs wins)]
+             (->> (api.nvim_win_get_option w name)
+                  (tset state.saved_editor_opts [:w w name]))
+             (api.nvim_win_set_option w name val))
+        :b (each [_ w (ipairs wins)]
+             (local b (api.nvim_win_get_buf w))
+             (->> (api.nvim_buf_get_option b name)
+                  (tset state.saved_editor_opts [:b b name]))
+             (api.nvim_buf_set_option b name val))
+        _ (do (->> (api.nvim_get_option name)
+                   (tset state.saved_editor_opts name))
+              (api.nvim_set_option name val))))))
+
+
+(fn restore-editor-opts []
+  (each [key val (pairs state.saved_editor_opts)]
+    (match key
+      [:w w name] (api.nvim_win_set_option w name val)
+      [:b b name] (api.nvim_buf_set_option b name val)
+      name (api.nvim_set_option name val))))
+
+
+(local temporary-editor-opts {:w.conceallevel 0
+                              :g.scrolloff 0
+                              :w.scrolloff 0
+                              :g.sidescrolloff 0
+                              :w.sidescrolloff 0
+                              :b.modeline false})  ; lightspeed#81
+
+(api.nvim_create_autocmd "User" {:pattern "LeapEnter"
+                                 :callback #(set-editor-opts temporary-editor-opts)
+                                 :group "LeapDefault"})
+
+(api.nvim_create_autocmd "User" {:pattern "LeapLeave"
+                                 :callback #(restore-editor-opts)
+                                 :group "LeapDefault"})
 
 
 ; Module ///1
