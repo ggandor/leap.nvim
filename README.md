@@ -17,6 +17,7 @@ much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
 - [Introduction](#introduction)
+- [Plugins using Leap](#plugins-using-leap)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
@@ -106,11 +107,14 @@ Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
+## Plugins using Leap
+
+- [Leap-AST](https://github.com/ggandor/leap-ast.nvim)
+
 ## FAQ
 
 <details>
 <summary>Bidirectional search</summary>
-
 ```lua
 -- Initiate multi-window mode with the current window as the only target:
 require('leap').leap { target_windows = { vim.fn.win_getid() } }
@@ -118,8 +122,12 @@ require('leap').leap { target_windows = { vim.fn.win_getid() } }
 </details>
 
 <details>
-<summary>Disable auto-jumping to the first match</summary>
+<summary>Linewise motions</summary>
+See the "Extending Leap" section below for an example snippet.
+</details>
 
+<details>
+<summary>Disable auto-jumping to the first match</summary>
 ```lua
 require('leap').opts.safe_labels = {}
 ```
@@ -127,7 +135,6 @@ require('leap').opts.safe_labels = {}
 
 <details>
 <summary>Greying out the search area</summary>
-
 ```lua
 vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 ```
@@ -135,7 +142,6 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 
 <details>
 <summary>How to live without 's' and 'S'?</summary>
-
 `s` = `cl`, `S` = `cc`.
 </details>
 
