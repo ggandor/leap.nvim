@@ -115,34 +115,48 @@ corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 <details>
 <summary>Bidirectional search</summary>
+
 ```lua
 -- Initiate multi-window mode with the current window as the only target:
 require('leap').leap { target_windows = { vim.fn.win_getid() } }
 ```
+
 </details>
+
 
 <details>
 <summary>Linewise motions</summary>
+
 See the "Extending Leap" section below for an example snippet.
+
 </details>
+
 
 <details>
 <summary>Disable auto-jumping to the first match</summary>
+
 ```lua
 require('leap').opts.safe_labels = {}
 ```
+
 </details>
+
 
 <details>
 <summary>Greying out the search area</summary>
+
 ```lua
 vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 ```
+
 </details>
+
 
 <details>
 <summary>How to live without 's' and 'S'?</summary>
+
 `s` = `cl`, `S` = `cc`.
+
 </details>
 
 ## Getting started
