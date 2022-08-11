@@ -34,7 +34,7 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
-- **the motion command**: we need one fundamental targeting method, instead of a
+- **the command**: we need one fundamental targeting method, instead of a
   smorgasbord of possibilities, having "enhanced" versions of each native
   motion, and more (↔ EasyMotion and co.)
 - **the context**: it should be enough to look at the target, and nothing else
@@ -55,22 +55,20 @@ the design space.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
-- Start typing a 2-character search pattern (`{c1}{c2}`).
+- Start typing a 2-character pattern (`{c1}{c2}`).
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - As a convenience, at this point you can just start walking through the matches
   using `<enter>/<tab>` ("traversal" mode). [**#2**]
-- Else: enter `{c2}`.
-- If the pair was not labeled, then voilà, you're already there (no need to be
-  bothered by remaining labels, just continue editing). [**#1**]
+- Else: enter `{c2}`. If the pair was not labeled, then voilà, you're already
+  there (no need to be bothered by remaining labels, just continue editing).
+  [**#1**]
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>/<tab>`. [**#3**, **#4**]
 
 ![showcase](../media/showcase.gif?raw=true)
 
-(1: `sha`; 2: `s,<cr><cr><cr>`; 3: `sanN`; 4: `gshe<space>m`)
-
-For further features, head to the [usage](#usage) section.
+For further features, head to the [Usage](#usage) section.
 
 ### Background
 
@@ -421,18 +419,13 @@ inclusive (`:h inclusive`).
 ```lua
 -- Bidirectional search in the current window is just a specific case of the
 -- multi-window mode.
-function leap_current_window()
-  require('leap').leap { target_windows = { vim.fn.win_getid() } }
-end
+require('leap').leap { target_windows = { vim.fn.win_getid() } }
 
 -- Searching in all windows (including the current one) on the tab page.
-function leap_all_windows()
-  local focusable_windows_on_tabpage = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
-  require('leap').leap { target_windows = focusable_windows_on_tabpage }
-end
+require('leap').leap { target_windows = vim.tbl_filter(
+  function (win) return vim.api.nvim_win_get_config(win).focusable end,
+  vim.api.nvim_tabpage_list_wins(0)
+)}
 ```
 </details>
 
@@ -440,7 +433,10 @@ This is where things start to become really interesting:
 
 `targets`: A list of target items: tables of arbitrary structure, with the only
 mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
-label, and also the jump target, if there is no custom `action` provided.
+label, and also the jump target, if there is no custom `action` provided. If
+you have targets in multiple windows, you also need to provide a `wininfo` field
+for each (`:h getwininfo()`).
+
 Targets can represent anything that has a position in the window, like
 Tree-sitter nodes, etc.
 
@@ -448,8 +444,6 @@ Tree-sitter nodes, etc.
 <summary>Example: linewise motions</summary>
 
 ```lua
--- Here we feed Leap with custom targets.
-
 local function get_line_starts(winid)
   local wininfo =  vim.fn.getwininfo(winid)[1]
   local cur_line = vim.fn.line('.')
@@ -483,12 +477,29 @@ local function get_line_starts(winid)
 end
 
 -- Usage:
-local function leap_lines()
+local function leap_to_line()
   winid = vim.api.nvim_get_current_win()
   require('leap').leap {
-    target_windows = { winid },
-    targets = get_line_starts(winid),
+    target_windows = { winid }, targets = get_line_starts(winid),
   }
+end
+```
+</details>
+
+<details>
+<summary>Example: pick a window</summary>
+
+```lua
+function leap_to_window()
+  target_windows = require('leap.util').get_enterable_windows()
+  local targets = {}
+  for _, win in ipairs(target_windows) do
+    local wininfo = vim.fn.getwininfo(win)[1]
+    local pos = { wininfo.topline, 1 }  -- top/left corner
+    table.insert(targets, { pos = pos, wininfo = wininfo })
+  end
+
+  require('leap').leap { target_windows = target_windows, targets = targets }
 end
 ```
 </details>
@@ -510,7 +521,7 @@ the most recent pick with `<backspace>`, and accept the selection with
 -- executing a `normal!` command at each selected position (this could be even
 -- more useful if we'd pass in custom targets too).
 
-function leap_paranormal(targets)
+function paranormal(targets)
   -- Get the :normal sequence to be executed.
   local input = vim.fn.input("normal! ")
   if #input < 1 then return end
@@ -541,7 +552,7 @@ end
 -- Usage:
 require('leap').leap {
     target_windows = { vim.fn.win_getid() },
-    action = leap_paranormal
+    action = paranormal,
     multiselect = true,
 }
 ```
