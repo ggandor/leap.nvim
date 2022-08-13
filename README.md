@@ -34,11 +34,11 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
-- **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations, Sneak in non-labeled mode)
 - **the command**: we need one fundamental targeting method, instead of a
   smorgasbord of possibilities, having "enhanced" versions of each native
   motion, and more (↔ EasyMotion and co.)
+- **the context**: it should be enough to look at the target, and nothing else
+  (↔ vanilla Vim motion combinations)
 - **the steps**: the motion should be atomic (↔ Vim motion combos) and you
   should be able to type the command in one go, without interruptions (↔ most
   "labeling" plugins except Pounce to some degree, marred by its
@@ -59,7 +59,7 @@ the design space.
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - As a convenience, at this point you can just start walking through the matches
-  using `<enter>/<tab>` ([traversal mode](#-traversal-mode)). [**#2**]
+  using `<enter>/<tab>` ([traversal mode](#traversal-mode)). [**#2**]
 - Else: enter `{c2}`. If the pair was not labeled, then voilà, you're already
   there (no need to be bothered by remaining labels, just continue editing).
   [**#1**]
@@ -327,8 +327,7 @@ previous jump(s) in case you accidentally overshoot your target.
 #### Tips
 
 - When repeating the previous search, you can immediately move on:
-
-  `s|S <enter> <enter> ...`
+  `s<enter><enter>...`
 
 - Accepting the first match after one input character is a useful shortcut in
   operator-pending mode (e.g. `dz{char}<enter>`).
