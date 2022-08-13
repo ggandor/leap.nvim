@@ -34,11 +34,11 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
+- **the context**: it should be enough to look at the target, and nothing else
+  (↔ vanilla Vim motion combinations, Sneak in non-labeled mode)
 - **the command**: we need one fundamental targeting method, instead of a
   smorgasbord of possibilities, having "enhanced" versions of each native
   motion, and more (↔ EasyMotion and co.)
-- **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations, Sneak in non-labeled mode)
 - **the steps**: the motion should be atomic (↔ Vim motion combos) and you
   should be able to type the command in one go, without interruptions (↔ most
   "labeling" plugins except Pounce to some degree, marred by its
@@ -59,7 +59,7 @@ the design space.
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - As a convenience, at this point you can just start walking through the matches
-  using `<enter>/<tab>` ("traversal" mode). [**#2**]
+  using `<enter>/<tab>` ([traversal mode](#-traversal-mode)). [**#2**]
 - Else: enter `{c2}`. If the pair was not labeled, then voilà, you're already
   there (no need to be bothered by remaining labels, just continue editing).
   [**#1**]
@@ -84,6 +84,12 @@ Compared to Lightspeed, Leap
 * has a smaller and simpler visual footprint; it feels like using Sneak
 
 ### Auxiliary design principles
+
+- Optimize for the common case, not the pathological: a good example of this is
+  the Sneak-like "one-character labels & multiple groups" approach, which can
+  become awkward for, say, 200 targets, but otherwise more comfortable,
+  eliminates all kinds of edge cases and implementation problems, and allows for
+  features like [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on the native interface, and aim for synergy as much as possible. The
@@ -247,8 +253,15 @@ That is,
 Leap automatically jumps to the first match if the remaining matches can be
 covered by a limited set of "safe" target labels (keys you would not use right
 after a jump), but stays in place, and switches to an extended, more comfortable
-label set otherwise. For details on configuring this behaviour, see `:h
-leap-config`.
+label set otherwise.
+
+The rationale behind this is that the probability of the user aiming for the
+very first target lessens with the number of targets; also, the probability of
+being able to reach the first target by other means (`www`, `f`, etc.)
+increases. That is, staying in place in exchange for more comfortable labels
+becomes a more and more acceptable trade-off.
+
+For details on configuring this behaviour, see `:h leap-config`.
 
 ### Resolving conflicts in the first phase
 
@@ -297,36 +310,40 @@ it.)
 matches are sorted by their screen distance from the cursor, advancing in
 concentric circles.
 
-### Repeating the search and traversing through the matches
+### Repeating the previous search
 
 Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
-motions searches with the previous input.
+motions sets the search pattern to the previous one.
+
+### Traversal mode
 
 After entering at least one input character, `<enter>`
-(`special_keys.next_match`) moves on to the immediate next match (enters
-traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`) can
-revert the previous jump - that is, it puts the cursor back to its
-previous position, allowing for an easy correction when you accidentally
-overshoot your target.
+(`special_keys.next_match`) initiates "traversal" mode, moving on to the
+next match on each keypress. `<tab>` (`special_keys.prev_match`) can revert the
+previous jump(s) in case you accidentally overshoot your target.
 
-`s|S char1 <enter> (<enter>|<tab>)*`
+`s|S ch1 ch2? <enter> (<enter>|<tab>)*`
 
-`s|S char1 char2 <enter>? (<enter>|<tab>)*`
+#### Tips
 
-Of course, the two can be combined - you can immediately move on after a
-repeated search:
+- When repeating the previous search, you can immediately move on:
 
-`s|S <enter> <enter>? (<enter>|<tab>)*`
+  `s|S <enter> <enter> ...`
 
-Entering traversal mode after the first input is a useful shortcut, especially
-in operator-pending mode, but it can also be used as a substitute for
-normal-mode `f`/`t` motions. `s{char}<enter>` is the same as `f{char}`, but
-works over multiple lines.
+- Accepting the first match after one input character is a useful shortcut in
+  operator-pending mode (e.g. `dz{char}<enter>`).
 
-If the safe label set is in use, the labels will remain available during the
-whole time, even after entering traversal mode.
+- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
+  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
+  lines.
 
-For cross-window search, traversal mode is not supported.
+#### Notes
+
+- If the safe label set is in use, the labels will remain available during the
+  whole time.
+
+- For cross-window search, traversal mode is not supported (since there's no
+  direction to follow).
 
 ## Configuration
 

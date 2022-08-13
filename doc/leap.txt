@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 July 23
+Last change: 2022 August 13
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -73,35 +73,35 @@ that contains it.)
 matches are sorted by their screen distance from the cursor, advancing in
 concentric circles.
 
-                                                    *leap-repeat* *leap-traversal*
+                                                                   *leap-repeat*
 Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
-motions searches with the previous input.
+motions sets the search pattern to the previous one.
 
+                                                                *leap-traversal*
 After entering at least one input character, `<enter>`
-(`special_keys.next_match`) moves on to the immediate next match (enters
-traversal mode). Once in traversal mode, `<tab>` (`special_keys.prev_match`)
-can revert the previous jump - that is, it puts the cursor back to its
-previous position, allowing for an easy correction when you accidentally
-overshoot your target.
+(`special_keys.next_match`) initiates "traversal" mode, moving on to the next
+match on each keypress. `<tab>` (`special_keys.prev_match`) can revert the
+previous jump(s) in case you accidentally overshoot your target.
 
-`s|S char1 <enter> (<enter>|<tab>)*`
+`s|S ch1 ch2? <enter> (<enter>|<tab>)*`
 
-`s|S char1 char2 <enter>? (<enter>|<tab>)*`
+Tips:
 
-Of course, the two can be combined - you can immediately move on after a
-repeated search:
+- When repeating the previous search, you can immediately move on:
+  `s|S <enter> <enter> ...`
 
-`s|S <enter> <enter>? (<enter>|<tab>)*`
+- Accepting the first match after one input character is a useful shortcut in
+  operator-pending mode (e.g. `dz{char}<enter>`).
 
-Entering traversal mode after the first input is a useful shortcut, especially
-in operator-pending mode, but it can also be used as a substitute for
-normal-mode |f|/|t| motions. `s{char}<enter>` is the same as `f{char}`, but
-works over multiple lines.
+- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
+  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
+  lines.
 
-If |leap.opts.safe_labels| is in use, the labels will remain available during
-the whole time, even after entering traversal mode.
+Note: If |leap.opts.safe_labels| is in use, the labels will remain available
+during the whole time.
 
-Note: For cross-window search, traversal mode is not supported.
+Note: For cross-window search, traversal mode is not supported (since there's
+no direction to follow).
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
@@ -122,7 +122,7 @@ Setting multiple options via the `setup` function: >
     }
 <
     Note: These will be merged with the current/default settings. (Settings
-          not mentioned here are not disturbed.)
+    not mentioned here are not disturbed.)
 
 Available options~
 
@@ -186,7 +186,7 @@ Available options~
     auto-jump feature.
 
     Note: Operator-pending mode ignores this, all targets (if multiple found)
-          are labeled then (using the `labels` list, if not empty).
+    are labeled then (using the `labels` list, if not empty).
 
                                                               *leap.opts.labels*
 `labels` >
