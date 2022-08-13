@@ -416,11 +416,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
     (fn expand-to-user-defined-character-class [in]
       (match (. opts.character_class_of in)
+        chars  ; table
         ; `vim.fn.search` cannot interpret actual newline (LF) chars in
         ; the pattern, so we need to insert them as raw \n sequences.
-        chars (let [chars (->> chars
-                               (map #(if (= $ "\n") "\\n" $)))]
-                (.. "\\(" (table.concat chars "\\|") "\\)"))))
+        ; Backslash itself might appear in a character class, needs to
+        ; be escaped.
+        (let [chars* (map #(match $ "\n" "\\n" "\\" "\\\\" _ $) chars)]
+          (.. "\\(" (table.concat chars* "\\|") "\\)"))))
 
     ; NOTE: If two-step processing is ebabled (AOT beacons), for any
     ; kind of input mapping (case-insensitivity, character classes,
