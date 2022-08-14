@@ -179,23 +179,23 @@ local function get_match_positions(pattern, _16_, _18_)
         else
           return nil
         end
-      elseif ((col < left_bound) and (col > right_bound) and not vim.wo.wrap) then
-        local _29_ = to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
-        if (_29_ == "dead-end") then
+      elseif not (vim.wo.wrap or (function(_29_,_30_,_31_) return (_29_ <= _30_) and (_30_ <= _31_) end)(left_bound,col,right_bound)) then
+        local _32_ = to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
+        if (_32_ == "dead-end") then
           return cleanup()
         elseif true then
-          local _ = _29_
+          local _ = _32_
           return iter(true)
         else
           return nil
         end
       elseif (vim.fn.foldclosed(line) ~= -1) then
         to_closed_fold_edge_21(backward_3f)
-        local _31_ = skip_one_21(backward_3f)
-        if (_31_ == "dead-end") then
+        local _34_ = skip_one_21(backward_3f)
+        if (_34_ == "dead-end") then
           return cleanup()
         elseif true then
-          local _ = _31_
+          local _ = _34_
           return iter(true)
         else
           return nil
@@ -210,50 +210,50 @@ local function get_match_positions(pattern, _16_, _18_)
   end
   return iter
 end
-local function get_targets_2a(pattern, _35_)
-  local _arg_36_ = _35_
-  local backward_3f = _arg_36_["backward?"]
-  local wininfo = _arg_36_["wininfo"]
-  local targets = _arg_36_["targets"]
-  local source_winid = _arg_36_["source-winid"]
+local function get_targets_2a(pattern, _38_)
+  local _arg_39_ = _38_
+  local backward_3f = _arg_39_["backward?"]
+  local wininfo = _arg_39_["wininfo"]
+  local targets = _arg_39_["targets"]
+  local source_winid = _arg_39_["source-winid"]
   local targets0 = (targets or {})
-  local _let_37_ = get_horizontal_bounds()
-  local _ = _let_37_[1]
-  local right_bound = _let_37_[2]
-  local bounds = _let_37_
+  local _let_40_ = get_horizontal_bounds()
+  local _ = _let_40_[1]
+  local right_bound = _let_40_[2]
+  local bounds = _let_40_
   local whole_window_3f = wininfo
   local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
   local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
   local match_positions = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
-  for _38_ in match_positions do
-    local _each_39_ = _38_
-    local line = _each_39_[1]
-    local col = _each_39_[2]
-    local pos = _each_39_
-    local _40_ = get_char_at(pos, {})
-    if (nil ~= _40_) then
-      local ch1 = _40_
+  for _41_ in match_positions do
+    local _each_42_ = _41_
+    local line = _each_42_[1]
+    local col = _each_42_[2]
+    local pos = _each_42_
+    local _43_ = get_char_at(pos, {})
+    if (nil ~= _43_) then
+      local ch1 = _43_
       local ch2, eol_3f = nil, nil
       do
-        local _41_ = get_char_at(pos, {["char-offset"] = 1})
-        if (_41_ == nil) then
+        local _44_ = get_char_at(pos, {["char-offset"] = 1})
+        if (_44_ == nil) then
           ch2, eol_3f = "\n", true
-        elseif (nil ~= _41_) then
-          local ch = _41_
+        elseif (nil ~= _44_) then
+          local ch = _44_
           ch2, eol_3f = ch
         else
           ch2, eol_3f = nil
         end
       end
       local same_char_triplet_3f
-      local _43_
+      local _46_
       if backward_3f then
-        _43_ = dec
+        _46_ = dec
       else
-        _43_ = inc
+        _46_ = inc
       end
-      same_char_triplet_3f = ((ch2 == prev_match.ch2) and (line == prev_match.line) and (col == _43_(prev_match.col)))
+      same_char_triplet_3f = ((ch2 == prev_match.ch2) and (line == prev_match.line) and (col == _46_(prev_match.col)))
       prev_match = {line = line, col = col, ch2 = ch2}
       if not same_char_triplet_3f then
         table.insert(targets0, {wininfo = wininfo0, pos = pos, pair = {ch1, ch2}, ["edge-pos?"] = (eol_3f or (col == right_bound))})
@@ -268,24 +268,24 @@ local function get_targets_2a(pattern, _35_)
     return nil
   end
 end
-local function distance(_48_, _50_)
-  local _arg_49_ = _48_
-  local l1 = _arg_49_[1]
-  local c1 = _arg_49_[2]
-  local _arg_51_ = _50_
-  local l2 = _arg_51_[1]
-  local c2 = _arg_51_[2]
+local function distance(_51_, _53_)
+  local _arg_52_ = _51_
+  local l1 = _arg_52_[1]
+  local c1 = _arg_52_[2]
+  local _arg_54_ = _53_
+  local l2 = _arg_54_[1]
+  local c2 = _arg_54_[2]
   local editor_grid_aspect_ratio = 0.3
-  local _let_52_ = {abs((c1 - c2)), abs((l1 - l2))}
-  local dx = _let_52_[1]
-  local dy = _let_52_[2]
+  local _let_55_ = {abs((c1 - c2)), abs((l1 - l2))}
+  local dx = _let_55_[1]
+  local dy = _let_55_[2]
   local dx0 = (dx * editor_grid_aspect_ratio)
   return pow((pow(dx0, 2) + pow(dy, 2)), 0.5)
 end
-local function get_targets(pattern, _53_)
-  local _arg_54_ = _53_
-  local backward_3f = _arg_54_["backward?"]
-  local target_windows = _arg_54_["target-windows"]
+local function get_targets(pattern, _56_)
+  local _arg_57_ = _56_
+  local backward_3f = _arg_57_["backward?"]
+  local target_windows = _arg_57_["target-windows"]
   if not target_windows then
     return get_targets_2a(pattern, {["backward?"] = backward_3f})
   else
@@ -294,18 +294,18 @@ local function get_targets(pattern, _53_)
     local source_winid = vim.fn.win_getid()
     local curr_win_only_3f
     do
-      local _55_ = target_windows
-      if ((_G.type(_55_) == "table") and ((_G.type((_55_)[1]) == "table") and (((_55_)[1]).winid == source_winid)) and ((_55_)[2] == nil)) then
+      local _58_ = target_windows
+      if ((_G.type(_58_) == "table") and ((_G.type((_58_)[1]) == "table") and (((_58_)[1]).winid == source_winid)) and ((_58_)[2] == nil)) then
         curr_win_only_3f = true
       else
         curr_win_only_3f = nil
       end
     end
     local cross_win_3f = not curr_win_only_3f
-    for _, _57_ in ipairs(target_windows) do
-      local _each_58_ = _57_
-      local winid = _each_58_["winid"]
-      local wininfo = _each_58_
+    for _, _60_ in ipairs(target_windows) do
+      local _each_61_ = _60_
+      local winid = _each_61_["winid"]
+      local wininfo = _each_61_
       if cross_win_3f then
         api.nvim_set_current_win(winid)
       else
@@ -320,31 +320,31 @@ local function get_targets(pattern, _53_)
     if not empty_3f(targets) then
       local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
       if by_screen_pos_3f then
-        for winid, _61_ in pairs(cursor_positions) do
-          local _each_62_ = _61_
-          local line = _each_62_[1]
-          local col = _each_62_[2]
-          local _63_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_63_) == "table") and (nil ~= (_63_).row) and ((_63_).col == col)) then
-            local row = (_63_).row
+        for winid, _64_ in pairs(cursor_positions) do
+          local _each_65_ = _64_
+          local line = _each_65_[1]
+          local col = _each_65_[2]
+          local _66_ = vim.fn.screenpos(winid, line, col)
+          if ((_G.type(_66_) == "table") and ((_66_).col == col) and (nil ~= (_66_).row)) then
+            local row = (_66_).row
             cursor_positions[winid] = {row, col}
           else
           end
         end
       else
       end
-      for _, _66_ in ipairs(targets) do
-        local _each_67_ = _66_
-        local _each_68_ = _each_67_["pos"]
-        local line = _each_68_[1]
-        local col = _each_68_[2]
-        local _each_69_ = _each_67_["wininfo"]
-        local winid = _each_69_["winid"]
-        local t = _each_67_
+      for _, _69_ in ipairs(targets) do
+        local _each_70_ = _69_
+        local _each_71_ = _each_70_["pos"]
+        local line = _each_71_[1]
+        local col = _each_71_[2]
+        local _each_72_ = _each_70_["wininfo"]
+        local winid = _each_72_["winid"]
+        local t = _each_70_
         if by_screen_pos_3f then
-          local _70_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_70_) == "table") and (nil ~= (_70_).row) and ((_70_).col == col)) then
-            local row = (_70_).row
+          local _73_ = vim.fn.screenpos(winid, line, col)
+          if ((_G.type(_73_) == "table") and ((_73_).col == col) and (nil ~= (_73_).row)) then
+            local row = (_73_).row
             t["screenpos"] = {row, col}
           else
           end
@@ -352,10 +352,10 @@ local function get_targets(pattern, _53_)
         end
         t["rank"] = distance((t.screenpos or t.pos), cursor_positions[winid])
       end
-      local function _73_(_241, _242)
+      local function _76_(_241, _242)
         return ((_241).rank < (_242).rank)
       end
-      table.sort(targets, _73_)
+      table.sort(targets, _76_)
       return targets
     else
       return nil

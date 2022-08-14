@@ -112,7 +112,7 @@ early termination in loops."
                 _ (iter true))
 
               ; Horizontally offscreen?
-              (and (< col left-bound) (> col right-bound) (not vim.wo.wrap))
+              (not (or vim.wo.wrap (<= left-bound col right-bound)))
               (match (to-next-in-window-pos!
                        backward? left-bound right-bound stopline)
                 :dead-end (cleanup)  ; = on the first/last line in the window
