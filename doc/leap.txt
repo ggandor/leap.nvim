@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 August 13
+Last change: 2022 August 16
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -174,9 +174,8 @@ Available options~
 <
                                                          *leap.opts.safe_labels*
 `safe_labels` >
-    { "s", "f", "n",
-      "u", "t",
-      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z" }
+    { "s", "f", "n", "u", "t", "/",
+      "S", "F", "N", "L", "H", "M", "U", "G", "T", "?", "Z" }
 <
     When the number of matches does not exceed the number of these "safe"
     labels plus one, the plugin jumps to the first match automatically after
@@ -191,10 +190,11 @@ Available options~
                                                               *leap.opts.labels*
 `labels` >
     { "s", "f", "n",
-      "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g",
-      "u", "t",
-      "c", ".", "z",
-      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z" }
+      "j", "k", "l", "h", "o", "d", "w", "e", "m", "b",
+      "u", "y", "v", "r", "g", "t", "c", "x", "/", "z",
+      "S", "F", "N",
+      "J", "K", "L", "H", "O", "D", "W", "E", "M", "B",
+      "U", "Y", "V", "R", "G", "T", "C", "X", "?", "Z" }
 <
     Target labels to be used when there are more matches than the number of
     safe labels plus one.
