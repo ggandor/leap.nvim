@@ -515,7 +515,12 @@ function leap_to_window()
     table.insert(targets, { pos = pos, wininfo = wininfo })
   end
 
-  require('leap').leap { target_windows = target_windows, targets = targets }
+  require('leap').leap {
+    target_windows = target_windows, targets = targets,
+    action = function (target)
+      vim.api.nvim_set_current_win(target.wininfo.winid)
+    end
+  }
 end
 ```
 </details>
