@@ -587,8 +587,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                                     (do-action targets**)))
                     (let [exit-with-action (fn [idx]
                                              (exit (set-dot-repeat in1 in2 idx)
-                                                   (do-action (. targets* idx))))]
-                      (if (= (length targets*) 1) (exit-with-action 1)
+                                                   (do-action (. targets* idx))))
+                          |targets*| (length targets*)]
+                      (if (= |targets*| 1) (exit-with-action 1)
                           (do
                             (when targets*.autojump?
                               (do-action (. targets* 1)))
@@ -601,6 +602,10 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (if targets*.autojump? 2 1)]
                                       (do-action (. targets* new-idx))
+                                      (when (user-forced-autojump?)
+                                        (for [i (+ (length opts.safe_labels) 2) |targets*|]
+                                          (tset targets* i :label nil)
+                                          (tset targets* i :beacon nil)))
                                       (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                                                       {:force-no-labels?
                                                        (not targets*.autojump?)})))
