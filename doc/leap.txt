@@ -71,7 +71,7 @@ inclusive (so ultimately they have equivalent results).
                                                             *leap-match-newline*
 A character at the end of a line can be targeted by pressing `<space>` after it.
 (There is no special mechanism behind this: you can set aliases for the
-newline character simply by defining a group in |leap.opts.character_classes|
+newline character simply by defining a set in |leap.opts.equivalence_classes|
 that contains it.)
 
                                                              *leap-cross-window*
@@ -160,15 +160,14 @@ Available options~
 
     Whether to consider case in search patterns.
 
-                                                   *leap.opts.character_classes*
-`character_classes = { ' \t\r\n' }`
+                                                   *leap.opts.equivalence_classes*
+`equivalence_classes = { ' \t\r\n' }`
 
-    User defined character classes to be used in search patterns. A character
-    will match any other in its class. The classes can either be defined as
-    strings or tables.
+    A character will match any other in its equivalence class. The sets can
+    either be defined as strings or tables.
 
-    Note: Make sure to define a class containing `\n` if you want to be able
-    to target characters at the end of the line. 
+    Note: Make sure to define a set containing `\n` if you want to be able to
+    target characters at the end of the line. 
 
     Example: >
     {

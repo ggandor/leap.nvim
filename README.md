@@ -312,7 +312,7 @@ inclusive (so ultimately they have equivalent results).
 
 A character at the end of a line can be targeted by pressing `<space>` after it.
 (There is no special mechanism behind this: you can set aliases for the newline
-character simply by defining a group in `opts.character_classes` that contains
+character simply by defining a set in `opts.equivalence_classes` that contains
 it.)
 
 ### Cross-window motions
@@ -369,9 +369,9 @@ require('leap').setup {
   max_aot_targets = nil,
   highlight_unlabeled = false,
   case_sensitive = false,
-  -- Groups of characters that should match each other.
-  -- Obvious candidates are braces & quotes ('([{', ')]}', '`"\'').
-  character_classes = { ' \t\r\n', },
+  -- Sets of characters that should match each other.
+  -- Obvious candidates are braces and quotes ('([{', ')]}', '`"\'').
+  equivalence_classes = { ' \t\r\n', },
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },

@@ -189,12 +189,12 @@ char separately."
   ; Setting a metatable to handle case insensitivity and user-defined
   ; character classes (in both cases: multiple keys -> one value).
   ; If `k` is not found, try to get a sublist belonging to some common
-  ; key: the character class that `k` belongs to (if there is one), or,
-  ; if case insensivity is set, the lowercased verison of `k`.
+  ; key: the equivalence class that `k` belongs to (if there is one),
+  ; or, if case insensivity is set, the lowercased verison of `k`.
   ; (And in the above cases, `k` will not be found, since we also
   ; redirect to the common keys when inserting a new sublist.)
   (setmetatable targets.sublists
-    (let [->common-key #(or (. opts.character_class_of $)
+    (let [->common-key #(or (. opts.eq_class_of $)
                             (when-not opts.case_sensitive ($:lower))
                             $)]
       {:__index (fn [t k] (rawget t (->common-key k)))
@@ -414,8 +414,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
 
-    (fn expand-to-user-defined-character-class [in]
-      (match (. opts.character_class_of in)
+    (fn expand-to-equivalence-class [in]
+      (match (. opts.eq_class_of in)
         chars  ; table
         ; `vim.fn.search` cannot interpret actual newline (LF) chars in
         ; the pattern, so we need to insert them as raw \n sequences.
@@ -434,9 +434,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (fn prepare-pattern [in1 ?in2]
       (.. "\\V"
           (if opts.case_sensitive "\\C" "\\c")
-          (or (expand-to-user-defined-character-class in1)
+          (or (expand-to-equivalence-class in1)
               (in1:gsub "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
-          (or (expand-to-user-defined-character-class ?in2)
+          (or (expand-to-equivalence-class ?in2)
               ?in2
               "\\_.")))  ; match anything, including EOL
 
@@ -654,16 +654,15 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 ; Init ///1
 
-; Add a char -> char-class lookup table (the relevant one for us).
-(tset opts :character_class_of
-      (do (local t {})
-          (each [_ cc (ipairs (or opts.character_classes []))]
-            (local cc* (if (= (type cc) :string)
-                           (icollect [char (cc:gmatch ".")] char)
-                           cc))
-            (each [_ char (ipairs cc*)]
-              (tset t char cc*)))
-          t))
+; Add a char->char-class lookup table (the relevant one for us).
+(tset opts :eq_class_of
+      (do (local res {})
+          (each [_ eqcl (ipairs (or opts.equivalence_classes []))]
+            (local eqcl* (if (= (type eqcl) :table) eqcl
+                             (icollect [ch (eqcl:gmatch ".")] ch)))
+            (each [_ ch (ipairs eqcl*)]
+              (tset res ch eqcl*)))
+          res))
 
 
 (api.nvim_create_augroup "LeapDefault" {})

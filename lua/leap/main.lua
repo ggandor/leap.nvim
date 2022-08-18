@@ -233,7 +233,7 @@ local function populate_sublists(targets)
           return nil
         end
       end
-      return (opts.character_class_of[_241] or _42_() or _241)
+      return (opts.eq_class_of[_241] or _42_() or _241)
     end
     __3ecommon_key = _41_
     local function _45_(t, k)
@@ -523,8 +523,8 @@ local function leap(kwargs)
   local function echo_not_found(s)
     return echo(("not found: " .. s))
   end
-  local function expand_to_user_defined_character_class(_in)
-    local _97_ = opts.character_class_of[_in]
+  local function expand_to_equivalence_class(_in)
+    local _97_ = opts.eq_class_of[_in]
     if (nil ~= _97_) then
       local chars = _97_
       local chars_2a
@@ -555,7 +555,7 @@ local function leap(kwargs)
         return "\\c"
       end
     end
-    return ("\\V" .. _102_() .. (expand_to_user_defined_character_class(in1) or in1:gsub("\\", "\\\\")) .. (expand_to_user_defined_character_class(_3fin2) or _3fin2 or "\\_."))
+    return ("\\V" .. _102_() .. (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\")) .. (expand_to_equivalence_class(_3fin2) or _3fin2 or "\\_."))
   end
   local function get_target_with_active_primary_label(sublist, input)
     local res = nil
@@ -1187,31 +1187,31 @@ local function leap(kwargs)
 end
 local _211_
 do
-  local t = {}
-  for _, cc in ipairs((opts.character_classes or {})) do
-    local cc_2a
-    if (type(cc) == "string") then
+  local res = {}
+  for _, eqcl in ipairs((opts.equivalence_classes or {})) do
+    local eqcl_2a
+    if (type(eqcl) == "table") then
+      eqcl_2a = eqcl
+    else
       local tbl_15_auto = {}
       local i_16_auto = #tbl_15_auto
-      for char in cc:gmatch(".") do
-        local val_17_auto = char
+      for ch in eqcl:gmatch(".") do
+        local val_17_auto = ch
         if (nil ~= val_17_auto) then
           i_16_auto = (i_16_auto + 1)
           do end (tbl_15_auto)[i_16_auto] = val_17_auto
         else
         end
       end
-      cc_2a = tbl_15_auto
-    else
-      cc_2a = cc
+      eqcl_2a = tbl_15_auto
     end
-    for _0, char in ipairs(cc_2a) do
-      t[char] = cc_2a
+    for _0, ch in ipairs(eqcl_2a) do
+      res[ch] = eqcl_2a
     end
   end
-  _211_ = t
+  _211_ = res
 end
-opts["character_class_of"] = _211_
+opts["eq_class_of"] = _211_
 api.nvim_create_augroup("LeapDefault", {})
 hl["init-highlight"](hl)
 local function _214_()

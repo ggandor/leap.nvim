@@ -1,7 +1,7 @@
 {:max_aot_targets nil
  :highlight_unlabeled false
  :case_sensitive false
- :character_classes [" \t\r\n"]
+ :equivalence_classes [" \t\r\n"]
  :safe_labels ["s" "f" "n" "u" "t" "/"
                "S" "F" "N" "L" "H" "M" "U" "G" "T" "?" "Z"]
  :labels ["s" "f" "n"
