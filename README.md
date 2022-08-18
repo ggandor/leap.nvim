@@ -85,11 +85,12 @@ Compared to Lightspeed, Leap
 
 ### Auxiliary design principles
 
-- Optimize for the common case, not the pathological: a good example of this is
-  the Sneak-like "one-character labels & multiple groups" approach, which can
-  become awkward for, say, 200 targets, but otherwise more comfortable,
-  eliminates all kinds of edge cases and implementation problems, and allows for
-  features like [multiselect](#extending-leap).
+- Optimize for the common case (not the pathological): a good example of this is
+  the Sneak-like "one-character labels in multiple groups" approach (instead of
+  using arbitrary-length labels), which can become awkward for, say, 200
+  targets, but usually more comfortable, eliminates all kinds of edge cases and
+  implementation problems, and allows for features like
+  [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on the native interface, and aim for synergy as much as possible. The
@@ -198,6 +199,7 @@ The search is invoked with `s` in the forward direction, and `S` in the backward
 direction. Let's target some word containing `ol`. After entering the letter
 `o`, the plugin processes all character pairs starting with it, and from here
 on, you have all the visual information you need to reach your specific target.
+
 To reach the unlabeled matches, just finish the pattern, i.e., type the second
 character. For the others, you also need to type the label character that is
 displayed right next to the match.
@@ -256,12 +258,15 @@ after a jump), but stays in place, and switches to an extended, more comfortable
 label set otherwise.
 
 The rationale behind this is that the probability of the user aiming for the
-very first target lessens with the number of targets; also, the probability of
-being able to reach the first target by other means (`www`, `f`, etc.)
-increases. That is, staying in place in exchange for more comfortable labels
-becomes a more and more acceptable trade-off.
+very first target lessens with the number of targets; at the same time, the
+probability of being able to reach the first target by other means (`www`, `f`,
+etc.) increases. That is, staying in place in exchange for more comfortable
+labels becomes a more and more acceptable trade-off.
 
-For details on configuring this behaviour, see `:h leap-config`.
+Smart autojump gives the best of both worlds between Sneak (jumps
+unconditionally, can only use a seriously limited label set) and Hop (labels
+everything, always requires that one extra keystroke). For configuration, see
+`:h leap-config`.
 
 ### Resolving conflicts in the first phase
 
@@ -279,23 +284,29 @@ available, providing the necessary additional comfort and precision, since in
 that case we are targeting exact positions, and can only aim once, without the
 means of easy correction.
 
-`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and they follow the
-semantics of `/` and `?` in terms of cursor placement and inclusive/exclusive
-operational behaviour, including forced motion types (`:h forced-motion`).
+`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and behave like `/` and
+`?`, that is, they are _exclusive_ motions (the end column is not included in
+the operation).
 
 `x`/`X` provide missing variants for the two directions; the mnemonics could be
 e**x**tend/e**X**clude:
 
 ```
-ab···|                    |···ab
-█████·  ←  Zab    zab  →  ████ab
-ab███·  ←  Xab    xab  →  ██████
+abcd|                    |bcde
+████e  ←  Zab    zde  →  ███de
+ab██e  ←  Xab    xde  →  █████
 ```
 
-As you can see from the figure, `x` goes to the end of the match, including it
-in the operation, while `X` stops just before - in an absolute sense, after -
-the end of the match (the equivalent of `T` for Leap motions). In simpler
-terms: `x`/`X` both shift the relevant edge of the operated area by +2.
+In the end, `x`/`X` both push the relevant edge of the operated area forward by
+2, but there is a subtlety here:
+
+`X` = +2
+
+`x` = +1 _inclusive_
+
+This is relevant when using the `v` modifier (`:h forced-motion`). `v` works as
+expected: for example, `vx` becomes an exclusive motion, while `vz` becomes
+inclusive (so ultimately they have equivalent results).
 
 ### Jumping to the last character on a line
 
@@ -349,9 +360,9 @@ previous jump(s) in case you accidentally overshoot your target.
 `setup` has no implicit side effects, it is just a convenience function for
 changing the values in the configuration table (which can also be accessed
 directly as `require('leap').opts`). There is no need to call it if you're
-fine with the defaults. Also note that `setup` is not recursive - table values
-will simply be overwritten -, so in many cases, it might be more straightforward
-to set `opts` directly.
+fine with the defaults. Also note that table values are not extended, but simply
+overwritten by the given ones, so in many cases, it might be more
+straightforward to set `opts` directly.
 
 ```Lua
 require('leap').setup {
@@ -451,10 +462,8 @@ This is where things start to become really interesting:
 mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
 label, and also the jump target, if there is no custom `action` provided. If
 you have targets in multiple windows, you also need to provide a `wininfo` field
-for each (`:h getwininfo()`).
-
-Targets can represent anything that has a position in the window, like
-Tree-sitter nodes, etc.
+for each (`:h getwininfo()`). Targets can represent anything with a position,
+like Tree-sitter nodes, etc.
 
 <details>
 <summary>Example: linewise motions</summary>
@@ -502,6 +511,10 @@ end
 ```
 </details>
 
+`action`: A Lua function that will be executed by Leap in place of the jump. (You
+could obviously implement some custom jump logic here too.) Its only argument is
+either a target, or a list of targets (in multiselect mode).
+
 <details>
 <summary>Example: pick a window</summary>
 
@@ -524,10 +537,6 @@ function leap_to_window()
 end
 ```
 </details>
-
-`action`: A Lua function that will be executed by Leap in place of the jump. (You
-could obviously implement some custom jump logic here too.) Its only argument is
-either a target, or a list of targets (in multiselect mode).
 
 `multiselect`: A flag allowing for selecting multiple targets for `action`. In
 this mode, you can just start picking labels one after the other. You can revert
