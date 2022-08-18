@@ -193,7 +193,7 @@ char separately."
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (when-not opts.highlight_unlabeled
+                   :inactive (when (and aot? (not opts.highlight_unlabeled))
                                ; In this case, "no highlight" should
                                ; unambiguously signal "no further keystrokes
                                ; needed", so it is mandatory to show all labeled

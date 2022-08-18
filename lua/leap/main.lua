@@ -236,7 +236,7 @@ local function set_beacon_for_labeled(target, _41_)
     elseif (_45_ == "active-secondary") then
       virttext = {{text, hl.group["label-secondary"]}}
     elseif (_45_ == "inactive") then
-      if not opts.highlight_unlabeled then
+      if (aot_3f and not opts.highlight_unlabeled) then
         virttext = {{(" " .. pad), hl.group["label-secondary"]}}
       else
         virttext = nil
