@@ -62,4 +62,79 @@ local function get_enterable_windows()
   end
   return filter(_10_, wins)
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["push-cursor!"] = push_cursor_21, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows}
+local function get_input()
+  local ok_3f, ch = pcall(vim.fn.getcharstr)
+  if (ok_3f and (ch ~= __fnl_global___3cesc_3e)) then
+    return ch
+  else
+    return nil
+  end
+end
+local function get_input_by_keymap(prompt)
+  local function echo_prompt(seq)
+    return api.nvim_echo({{prompt.str}, {(seq or ""), "ErrorMsg"}}, false, {})
+  end
+  local function accept(ch)
+    prompt.str = (prompt.str .. ch)
+    echo_prompt()
+    return ch
+  end
+  local function loop(seq)
+    local _7cseq_7c = #(seq or "")
+    if (function(_12_,_13_,_14_) return (_12_ <= _13_) and (_13_ <= _14_) end)(1,_7cseq_7c,5) then
+      echo_prompt(seq)
+      local rhs_candidate = vim.fn.mapcheck(seq, "l")
+      local rhs = vim.fn.maparg(seq, "l")
+      if (rhs_candidate == "") then
+        return accept(seq)
+      elseif (rhs == rhs_candidate) then
+        return accept(rhs)
+      else
+        local _15_ = get_input()
+        if (nil ~= _15_) then
+          local _3cbs_3e = _15_
+          local function _16_()
+            if (_7cseq_7c >= 2) then
+              return seq:sub(1, dec(_7cseq_7c))
+            else
+              return seq
+            end
+          end
+          return loop(_16_())
+        elseif (nil ~= _15_) then
+          local _3ccr_3e = _15_
+          if (rhs ~= "") then
+            return accept(rhs)
+          elseif (_7cseq_7c == 1) then
+            return accept(seq)
+          else
+            return loop(seq)
+          end
+        elseif (nil ~= _15_) then
+          local ch = _15_
+          return loop((seq .. ch))
+        else
+          return nil
+        end
+      end
+    else
+      return nil
+    end
+  end
+  if (vim.bo.iminsert ~= 1) then
+    return get_input()
+  else
+    echo_prompt()
+    local _21_ = loop(get_input())
+    if (nil ~= _21_) then
+      local _in = _21_
+      return _in
+    elseif true then
+      local _ = _21_
+      return echo("")
+    else
+      return nil
+    end
+  end
+end
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["push-cursor!"] = push_cursor_21, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

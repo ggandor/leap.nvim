@@ -9,7 +9,9 @@
         : echo
         : replace-keycodes
         : get-cursor-pos
-        : push-cursor!}
+        : push-cursor!
+        : get-input
+        : get-input-by-keymap}
        (require "leap.util"))
 
 (local api vim.api)
@@ -70,50 +72,6 @@ interrupted change operation."
     (pcall vim.fn.repeat#setreg seq vim.v.register)
     ; Note: we're feeding count inside the seq itself.
     (pcall vim.fn.repeat#set seq -1)))
-
-
-; Input ///1
-
-(fn get-input []
-  (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
-  ; <esc> should cleanly exit anytime.
-  (when (and ok? (not= ch <esc>)) ch))
-
-
-; :help mbyte-keymap
-; prompt = {:str <val>} (pass by reference hack)
-(fn get-input-by-keymap [prompt]
-
-  (fn echo-prompt [seq]
-    (api.nvim_echo [[prompt.str] [(or seq "") :ErrorMsg]] false []))
-
-  (fn accept [ch]
-    (set prompt.str (.. prompt.str ch))
-    (echo-prompt)
-    ch)
-
-  (fn loop [seq]
-    (local |seq| (length (or seq "")))
-    ; Arbitrary limit (`mapcheck` will continue to give back a candidate
-    ; if the start of `seq` matches, need to cut the gibberish somewhere).
-    (when (<= 1 |seq| 5)
-      (echo-prompt seq)
-      (let [rhs-candidate (vim.fn.mapcheck seq :l)
-            rhs (vim.fn.maparg seq :l)]
-        (if (= rhs-candidate "") (accept seq)   ; implies |seq|=1 (no recursion here)
-            (= rhs rhs-candidate) (accept rhs)  ; seq is the longest LHS match
-            (match (get-input)
-              <bs> (loop (if (>= |seq| 2) (seq:sub 1 (dec |seq|)) seq))
-              <cr> (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
-                       (= |seq| 1) (accept seq)
-                       (loop seq))
-              ch (loop (.. seq ch)))))))
-
-  (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
-      (do (echo-prompt)
-          (match (loop (get-input))
-            in in
-            _ (echo "")))))
 
 
 ; Processing targets ///1
