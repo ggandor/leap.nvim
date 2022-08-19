@@ -304,7 +304,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
               (lua :return)))  ; EARLY
   (let [{:dot_repeat dot-repeat? :target_windows target-windows
          :targets user-given-targets :action user-given-action
-         :multiselect multi-select?}
+         :multiselect multi-select? : count}
         kwargs
         {:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
@@ -322,6 +322,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         _ (each [_ w (ipairs (or ?target-windows []))]
             (table.insert hl-affected-windows w))
         directional? (not target-windows)
+        count (or count (if (not directional?) 0 vim.v.count))
         ; We need to save the mode here, because the `:normal` command
         ; in `jump.jump-to!` can change the state. Related: vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
@@ -339,7 +340,10 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                       (-?> (. opts.special_keys k)
                                            replace-keycodes))})]
 
-    (var aot? (not (or multi-select? user-given-targets (= max-aot-targets 0))))
+    (var aot? (not (or (> count 0)
+                       multi-select?
+                       user-given-targets
+                       (= max-aot-targets 0))))
 
     ; Helpers ///
 
@@ -590,6 +594,10 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                                    (do-action (. targets* idx))))
                           |targets*| (length targets*)]
                       (if (= |targets*| 1) (exit-with-action 1)
+
+                          (and directional? (> count 0))
+                          (if (> count |targets*|) (exit-early) (exit-with-action count))
+
                           (do
                             (when targets*.autojump?
                               (do-action (. targets* 1)))
