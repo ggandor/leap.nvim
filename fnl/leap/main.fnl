@@ -422,7 +422,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
           (set state.dot_repeat
                (vim.tbl_extend :error
                                state*.dot_repeat
-                               {: backward? : offset : inclusive-op?})))))
+                               {: backward : offset : inclusive_op})))))
 
     (fn set-dot-repeat [in1 in2 target_idx]
       (when dot-repeatable-op?

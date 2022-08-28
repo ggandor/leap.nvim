@@ -518,7 +518,7 @@ local function leap(kwargs)
       else
       end
       if state_2a.dot_repeat then
-        state.dot_repeat = vim.tbl_extend("error", state_2a.dot_repeat, {["backward?"] = backward_3f, offset = offset, ["inclusive-op?"] = inclusive_op_3f})
+        state.dot_repeat = vim.tbl_extend("error", state_2a.dot_repeat, {backward = backward, offset = offset, inclusive_op = inclusive_op})
         return nil
       else
         return nil
