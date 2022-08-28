@@ -20,10 +20,6 @@
 (local map vim.tbl_map)
 (local {: abs : ceil : max : min : pow} math)
 
-(local <bs> (replace-keycodes "<bs>"))
-(local <cr> (replace-keycodes "<cr>"))
-(local <esc> (replace-keycodes "<esc>"))
-
 
 ; Fennel utils ///1
 

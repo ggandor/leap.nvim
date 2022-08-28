@@ -50,6 +50,11 @@ character instead."
 
 ; Input
 
+(local <bs> (replace-keycodes "<bs>"))
+(local <cr> (replace-keycodes "<cr>"))
+(local <esc> (replace-keycodes "<esc>"))
+
+
 (fn get-input []
   (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
   ; <esc> should cleanly exit anytime.

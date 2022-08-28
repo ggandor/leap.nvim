@@ -62,9 +62,12 @@ local function get_enterable_windows()
   end
   return filter(_10_, wins)
 end
+local _3cbs_3e = replace_keycodes("<bs>")
+local _3ccr_3e = replace_keycodes("<cr>")
+local _3cesc_3e = replace_keycodes("<esc>")
 local function get_input()
   local ok_3f, ch = pcall(vim.fn.getcharstr)
-  if (ok_3f and (ch ~= __fnl_global___3cesc_3e)) then
+  if (ok_3f and (ch ~= _3cesc_3e)) then
     return ch
   else
     return nil
@@ -91,8 +94,7 @@ local function get_input_by_keymap(prompt)
         return accept(rhs)
       else
         local _15_ = get_input()
-        if (nil ~= _15_) then
-          local _3cbs_3e = _15_
+        if (_15_ == _3cbs_3e) then
           local function _16_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
@@ -101,8 +103,7 @@ local function get_input_by_keymap(prompt)
             end
           end
           return loop(_16_())
-        elseif (nil ~= _15_) then
-          local _3ccr_3e = _15_
+        elseif (_15_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then

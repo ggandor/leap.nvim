@@ -20,9 +20,6 @@ local ceil = _local_2_["ceil"]
 local max = _local_2_["max"]
 local min = _local_2_["min"]
 local pow = _local_2_["pow"]
-local _3cbs_3e = replace_keycodes("<bs>")
-local _3ccr_3e = replace_keycodes("<cr>")
-local _3cesc_3e = replace_keycodes("<esc>")
 local function user_forced_autojump_3f()
   return (not opts.labels or empty_3f(opts.labels))
 end
