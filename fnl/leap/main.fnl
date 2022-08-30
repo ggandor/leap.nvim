@@ -249,8 +249,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
 
 
 ; TODO: User-given targets cannot get a match highlight at the moment.
-(fn set-beacons [targets {: force-no-labels? : user-given-targets? : aot?}]
-  (if (and force-no-labels? (not user-given-targets?))
+(fn set-beacons [targets {: no-labels? : user-given-targets? : aot?}]
+  (if (and no-labels? (not user-given-targets?))
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs targets)]
@@ -331,6 +331,8 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; without allowing us to select a labeled target.
         force-noautojump? (or multi-select? user-given-action
                               op-mode? (not directional?))
+        ; TODO:
+        no-labels? (and (user-forced-autojump?) (user-forced-noautojump?))
         max-aot-targets (or opts.max_aot_targets math.huge)
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
@@ -338,10 +340,12 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                       (-?> (. opts.special_keys k)
                                            replace-keycodes))})]
 
-    (var aot? (not (or (> count 0)
-                       multi-select?
-                       user-given-targets
-                       (= max-aot-targets 0))))
+    (when (and (not directional?) no-labels?)
+      (echo "no labels to use")
+      (lua :return))  ; EARLY
+
+    (var aot? (not (or (= max-aot-targets 0) (> count 0)
+                       no-labels? multi-select? user-given-targets)))
 
     ; Helpers ///
 
@@ -462,24 +466,25 @@ B: Two labels occupy the same position (this can occur at EOL or window
                     in2 (values in1 in2)
                     _ (exit-early))))
 
-    (fn post-pattern-input-loop [sublist ?group-offset first-invoc?]
+    (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
       (fn loop [group-offset first-invoc?]
-        (doto sublist
-          ; Do _not_ skip this on initial invocation - we might have skipped
-          ; setting the initial label states in case of <enter>-repeat.
-          (set-label-states {: group-offset})
-          (set-beacons {:user-given-targets? user-given-targets : aot?}))
+        ; Do _not_ skip this on initial invocation - we might have skipped
+        ; setting the initial label states in case of <enter>-repeat.
+        (when targets.label-set
+          (set-label-states targets {: group-offset}))
+        (set-beacons targets {: aot? : no-labels?
+                              :user-given-targets? user-given-targets})
         (with-highlight-chores
-          (light-up-beacons sublist (when sublist.autojump? 2)))
+          (light-up-beacons targets (when targets.autojump? 2)))
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not first-invoc?)))
-                   (or (not sublist.autojump?)
+                   (or (not targets.autojump?)
                        ; If auto-jump has been set automatically (not forced),
                        ; it implies that there are no subsequent groups.
                        (user-forced-autojump?)))
-              (let [|groups| (ceil (/ (length sublist) (length sublist.label-set)))
+              (let [|groups| (ceil (/ (length targets) (length targets.label-set)))
                     max-offset (dec |groups|)
                     inc/dec (if (= input spec-keys.next_group) inc dec)
                     new-offset (-> group-offset inc/dec (clamp 0 max-offset))]
@@ -508,9 +513,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                  (tset target :label-state :selected)))
                 (loop targets))))))
 
-    (fn traversal-loop [targets idx {: force-no-labels?}]
-      (when force-no-labels? (inactivate-labels targets))
-      (set-beacons targets {: force-no-labels? : aot?
+    (fn traversal-loop [targets idx {: no-labels?}]
+      (when no-labels? (inactivate-labels targets))
+      (set-beacons targets {: no-labels? : aot?
                             :user-given-targets? user-given-targets})
       (with-highlight-chores (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
@@ -524,7 +529,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                       ; ?. -> user-given targets might not have :pair
                                       :in2 (?. targets new-idx :pair 2)}})
               (jump-to! (. targets new-idx))
-              (traversal-loop targets new-idx {: force-no-labels?}))
+              (traversal-loop targets new-idx {: no-labels?}))
             ; We still want the labels (if there are) to function.
             (match (get-target-with-active-primary-label targets input)
               [_ target] (exit (jump-to! target))
@@ -557,7 +562,9 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                            (set-autojump force-noautojump?)
                                            (attach-label-set)
                                            (set-labels multi-select?))]
-                    (if ?in2 (prepare-targets targets)
+                    (if ?in2
+                        (if no-labels? (tset targets :autojump? true)
+                            (prepare-targets targets))
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
                               (prepare-targets sublist))))
@@ -576,7 +583,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
                   (exit (set-dot-repeat in1 in2 1))
-                  (traversal-loop targets 1 {:force-no-labels? true})))  ; REDRAW (LOOP)
+                  (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
             (do
               ; Do this _now_ - in any case, repeat can succeed.
               (update-state {:repeat {: in1 : in2}})
@@ -608,13 +615,13 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (if targets*.autojump? 2 1)]
                                       (do-action (. targets* new-idx))
-                                      (when (user-forced-autojump?)
+                                      (when (and (user-forced-autojump?) (not no-labels?))
                                         (for [i (+ (length opts.safe_labels) 2) |targets*|]
                                           (tset targets* i :label nil)
                                           (tset targets* i :beacon nil)))
                                       (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                                                      {:force-no-labels?
-                                                       (not targets*.autojump?)})))
+                                                      {:no-labels?
+                                                       (or no-labels? (not targets*.autojump?))})))
                                 (match (get-target-with-active-primary-label targets* in-final)
                                   [idx _] (exit-with-action idx)
                                   _ (if targets*.autojump? (exit (vim.fn.feedkeys in-final :i))
