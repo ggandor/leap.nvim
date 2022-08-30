@@ -299,12 +299,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
     [nil] (do (echo "no targetable windows")
               (lua :return)))  ; EARLY
   (let [{:dot_repeat dot-repeat? :target_windows target-windows
-         :targets user-given-targets :action user-given-action
-         :multiselect multi-select? : count}
+         :opts user-given-opts :targets user-given-targets
+         :action user-given-action :multiselect multi-select?
+         : count}
         kwargs
         {:backward backward? :inclusive_op inclusive-op? : offset}
         (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
+        _ (set opts.current_call (or user-given-opts {}))
         ->wininfo #(. (vim.fn.getwininfo $) 1)
         curr-winid (vim.fn.win_getid)
         _ (set state.source_window curr-winid)

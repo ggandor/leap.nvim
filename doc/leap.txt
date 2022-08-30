@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 August 18
+Last change: 2022 August 30
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -114,7 +114,7 @@ You can repeat change and delete operations with the `.` character, if
 repeat.vim (https://github.com/tpope/vim-repeat) is installed.
 
 ==============================================================================
-CONFIGURATION                                                      *leap-config*
+CONFIGURATION                                            *leap-config* *leap.opts*
 
 Setting an individual option via the `opts` table directly:
 
@@ -383,6 +383,10 @@ leap({opts})                                                       *leap.leap()*
 
     Parameters ~
         {opts} Optional parameters.
+               • opts: A table just like |leap.opts|, to override any default
+                 setting for the specific call.
+                 E.g.: `require('leap').leap { opts = { labels = {} } }`
+
                • offset: Where to land with the cursor compared to the target
                  position (-1, 0, 1, 2).
                • inclusive_op: A flag indicating whether an operation should

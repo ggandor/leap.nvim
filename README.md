@@ -432,6 +432,9 @@ the combinations of them give you almost infinite possibilities.
 Instead of using the provided `<Plug>` keys, you can also call the `leap`
 function directly. The following arguments are available:
 
+`opts`: A table just like `leap.opts`, to override any default setting for the
+specific call. E.g.: `require('leap').leap { opts = { labels = {} } }`.
+
 `offset`: Where to land with the cursor compared to the target position (-1, 0,
 1, 2).
 

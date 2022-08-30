@@ -1,7 +1,7 @@
 local function _1_(_, k)
   local _2_ = k
   if (_2_ == "opts") then
-    return require("leap.opts")
+    return (require("leap.opts")).default
   elseif (_2_ == "leap") then
     return (require("leap.main")).leap
   elseif (_2_ == "state") then

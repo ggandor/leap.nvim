@@ -6,7 +6,7 @@
   {:__index
    (fn [_ k]
      (match k
-       :opts (require "leap.opts")
+       :opts (. (require "leap.opts") :default)
        :leap (. (require "leap.main") :leap)
        :state (. (require "leap.main") :state)
        :setup (. (require "leap.user") :setup)

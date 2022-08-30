@@ -375,6 +375,7 @@ local function leap(kwargs)
   local _let_73_ = kwargs
   local dot_repeat_3f = _let_73_["dot_repeat"]
   local target_windows = _let_73_["target_windows"]
+  local user_given_opts = _let_73_["opts"]
   local user_given_targets = _let_73_["targets"]
   local user_given_action = _let_73_["action"]
   local multi_select_3f = _let_73_["multiselect"]
@@ -393,25 +394,28 @@ local function leap(kwargs)
   local _
   state.args = kwargs
   _ = nil
+  local _0
+  opts.current_call = (user_given_opts or {})
+  _0 = nil
   local __3ewininfo
   local function _76_(_241)
     return (vim.fn.getwininfo(_241))[1]
   end
   __3ewininfo = _76_
   local curr_winid = vim.fn.win_getid()
-  local _0
-  state.source_window = curr_winid
-  _0 = nil
-  local curr_win = __3ewininfo(curr_winid)
   local _1
+  state.source_window = curr_winid
+  _1 = nil
+  local curr_win = __3ewininfo(curr_winid)
+  local _2
   if (user_given_targets and not user_given_targets[1].wininfo) then
     local function _77_(t)
       t.wininfo = curr_win
       return nil
     end
-    _1 = map(_77_, user_given_targets)
+    _2 = map(_77_, user_given_targets)
   else
-    _1 = nil
+    _2 = nil
   end
   local _3ftarget_windows
   do
@@ -423,11 +427,11 @@ local function leap(kwargs)
     end
   end
   local hl_affected_windows = {curr_win}
-  local _2
-  for _3, w in ipairs((_3ftarget_windows or {})) do
+  local _3
+  for _4, w in ipairs((_3ftarget_windows or {})) do
     table.insert(hl_affected_windows, w)
   end
-  _2 = nil
+  _3 = nil
   local directional_3f = not target_windows
   local count0
   local function _81_()
@@ -446,7 +450,7 @@ local function leap(kwargs)
   local max_aot_targets = (opts.max_aot_targets or math.huge)
   local prompt = {str = ">"}
   local spec_keys
-  local function _82_(_3, k)
+  local function _82_(_4, k)
     local _83_ = opts.special_keys[k]
     if (nil ~= _83_) then
       return replace_keycodes(_83_)
@@ -471,7 +475,7 @@ local function leap(kwargs)
         elseif (_87_ == "\\") then
           return "\\\\"
         elseif true then
-          local _3 = _87_
+          local _4 = _87_
           return _241
         else
           return nil
@@ -632,7 +636,7 @@ local function leap(kwargs)
         local in2 = _112_
         return in1, in2
       elseif true then
-        local _3 = _112_
+        local _4 = _112_
         if change_op_3f then
           handle_interrupted_change_op_21()
         else
@@ -832,7 +836,7 @@ local function leap(kwargs)
       else
         local _148_ = get_target_with_active_primary_label(targets, input)
         if ((_G.type(_148_) == "table") and true and (nil ~= (_148_)[2])) then
-          local _3 = (_148_)[1]
+          local _4 = (_148_)[1]
           local target = (_148_)[2]
           do
             jump_to_21(target)
@@ -841,7 +845,7 @@ local function leap(kwargs)
           exec_user_autocmds("LeapLeave")
           return nil
         elseif true then
-          local _3 = _148_
+          local _4 = _148_
           do
             vim.fn.feedkeys(input, "i")
           end
@@ -996,10 +1000,10 @@ local function leap(kwargs)
                           local _175_ = get_target_with_active_primary_label(targets_2a, in_final)
                           if ((_G.type(_175_) == "table") and (nil ~= (_175_)[1]) and true) then
                             local idx = (_175_)[1]
-                            local _3 = (_175_)[2]
+                            local _4 = (_175_)[2]
                             return exit_with_action(idx)
                           elseif true then
-                            local _3 = _175_
+                            local _4 = _175_
                             if targets_2a["autojump?"] then
                               do
                                 vim.fn.feedkeys(in_final, "i")
@@ -1050,7 +1054,7 @@ local function leap(kwargs)
                 exec_user_autocmds("LeapLeave")
                 return nil
               elseif true then
-                local _3 = _186_
+                local _4 = _186_
                 if change_op_3f then
                   handle_interrupted_change_op_21()
                 else
@@ -1077,7 +1081,7 @@ local function leap(kwargs)
                 prepare_targets(targets)
               else
                 populate_sublists(targets)
-                for _3, sublist in pairs(targets.sublists) do
+                for _4, sublist in pairs(targets.sublists) do
                   prepare_targets(sublist)
                 end
               end
