@@ -40,37 +40,35 @@
   (vim.fn.cursor 0 edge-col))
 
 
-; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
-; to `right-bound` as virtcol (screen col); so simply start crawling
-; to the right, checking the virtcol... (When targeting the left
-; bound, we might undershoot too - the virtcol of a position is
-; always <= the bytecol of it -, but in that case it's no problem,
-; just some unnecessary work afterwards, as we're still outside the
-; on-screen area).
-(fn reach-right-bound! [right-bound]
-  (while (and (< (vim.fn.virtcol ".") right-bound)
-              (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
-    (vim.cmd "norm! l")))
-
-
 (fn to-next-in-window-pos! [backward? left-bound right-bound stopline]
   ; virtcol = like `col`, starting from the beginning of the line in the
   ; buffer, but every char counts as the #of screen columns it occupies
   ; (or would occupy), instead of the #of bytes.
-  (let [[line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")]
+  (let [forward? (not backward?)
+        [line virtcol] [(vim.fn.line ".") (vim.fn.virtcol ".")]
         left-off? (< virtcol left-bound)
         right-off? (> virtcol right-bound)]
-    (match (if (and left-off? backward?) (when (>= (dec line) stopline)
-                                           [(dec line) right-bound])
-               (and left-off? (not backward?)) [line left-bound]
+    (match (if (and left-off? backward?) [(dec line) right-bound]
+               (and left-off? forward?) [line left-bound]
                (and right-off? backward?) [line right-bound]
-               (and right-off? (not backward?)) (when (<= (inc line) stopline)
-                                                  [(inc line) left-bound]))
-      to-pos
-      (if (= from-pos to-pos) :dead-end
-          (do (vim.fn.cursor to-pos)
+               (and right-off? forward?) [(inc line) left-bound])
+      [line* virtcol*]
+      (if (or (and (= line line*) (= virtcol virtcol*))
+              (and backward? (< line* stopline))
+              (and forward? (> line* stopline)))
+          :dead-end
+          ; HACK: vim.fn.cursor expects bytecol, but we only have `right-bound`
+          ; as virtcol (at least until `virtcol2col()` is not ported); so simply
+          ; start crawling to the right, checking the virtcol... (When targeting
+          ; the left bound, we might undershoot too - the virtcol of a position
+          ; is always <= the bytecol of it -, but in that case it's no problem,
+          ; just some unnecessary work afterwards, as we're still outside the
+          ; on-screen area).
+          (do (vim.fn.cursor [line* virtcol*])
               (when backward?
-                (reach-right-bound! right-bound)))))))
+                (while (and (< (vim.fn.virtcol ".") right-bound)
+                            (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
+                  (vim.cmd "norm! l"))))))))
 
 
 (fn get-match-positions [pattern [left-bound right-bound]
@@ -112,7 +110,8 @@ early termination in loops."
                 _ (iter true))
 
               ; Horizontally offscreen?
-              (not (or vim.wo.wrap (<= left-bound col right-bound)))
+              (not (or vim.wo.wrap
+                       (<= left-bound (vim.fn.virtcol ".") right-bound)))
               (match (to-next-in-window-pos!
                        backward? left-bound right-bound stopline)
                 :dead-end (cleanup)  ; = on the first/last line in the window
