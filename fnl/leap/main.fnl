@@ -276,64 +276,75 @@ B: Two labels occupy the same position (this can occur at EOL or window
 (local state {:args nil  ; arguments passed to the current call
               :source_window nil
               :repeat {:in1 nil :in2 nil}
-              :dot_repeat {:in1 nil :in2 nil :target_idx nil
-                           :backward nil :inclusive_op nil :offset nil}
-              :saved_editor_opts {}
-              })
+              :dot_repeat {:in1 nil :in2 nil
+                           :target_idx nil
+                           :backward nil
+                           :inclusive_op nil
+                           :offset nil}
+              :saved_editor_opts {}})
 
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (match kwargs.target_windows
-    [nil] (do (echo "no targetable windows")
-              (lua :return)))  ; EARLY
-  (let [{:dot_repeat dot-repeat? :target_windows target-windows
-         :opts user-given-opts :targets user-given-targets
-         :action user-given-action :multiselect multi-select?
+  (let [{:backward backward?
+         :inclusive_op inclusive-op?
+         : offset}
+        (if dot-repeat? state.dot_repeat kwargs)
+        {:dot_repeat dot-repeat?
+         :target_windows target-windows
+         :opts user-given-opts
+         :targets user-given-targets
+         :action user-given-action
+         :multiselect multi-select?
          : count}
         kwargs
-        {:backward backward? :inclusive_op inclusive-op? : offset}
-        (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
         _ (set opts.current_call (or user-given-opts {}))
-        ->wininfo #(. (vim.fn.getwininfo $) 1)
+        id->wininfo #(. (vim.fn.getwininfo $) 1)
         curr-winid (vim.fn.win_getid)
         _ (set state.source_window curr-winid)
-        curr-win (->wininfo curr-winid)
+        curr-win (id->wininfo curr-winid)
         ; Fill in the wininfo fields if not provided.
-        _ (when (and user-given-targets (not (. user-given-targets 1 :wininfo)))
-            (->> user-given-targets
-                 (map (fn [t] (set t.wininfo curr-win)))))
-        ?target-windows (-?>> target-windows (map ->wininfo))
-        hl-affected-windows [curr-win]  ; cursor is always highlighted
-        _ (each [_ w (ipairs (or ?target-windows []))]
-            (table.insert hl-affected-windows w))
+        _ (when (and user-given-targets
+                     (not (. user-given-targets 1 :wininfo)))
+            (map #(tset $ :wininfo curr-win) user-given-targets))
+        ?target-windows (-?>> target-windows (map id->wininfo))
+        hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
+                                       :into [curr-win]]  ; cursor is always highlighted
+                              w)
         directional? (not target-windows)
         count (or count (if (not directional?) 0 vim.v.count))
         ; We need to save the mode here, because the `:normal` command
-        ; in `jump.jump-to!` can change the state. Related: vim/vim#9332.
+        ; in `jump.jump-to!` can change the state. See vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
-        ; In operator-pending mode, autojump would execute the operation
-        ; without allowing us to select a labeled target.
-        force-noautojump? (or multi-select? user-given-action
-                              op-mode? (not directional?))
-        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
+        force-noautojump? (or op-mode?            ; should be able to select a target
+                              multi-select?       ; likewise
+                              (not directional?)  ; potentially disorienting
+                              user-given-action)  ; no jump, doing sg else
         max-aot-targets (or opts.max_aot_targets math.huge)
+        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
-        spec-keys (setmetatable {} {:__index
-                                    (fn [_ k]
-                                      (-?> (. opts.special_keys k)
-                                           replace-keycodes))})]
+        spec-keys (setmetatable {} {:__index (fn [_ k]
+                                               (-?> (. opts.special_keys k)
+                                                    replace-keycodes))})]
 
+    (when (and target-windows (empty? target-windows))
+      (echo "no targetable windows")
+      (lua :return))
     (when (and (not directional?) no-labels?)
       (echo "no labels to use")
-      (lua :return))  ; EARLY
+      (lua :return))
 
-    (var aot? (not (or (= max-aot-targets 0) (> count 0)
-                       no-labels? multi-select? user-given-targets)))
+    ; Show beacons (labels & match highlights) ahead of time,
+    ; right after the first input?
+    (var aot? (not (or (= max-aot-targets 0)
+                       (> count 0)
+                       no-labels?
+                       multi-select?
+                       user-given-targets)))
 
     ; Helpers ///
 

@@ -358,14 +358,17 @@ local function light_up_beacons(targets, _3fstart)
 end
 local state = {args = nil, source_window = nil, ["repeat"] = {in1 = nil, in2 = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, saved_editor_opts = {}}
 local function leap(kwargs)
-  do
-    local _71_ = kwargs.target_windows
-    if ((_G.type(_71_) == "table") and ((_71_)[1] == nil)) then
-      echo("no targetable windows")
-      return
+  local function _72_()
+    if __fnl_global__dot_2drepeat_3f then
+      return state.dot_repeat
     else
+      return kwargs
     end
   end
+  local _let_71_ = _72_()
+  local backward_3f = _let_71_["backward"]
+  local inclusive_op_3f = _let_71_["inclusive_op"]
+  local offset = _let_71_["offset"]
   local _let_73_ = kwargs
   local dot_repeat_3f = _let_73_["dot_repeat"]
   local target_windows = _let_73_["target_windows"]
@@ -374,86 +377,88 @@ local function leap(kwargs)
   local user_given_action = _let_73_["action"]
   local multi_select_3f = _let_73_["multiselect"]
   local count = _let_73_["count"]
-  local function _75_()
-    if dot_repeat_3f then
-      return state.dot_repeat
-    else
-      return kwargs
-    end
-  end
-  local _let_74_ = _75_()
-  local backward_3f = _let_74_["backward"]
-  local inclusive_op_3f = _let_74_["inclusive_op"]
-  local offset = _let_74_["offset"]
   local _
   state.args = kwargs
   _ = nil
   local _0
   opts.current_call = (user_given_opts or {})
   _0 = nil
-  local __3ewininfo
-  local function _76_(_241)
+  local id__3ewininfo
+  local function _74_(_241)
     return (vim.fn.getwininfo(_241))[1]
   end
-  __3ewininfo = _76_
+  id__3ewininfo = _74_
   local curr_winid = vim.fn.win_getid()
   local _1
   state.source_window = curr_winid
   _1 = nil
-  local curr_win = __3ewininfo(curr_winid)
+  local curr_win = id__3ewininfo(curr_winid)
   local _2
   if (user_given_targets and not user_given_targets[1].wininfo) then
-    local function _77_(t)
-      t.wininfo = curr_win
+    local function _75_(_241)
+      _241["wininfo"] = curr_win
       return nil
     end
-    _2 = map(_77_, user_given_targets)
+    _2 = map(_75_, user_given_targets)
   else
     _2 = nil
   end
   local _3ftarget_windows
   do
-    local _79_ = target_windows
-    if (_79_ ~= nil) then
-      _3ftarget_windows = map(__3ewininfo, _79_)
+    local _77_ = target_windows
+    if (_77_ ~= nil) then
+      _3ftarget_windows = map(id__3ewininfo, _77_)
     else
-      _3ftarget_windows = _79_
+      _3ftarget_windows = _77_
     end
   end
-  local hl_affected_windows = {curr_win}
-  local _3
-  for _4, w in ipairs((_3ftarget_windows or {})) do
-    table.insert(hl_affected_windows, w)
+  local hl_affected_windows
+  do
+    local tbl_15_auto = {curr_win}
+    local i_16_auto = #tbl_15_auto
+    for _3, w in ipairs((_3ftarget_windows or {})) do
+      local val_17_auto = w
+      if (nil ~= val_17_auto) then
+        i_16_auto = (i_16_auto + 1)
+        do end (tbl_15_auto)[i_16_auto] = val_17_auto
+      else
+      end
+    end
+    hl_affected_windows = tbl_15_auto
   end
-  _3 = nil
   local directional_3f = not target_windows
   local count0
-  local function _81_()
+  local function _80_()
     if not directional_3f then
       return 0
     else
       return vim.v.count
     end
   end
-  count0 = (count or _81_())
+  count0 = (count or _80_())
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
-  local force_noautojump_3f = (multi_select_3f or user_given_action or op_mode_3f or not directional_3f)
-  local no_labels_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
+  local force_noautojump_3f = (op_mode_3f or multi_select_3f or not directional_3f or user_given_action)
   local max_aot_targets = (opts.max_aot_targets or math.huge)
+  local no_labels_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
   local prompt = {str = ">"}
   local spec_keys
-  local function _82_(_4, k)
-    local _83_ = opts.special_keys[k]
-    if (nil ~= _83_) then
-      return replace_keycodes(_83_)
+  local function _81_(_3, k)
+    local _82_ = opts.special_keys[k]
+    if (nil ~= _82_) then
+      return replace_keycodes(_82_)
     else
-      return _83_
+      return _82_
     end
   end
-  spec_keys = setmetatable({}, {__index = _82_})
+  spec_keys = setmetatable({}, {__index = _81_})
+  if (target_windows and empty_3f(target_windows)) then
+    echo("no targetable windows")
+    return
+  else
+  end
   if (not directional_3f and no_labels_3f) then
     echo("no labels to use")
     return
@@ -475,7 +480,7 @@ local function leap(kwargs)
         elseif (_88_ == "\\") then
           return "\\\\"
         elseif true then
-          local _4 = _88_
+          local _3 = _88_
           return _241
         else
           return nil
@@ -636,7 +641,7 @@ local function leap(kwargs)
         local in2 = _113_
         return in1, in2
       elseif true then
-        local _4 = _113_
+        local _3 = _113_
         if change_op_3f then
           handle_interrupted_change_op_21()
         else
@@ -836,7 +841,7 @@ local function leap(kwargs)
       else
         local _149_ = get_target_with_active_primary_label(targets, input)
         if ((_G.type(_149_) == "table") and true and (nil ~= (_149_)[2])) then
-          local _4 = (_149_)[1]
+          local _3 = (_149_)[1]
           local target = (_149_)[2]
           do
             jump_to_21(target)
@@ -845,7 +850,7 @@ local function leap(kwargs)
           exec_user_autocmds("LeapLeave")
           return nil
         elseif true then
-          local _4 = _149_
+          local _3 = _149_
           do
             vim.fn.feedkeys(input, "i")
           end
@@ -1000,10 +1005,10 @@ local function leap(kwargs)
                           local _176_ = get_target_with_active_primary_label(targets_2a, in_final)
                           if ((_G.type(_176_) == "table") and (nil ~= (_176_)[1]) and true) then
                             local idx = (_176_)[1]
-                            local _4 = (_176_)[2]
+                            local _3 = (_176_)[2]
                             return exit_with_action(idx)
                           elseif true then
-                            local _4 = _176_
+                            local _3 = _176_
                             if targets_2a["autojump?"] then
                               do
                                 vim.fn.feedkeys(in_final, "i")
@@ -1054,7 +1059,7 @@ local function leap(kwargs)
                 exec_user_autocmds("LeapLeave")
                 return nil
               elseif true then
-                local _4 = _187_
+                local _3 = _187_
                 if change_op_3f then
                   handle_interrupted_change_op_21()
                 else
@@ -1085,7 +1090,7 @@ local function leap(kwargs)
                 end
               else
                 populate_sublists(targets)
-                for _4, sublist in pairs(targets.sublists) do
+                for _3, sublist in pairs(targets.sublists) do
                   prepare_targets(sublist)
                 end
               end
