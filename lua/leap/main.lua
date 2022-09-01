@@ -20,12 +20,6 @@ local ceil = _local_2_["ceil"]
 local max = _local_2_["max"]
 local min = _local_2_["min"]
 local pow = _local_2_["pow"]
-local function user_forced_autojump_3f()
-  return (not opts.labels or empty_3f(opts.labels))
-end
-local function user_forced_noautojump_3f()
-  return (not opts.safe_labels or empty_3f(opts.safe_labels))
-end
 local function exec_user_autocmds(pattern)
   return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
 end
@@ -55,14 +49,14 @@ local function set_dot_repeat_2a()
   return pcall(vim.fn["repeat#set"], seq, -1)
 end
 local function set_autojump(targets, force_noautojump_3f)
-  targets["autojump?"] = (not (force_noautojump_3f or user_forced_noautojump_3f()) and (user_forced_autojump_3f() or (#opts.safe_labels >= dec(#targets))))
+  targets["autojump?"] = (not (force_noautojump_3f or empty_3f(opts.safe_labels)) and (empty_3f(opts.labels) or (#opts.safe_labels >= dec(#targets))))
   return nil
 end
 local function attach_label_set(targets)
   local _5_
-  if user_forced_autojump_3f() then
+  if empty_3f(opts.labels) then
     _5_ = opts.safe_labels
-  elseif user_forced_noautojump_3f() then
+  elseif empty_3f(opts.safe_labels) then
     _5_ = opts.labels
   elseif targets["autojump?"] then
     _5_ = opts.safe_labels
@@ -447,7 +441,7 @@ local function leap(kwargs)
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
   local force_noautojump_3f = (multi_select_3f or user_given_action or op_mode_3f or not directional_3f)
-  local no_labels_3f = (user_forced_autojump_3f() and user_forced_noautojump_3f())
+  local no_labels_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
   local max_aot_targets = (opts.max_aot_targets or math.huge)
   local prompt = {str = ">"}
   local spec_keys
@@ -700,7 +694,7 @@ local function leap(kwargs)
       _120_ = (get_input() or _121_())
       if (nil ~= _120_) then
         local input = _120_
-        if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not first_invoc_3f0)) and (not targets["autojump?"] or user_forced_autojump_3f())) then
+        if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not first_invoc_3f0)) and (not targets["autojump?"] or empty_3f(opts.labels))) then
           local _7cgroups_7c = ceil((#targets / #targets["label-set"]))
           local max_offset = dec(_7cgroups_7c)
           local inc_2fdec
@@ -993,7 +987,7 @@ local function leap(kwargs)
                               new_idx = 1
                             end
                             do_action((targets_2a)[new_idx])
-                            if (user_forced_autojump_3f() and not no_labels_3f) then
+                            if (empty_3f(opts.labels) and not empty_3f(opts.safe_labels)) then
                               for i = (#opts.safe_labels + 2), _7ctargets_2a_7c do
                                 targets_2a[i]["label"] = nil
                                 targets_2a[i]["beacon"] = nil
@@ -1042,7 +1036,7 @@ local function leap(kwargs)
                 end
               end
             elseif true then
-              local __60_auto = _159_
+              local __61_auto = _159_
               return ...
             else
               return nil
@@ -1112,7 +1106,7 @@ local function leap(kwargs)
           end
           return _158_(_197_(...))
         elseif true then
-          local __60_auto = _157_
+          local __61_auto = _157_
           return ...
         else
           return nil
@@ -1138,7 +1132,7 @@ local function leap(kwargs)
       end
       return _156_((user_given_targets or _199_(...) or _200_(...)))
     elseif true then
-      local __60_auto = _154_
+      local __61_auto = _154_
       return ...
     else
       return nil

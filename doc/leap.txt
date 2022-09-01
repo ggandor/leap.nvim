@@ -186,8 +186,7 @@ Available options~
     labels plus one, the plugin jumps to the first match automatically after
     entering the pattern. Obviously, for this purpose you should choose keys
     that are unlikely to be used right after a jump!
-    Leaving the list empty (or setting it to `nil`) effectively disables the
-    auto-jump feature.
+    Setting the list to `{}` effectively disables the auto-jump feature.
 
     Note: Operator-pending mode ignores this, all targets (if multiple found)
     are labeled then (using the `labels` list, if not empty).
@@ -203,9 +202,9 @@ Available options~
 <
     Target labels to be used when there are more matches than the number of
     safe labels plus one.
-    Leaving the list empty (or setting it to `nil`) forces auto-jump to always
-    be on, except for Operator-pending mode. In this case, do not forget to
-    set `special_keys.next_group` to something "safe" too.
+    Setting the list to `{}` forces auto-jump to always be on, except for
+    Operator-pending mode. In this case, do not forget to set
+    `special_keys.next_group` to something "safe" too.
 
     Heuristics behind the defaults:
     - At least the first few labels should be the same on the two lists, since

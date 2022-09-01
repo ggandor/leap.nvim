@@ -29,17 +29,6 @@
 
 ; Utils ///1
 
-; Misc.
-
-(fn user-forced-autojump? []
-  (or (not opts.labels) (empty? opts.labels)))
-
-(fn user-forced-noautojump? []
-  (or (not opts.safe_labels) (empty? opts.safe_labels)))
-
-
-; For `leap` only.
-
 (fn exec-user-autocmds [pattern]
   (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
@@ -79,9 +68,8 @@ Note that there is no one-to-one correspondence between this flag and
 the `label-set` field set by `attach-label-set`. No-autojump might be
 forced implicitly, regardless of using safe labels."
   (tset targets :autojump?
-        (and (not (or force-noautojump?
-                      (user-forced-noautojump?)))
-             (or (user-forced-autojump?)
+        (and (not (or force-noautojump? (empty? opts.safe_labels)))
+             (or (empty? opts.labels)
                  (>= (length opts.safe_labels)
                      (dec (length targets)))))))  ; skipping the first if autojumping
 
@@ -89,9 +77,10 @@ forced implicitly, regardless of using safe labels."
 (fn attach-label-set [targets]
   "Set a field referencing the label set to be used for `targets`.
 NOTE: `set-autojump` should be called BEFORE this function."
+  ; (assert (not (and (empty? opts.labels) (empty? opts.safe_labels))))
   (tset targets :label-set
-        (if (user-forced-autojump?) opts.safe_labels
-            (user-forced-noautojump?) opts.labels
+        (if (empty? opts.labels) opts.safe_labels
+            (empty? opts.safe_labels) opts.labels
             targets.autojump? opts.safe_labels
             opts.labels)))
 
@@ -331,8 +320,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
         ; without allowing us to select a labeled target.
         force-noautojump? (or multi-select? user-given-action
                               op-mode? (not directional?))
-        ; TODO:
-        no-labels? (and (user-forced-autojump?) (user-forced-noautojump?))
+        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
         max-aot-targets (or opts.max_aot_targets math.huge)
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index
@@ -483,7 +471,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                    (or (not targets.autojump?)
                        ; If auto-jump has been set automatically (not forced),
                        ; it implies that there are no subsequent groups.
-                       (user-forced-autojump?)))
+                       (empty? opts.labels)))
               (let [|groups| (ceil (/ (length targets) (length targets.label-set)))
                     max-offset (dec |groups|)
                     inc/dec (if (= input spec-keys.next_group) inc dec)
@@ -615,7 +603,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (if targets*.autojump? 2 1)]
                                       (do-action (. targets* new-idx))
-                                      (when (and (user-forced-autojump?) (not no-labels?))
+                                      (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
                                         (for [i (+ (length opts.safe_labels) 2) |targets*|]
                                           (tset targets* i :label nil)
                                           (tset targets* i :beacon nil)))
