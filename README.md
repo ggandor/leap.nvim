@@ -51,6 +51,13 @@ It is obviously impossible to achieve all of these at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
 
+With Leap you can jump to any positions in the visible window / tab page area by
+entering a 2-character search pattern, and then potentially a "label" character
+for choosing among multiple matches, similar to Sneak. The game-changing idea in
+Leap is its "clairvoyant" ability: it maps possible futures, and shows you which
+keys you will need to press _before_ you actually need to do that, so despite
+the use of target labels, you can keep typing in a continuous manner.
+
 ### How to use it (TL;DR)
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
@@ -183,13 +190,6 @@ setting the default keymaps:
 `require('leap').set_default_keymaps()`
 
 ## Usage
-
-With Leap you can jump to any positions in the visible window / tab page area by
-entering a 2-character search pattern, and then optionally a "label" character
-for choosing among multiple matches, similar to Sneak. The game-changing idea in
-Leap is its "clairvoyant" ability: it maps possible futures, and shows you which
-keys you will need to press _before_ you actually need to do that, so despite
-the use of target labels, you can keep typing in a continuous manner.
 
 Without further ado, let's cut to the chase, and learn by doing.
 ([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
