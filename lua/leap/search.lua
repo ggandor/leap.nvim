@@ -1,4 +1,3 @@
-local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
@@ -315,7 +314,7 @@ local function get_targets(pattern, _54_)
           local line = _each_63_[1]
           local col = _each_63_[2]
           local _64_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_64_) == "table") and (nil ~= (_64_).row) and ((_64_).col == col)) then
+          if ((_G.type(_64_) == "table") and ((_64_).col == col) and (nil ~= (_64_).row)) then
             local row = (_64_).row
             cursor_positions[winid] = {row, col}
           else
@@ -333,7 +332,7 @@ local function get_targets(pattern, _54_)
         local t = _each_68_
         if by_screen_pos_3f then
           local _71_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_71_) == "table") and (nil ~= (_71_).row) and ((_71_).col == col)) then
+          if ((_G.type(_71_) == "table") and ((_71_).col == col) and (nil ~= (_71_).row)) then
             local row = (_71_).row
             t["screenpos"] = {row, col}
           else
