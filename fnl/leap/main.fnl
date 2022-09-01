@@ -310,7 +310,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
             (map #(tset $ :wininfo curr-win) user-given-targets))
         ?target-windows (-?>> target-windows (map id->wininfo))
         hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
-                                       :into [curr-win]]  ; cursor is always highlighted
+                                       &into [curr-win]]  ; cursor is always highlighted
                               w)
         directional? (not target-windows)
         count (or count (if (not directional?) 0 vim.v.count))
@@ -409,7 +409,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
       (each [idx {: label : label-state &as target} (ipairs sublist)
-             :until (or res (= label-state :inactive))]
+             &until (or res (= label-state :inactive))]
         (when (and (= label input) (= label-state :active-primary))
           (set res [idx target])))
       res)
