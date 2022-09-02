@@ -70,6 +70,7 @@ forced implicitly, regardless of using safe labels."
   (tset targets :autojump?
         (and (not (or force-noautojump? (empty? opts.safe_labels)))
              (or (empty? opts.labels)
+                 ; Smart mode.
                  (>= (length opts.safe_labels)
                      (dec (length targets)))))))  ; skipping the first if autojumping
 
@@ -127,10 +128,23 @@ should actually be displayed depends on the `label-state` flag."
 (fn populate-sublists [targets]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
-char separately."
+char separately.
+
+  at  ar  at  at  ar  ar  an  ar
+{ t1, t2, t3, t4, t5, t6, t7, t8 }
+-->
+{
+  t1, t2, t3, t4, t5, t6, t7, t8,
+  sublists = {
+    ['t'] = { t1, t3, t4 },
+    ['r'] = { t2, t5, t6, t8 },
+    ['n'] = { t7 }
+  },
+}
+"
   (set targets.sublists {})
-  ; Setting a metatable to handle case insensitivity and user-defined
-  ; character classes (in both cases: multiple keys -> one value).
+  ; Setting a metatable to handle case insensitivity and equivalence
+  ; classes (in both cases: multiple keys -> one value).
   ; If `k` is not found, try to get a sublist belonging to some common
   ; key: the equivalence class that `k` belongs to (if there is one),
   ; or, if case insensivity is set, the lowercased verison of `k`.
@@ -200,14 +214,14 @@ char separately."
 (fn resolve-conflicts [targets]
   "After setting the beacons in a context-unaware manner, the following
 conflicts can occur:
-A: A label occupies a position that also belongs to an unlabeled match.
-   Fix: Highlight the unlabeled match to make the user aware ('Label
-   underneath!').
-B: Two labels occupy the same position (this can occur at EOL or window
-   edge, where labels need to be shifted left).
-   Fix: Display an 'empty' label at the position."
-  (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>" : target}
-        label-positions {}]           ; - " -
+(A) An unlabeled match covers a label.
+--> Fix: Highlight the unlabeled match to make the user aware ('Label
+underneath!').
+(B) Two labels on top of each other. (Possible at EOL or window edge,
+where labels need to be shifted left).
+--> Fix: Display an 'empty' label at the position."
+  (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>": target}
+        label-positions {}]           ; { - " - }
     (each [i target (ipairs targets)]
       (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
         (macro make-key [col*]
@@ -227,7 +241,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
             (let [label-offset (. target.beacon 1)
                   k (make-key (+ col label-offset))]
               (match (. unlabeled-match-positions k)
-                ; A2 - unlabeled covers current's label
+                ; A2 - other covers current's label
                 other (do (set target.beacon nil)
                           (set-beacon-to-match-hl other))
                 _ (match (. label-positions k)
@@ -325,6 +339,7 @@ B: Two labels occupy the same position (this can occur at EOL or window
                               (not directional?)  ; potentially disorienting
                               user-given-action)  ; no jump, doing sg else
         max-aot-targets (or opts.max_aot_targets math.huge)
+        user-given-targets? user-given-targets
         no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index (fn [_ k]
@@ -380,15 +395,14 @@ B: Two labels occupy the same position (this can occur at EOL or window
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
 
-    (fn expand-to-equivalence-class [in]
+    (fn expand-to-equivalence-class [in]  ; <-- "b"
       (match (. opts.eq_class_of in)
-        chars  ; table
+        chars  ; {"a","b","c"}
         ; `vim.fn.search` cannot interpret actual newline (LF) chars in
-        ; the pattern, so we need to insert them as raw \n sequences.
-        ; Backslash itself might appear in a character class, needs to
-        ; be escaped.
+        ; the regex pattern, we need to insert them as raw \ + n.
+        ; Backslash itself might appear in the class, needs to be escaped.
         (let [chars* (map #(match $ "\n" "\\n" "\\" "\\\\" _ $) chars)]
-          (.. "\\(" (table.concat chars* "\\|") "\\)"))))
+          (.. "\\(" (table.concat chars* "\\|") "\\)"))))  ; --> "\(a\|b\|c\)"
 
     ; NOTE: If two-step processing is ebabled (AOT beacons), for any
     ; kind of input mapping (case-insensitivity, character classes,
@@ -415,11 +429,11 @@ B: Two labels occupy the same position (this can occur at EOL or window
       res)
 
     (fn update-state [state*]  ; a partial state table
+      ; Do not short-circuit on regular repeat: we need to update the
+      ; repeat state continuously if we have entered traversal mode
+      ; after the first input (i.e., traversing all matches, not just a
+      ; given sublist).
       (when-not (or dot-repeat? user-given-targets)
-        ; Do not short-circuit on regular repeat: we need to update the
-        ; repeat state continuously if we have entered traversal mode
-        ; after the first input (i.e., traversing all matches, not just
-        ; a given sublist).
         (when state*.repeat
           (set state.repeat state*.repeat))
         (when state*.dot_repeat
@@ -434,14 +448,15 @@ B: Two labels occupy the same position (this can occur at EOL or window
         (set-dot-repeat*)))
 
     (local jump-to!
-      (do (var first-jump? true)  ; better be managed by the function itself
-          (fn [target]
-            (local jump (require "leap.jump"))
-            (jump.jump-to! target.pos
-                           {:winid target.wininfo.winid
-                            :add-to-jumplist? first-jump?
-                            : mode : offset : backward? : inclusive-op?})
-            (set first-jump? false))))
+      (do
+        (var first-jump? true)  ; better be managed by the function itself
+        (fn [target]
+          (local jump (require "leap.jump"))
+          (jump.jump-to! target.pos
+                         {:winid target.wininfo.winid
+                          :add-to-jumplist? first-jump?
+                          : mode : offset : backward? : inclusive-op?})
+          (set first-jump? false))))
 
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
@@ -471,58 +486,59 @@ B: Two labels occupy the same position (this can occur at EOL or window
     (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
       (fn loop [group-offset first-invoc?]
         ; Do _not_ skip this on initial invocation - we might have skipped
-        ; setting the initial label states in case of <enter>-repeat.
-        (when targets.label-set
-          (set-label-states targets {: group-offset}))
-        (set-beacons targets {: aot? : no-labels?
-                              :user-given-targets? user-given-targets})
+        ; setting the initial label states if using `spec-keys.repeat_search`.
+        (when targets.label-set (set-label-states targets {: group-offset}))
+        (set-beacons targets {: aot? : no-labels? : user-given-targets?})
         (with-highlight-chores
           (light-up-beacons targets (when targets.autojump? 2)))
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not first-invoc?)))
-                   (or (not targets.autojump?)
-                       ; If auto-jump has been set automatically (not forced),
-                       ; it implies that there are no subsequent groups.
-                       (empty? opts.labels)))
-              (let [|groups| (ceil (/ (length targets) (length targets.label-set)))
+                   ; Autojump, if it is not forced (by empty `labels`),
+                   ; implies that there are no subsequent groups.
+                   (or (not targets.autojump?) (empty? opts.labels)))
+              (let [inc/dec (if (= input spec-keys.next_group) inc dec)
+                    |groups| (ceil (/ (length targets) (length targets.label-set)))
                     max-offset (dec |groups|)
-                    inc/dec (if (= input spec-keys.next_group) inc dec)
-                    new-offset (-> group-offset inc/dec (clamp 0 max-offset))]
-                (loop new-offset false))
-              :else (values input group-offset))))
-      (loop (or ?group-offset 0)
-            (if (= nil first-invoc?) true first-invoc?)))
+                    group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
+                (loop group-offset* false))
+              (values input group-offset))))
+      (loop (or ?group-offset 0) (or (= nil first-invoc?) first-invoc?)))
 
     (local multi-select-loop
-      (let [res []]
+      (let [selection []]
         (var group-offset 0)
         (var first-invoc? true)
         (fn loop [targets]
           (match (post-pattern-input-loop targets group-offset first-invoc?)
-            spec-keys.multi_accept (if (next res) res  ; accept selection
-                                       (loop targets))
-            spec-keys.multi_revert (do (-?> (table.remove res)
-                                            (tset :label-state nil))
-                                       (loop targets))
+            spec-keys.multi_accept
+            (if (next selection) selection  ; accept selection
+                (loop targets))
+
+            spec-keys.multi_revert
+            (do (-?> (table.remove selection)
+                     (tset :label-state nil))
+                (loop targets))
+
             (in group-offset*)
             (do (set group-offset group-offset*)
                 (set first-invoc? false)
                 (match (get-target-with-active-primary-label targets in)
-                  [idx target] (when-not (contains? res target)
-                                 (table.insert res target)
+                  [_ target] (when-not (contains? selection target)
+                                 (table.insert selection target)
                                  (tset target :label-state :selected)))
                 (loop targets))))))
 
     (fn traversal-loop [targets idx {: no-labels?}]
       (when no-labels? (inactivate-labels targets))
-      (set-beacons targets {: no-labels? : aot?
-                            :user-given-targets? user-given-targets})
-      (with-highlight-chores (light-up-beacons targets (inc idx)))
+      (set-beacons targets {: no-labels? : aot? : user-given-targets?})
+      (with-highlight-chores
+        (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
         input
-        (if (or (= input spec-keys.next_match) (= input spec-keys.prev_match))
+        (if (or (= input spec-keys.next_match)
+                (= input spec-keys.prev_match))
             (let [new-idx (match input
                             spec-keys.next_match (min (inc idx) (length targets))
                             spec-keys.prev_match (max (dec idx) 1))]
