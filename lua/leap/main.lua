@@ -142,7 +142,6 @@ local function inactivate_labels(targets)
   return nil
 end
 local function populate_sublists(targets)
-  targets.sublists = {}
   local function _31_()
     local __3ecommon_key
     local function _28_(_241)
@@ -164,7 +163,7 @@ local function populate_sublists(targets)
     end
     return {__index = _32_, __newindex = _33_}
   end
-  setmetatable(targets.sublists, _31_())
+  targets["sublists"] = setmetatable({}, _31_())
   for _, _34_ in ipairs(targets) do
     local _each_35_ = _34_
     local _each_36_ = _each_35_["pair"]
@@ -172,7 +171,7 @@ local function populate_sublists(targets)
     local ch2 = _each_36_[2]
     local target = _each_35_
     if not targets.sublists[ch2] then
-      targets["sublists"][ch2] = {}
+      targets.sublists[ch2] = {}
     else
     end
     table.insert(targets.sublists[ch2], target)
