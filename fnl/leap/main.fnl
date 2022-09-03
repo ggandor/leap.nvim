@@ -192,12 +192,13 @@ char separately.
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (when (and aot? (not opts.highlight_unlabeled))
-                               ; In this case, "no highlight" should
-                               ; unambiguously signal "no further keystrokes
-                               ; needed", so it is mandatory to show all labeled
-                               ; positions in some way.
-                               [[(.. " " pad) hl.group.label-secondary]]))]
+                   :inactive (if (and aot? (not opts.highlight_unlabeled))
+                                 ; In this case, "no highlight" should
+                                 ; unambiguously signal "no further keystrokes
+                                 ; needed", so it is mandatory to show all labeled
+                                 ; positions in some way.
+                                 [[(.. " " pad) hl.group.label-secondary]]
+                                 :else nil))]
     (tset target :beacon (when virttext [offset virttext]))))
 
 
@@ -222,33 +223,28 @@ where labels need to be shifted left).
 --> Fix: Display an 'empty' label at the position."
   (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>": target}
         label-positions {}]           ; { - " - }
-    (each [i target (ipairs targets)]
-      (let [{:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target]
-        (macro make-key [col*]
-          `(.. bufnr " " winid " " lnum " " ,col*))
-        (if (or (not target.beacon)
-                (and opts.highlight_unlabeled
-                     (= (. target.beacon 2 1 2) hl.group.match)))
-            ; Unlabeled target.
-            (let [keys [(make-key col) (make-key (+ col (ch1:len)))]]
-              (each [_ k (ipairs keys)]
-                (match (. label-positions k)
-                  ; A1 - current covers other's label
-                  other (do (set other.beacon nil)
-                            (set-beacon-to-match-hl target)))
-                (tset unlabeled-match-positions k target)))
-            ; Labeled target.
+    (each [_ target (ipairs targets)]
+      (local {:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target)
+      (macro ->key [col*] `(.. bufnr " " winid " " lnum " " ,col*))
+      (if target.label
+          (when target.beacon  ; can be nil if the label is inactive
             (let [label-offset (. target.beacon 1)
-                  k (make-key (+ col label-offset))]
-              (match (. unlabeled-match-positions k)
-                ; A2 - other covers current's label
+                  key (->key (+ col label-offset))]
+              (match (. unlabeled-match-positions key)
+                ; A1 - other covers current's label
                 other (do (set target.beacon nil)
                           (set-beacon-to-match-hl other))
-                _ (match (. label-positions k)
+                _ (match (. label-positions key)
                     ; B - conflicting labels
                     other (do (set target.beacon nil)
                               (set-beacon-to-empty-label other))))
-              (tset label-positions k target)))))))
+              (tset label-positions key target)))
+          (each [_ key (ipairs [(->key col) (->key (+ col (ch1:len)))])]
+            (match (. label-positions key)
+              ; A2 - current covers other's label
+              other (do (set other.beacon nil)
+                        (set-beacon-to-match-hl target)))
+            (tset unlabeled-match-positions key target))))))
 
 
 ; TODO: User-given targets cannot get a match highlight at the moment.
@@ -262,7 +258,8 @@ where labels need to be shifted left).
 
                 (and aot? opts.highlight_unlabeled)
                 (set-beacon-to-match-hl target)))
-          (when aot? (resolve-conflicts targets)))))
+          (when aot?
+            (resolve-conflicts targets)))))
 
 
 (fn light-up-beacons [targets ?start]
