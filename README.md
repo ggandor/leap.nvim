@@ -17,12 +17,12 @@ much about motion commands anymore - just be able to reach any target in a
 blink, while keeping the required mental effort close to zero.
 
 - [Introduction](#introduction)
-- [Plugins using Leap](#plugins-using-leap)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Extending Leap](#extending-leap)
+- [Plugins using Leap](#plugins-using-leap)
 
 ## Introduction
 
@@ -54,9 +54,9 @@ the design space.
 With Leap you can jump to any positions in the visible window / tab page area by
 entering a 2-character search pattern, and then potentially a "label" character
 for choosing among multiple matches, similar to Sneak. The game-changing idea in
-Leap is its "clairvoyant" ability: it maps possible futures, and shows you which
-keys you will need to press _before_ you actually need to do that, so despite
-the use of target labels, you can keep typing in a continuous manner.
+Leap is its "clairvoyant" ability: it maps possible futures, and **shows you
+which keys you will need to press _before_ you actually need to do that**, so
+despite the use of target labels, you can keep typing in a continuous manner.
 
 ### How to use it (TL;DR)
 
@@ -68,7 +68,7 @@ the use of target labels, you can keep typing in a continuous manner.
 - As a convenience, at this point you can just start walking through the matches
   using `<enter>/<tab>` ([traversal mode](#traversal-mode)). [**#2**]
 - Else: enter `{c2}`. If the pair was not labeled, then voilà, you're already
-  there (no need to be bothered by remaining labels, just continue editing).
+  there. No need to be bothered by remaining labels, just continue editing.
   [**#1**]
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>/<tab>`. [**#3**, **#4**]
@@ -76,19 +76,6 @@ the use of target labels, you can keep typing in a continuous manner.
 ![showcase](../media/showcase.gif?raw=true)
 
 For further features, head to the [Usage](#usage) section.
-
-### Background
-
-Leap is essentially a streamlined, refactored fork of
-[Lightspeed](https://github.com/ggandor/lightspeed.nvim) (by the same author),
-with more focus on simplicity, intuitiveness, and maintainability.
-
-Compared to Lightspeed, Leap
-
-* is just as efficient in the common case, and almost as efficient generally;
-  all the really important features are there
-* has less complexity and configuration options
-* has a smaller and simpler visual footprint; it feels like using Sneak
 
 ### Auxiliary design principles
 
@@ -110,18 +97,27 @@ Compared to Lightspeed, Leap
 - [Mechanisms instead of
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext)
   (or "be opinionated, but not stubborn"): aim for a small, maintainable core,
-  and provide reasonable defaults; at the same time, keep the plugin flexible
-  and future-proof via [extension points](#extending-leap).
+  with reasonable defaults; at the same time, keep the plugin flexible and
+  future-proof via [extension points](#extending-leap).
+
+### Background
+
+Leap is essentially a reboot of
+[Lightspeed](https://github.com/ggandor/lightspeed.nvim); a streamlined but in
+many respects enhanced version of its ancestor. Compared to Lightspeed, Leap:
+
+* gets rid of some gimmicks with a low benefit/cost ratio (like Lightspeed's
+  "shortcut" labels), but works the same way in the common case; all the really
+  important features are there
+* has a smaller and simpler visual footprint; it feels like using Sneak
+* is more flexible and extensible; it can be used as an engine for selecting
+  arbitrary targets, and performing arbitrary actions on them
 
 ### Status
 
 Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
 corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
-
-## Plugins using Leap
-
-- [Leap-AST](https://github.com/ggandor/leap-ast.nvim)
 
 ## FAQ
 
@@ -377,7 +373,6 @@ require('leap').setup {
   safe_labels = { . . . },
   labels = { . . . },
   -- These keys are captured directly by the plugin at runtime.
-  -- (For `prev_match`, I suggest <s-enter> if possible in the terminal/GUI.)
   special_keys = {
     repeat_search = '<enter>',
     next_match    = '<enter>',
@@ -624,3 +619,8 @@ vim.api.nvim_create_autocmd('User', {
   end
 })
 ```
+
+## Plugins using Leap
+
+- [Leap-AST](https://github.com/ggandor/leap-ast.nvim)
+
