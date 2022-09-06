@@ -6,17 +6,42 @@ Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
 the ultimate goal of establishing a new standard interface for moving around in
 the visible editor area in Vim-like editors.
 
-The aim is: to be a common denominator, and unite the strengths of various
-similar plugins like [Sneak](https://github.com/justinmk/vim-sneak) (minimalism,
-speed, convenience),
-[EasyMotion](https://github.com/easymotion/vim-easymotion)/[Hop](https://github.com/phaazon/hop.nvim)
-(scaling well for lots of targets), and
-[Pounce](https://github.com/rlane/pounce.nvim) (incremental search + dynamic
-feedback). To reach a level of sophistication where one does not have to think
-much about motion commands anymore - just be able to reach any target in a
-blink, while keeping the required mental effort close to zero.
+## How to use it (TL;DR)
 
-- [Introduction](#introduction)
+Leap allows you to jump to any positions in the visible window / tab page area
+by entering a 2-character search pattern, and then potentially a "label"
+character to choose among multiple matches, similar to
+[Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
+"clairvoyant" ability: it maps possible futures, and shows you which key(s) you
+will need to press _before_ you actually need to do that.
+
+![showcase](../media/showcase.gif?raw=true)
+
+- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
+  the other windows (`gs`).
+- Start typing a 2-character pattern (`{c1}{c2}`).
+- After typing the first character, you see "labels" appearing next to some of
+  the `{c1}{?}` pairs. You cannot _use_ the labels yet.
+- Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
+  No need to be bothered by remaining labels, just continue editing.
+- Else: select a label. In case of multiple groups, first switch to the desired
+  one, using `<space>` (step back with `<tab>`, if needed).
+
+## Why is this method cool?
+
+- You don't have to _make decisions_: the sequence you should enter is
+  determined from the very beginning.
+- You don't have to _react to events_: at any step, you already know what the next
+  keypress should be (no need to pause for reading the label[s], if you're not
+  typing extremely fast).
+
+The two guarantees above, together with ["smart" automatic
+jumping](#smart-autojump) to the first target make Leap unique: no other motion
+plugin, let alone native Vim solution provides the same combination of speed
+_and_ mindlessness, resulting in an almost mouse-like user experience.
+
+- [(An impractical) introduction](#an-impractical-introduction)
+- [Status](#status)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
@@ -24,9 +49,11 @@ blink, while keeping the required mental effort close to zero.
 - [Extending Leap](#extending-leap)
 - [Plugins using Leap](#plugins-using-leap)
 
-## Introduction
+## (An impractical) introduction
 
-Jumping from point A to B on the screen should not be some [exciting
+### Rationale
+
+Premise: jumping from point A to B on the screen should not be some [exciting
 puzzle](https://www.vimgolf.com/), for which you should train yourself; it
 should be a _non-issue_. An ideal keyboard-driven interface would impose almost
 **no more cognitive burden than using a mouse**, without the constant
@@ -36,13 +63,16 @@ That is, **you do not want to think about**
 
 - **the command**: we need one fundamental targeting method, instead of a
   smorgasbord of possibilities, having "enhanced" versions of each native
-  motion, and more (↔ EasyMotion and co.)
+  motion, and more - as I used to phrase it, [a jetpack instead of railway
+  tickets](https://github.com/ggandor/lightspeed.nvim#railways-versus-jetpacks)
+  (↔ EasyMotion and its dervatives)
 - **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations)
-- **the steps**: the motion should be atomic (↔ Vim motion combos) and you
-  should be able to type the command in one go, without interruptions (↔ most
-  "labeling" plugins except Pounce to some degree, marred by its
-  non-determinism)
+- **the steps**: the motion should be atomic (↔ Vim motion combos); you should
+  not have to make any decisions - that is, a fixed-length input pattern is
+  desired (↔ e.g. Pounce); most importantly, you should be able to type the command
+  in one go, without having to pause and react to events happening (↔ all
+  labeling plugins so far)
 
 And of course, all the while using as few keystrokes as possible, and getting
 distracted by as little incidental visual noise as possible.
@@ -50,32 +80,6 @@ distracted by as little incidental visual noise as possible.
 It is obviously impossible to achieve all of these at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
-
-With Leap you can jump to any positions in the visible window / tab page area by
-entering a 2-character search pattern, and then potentially a "label" character
-for choosing among multiple matches, similar to Sneak. The game-changing idea in
-Leap is its "clairvoyant" ability: it maps possible futures, and **shows you
-which keys you will need to press _before_ you actually need to do that**, so
-despite the use of target labels, you can keep typing in a continuous manner.
-
-### How to use it (TL;DR)
-
-- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`).
-- Start typing a 2-character pattern (`{c1}{c2}`).
-- After typing the first character, you see "labels" appearing next to some of
-  the `{c1}{?}` pairs. You cannot _use_ the labels yet.
-- As a convenience, at this point you can just start walking through the matches
-  using `<enter>/<tab>` ([traversal mode](#traversal-mode)). [**#2**]
-- Else: enter `{c2}`. If the pair was not labeled, then voilà, you're already
-  there. No need to be bothered by remaining labels, just continue editing.
-  [**#1**]
-- Else: select a label. In case of multiple groups, first switch to the desired
-  one, using `<space>/<tab>`. [**#3**, **#4**]
-
-![showcase](../media/showcase.gif?raw=true)
-
-For further features, head to the [Usage](#usage) section.
 
 ### Auxiliary design principles
 
@@ -88,10 +92,10 @@ For further features, head to the [Usage](#usage) section.
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on the native interface, and aim for synergy as much as possible. The
-  plugin supports operators, dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-  multibyte text and
+  plugin supports macros, operators, dot-repeat (`.`), inclusive/exclusive
+  toggle (`v`), multibyte text and
   [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-  (language mapping), autocommands via `User` events, among others, and intends
+  (language mappings), autocommands via `User` events, among others, and intends
   to continuously improve in this respect.
 
 - [Mechanisms instead of
@@ -106,14 +110,14 @@ Leap is essentially a reboot of
 [Lightspeed](https://github.com/ggandor/lightspeed.nvim); a streamlined but in
 many respects enhanced version of its ancestor. Compared to Lightspeed, Leap:
 
-* gets rid of some gimmicks with a low benefit/cost ratio (like Lightspeed's
+- gets rid of some gimmicks with a low benefit/cost ratio (like Lightspeed's
   "shortcut" labels), but works the same way in the common case; all the really
   important features are there
-* has a smaller and simpler visual footprint; it feels like using Sneak
-* is more flexible and extensible; it can be used as an engine for selecting
+- has a smaller and simpler visual footprint; it feels like using Sneak
+- is more flexible and extensible; it can be used as an engine for selecting
   arbitrary targets, and performing arbitrary actions on them
 
-### Status
+## Status
 
 Leap is not fully stable yet, but don't let that stop you - the usage basics are
 extremely unlikely to change. To follow breaking changes, subscribe to the
@@ -176,7 +180,7 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 ### Dependencies
 
 * For the moment, [repeat.vim](https://github.com/tpope/vim-repeat) is required
-  for the dot-repeat functionality to work as intended.
+  for dot-repeats (`.`) to work as intended.
 
 ### Installation
 
@@ -264,14 +268,14 @@ unconditionally, can only use a seriously limited label set) and Hop (labels
 everything, always requires that one extra keystroke). For configuration, see
 `:h leap-config`.
 
-### Resolving conflicts in the first phase
+### Resolving highlighting conflicts in the first phase
 
-If a directly reachable match covers a label, the match will get a highlight
-(like in traversal mode), and the label will only be displayed after the second
-input, that resolves the ambiguity. If a label gets positioned over another
-label (this might occur before EOL or the window edge, when the labels need to
-be shifted left), an "empty" label will be displayed until entering the second
-input.
+If a directly reachable match covers a label, the match will get highlighted
+(telling the user, "Label underneath!"), and the label will only be displayed
+after the second input, that resolves the ambiguity. If a label gets positioned
+over another label (this might occur before EOL or the window edge, when the
+labels need to be shifted left), an "empty" label will be displayed until
+entering the second input.
 
 ### Operator-pending mode
 
@@ -372,7 +376,6 @@ require('leap').setup {
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
   labels = { . . . },
-  -- These keys are captured directly by the plugin at runtime.
   special_keys = {
     repeat_search = '<enter>',
     next_match    = '<enter>',
