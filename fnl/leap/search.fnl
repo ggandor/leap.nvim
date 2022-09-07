@@ -11,16 +11,26 @@
 (local {: abs : pow} math)
 
 
-; Returns screen columns.
 (fn get-horizontal-bounds []
+  "
+ [--------------------]  window-width
+ (--------]              offset-in-win
+ [--]                    textoff (e.g. foldcolumn)
+     (----]              offset-in-editable-win
++----------------------+
+|XXXX                  |
+|XXXX     C            |
+|XXXX                  |
++----------------------+
+"
   (let [textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
         offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
-        ; I.e., screen-column of the first visible column in the editable area.
+        ; I.e., screen column of the first visible column in the editable area.
         left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
         window-width (api.nvim_win_get_width 0)
         right-bound (+ left-bound (dec (- window-width textoff)))]
-    [left-bound right-bound]))
+    [left-bound right-bound]))  ; screen columns
 
 
 (fn skip-one! [backward?]
