@@ -11,14 +11,12 @@ local _local_2_ = math
 local abs = _local_2_["abs"]
 local pow = _local_2_["pow"]
 local function get_horizontal_bounds()
-  local match_length = 2
   local textoff = vim.fn.getwininfo(vim.fn.win_getid())[1].textoff
   local offset_in_win = dec(vim.fn.wincol())
   local offset_in_editable_win = (offset_in_win - textoff)
   local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
   local window_width = api.nvim_win_get_width(0)
-  local right_edge = (left_bound + dec((window_width - textoff)))
-  local right_bound = (right_edge - dec(match_length))
+  local right_bound = (left_bound + dec((window_width - textoff)))
   return {left_bound, right_bound}
 end
 local function skip_one_21(backward_3f)
@@ -207,13 +205,13 @@ local function get_targets_2a(pattern, _36_)
   local source_winid = _arg_37_["source-winid"]
   local targets0 = (targets or {})
   local _let_38_ = get_horizontal_bounds()
-  local _ = _let_38_[1]
-  local right_bound = _let_38_[2]
-  local bounds = _let_38_
+  local left_bound = _let_38_[1]
+  local right_bound_2a = _let_38_[2]
+  local right_bound = dec(right_bound_2a)
   local whole_window_3f = wininfo
   local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
   local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
-  local match_positions = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
+  local match_positions = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
   for _39_ in match_positions do
     local _each_40_ = _39_

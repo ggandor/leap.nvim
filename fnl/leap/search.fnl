@@ -11,17 +11,16 @@
 (local {: abs : pow} math)
 
 
+; Returns screen columns.
 (fn get-horizontal-bounds []
-  (let [match-length 2  ; screen columns
-        textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
+  (let [textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
         offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
         ; I.e., screen-column of the first visible column in the editable area.
         left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
         window-width (api.nvim_win_get_width 0)
-        right-edge (+ left-bound (dec (- window-width textoff)))
-        right-bound (- right-edge (dec match-length))]  ; the whole match should be visible
-    [left-bound right-bound]))  ; screen columns
+        right-bound (+ left-bound (dec (- window-width textoff)))]
+    [left-bound right-bound]))
 
 
 (fn skip-one! [backward?]
@@ -146,12 +145,13 @@ Dynamic attributes
 ?beacon      : [col-offset [[char hl-group]]]
 "
   (let [targets (or targets [])
-        [_ right-bound &as bounds] (get-horizontal-bounds)
+        [left-bound right-bound*] (get-horizontal-bounds)
+        right-bound (dec right-bound*)  ; the whole match should be visible
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
         skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
-        match-positions (get-match-positions
-                          pattern bounds {: backward? : skip-curpos? : whole-window?})]
+        match-positions (get-match-positions pattern [left-bound right-bound]
+                                             {: backward? : skip-curpos? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
       (match (get-char-at pos {})  ; EOL might fail (make this future-proof)
