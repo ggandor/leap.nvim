@@ -459,12 +459,13 @@ require('leap').leap { target_windows = vim.tbl_filter(
 
 This is where things start to become really interesting:
 
-`targets`: A list of target items: tables of arbitrary structure, with the only
-mandatory field being `pos` - a (1,1)-indexed tuple; this is the position of the
-label, and also the jump target, if there is no custom `action` provided. If
-you have targets in multiple windows, you also need to provide a `wininfo` field
-for each (`:h getwininfo()`). Targets can represent anything with a position,
-like Tree-sitter nodes, etc.
+`targets`: Either a list of targets, or a function returning such a list. The
+elements of the list are tables of arbitrary structure, with the only mandatory
+field being `pos` - a (1,1)-indexed tuple; this is the position of the label,
+and also the jump target, if there is no custom `action` provided. If you have
+targets in multiple windows, you also need to provide a `wininfo` field for each
+(`:h getwininfo()`). Targets can represent anything with a position, like
+Tree-sitter nodes, etc.
 
 <details>
 <summary>Example: linewise motions</summary>

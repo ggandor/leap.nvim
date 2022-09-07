@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 August 30
+Last change: 2022 September 07
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -393,12 +393,20 @@ leap({opts})                                                       *leap.leap()*
                • target_windows: A list of windows (as |winid|s) to be
                  searched.
                                                            *leap-custom-targets*
-               • targets: A list of target items: tables of arbitrary
-                 structure, with the only mandatory field being `pos` - a
-                 (1,1)-indexed tuple; this is the position of the label, and
-                 also the jump target, if there is no custom `action`
-                 provided. Targets can represent anything that has a position
-                 in the window, like Tree-sitter nodes, etc.
+               • targets: Either a list of targets, or a function returning
+                 such a list. The advantage of the latter is that the function
+                 will be evaluated after |LeapEnter| (that is, after setting
+                 temporary editor options, etc.), so that you can even prompt
+                 the user for input while already "in" Leap.
+
+                 The elements of the list are tables of arbitrary structure,
+                 with the only mandatory field being `pos` - a (1,1)-indexed
+                 tuple; this is the position of the label, and also the jump
+                 target, if there is no custom `action` provided. If you have
+                 targets in multiple windows, you also need to provide a
+                 `wininfo` field for each (|getwininfo()|). Targets can
+                 represent anything with a position, like Tree-sitter nodes,
+                 etc.
                                                             *leap-custom-action* 
                • action: A Lua function that will be executed by Leap in place
                  of the jump. (You could obviously implement some custom jump

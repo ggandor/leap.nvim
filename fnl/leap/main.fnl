@@ -315,10 +315,6 @@ where labels need to be shifted left).
         curr-winid (vim.fn.win_getid)
         _ (set state.source_window curr-winid)
         curr-win (id->wininfo curr-winid)
-        ; Fill in the wininfo fields if not provided.
-        _ (when (and user-given-targets
-                     (not (. user-given-targets 1 :wininfo)))
-            (map #(tset $ :wininfo curr-win) user-given-targets))
         ?target-windows (-?>> target-windows (map id->wininfo))
         hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
                                        &into [curr-win]]  ; cursor is always highlighted
@@ -346,9 +342,6 @@ where labels need to be shifted left).
     (when (and target-windows (empty? target-windows))
       (echo "no targetable windows")
       (lua :return))
-    (when (and user-given-targets (empty? user-given-targets))
-      (echo "no targets")
-      (lua :return))
     (when (and (not directional?) no-labels?)
       (echo "no labels to use")
       (lua :return))
@@ -359,7 +352,7 @@ where labels need to be shifted left).
                        (> count 0)
                        no-labels?
                        multi-select?
-                       user-given-targets)))
+                       user-given-targets?)))
 
     ; Helpers ///
 
@@ -386,11 +379,20 @@ where labels need to be shifted left).
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
-           (when-not (and user-given-targets (not ?target-windows))
+           (when-not (and user-given-targets? (not ?target-windows))
              (hl:apply-backdrop backward? ?target-windows))
            (do ,...)
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
+
+   (fn get-user-given-targets []
+     (match (match user-given-targets [&as tbl] tbl func (func))
+       ts (when-not (empty? ts)
+            ; Fill in the wininfo fields if not provided.
+            (when-not (. ts 1 :wininfo)
+              (each [_ t (ipairs ts)]
+                (set t.wininfo curr-win)))
+            ts)))
 
     (fn expand-to-equivalence-class [in]  ; <-- "b"
       (match (. opts.eq_class_of in)
@@ -430,7 +432,7 @@ where labels need to be shifted left).
       ; repeat state continuously if we have entered traversal mode
       ; after the first input (i.e., traversing all matches, not just a
       ; given sublist).
-      (when-not (or dot-repeat? user-given-targets)
+      (when-not (or dot-repeat? user-given-targets?)
         (when state*.repeat
           (set state.repeat state*.repeat))
         (when state*.dot_repeat
@@ -560,16 +562,17 @@ where labels need to be shifted left).
     (exec-user-autocmds :LeapEnter)
 
     (match-try (if dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
-                   user-given-targets (values true true)
+                   user-given-targets? (values true true)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    aot? (get-first-pattern-input)  ; REDRAW
                    (get-full-pattern-input))  ; REDRAW
-      (in1 ?in2) (or user-given-targets
-                     (let [search (require "leap.search")
-                           pattern (prepare-pattern in1 ?in2)
-                           kwargs {: backward? :target-windows ?target-windows}]
-                       (search.get-targets pattern kwargs))
-                     (exit-early (echo-not-found (.. in1 (or ?in2 "")))))
+      (in1 ?in2) (if user-given-targets? (or (get-user-given-targets)
+                                             (exit-early (echo "no targets")))
+                     (or (let [search (require "leap.search")
+                               pattern (prepare-pattern in1 ?in2)
+                               kwargs {: backward? :target-windows ?target-windows}]
+                           (search.get-targets pattern kwargs))
+                         (exit-early (echo-not-found (.. in1 (or ?in2 ""))))))
       targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
                                 target (exit (do-action target))
                                 _ (exit-early))
