@@ -6,16 +6,16 @@ Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
 the ultimate goal of establishing a new standard interface for moving around in
 the visible editor area in Vim-like editors.
 
-## How to use it (TL;DR)
-
-Leap allows you to jump to any positions in the visible window / tab page area
-by entering a 2-character search pattern, and then potentially a "label"
+The plugin allows you to jump to any positions in the visible window / tab page
+area by entering a 2-character search pattern, and then potentially a "label"
 character to choose among multiple matches, similar to
-[Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
-"clairvoyant" ability: it maps possible futures, and shows you which key(s) you
-will need to press _before_ you actually need to do that.
+[Sneak](https://github.com/justinmk/vim-sneak). The main novel idea in Leap is
+its "clairvoyant" ability: it maps possible futures, and shows you which key(s)
+you will need to press _before_ you actually need to do that.
 
 ![showcase](../media/showcase.gif?raw=true)
+
+## How to use it (TL;DR)
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -23,7 +23,7 @@ will need to press _before_ you actually need to do that.
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
-  No need to be bothered by remaining labels, just continue editing.
+  No need to be bothered by remaining labels, just continue editing!
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>` (step back with `<tab>`, if needed).
 
@@ -35,12 +35,12 @@ will need to press _before_ you actually need to do that.
   keypress should be (no need to pause for reading the label[s], if you're not
   typing extremely fast).
 
-The two guarantees above, together with ["smart" automatic
-jumping](#smart-autojump) to the first target make Leap unique: no other motion
-plugin, let alone native Vim solution provides the same combination of speed
-_and_ mindlessness, resulting in an almost mouse-like user experience.
+The two guarantees above, together with ["smart" automatic jumping to the first
+target](#smart-autojump) make Leap unique: no other motion plugin, let alone
+native Vim solution provides the same combination of speed _and_ mindlessness,
+resulting in an almost mouse-like user experience.
 
-- [(An impractical) introduction](#an-impractical-introduction)
+- [An impractical introduction](#an-impractical-introduction)
 - [Status](#status)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
@@ -49,9 +49,7 @@ _and_ mindlessness, resulting in an almost mouse-like user experience.
 - [Extending Leap](#extending-leap)
 - [Plugins using Leap](#plugins-using-leap)
 
-## (An impractical) introduction
-
-### Rationale
+## An impractical introduction
 
 Premise: jumping from point A to B on the screen should not be some [exciting
 puzzle](https://www.vimgolf.com/), for which you should train yourself; it
@@ -63,19 +61,19 @@ That is, **you do not want to think about**
 
 - **the command**: we need one fundamental targeting method, instead of a
   smorgasbord of possibilities, having "enhanced" versions of each native
-  motion, and more - as I used to phrase it, [a jetpack instead of railway
+  motion - as I used to phrase it, [a jetpack instead of railway
   tickets](https://github.com/ggandor/lightspeed.nvim#railways-versus-jetpacks)
-  (↔ EasyMotion and its dervatives)
+  (↔ EasyMotion and its derivatives)
 - **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations)
 - **the steps**: the motion should be atomic (↔ Vim motion combos); you should
   not have to make any decisions - that is, a fixed-length input pattern is
-  desired (↔ e.g. Pounce); most importantly, you should be able to type the command
-  in one go, without having to pause and react to events happening (↔ all
-  labeling plugins so far)
+  desired; most importantly, you should be able to type the command in one go,
+  without having to pause and react to events happening (↔ all labeling plugins
+  so far)
 
-And of course, all the while using as few keystrokes as possible, and getting
-distracted by as little incidental visual noise as possible.
+And of course, all the while using **as few keystrokes** as possible, **and**
+getting distracted by **as little incidental visual noise as possible**.
 
 It is obviously impossible to achieve all of these at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
