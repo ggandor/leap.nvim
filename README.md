@@ -6,16 +6,16 @@ Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
 the ultimate goal of establishing a new standard interface for moving around in
 the visible editor area in Vim-like editors.
 
-The plugin allows you to jump to any positions in the visible window / tab page
-area by entering a 2-character search pattern, and then potentially a "label"
-character to choose among multiple matches, similar to
-[Sneak](https://github.com/justinmk/vim-sneak). The main novel idea in Leap is
-its "clairvoyant" ability: it maps possible futures, and shows you which key(s)
-you will need to press _before_ you actually need to do that.
-
 ![showcase](../media/showcase.gif?raw=true)
 
-## How to use it (TL;DR)
+### How to use it (TL;DR)
+
+Leap allows you to jump to any positions in the visible window / tab page area
+by entering a 2-character search pattern, and then potentially a "label"
+character to choose among multiple matches, similar to
+[Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
+"clairvoyant" ability: it maps possible futures, and shows you which key(s) you
+will need to press _before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -27,7 +27,7 @@ you will need to press _before_ you actually need to do that.
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>` (step back with `<tab>`, if needed).
 
-## Why is this method cool?
+### Why is this method cool?
 
 - You don't have to _make decisions_: the sequence you should enter is
   determined from the very beginning.
@@ -72,8 +72,8 @@ That is, **you do not want to think about**
   without having to pause and react to events happening (↔ all labeling plugins
   so far)
 
-And of course, all the while using **as few keystrokes** as possible, **and**
-getting distracted by **as little incidental visual noise as possible**.
+All the while using **as few keystrokes as possible**, and getting distracted by
+**as little incidental visual noise as possible**.
 
 It is obviously impossible to achieve all of these at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
@@ -505,7 +505,8 @@ end
 local function leap_to_line()
   winid = vim.api.nvim_get_current_win()
   require('leap').leap {
-    target_windows = { winid }, targets = get_line_starts(winid),
+    target_windows = { winid },
+    targets = get_line_starts(winid),
   }
 end
 ```
@@ -529,7 +530,8 @@ function leap_to_window()
   end
 
   require('leap').leap {
-    target_windows = target_windows, targets = targets,
+    target_windows = target_windows,
+    targets = targets,
     action = function (target)
       vim.api.nvim_set_current_win(target.wininfo.winid)
     end
