@@ -379,8 +379,7 @@ where labels need to be shifted left).
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
-           (when-not (and user-given-targets? (not ?target-windows))
-             (hl:apply-backdrop backward? ?target-windows))
+           (hl:apply-backdrop backward? ?target-windows)
            (do ,...)
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
