@@ -306,8 +306,7 @@ where labels need to be shifted left).
          :opts user-given-opts
          :targets user-given-targets
          :action user-given-action
-         :multiselect multi-select?
-         : count}
+         :multiselect multi-select?}
         kwargs
         _ (set state.args kwargs)
         _ (set opts.current_call (or user-given-opts {}))
@@ -320,20 +319,22 @@ where labels need to be shifted left).
                                        &into [curr-win]]  ; cursor is always highlighted
                               w)
         directional? (not target-windows)
-        count (or count (if (not directional?) 0 vim.v.count))
         ; We need to save the mode here, because the `:normal` command
         ; in `jump.jump-to!` can change the state. See vim/vim#9332.
         mode (. (api.nvim_get_mode) :mode)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
+        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
+        count (if (not directional?) nil
+                  (= vim.v.count 0) (if (and op-mode? no-labels?) 1 nil)
+                  vim.v.count)
         force-noautojump? (or op-mode?            ; should be able to select a target
                               multi-select?       ; likewise
                               (not directional?)  ; potentially disorienting
                               user-given-action)  ; no jump, doing sg else
         max-aot-targets (or opts.max_aot_targets math.huge)
         user-given-targets? user-given-targets
-        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {} {:__index (fn [_ k]
                                                (-?> (. opts.special_keys k)
@@ -349,7 +350,7 @@ where labels need to be shifted left).
     ; Show beacons (labels & match highlights) ahead of time,
     ; right after the first input?
     (var aot? (not (or (= max-aot-targets 0)
-                       (> count 0)
+                       count
                        no-labels?
                        multi-select?
                        user-given-targets?)))
@@ -379,7 +380,8 @@ where labels need to be shifted left).
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
-           (hl:apply-backdrop backward? ?target-windows)
+           (when-not count
+             (hl:apply-backdrop backward? ?target-windows))
            (do ,...)
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
@@ -616,10 +618,8 @@ where labels need to be shifted left).
                                                    (do-action (. targets* idx))))
                           |targets*| (length targets*)]
                       (if (= |targets*| 1) (exit-with-action 1)
-
-                          (and directional? (> count 0))
-                          (if (> count |targets*|) (exit-early) (exit-with-action count))
-
+                          count (if (<= count |targets*|) (exit-with-action count)
+                                    (exit-early))
                           (do
                             (when targets*.autojump?
                               (do-action (. targets* 1)))
