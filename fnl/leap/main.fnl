@@ -535,19 +535,17 @@ where labels need to be shifted left).
         (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
         input
-        (if (or (= input spec-keys.next_match)
-                (= input spec-keys.prev_match))
-            (let [new-idx (match input
-                            spec-keys.next_match (min (inc idx) (length targets))
-                            spec-keys.prev_match (max (dec idx) 1))]
-              ; Need to save now - we might <esc> next time, exiting above.
-              (update-state {:repeat {:in1 state.repeat.in1
-                                      ; ?. -> user-given targets might not have :chars
-                                      :in2 (?. targets new-idx :chars 2)}})
-              (jump-to! (. targets new-idx))
-              (traversal-loop targets new-idx {: no-labels?}))
-            ; We still want the labels (if there are) to function.
-            (match (get-target-with-active-primary-label targets input)
+        (match (if (= input spec-keys.next_match) (min (inc idx) (length targets))
+                   (= input spec-keys.prev_match) (max (dec idx) 1))
+          new-idx (do
+                    ; Need to update now - we might <esc> next time, exiting above.
+                    ; ?. --> user-given targets might not have :chars
+                    (update-state {:repeat {:in1 state.repeat.in1
+                                            :in2 (?. targets new-idx :chars 2)}})
+                    (jump-to! (. targets new-idx))
+                    (traversal-loop targets new-idx {: no-labels?}))
+          ; We still want the labels (if there are) to function.
+          _ (match (get-target-with-active-primary-label targets input)
               [_ target] (exit (jump-to! target))
               _ (exit (vim.fn.feedkeys input :i))))))
 

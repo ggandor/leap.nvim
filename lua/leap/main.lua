@@ -819,18 +819,16 @@ local function leap(kwargs)
     _143_ = (get_input() or _144_())
     if (nil ~= _143_) then
       local input = _143_
-      if ((input == spec_keys.next_match) or (input == spec_keys.prev_match)) then
-        local new_idx
-        do
-          local _145_ = input
-          if (_145_ == spec_keys.next_match) then
-            new_idx = min(inc(idx), #targets)
-          elseif (_145_ == spec_keys.prev_match) then
-            new_idx = max(dec(idx), 1)
-          else
-            new_idx = nil
-          end
-        end
+      local _145_
+      if (input == spec_keys.next_match) then
+        _145_ = min(inc(idx), #targets)
+      elseif (input == spec_keys.prev_match) then
+        _145_ = max(dec(idx), 1)
+      else
+        _145_ = nil
+      end
+      if (nil ~= _145_) then
+        local new_idx = _145_
         local _148_
         do
           local t_147_ = targets
@@ -851,10 +849,11 @@ local function leap(kwargs)
         update_state({["repeat"] = {in1 = state["repeat"].in1, in2 = _148_}})
         jump_to_21(targets[new_idx])
         return traversal_loop(targets, new_idx, {["no-labels?"] = no_labels_3f0})
-      else
+      elseif true then
+        local _2 = _145_
         local _152_ = get_target_with_active_primary_label(targets, input)
         if ((_G.type(_152_) == "table") and true and (nil ~= (_152_)[2])) then
-          local _2 = (_152_)[1]
+          local _3 = (_152_)[1]
           local target = (_152_)[2]
           do
             jump_to_21(target)
@@ -863,7 +862,7 @@ local function leap(kwargs)
           exec_user_autocmds("LeapLeave")
           return nil
         elseif true then
-          local _2 = _152_
+          local _3 = _152_
           do
             vim.fn.feedkeys(input, "i")
           end
@@ -873,6 +872,8 @@ local function leap(kwargs)
         else
           return nil
         end
+      else
+        return nil
       end
     else
       return nil
