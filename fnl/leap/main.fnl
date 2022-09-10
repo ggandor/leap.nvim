@@ -203,9 +203,8 @@ char separately.
 
 
 (fn set-beacon-to-match-hl [target]
-  (let [{:chars [ch1 ch2]} target
-        virttext [[(.. ch1 ch2) hl.group.match]]]
-    (tset target :beacon [0 virttext])))
+  (tset target :beacon
+        [0 [[(table.concat target.chars) hl.group.match]]]))
 
 
 (fn set-beacon-to-empty-label [target]
