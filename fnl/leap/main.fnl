@@ -247,9 +247,8 @@ where labels need to be shifted left).
             (tset unlabeled-match-positions key target))))))
 
 
-; TODO: User-given targets cannot get a match highlight at the moment.
 (fn set-beacons [targets {: no-labels? : user-given-targets? : aot?}]
-  (if (and no-labels? (not user-given-targets?))
+  (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs targets)]

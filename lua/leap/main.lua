@@ -320,7 +320,7 @@ local function set_beacons(targets, _64_)
   local no_labels_3f = _arg_65_["no-labels?"]
   local user_given_targets_3f = _arg_65_["user-given-targets?"]
   local aot_3f = _arg_65_["aot?"]
-  if (no_labels_3f and not user_given_targets_3f) then
+  if (no_labels_3f and targets[1].chars) then
     for _, target in ipairs(targets) do
       set_beacon_to_match_hl(target)
     end
