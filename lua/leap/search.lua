@@ -349,4 +349,4 @@ local function get_targets(pattern, _54_)
     end
   end
 end
-return {["get-targets"] = get_targets}
+return {["get-horizontal-bounds"] = get_horizontal_bounds, ["get-match-positions"] = get_match_positions, ["get-targets"] = get_targets}

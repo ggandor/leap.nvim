@@ -228,4 +228,6 @@ Dynamic attributes
           targets))))
 
 
-{: get-targets}
+{: get-horizontal-bounds
+ : get-match-positions
+ : get-targets}
