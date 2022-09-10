@@ -295,17 +295,17 @@ where labels need to be shifted left).
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (let [{:backward backward?
-         :inclusive_op inclusive-op?
-         : offset}
-        (if dot-repeat? state.dot_repeat kwargs)
-        {:dot_repeat dot-repeat?
+  (let [{:dot_repeat dot-repeat?
          :target_windows target-windows
          :opts user-given-opts
          :targets user-given-targets
          :action user-given-action
          :multiselect multi-select?}
         kwargs
+        {:backward backward?
+         :inclusive_op inclusive-op?
+         : offset}
+        (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
         _ (set opts.current_call (or user-given-opts {}))
         id->wininfo #(. (vim.fn.getwininfo $) 1)
@@ -426,23 +426,18 @@ where labels need to be shifted left).
           (set res [idx target])))
       res)
 
-    (fn update-state [state*]  ; a partial state table
-      ; Do not short-circuit on regular repeat: we need to update the
-      ; repeat state continuously if we have entered traversal mode
-      ; after the first input (i.e., traversing all matches, not just a
-      ; given sublist).
-      (when-not (or dot-repeat? user-given-targets?)
-        (when state*.repeat
-          (set state.repeat state*.repeat))
-        (when state*.dot_repeat
-          (set state.dot_repeat
-               (vim.tbl_extend :error
-                               state*.dot_repeat
-                               {: backward : offset : inclusive_op})))))
+    (fn update-repeat-state [state*]
+      (when-not user-given-targets?
+        (set state.repeat state*)))
 
     (fn set-dot-repeat [in1 in2 target_idx]
-      (when dot-repeatable-op?
-        (update-state {:dot_repeat {: in1 : in2 : target_idx}})
+      (when (and dot-repeatable-op?
+                 (not (or dot-repeat? user-given-targets?)))
+        (set state.dot_repeat {: in1 : in2 : target_idx
+                               ; Mind the naming conventions and the
+                               ; conversions back and forth.
+                               :backward backward? : offset
+                               :inclusive_op inclusive-op?})
         (set-dot-repeat*)))
 
     (local jump-to!
@@ -538,10 +533,12 @@ where labels need to be shifted left).
         (match (if (= input spec-keys.next_match) (min (inc idx) (length targets))
                    (= input spec-keys.prev_match) (max (dec idx) 1))
           new-idx (do
-                    ; Need to update now - we might <esc> next time, exiting above.
-                    ; ?. --> user-given targets might not have :chars
-                    (update-state {:repeat {:in1 state.repeat.in1
-                                            :in2 (?. targets new-idx :chars 2)}})
+                    ; We need to update the repeat state continuously, in case
+                    ; we have entered traversal mode after the first input
+                    ; (i.e., traversing all matches, not just a given sublist)!
+                    (update-repeat-state {:in1 state.repeat.in1
+                                          ; ?. -> user-given targets might not have :chars
+                                          :in2 (?. targets new-idx :chars 2)})
                     (jump-to! (. targets new-idx))
                     (traversal-loop targets new-idx {: no-labels?}))
           ; We still want the labels (if there are) to function.
@@ -594,14 +591,13 @@ where labels need to be shifted left).
             ; Jump to the very first match?
             (and (= in2 spec-keys.next_match) directional?)
             (let [in2 (. targets 1 :chars 2)]
-              (update-state {:repeat {: in1 : in2}})
+              (update-repeat-state {: in1 : in2})
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
                   (exit (set-dot-repeat in1 in2 1))
                   (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
             (do
-              ; Do this _now_ - in any case, repeat can succeed.
-              (update-state {:repeat {: in1 : in2}})
+              (update-repeat-state {: in1 : in2})  ; do this now - repeat can succeed
               (match (or (if targets.sublists (. targets.sublists in2) targets)
                          (exit-early (echo-not-found (.. in1 in2))))
                 targets*
