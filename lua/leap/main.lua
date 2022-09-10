@@ -166,7 +166,7 @@ local function populate_sublists(targets)
   targets["sublists"] = setmetatable({}, _31_())
   for _, _34_ in ipairs(targets) do
     local _each_35_ = _34_
-    local _each_36_ = _each_35_["pair"]
+    local _each_36_ = _each_35_["chars"]
     local _0 = _each_36_[1]
     local ch2 = _each_36_[2]
     local target = _each_35_
@@ -186,7 +186,7 @@ local function set_initial_label_states(targets)
 end
 local function get_label_offset(target)
   local _let_38_ = target
-  local _let_39_ = _let_38_["pair"]
+  local _let_39_ = _let_38_["chars"]
   local ch1 = _let_39_[1]
   local ch2 = _let_39_[2]
   local edge_pos_3f = _let_38_["edge-pos?"]
@@ -248,7 +248,7 @@ local function set_beacon_for_labeled(target, _41_)
 end
 local function set_beacon_to_match_hl(target)
   local _let_50_ = target
-  local _let_51_ = _let_50_["pair"]
+  local _let_51_ = _let_50_["chars"]
   local ch1 = _let_51_[1]
   local ch2 = _let_51_[2]
   local virttext = {{(ch1 .. ch2), hl.group.match}}
@@ -267,7 +267,7 @@ local function resolve_conflicts(targets)
     local _local_53_ = _local_52_["pos"]
     local lnum = _local_53_[1]
     local col = _local_53_[2]
-    local _local_54_ = _local_52_["pair"]
+    local _local_54_ = _local_52_["chars"]
     local ch1 = _local_54_[1]
     local _0 = _local_54_[2]
     local _local_55_ = _local_52_["wininfo"]
@@ -844,7 +844,7 @@ local function leap(kwargs)
           else
           end
           if (nil ~= t_149_) then
-            t_149_ = (t_149_).pair
+            t_149_ = (t_149_).chars
           else
           end
           if (nil ~= t_149_) then
@@ -899,7 +899,7 @@ local function leap(kwargs)
             if (nil ~= _164_) then
               local in2 = _164_
               if ((in2 == spec_keys.next_match) and directional_3f) then
-                local in20 = targets[1].pair[2]
+                local in20 = targets[1].chars[2]
                 update_state({["repeat"] = {in1 = in1, in2 = in20}})
                 do_action(targets[1])
                 if ((#targets == 1) or op_mode_3f or user_given_action) then

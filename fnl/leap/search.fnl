@@ -145,7 +145,7 @@ ones might be set by subsequent functions):
 
 Static attributes (set once and for all)
 pos          : [lnum col]  1/1-indexed
-pair         : [char char]
+chars        : [char+]
 edge-pos?    : bool
 ?wininfo     : `vim.fn.getwininfo` dict
 ?label       : char
@@ -174,7 +174,7 @@ Dynamic attributes
                                       (= col ((if backward? dec inc) prev-match.col)))]
           (set prev-match {: line : col : ch2})
           (when (not same-char-triplet?)
-            (table.insert targets {: wininfo : pos :pair [ch1 ch2]
+            (table.insert targets {: wininfo : pos :chars [ch1 ch2]
                                    ; TODO: `right-bound` = virtcol, but `col` = byte col!
                                    :edge-pos? (or eol? (= col right-bound))})))))
     (when (next targets)

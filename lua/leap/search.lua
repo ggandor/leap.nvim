@@ -243,7 +243,7 @@ local function get_targets_2a(pattern, _36_)
       same_char_triplet_3f = ((ch2 == prev_match.ch2) and (line == prev_match.line) and (col == _44_(prev_match.col)))
       prev_match = {line = line, col = col, ch2 = ch2}
       if not same_char_triplet_3f then
-        table.insert(targets0, {wininfo = wininfo0, pos = pos, pair = {ch1, ch2}, ["edge-pos?"] = (eol_3f or (col == right_bound))})
+        table.insert(targets0, {wininfo = wininfo0, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = (eol_3f or (col == right_bound))})
       else
       end
     else

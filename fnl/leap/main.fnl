@@ -157,7 +157,7 @@ char separately.
             {:__index (fn [t k] (rawget t (->common-key k)))
              :__newindex (fn [t k v] (rawset t (->common-key k) v))})))
   ; Filling the sublists.
-  (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
+  (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets.sublists ch2)
       (tset targets.sublists ch2 []))
     (table.insert (. targets.sublists ch2) target)))
@@ -180,7 +180,7 @@ char separately.
 
 ; Handling multibyte characters.
 (fn get-label-offset [target]
-  (let [{:pair [ch1 ch2] : edge-pos?} target]
+  (let [{:chars [ch1 ch2] : edge-pos?} target]
     (+ (ch1:len) (if edge-pos? 0 (ch2:len)))))
 
 
@@ -203,7 +203,7 @@ char separately.
 
 
 (fn set-beacon-to-match-hl [target]
-  (let [{:pair [ch1 ch2]} target
+  (let [{:chars [ch1 ch2]} target
         virttext [[(.. ch1 ch2) hl.group.match]]]
     (tset target :beacon [0 virttext])))
 
@@ -224,7 +224,7 @@ where labels need to be shifted left).
   (let [unlabeled-match-positions {}  ; {"<buf> <win> <lnum> <col>": target}
         label-positions {}]           ; { - " - }
     (each [_ target (ipairs targets)]
-      (local {:pos [lnum col] :pair [ch1 _] :wininfo {: bufnr : winid}} target)
+      (local {:pos [lnum col] :chars [ch1 _] :wininfo {: bufnr : winid}} target)
       (macro ->key [col*] `(.. bufnr " " winid " " lnum " " ,col*))
       (if target.label
           (when target.beacon  ; can be nil if the label is inactive
@@ -544,8 +544,8 @@ where labels need to be shifted left).
                             spec-keys.prev_match (max (dec idx) 1))]
               ; Need to save now - we might <esc> next time, exiting above.
               (update-state {:repeat {:in1 state.repeat.in1
-                                      ; ?. -> user-given targets might not have :pair
-                                      :in2 (?. targets new-idx :pair 2)}})
+                                      ; ?. -> user-given targets might not have :chars
+                                      :in2 (?. targets new-idx :chars 2)}})
               (jump-to! (. targets new-idx))
               (traversal-loop targets new-idx {: no-labels?}))
             ; We still want the labels (if there are) to function.
@@ -597,7 +597,7 @@ where labels need to be shifted left).
       in2 (if
             ; Jump to the very first match?
             (and (= in2 spec-keys.next_match) directional?)
-            (let [in2 (. targets 1 :pair 2)]
+            (let [in2 (. targets 1 :chars 2)]
               (update-state {:repeat {: in1 : in2}})
               (do-action (. targets 1))
               (if (or (= (length targets) 1) op-mode? user-given-action)
