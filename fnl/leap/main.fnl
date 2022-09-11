@@ -334,9 +334,16 @@ where labels need to be shifted left).
         max-aot-targets (or opts.max_aot_targets math.huge)
         user-given-targets? user-given-targets
         prompt {:str ">"}  ; pass by reference hack (for input fns)
-        spec-keys (setmetatable {} {:__index (fn [_ k]
-                                               (-?> (. opts.special_keys k)
-                                                    replace-keycodes))})]
+        spec-keys (setmetatable {}
+                    {:__index (fn [_ k]
+                                (match (. opts.special_keys k)
+                                  v (if (or (= k :next_match) (= k :prev_match))
+                                        ; Force those into a table.
+                                        (match (type v)
+                                          :table (icollect [_ str (ipairs v)]
+                                                   (replace-keycodes str))
+                                          :string [(replace-keycodes v)])
+                                        (replace-keycodes v))))})]
 
     (when (and target-windows (empty? target-windows))
       (echo "no targetable windows")
@@ -534,8 +541,8 @@ where labels need to be shifted left).
         (light-up-beacons targets (inc idx)))
       (match (or (get-input) (exit))
         input
-        (match (if (= input spec-keys.next_match) (min (inc idx) (length targets))
-                   (= input spec-keys.prev_match) (max (dec idx) 1))
+        (match (if (contains? spec-keys.next_match input) (min (inc idx) (length targets))
+                   (contains? spec-keys.prev_match input) (max (dec idx) 1))
           new-idx (do
                     ; We need to update the repeat state continuously, in case
                     ; we have entered traversal mode after the first input
@@ -598,7 +605,7 @@ where labels need to be shifted left).
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
-            (and (= in2 spec-keys.next_match) directional?)
+            (and (contains? spec-keys.next_match in2) directional?)
             (let [in2 (. targets 1 :chars 2)]
               (update-repeat-state {: in1 : in2})
               (do-action (. targets 1))
@@ -629,7 +636,7 @@ where labels need to be shifted left).
                               in-final
                               (if
                                 ; Jump to the first match on the [rest of the] target list?
-                                (and (= in-final spec-keys.next_match) directional?)
+                                (and (contains? spec-keys.next_match in-final) directional?)
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (if targets*.autojump? 2 1)]
                                       (do-action (. targets* new-idx))
