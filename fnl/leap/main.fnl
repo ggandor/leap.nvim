@@ -384,14 +384,16 @@ where labels need to be shifted left).
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
 
-   (fn get-user-given-targets []
-     (match (match user-given-targets [&as tbl] tbl func (func))
-       ts (when-not (empty? ts)
-            ; Fill in the wininfo fields if not provided.
-            (when-not (. ts 1 :wininfo)
-              (each [_ t (ipairs ts)]
-                (set t.wininfo curr-win)))
-            ts)))
+    (fn fill-wininfo [targets]
+      (when-not (empty? targets)
+        (when-not (. targets 1 :wininfo)
+          (each [_ t (ipairs targets)]
+            (set t.wininfo curr-win)))
+        targets))
+
+    (fn get-user-given-targets [targets]
+      (-?> (match targets [&as tbl] tbl func (func))
+           fill-wininfo))
 
     (fn expand-to-equivalence-class [in]  ; <-- "b"
       (match (. opts.eq_class_of in)
@@ -432,12 +434,14 @@ where labels need to be shifted left).
 
     (fn set-dot-repeat [in1 in2 target_idx]
       (when (and dot-repeatable-op?
-                 (not (or dot-repeat? user-given-targets?)))
-        (set state.dot_repeat {: in1 : in2 : target_idx
-                               ; Mind the naming conventions and the
-                               ; conversions back and forth.
-                               :backward backward? : offset
-                               :inclusive_op inclusive-op?})
+                 (not (or dot-repeat? (= (type user-given-targets) :table))))
+        (set state.dot_repeat
+             (vim.tbl_extend :error
+               {: target_idx
+                ; Mind the naming conventions.
+                :backward backward? :inclusive_op inclusive-op? : offset}
+               (if user-given-targets {:callback user-given-targets}
+                   {: in1 : in2})))
         (set-dot-repeat*)))
 
     (local jump-to!
@@ -555,12 +559,17 @@ where labels need to be shifted left).
 
     (exec-user-autocmds :LeapEnter)
 
-    (match-try (if dot-repeat? (values state.dot_repeat.in1 state.dot_repeat.in2)
+    (match-try (if dot-repeat? (if state.dot_repeat.callback (values true true)
+                                   (values state.dot_repeat.in1
+                                           state.dot_repeat.in2))
                    user-given-targets? (values true true)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    aot? (get-first-pattern-input)  ; REDRAW
                    (get-full-pattern-input))  ; REDRAW
-      (in1 ?in2) (if user-given-targets? (or (get-user-given-targets)
+      (in1 ?in2) (if (and dot-repeat? state.dot_repeat.callback)
+                     (get-user-given-targets state.dot_repeat.callback)
+                     user-given-targets? (or (get-user-given-targets
+                                               user-given-targets)
                                              (exit-early (echo "no targets")))
                      (or (let [search (require "leap.search")
                                pattern (prepare-pattern in1 ?in2)
