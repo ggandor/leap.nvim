@@ -1,3 +1,5 @@
+(local current_call {})  ; will be updated by `leap` on invocation
+
 (local default
        {:max_aot_targets nil
         :highlight_unlabeled false
@@ -19,8 +21,10 @@
                        :multi_accept "<enter>"
                        :multi_revert "<backspace>"}})
 
-(setmetatable {: default
-               :current_call {}}  ; updated by `leap` on invocation
-              {:__index (fn [self k]
-                          (or (. self.current_call k)
-                              (. default k)))})
+; First try to look up everything in the `current_call` table,
+; so that we can override settings on a per-call basis.
+(-> {: current_call
+     : default}
+    (setmetatable {:__index (fn [self k]
+                              (or (. self.current_call k)
+                                  (. self.default k)))}))

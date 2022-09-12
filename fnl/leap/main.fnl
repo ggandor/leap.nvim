@@ -32,12 +32,14 @@
 (fn exec-user-autocmds [pattern]
   (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
+
 (fn handle-interrupted-change-op! []
   "Return to Normal mode and restore the cursor position after an
 interrupted change operation."
   (let [seq (.. "<C-\\><C-G>"  ; :h CTRL-\_CTRL-G
                 (if (> (vim.fn.col ".") 1) "<RIGHT>" ""))]
     (api.nvim_feedkeys (replace-keycodes seq) :n true)))
+
 
 ; repeat.vim support
 ; (see the docs in the script:
@@ -57,6 +59,18 @@ interrupted change operation."
     (pcall vim.fn.repeat#setreg seq vim.v.register)
     ; Note: we're feeding count inside the seq itself.
     (pcall vim.fn.repeat#set seq -1)))
+
+
+; Return a char->eq-class lookup table (the relevant one for us).
+(fn eq-classes->membership-lookup [eqcls]
+  (let [res {}]
+    (each [_ eqcl (ipairs eqcls)]
+      (let [eqcl* (if (= (type eqcl) :string)
+                      (icollect [ch (eqcl:gmatch ".")] ch)
+                      eqcl)]
+        (each [_ ch (ipairs eqcl*)]
+          (tset res ch eqcl*))))
+    res))
 
 
 ; Processing targets ///1
@@ -308,6 +322,10 @@ where labels need to be shifted left).
         (if dot-repeat? state.dot_repeat kwargs)
         _ (set state.args kwargs)
         _ (set opts.current_call (or user-given-opts {}))
+        _ (tset opts.current_call :eq_class_of
+                (-?> opts.current_call.equivalence_classes
+                     eq-classes->membership-lookup))
+        ;;;
         id->wininfo #(. (vim.fn.getwininfo $) 1)
         curr-winid (vim.fn.win_getid)
         _ (set state.source_window curr-winid)
@@ -655,15 +673,11 @@ where labels need to be shifted left).
 
 ; Init ///1
 
-; Add a char->char-class lookup table (the relevant one for us).
-(tset opts :eq_class_of
-      (do (local res {})
-          (each [_ eqcl (ipairs (or opts.equivalence_classes []))]
-            (local eqcl* (if (= (type eqcl) :table) eqcl
-                             (icollect [ch (eqcl:gmatch ".")] ch)))
-            (each [_ ch (ipairs eqcl*)]
-              (tset res ch eqcl*)))
-          res))
+; The equivalence class table can be potentially huge - let's do this
+; here, and not each time `leap` is called, at least for the defaults.
+(tset opts.default :eq_class_of
+      (-?> opts.default.equivalence_classes
+           eq-classes->membership-lookup))
 
 
 (api.nvim_create_augroup "LeapDefault" {})
