@@ -625,9 +625,9 @@ where labels need to be shifted left).
                                              (exit (set-dot-repeat in1 in2 idx)
                                                    (do-action (. targets* idx))))
                           |targets*| (length targets*)]
-                      (if (= |targets*| 1) (exit-with-action 1)
-                          count (if (<= count |targets*|) (exit-with-action count)
+                      (if count (if (<= count |targets*|) (exit-with-action count)
                                     (exit-early))
+                          (= |targets*| 1) (exit-with-action 1)
                           (do
                             (when targets*.autojump?
                               (do-action (. targets* 1)))

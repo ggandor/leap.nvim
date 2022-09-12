@@ -994,9 +994,7 @@ local function leap(kwargs)
                     end
                     exit_with_action = _174_
                     local _7ctargets_2a_7c = #targets_2a
-                    if (_7ctargets_2a_7c == 1) then
-                      return exit_with_action(1)
-                    elseif count then
+                    if count then
                       if (count <= _7ctargets_2a_7c) then
                         return exit_with_action(count)
                       else
@@ -1010,6 +1008,8 @@ local function leap(kwargs)
                         exec_user_autocmds("LeapLeave")
                         return nil
                       end
+                    elseif (_7ctargets_2a_7c == 1) then
+                      return exit_with_action(1)
                     else
                       if targets_2a["autojump?"] then
                         do_action((targets_2a)[1])
