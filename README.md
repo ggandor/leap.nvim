@@ -31,16 +31,21 @@ will need to press _before_ you actually need to do that.
 
 - You don't have to _make decisions_: the sequence you should enter is
   determined from the very beginning.
-- You don't have to _react to events_: at any step, you already know what the next
-  keypress should be (no need to pause for reading the label[s], if you're not
-  typing extremely fast).
 
-The two guarantees above, together with ["smart" automatic jumping to the first
-target](#smart-autojump) make Leap unique: no other motion plugin, let alone
-native Vim solution provides the same combination of speed _and_ mindlessness,
-resulting in an almost mouse-like user experience.
+- You don't have to _react to events_: at any step, you already know what the
+  immediate next keypress should be, and your mind can process the rest in the
+  background (no need to pause for reading labels, if you're not typing
+  extremely fast).
 
-- [An impractical introduction](#an-impractical-introduction)
+### Down the kangaroo hole
+
+This was just a teaser - mind that Leap is extremely flexible, and offers much
+more beyond the defaults: you can configure it to resemble other similar
+plugins, extend it with custom targeting methods, and even do arbitrary actions
+with the selected target(s) - read on to dig deeper.
+
+- [Design considerations in detail](#design-considerations-in-detail)
+- [Background](#background)
 - [Status](#status)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
@@ -49,7 +54,9 @@ resulting in an almost mouse-like user experience.
 - [Extending Leap](#extending-leap)
 - [Plugins using Leap](#plugins-using-leap)
 
-## An impractical introduction
+## Design considerations in detail
+
+### The ideal
 
 Premise: jumping from point A to B on the screen should not be some [exciting
 puzzle](https://www.vimgolf.com/), for which you should train yourself; it
@@ -59,27 +66,38 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
-- **the command**: we need one fundamental targeting method, instead of a
-  smorgasbord of possibilities, having "enhanced" versions of each native
-  motion - as I used to phrase it, [a jetpack instead of railway
-  tickets](https://github.com/ggandor/lightspeed.nvim#railways-versus-jetpacks)
-  (↔ EasyMotion and its derivatives)
 - **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations)
-- **the steps**: the motion should be atomic (↔ Vim motion combos); you should
-  not have to make any decisions - that is, a fixed-length input pattern is
-  desired; most importantly, you should be able to type the command in one go,
-  without having to pause and react to events happening (↔ all labeling plugins
-  so far)
+- **the command**: we need one fundamental targeting method that can bring you
+  anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
+  derivatives)
+- **the steps**: the motion should be atomic (↔ Vim motion combos), and you
+  should be able to type the sequence in one go, without having to make
+  semi-conscious decisions on the fly ("Shall I start a `<C-g>` streak, or try
+  one more input character?"), or instantly react to events (labels appearing).
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
 
-It is obviously impossible to achieve all of these at the same time, without
+### How do we measure up?
+
+It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
 
-### Auxiliary design principles
+The one-step shift between perception and action - that is, ahead-of-time
+labeling - cuts the Gordian knot: while the input sequence can be extended
+dynamically, to scale to any number of targets, it still behaves as if it would
+be an already known pattern, that you just have to type out. Leaping is like
+`/?` search on some kind of autopilot, where you know it in advance when to
+finish.
+
+Fortunately, a 2-character search pattern - the shortest one with which we can
+play this trick - is also long enough to sufficiently narrow down the matches in
+the vast majority of cases (as opposed to just one character). It is very rare
+that you should type more than 3 characters altogether to reach a given target.
+
+### Auxiliary principles
 
 - Optimize for the common case (not the pathological): a good example of this is
   the Sneak-like "one-character labels in multiple groups" approach (instead of
@@ -102,11 +120,11 @@ the design space.
   with reasonable defaults; at the same time, keep the plugin flexible and
   future-proof via [extension points](#extending-leap).
 
-### Background
+## Background
 
-Leap is essentially a reboot of
-[Lightspeed](https://github.com/ggandor/lightspeed.nvim); a streamlined but in
-many respects enhanced version of its ancestor. Compared to Lightspeed, Leap:
+Leap is a reboot of [Lightspeed](https://github.com/ggandor/lightspeed.nvim); a
+streamlined but in many respects enhanced version of its ancestor. Compared to
+Lightspeed, Leap:
 
 - gets rid of some gimmicks with a low benefit/cost ratio (like Lightspeed's
   "shortcut" labels), but works the same way in the common case; all the really
@@ -117,9 +135,9 @@ many respects enhanced version of its ancestor. Compared to Lightspeed, Leap:
 
 ## Status
 
-Leap is not fully stable yet, but don't let that stop you - the usage basics are
-extremely unlikely to change. To follow breaking changes, subscribe to the
-corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
+The plugin is not fully stable yet, but don't let that stop you - the usage
+basics are extremely unlikely to change. To follow breaking changes, subscribe
+to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ## FAQ
 
@@ -133,6 +151,16 @@ require('leap').leap { target_windows = { vim.fn.win_getid() } }
 
 </details>
 
+<details>
+<summary>Search in all windows</summary>
+
+```lua
+require('leap').leap { target_windows = vim.tbl_filter(
+  function (win) return vim.api.nvim_win_get_config(win).focusable end,
+  vim.api.nvim_tabpage_list_wins(0)
+)}
+```
+</details>
 
 <details>
 <summary>Linewise motions</summary>
