@@ -14,8 +14,9 @@
                  "J" "K" "L" "H" "O" "D" "W" "E" "M" "B"
                  "U" "Y" "V" "R" "G" "T" "C" "X" "?" "Z"]
         :special_keys {:repeat_search "<enter>"
-                       :next_match "<enter>"
-                       :prev_match "<tab>"
+                       :next_aot_match "<enter>"
+                       :next_match [";" "<enter>"]
+                       :prev_match ["," "<tab>"]
                        :next_group "<space>"
                        :prev_group "<tab>"
                        :multi_accept "<enter>"

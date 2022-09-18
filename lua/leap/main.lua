@@ -954,7 +954,7 @@ local function leap(kwargs)
             local _170_ = ...
             if (nil ~= _170_) then
               local in2 = _170_
-              if (contains_3f(spec_keys.next_match, in2) and directional_3f) then
+              if ((in2 == spec_keys.next_aot_match) and directional_3f) then
                 local in20 = targets[1].chars[2]
                 update_repeat_state({in1 = in1, in2 = in20})
                 do_action(targets[1])

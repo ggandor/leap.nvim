@@ -355,7 +355,7 @@ motions sets the search pattern to the previous one.
 ### Traversal mode
 
 After entering at least one input character, `<enter>`
-(`special_keys.next_match`) initiates "traversal" mode, moving on to the
+(`special_keys.next_aot_match`) initiates "traversal" mode, moving on to the
 next match on each keypress. `<tab>` (`special_keys.prev_match`) can revert the
 previous jump(s) in case you accidentally overshoot your target.
 
@@ -403,11 +403,12 @@ require('leap').setup {
   safe_labels = { . . . },
   labels = { . . . },
   special_keys = {
-    repeat_search = '<enter>',
-    next_match    = '<enter>',
-    prev_match    = '<tab>',
-    next_group    = '<space>',
-    prev_group    = '<tab>',
+    repeat_search  = '<enter>',
+    next_aot_match = '<enter>',
+    next_match     = {';', '<enter>'}
+    prev_match     = {',', '<tab>'}
+    next_group     = '<space>',
+    prev_group     = '<tab>',
   },
 }
 ```

@@ -623,7 +623,7 @@ where labels need to be shifted left).
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
-            (and (contains? spec-keys.next_match in2) directional?)
+            (and (= in2 spec-keys.next_aot_match) directional?)
             (let [in2 (. targets 1 :chars 2)]
               (update-repeat-state {: in1 : in2})
               (do-action (. targets 1))
