@@ -2,6 +2,7 @@
 
 (local default
        {:max_aot_targets nil
+        :max_highlighted_traversal_targets 10
         :highlight_unlabeled false
         :case_sensitive false
         :equivalence_classes [" \t\r\n"]

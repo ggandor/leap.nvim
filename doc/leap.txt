@@ -155,12 +155,18 @@ Available options~
 
     Note: This is only relevant if `max_aot_targets` is not 0.
 
+                                   *leap.opts.max_highlighted_traversal_targets*
+`max_highlighted_traversal_targets = 10`
+
+    Number of targets to be highlighted after the cursor when there are no
+    labels at all. (Only for unidirectional search.)
+
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
 
     Whether to consider case in search patterns.
 
-                                                   *leap.opts.equivalence_classes*
+                                                 *leap.opts.equivalence_classes*
 `equivalence_classes = { ' \t\r\n' }`
 
     A character will match any other in its equivalence class. The sets can

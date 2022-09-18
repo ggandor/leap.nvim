@@ -274,8 +274,8 @@ where labels need to be shifted left).
             (resolve-conflicts targets)))))
 
 
-(fn light-up-beacons [targets ?start]
-  (for [i (or ?start 1) (length targets)]
+(fn light-up-beacons [targets ?start ?end]
+  (for [i (or ?start 1) (or ?end (length targets))]
     (local target (. targets i))
     (match target.beacon
       [offset virttext]
@@ -377,6 +377,8 @@ where labels need to be shifted left).
                        no-labels?
                        multi-select?
                        user-given-targets?)))
+
+    (var current-idx 0)
 
     ; Helpers ///
 
@@ -480,6 +482,34 @@ where labels need to be shifted left).
                           : mode : offset : backward? : inclusive-op?})
           (set first-jump? false))))
 
+    ; When traversing without labels, keep highlighting the same one group
+    ; of targets, and do not shift until reaching the end of the group - it
+    ; is less disorienting if the "snake" does not move continuously, on
+    ; every jump.
+    (fn get-number-of-highlighted-targets []
+      (match opts.max_highlighted_traversal_targets
+        group-size
+        ; Assumption: being here means we are after an autojump, and
+        ; started highlighting from the 2nd target (no `count`).
+        ; Thus, we can use `current-idx` as the reference, instead of
+        ; some separate counter (but only because of the above).
+        (let [consumed (% (dec current-idx) group-size)
+              remaining (- group-size consumed)]
+          ; Switch just before the whole group gets eaten up.
+          (if (= remaining 1) (inc group-size)
+              (= remaining 0) group-size
+              remaining))))
+
+    (fn get-highlighted-idx-range [targets no-labels?]
+      (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
+          (values 0 -1)  ; empty range
+          (let [start (inc current-idx)
+                end (when no-labels?
+                      (-?> (get-number-of-highlighted-targets)
+                           (+ (dec start))
+                           (min (length targets))))]
+            (values start end))))
+
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
       (match (or (get-input-by-keymap prompt) (exit-early))
@@ -509,10 +539,12 @@ where labels need to be shifted left).
       (fn loop [group-offset first-invoc?]
         ; Do _not_ skip this on initial invocation - we might have skipped
         ; setting the initial label states if using `spec-keys.repeat_search`.
-        (when targets.label-set (set-label-states targets {: group-offset}))
+        (when targets.label-set
+          (set-label-states targets {: group-offset}))
         (set-beacons targets {: aot? : no-labels? : user-given-targets?})
         (with-highlight-chores
-          (light-up-beacons targets (when targets.autojump? 2)))
+          (let [(start end) (get-highlighted-idx-range targets no-labels?)]
+            (light-up-beacons targets start end)))
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
@@ -553,10 +585,12 @@ where labels need to be shifted left).
                 (loop targets))))))
 
     (fn traversal-loop [targets idx {: no-labels?}]
+      (set current-idx idx)
       (when no-labels? (inactivate-labels targets))
       (set-beacons targets {: no-labels? : aot? : user-given-targets?})
       (with-highlight-chores
-        (light-up-beacons targets (inc idx)))
+        (let [(start end) (get-highlighted-idx-range targets no-labels?)]
+          (light-up-beacons targets start end)))
       (match (or (get-input) (exit))
         input
         (match (if (contains? spec-keys.next_match input) (min (inc idx) (length targets))
@@ -648,6 +682,7 @@ where labels need to be shifted left).
                           (= |targets*| 1) (exit-with-action 1)
                           (do
                             (when targets*.autojump?
+                              (set current-idx 1)
                               (do-action (. targets* 1)))
                             ; This sets label states (i.e., modifies targets*) in each cycle.
                             (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
@@ -656,7 +691,7 @@ where labels need to be shifted left).
                                 ; Jump to the first match on the [rest of the] target list?
                                 (and (contains? spec-keys.next_match in-final) directional?)
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
-                                    (let [new-idx (if targets*.autojump? 2 1)]
+                                    (let [new-idx (inc current-idx)]
                                       (do-action (. targets* new-idx))
                                       (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
                                         (for [i (+ (length opts.safe_labels) 2) |targets*|]
