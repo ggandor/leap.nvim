@@ -99,7 +99,7 @@ that you should type more than 3 characters altogether to reach a given target.
 
 ### Auxiliary principles
 
-- Optimize for the common case (not the pathological): a good example of this is
+- Optimize for the common case, not the pathological: a good example of this is
   the Sneak-like "one-character labels in multiple groups" approach (instead of
   using arbitrary-length labels), which can become awkward for, say, 200
   targets, but usually more comfortable, eliminates all kinds of edge cases and
@@ -281,9 +281,12 @@ That is,
 Leap automatically jumps to the first match if the remaining matches can be
 covered by a limited set of "safe" target labels (keys you would not use right
 after a jump), but stays in place, and switches to an extended, more comfortable
-label set otherwise.
+label set otherwise. For fine-tuning, see `:h leap-config`.
 
-The rationale behind this is that the probability of the user aiming for the
+<details>
+<summary>Rationale</summary>
+
+The reasoning behind this is that the probability of the user aiming for the
 very first target lessens with the number of targets; at the same time, the
 probability of being able to reach the first target by other means (`www`, `f`,
 etc.) increases. That is, staying in place in exchange for more comfortable
@@ -291,8 +294,9 @@ labels becomes a more and more acceptable trade-off.
 
 Smart autojump gives the best of both worlds between Sneak (jumps
 unconditionally, can only use a seriously limited label set) and Hop (labels
-everything, always requires that one extra keystroke). For configuration, see
-`:h leap-config`.
+everything, always requires that one extra keystroke).
+
+</details>
 
 ### Resolving highlighting conflicts in the first phase
 
@@ -459,7 +463,11 @@ Instead of using the provided `<Plug>` keys, you can also call the `leap`
 function directly. The following arguments are available:
 
 `opts`: A table just like `leap.opts`, to override any default setting for the
-specific call. E.g.: `require('leap').leap { opts = { labels = {} } }`.
+specific call. E.g.:
+
+```lua
+require('leap').leap { opts = { labels = {} } }`.
+```
 
 `offset`: Where to land with the cursor compared to the target position (-1, 0,
 1, 2).
