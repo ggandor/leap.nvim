@@ -23,19 +23,30 @@ will need to press _before_ you actually need to do that.
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
-  No need to be bothered by remaining labels, just continue editing!
+  No need to be bothered by remaining labels, just continue editing.
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>` (step back with `<tab>`, if needed).
 
 ### Why is this method cool?
 
-- You don't have to _make decisions_: the sequence you should enter is
+It is ridiculously fast: most of the time you can reach the destination by 4
+keystrokes in total (often 3 is enough), that can be typed in one go.
+
+At the same time, it reduces mental effort to almost zero:
+
+- You can rely on a single universal motion type in all non-trivial situations:
+  forget Vim golf, the subconscious weighing of alternatives, and composing
+  multiple commands for one logical movement.
+
+- You can ignore the context: the eyes can keep focusing on the target the whole
+  time.
+
+- You don't have to make decisions on the fly: the sequence you should enter is
   determined from the very beginning.
 
-- You don't have to _react to events_: at any step, you already know what the
+- You don't have to react to events: at any step, you already know what the
   immediate next keypress should be, and your mind can process the rest in the
-  background (no need to pause for reading labels, if you're not typing
-  extremely fast).
+  background (if typing at a moderate speed).
 
 ### Down the kangaroo hole
 
@@ -67,7 +78,8 @@ context-switching required by the latter.
 That is, **you do not want to think about**
 
 - **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations)
+  (↔ vanilla Vim motion combinations, using relative line numbers and/or
+  repeats)
 - **the command**: we need one fundamental targeting method that can bring you
   anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
   derivatives)
@@ -99,7 +111,7 @@ that you should type more than 3 characters altogether to reach a given target.
 
 ### Auxiliary principles
 
-- Optimize for the common case, not the pathological: a good example of this is
+- Optimize for the common case (not the pathological): a good example of this is
   the Sneak-like "one-character labels in multiple groups" approach (instead of
   using arbitrary-length labels), which can become awkward for, say, 200
   targets, but usually more comfortable, eliminates all kinds of edge cases and
@@ -466,7 +478,7 @@ function directly. The following arguments are available:
 specific call. E.g.:
 
 ```lua
-require('leap').leap { opts = { labels = {} } }`.
+require('leap').leap { opts = { labels = {} } }
 ```
 
 `offset`: Where to land with the cursor compared to the target position (-1, 0,
