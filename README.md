@@ -475,7 +475,9 @@ require('leap').leap { opts = { labels = {} } }`.
 `inclusive_op`: A flag indicating whether an operation should behave as
 inclusive (`:h inclusive`).
 
-`target_windows` allows you to pass in a list of windows (ID-s) to be searched.
+`backward`: Search backward instead of forward in the current window.
+
+`target_windows`: A list of windows (as `winid`s) to be searched.
 
 <details>
 <summary>Example: bidirectional and all-windows search</summary>

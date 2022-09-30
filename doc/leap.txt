@@ -397,6 +397,8 @@ leap({opts})                                                       *leap.leap()*
                  position (-1, 0, 1, 2).
                • inclusive_op: A flag indicating whether an operation should
                  behave as |inclusive|. 
+               • backward: Search backward instead of forward in the current
+                 window.
                • target_windows: A list of windows (as |winid|s) to be
                  searched.
                                                            *leap-custom-targets*
