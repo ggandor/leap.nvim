@@ -1,6 +1,6 @@
 local function setup(user_opts)
   for k, v in pairs(user_opts) do
-    require("leap.opts")[k] = v
+    require("leap.opts")["default"][k] = v
   end
   return nil
 end

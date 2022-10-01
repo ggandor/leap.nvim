@@ -2,7 +2,7 @@
 
 (fn setup [user-opts]
   (each [k v (pairs user-opts)]
-    (tset (require "leap.opts") k v)))
+    (tset (require "leap.opts") :default k v)))
 
 (fn set-default-keymaps [force?]
   (each [_ [mode lhs rhs]
