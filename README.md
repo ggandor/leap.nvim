@@ -29,24 +29,27 @@ will need to press _before_ you actually need to do that.
 
 ### Why is this method cool?
 
-It is ridiculously fast: most of the time you can reach the destination by 4
-keystrokes in total (often 3 is enough), that can be typed in one go.
+It is **ridiculously fast**: leaping to literally anywhere on the screen rarely
+takes more than 4 keystrokes in total, that can be typed in one go. Often 3 is
+enough.
 
-At the same time, it reduces mental effort to almost zero:
+At the same time, it **reduces mental effort to almost zero**:
 
-- You can rely on a single universal motion type in all non-trivial situations:
-  forget Vim golf, the subconscious weighing of alternatives, and composing
-  multiple commands for one logical movement.
+- You _don't have to weigh alternatives_: a single universal motion type can be
+  used in all non-trivial situations.
 
-- You can ignore the context: the eyes can keep focusing on the target the whole
-  time.
+- You _don't have to compose in your head_: one command achieves one logical
+  movement.
 
-- You don't have to make decisions on the fly: the sequence you should enter is
-  determined from the very beginning.
+- You _don't have to be aware of the context_: the eyes can keep focusing on the
+  target the whole time.
 
-- You don't have to react to events: at any step, you already know what the
-  immediate next keypress should be, and your mind can process the rest in the
-  background (if typing at a moderate speed).
+- You _don't have to make decisions on the fly_: the sequence you should enter
+  is determined from the very beginning.
+
+- You _don't have to pause in the middle_: if typing at a moderate speed, at
+  each step you already know what the immediate next keypress should be, and
+  your mind can process the rest in the background.
 
 ### Down the kangaroo hole
 
@@ -78,8 +81,7 @@ context-switching required by the latter.
 That is, **you do not want to think about**
 
 - **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations, using relative line numbers and/or
-  repeats)
+  (↔ vanilla Vim motion combinations using relative line numbers and/or repeats)
 - **the command**: we need one fundamental targeting method that can bring you
   anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
   derivatives)
@@ -678,5 +680,6 @@ vim.api.nvim_create_autocmd('User', {
 
 ## Plugins using Leap
 
-- [Leap-AST](https://github.com/ggandor/leap-ast.nvim)
+- [flit.nvim](https://github.com/ggandor/flit.nvim) (enhanced f/t motions)
+- [leap-ast.nvim](https://github.com/ggandor/leap-ast.nvim) (TreeSitter nodes)
 
