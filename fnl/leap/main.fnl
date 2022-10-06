@@ -201,7 +201,8 @@ char separately.
 (fn set-beacon-for-labeled [target {: user-given-targets? : aot?}]
   (let [offset (if aot? (get-label-offset target) 0)  ; user-given-targets implies (not aot)
         pad (if (or user-given-targets? aot?) "" " ")
-        text (.. target.label pad)
+        label (or (. opts.substitute_chars target.label) target.label)
+        text (.. label pad)
         virttext (match target.label-state
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
@@ -217,8 +218,10 @@ char separately.
 
 
 (fn set-beacon-to-match-hl [target]
-  (tset target :beacon
-        [0 [[(table.concat target.chars) hl.group.match]]]))
+  (local virttext (->> target.chars
+                       (map #(or (. opts.substitute_chars $) $))
+                       table.concat))
+  (tset target :beacon [0 [[virttext hl.group.match]]]))
 
 
 (fn set-beacon-to-empty-label [target]

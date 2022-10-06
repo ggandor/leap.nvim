@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 September 18
+Last change: 2022 October 06
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -182,7 +182,16 @@ Available options~
       '([{<',
       { '"', "'", '`' },
     }
-<
+< 
+                                                    *leap.opts.substitute_chars*
+`substitute_chars = {}`
+
+    The keys in this table will be substituted in labels and highlighted
+    matches by the given characters. This way special (e.g. whitespace)
+    characters can be made visible in matches, or even be used as labels.
+
+    Example: `{ ['\r'] = '¬' }`
+
                                                          *leap.opts.safe_labels*
 `safe_labels` >
     { "s", "f", "n", "u", "t", "/",

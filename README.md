@@ -417,6 +417,7 @@ require('leap').setup {
   -- Sets of characters that should match each other.
   -- Obvious candidates are braces and quotes ('([{', ')]}', '`"\'').
   equivalence_classes = { ' \t\r\n', },
+  substitute_chars = {},
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
