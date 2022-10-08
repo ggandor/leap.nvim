@@ -205,9 +205,15 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 
 
 <details>
-<summary>How to live without 's' and 'S'?</summary>
+<summary>I am too used to using `x` instead of `d` in Visual mode</summary>
 
-`s` = `cl`, `S` = `cc`.
+```lua
+-- After adding the defaults:
+vim.keymap.del({'x', 'o'}, 'x')
+vim.keymap.del({'x', 'o'}, 'X')
+vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-forward-till)')
+vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
+```
 
 </details>
 
@@ -224,10 +230,10 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 
 ### Installation
 
-Use your preferred plugin manager. No extra steps needed, besides optionally
-setting the default keymaps:
+Use your preferred plugin manager. No extra steps needed besides defining
+keybindings - to use the default ones, put the following into your config:
 
-`require('leap').set_default_keymaps()`
+`require('leap').add_default_mappings()`
 
 ## Usage
 
@@ -321,36 +327,26 @@ over another label (this might occur before EOL or the window edge, when the
 labels need to be shifted left), an "empty" label will be displayed until
 entering the second input.
 
-### Operator-pending mode
+### Visual and Operator-pending mode
 
-In Operator-pending mode, there are two different (pairs of) default motions
-available, providing the necessary additional comfort and precision, since in
-that case we are targeting exact positions, and can only aim once, without the
-means of easy correction.
+In these modes, there are two different pairs of default motions available,
+providing the necessary additional comfort and precision.
 
-`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and behave like `/` and
-`?`, that is, they are _exclusive_ motions (the end column is not included in
-the operation).
+`s`/`S` are like their Normal-mode counterparts, except that `s` includes _the
+whole match_ in the selection/operation (which might be considered the more
+intuitive behaviour for these modes).
 
-`x`/`X` provide missing variants for the two directions; the mnemonics could be
-e**x**tend/e**X**clude:
+On the other hand, `x`/`X` are like `t`/`T` for `f`/`F` - they exclude the
+matched pair:
 
 ```
 abcd|                    |bcde
-████e  ←  Zab    zde  →  ███de
-ab██e  ←  Xab    xde  →  █████
+████e  ←  Sab    sde  →  █████
+ab██e  ←  Xab    xde  →  ███de
 ```
 
-In the end, `x`/`X` both push the relevant edge of the operated area forward by
-2, but there is a subtlety here:
-
-`X` = +2
-
-`x` = +1 _inclusive_
-
-This is relevant when using the `v` modifier (`:h forced-motion`). `v` works as
-expected: for example, `vx` becomes an exclusive motion, while `vz` becomes
-inclusive (so ultimately they have equivalent results).
+Note that each of the forward motions are inclusive (`:h inclusive`), and the
+`v` modifier (`:h o_v`) works as expected on them.
 
 ### Jumping to the last character on a line
 
@@ -435,16 +431,70 @@ require('leap').setup {
 
 For details, see `:h leap-config`.
 
-### Keymaps
+### Mappings
 
-You can set the defaults keymaps (listed in `:h leap-default-keymaps`) by
-calling `require('leap').set_default_keymaps()`. Note that the function will
+You can add the default mappings (listed in `:h leap-default-mappings`) by
+calling `require('leap').add_default_mappings()`. Note that the function will
 check for conflicts with any custom mappings created by you or other plugins,
 and will not overwite them, unless explicitly told so (called with a `true`
 argument).
 
-To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
-leap-custom-keymaps`.
+To define alternative mappings, you can use the `<Plug>` keys listed in `:h
+leap-custom-mappings`.
+
+Note: To create custom motions, see [Extending Leap](#extending-leap) below.
+
+#### How to live without `s`/`S`/`x`/`X`?
+
+All of them have aliases or obvious equivalents:
+
+- `s` = `cl`
+- `S` = `cc`
+- `v_s` = `v_c`
+- `v_S` = `Vc` if not already in linewise mode (else = `v_c`)
+- `v_x` = `v_d`
+- `v_X` -> `vnoremap D X`, and use `$D` for vanilla `v_b_D` behaviour
+
+#### Suggested mappings for fundamental text editing plugins
+
+[vim-surround](https://github.com/tpope/vim-surround)
+
+It is a shame that there is only one `s` on the keyboard. That said, while
+"surround" functionality is absolutely essential, especially for structured
+text, it is still less so than Leap motions. You jump between arbitrary points
+all the time, even when writing plain-text prose, so it makes sense to take over
+the most comfortable keys.
+
+Also, vim-surround's default mappings are pretty inconsistent in the first
+place (to maintain compatibility with Vim defaults). Since we are taking over
+`s` and `S` anyway, we can come up with something simpler.
+
+The following scheme maps `y`/`s`/`S` to `g`/`z`/`Z`, and keeps using the same
+combos in Normal and Visual mode. (Note that `g` might even be an improvement
+over the confusing "yank" prefix.) The consistency of the changes make it a bit
+less difficult to retrain muscle memory. Mnemonic: "zurround" :)
+
+```
+let g:surround_no_mappings = 1
+nmap dz   <Plug>Dsurround
+nmap cz   <Plug>Csurround
+nmap cZ   <Plug>CSurround
+nmap gz   <Plug>Ysurround
+nmap gzz  <Plug>Yssurround
+nmap gZ   <Plug>YSurround
+nmap gZZ  <Plug>YSsurround
+xmap gz   <Plug>VSurround
+xmap gz   <Plug>VgSurround
+```
+
+Alternatively, you might try using `<leader>` as the prefix, and something
+similar to the vim-sandwich scheme (`<leader>s`, `<leader>sd`, `<leader>sr`,
+etc.).
+
+[vim-exchange](https://github.com/tommcdo/vim-exchange)
+
+`gx` (`gX`/`gxx`/etc.) is an obvious candidate (see
+[evil-exchange](https://github.com/Dewdrops/evil-exchange)).
 
 ### Highlight groups
 
