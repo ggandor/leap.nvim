@@ -225,9 +225,13 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 ### Installation
 
 Use your preferred plugin manager. No extra steps needed, besides optionally
-setting the default keymaps:
+setting the default keymaps. In your `init.lua`, this would be:
 
 `require('leap').set_default_keymaps()`
+
+and in your `init.vim`, this would be
+
+`lua require('leap').set_default_keymaps()`
 
 ## Usage
 
