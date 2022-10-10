@@ -4,7 +4,7 @@
 
 Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
 the ultimate goal of establishing a new standard interface for moving around in
-the visible editor area in Vim-like editors.
+the visible area in Vim-like modal editors.
 
 ![showcase](../media/showcase.gif?raw=true)
 
@@ -29,9 +29,9 @@ will need to press _before_ you actually need to do that.
 
 ### Why is this method cool?
 
-It is **ridiculously fast**: leaping to literally anywhere on the screen rarely
-takes more than 4 keystrokes in total, that can be typed in one go. Often 3 is
-enough.
+It is **ridiculously fast**: not counting the trigger key, leaping to literally
+anywhere on the screen rarely takes more than 3 keystrokes in total, that can be
+typed in one go. Often 2 is enough.
 
 At the same time, it **reduces mental effort to almost zero**:
 
@@ -101,15 +101,15 @@ the design space.
 
 The one-step shift between perception and action - that is, ahead-of-time
 labeling - cuts the Gordian knot: while the input sequence can be extended
-dynamically, to scale to any number of targets, it still behaves as if it would
-be an already known pattern, that you just have to type out. Leaping is like
-`/?` search on some kind of autopilot, where you know it in advance when to
-finish.
+dynamically, to scale to any number of targets (by adding new labeled groups you
+can switch to), it still behaves as if it would be an already known pattern,
+that you just have to type out. Leaping is like `/?` search on some kind of
+autopilot, where you know it in advance when to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
 play this trick - is also long enough to sufficiently narrow down the matches in
-the vast majority of cases (as opposed to just one character). It is very rare
-that you should type more than 3 characters altogether to reach a given target.
+the vast majority of cases. It is very rare that you should type more than 3
+characters altogether to reach a given target.
 
 ### Auxiliary principles
 
@@ -161,6 +161,12 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 ```lua
 -- Initiate multi-window mode with the current window as the only target:
 require('leap').leap { target_windows = { vim.fn.win_getid() } }
+
+-- Beware that the trade-off in this mode is that you always have to
+-- select a label, as there is no automatic jump to the first target (it
+-- would be very confusing if the cursor would suddenly jump in the
+-- opposite direction than your goal). Moreover, operations cannot be
+-- dot-repeated.
 ```
 
 </details>
@@ -173,7 +179,16 @@ require('leap').leap { target_windows = vim.tbl_filter(
   function (win) return vim.api.nvim_win_get_config(win).focusable end,
   vim.api.nvim_tabpage_list_wins(0)
 )}
+
+-- The same caveats as above about bidirectional search apply here.
 ```
+</details>
+
+<details>
+<summary>Enhanced f/t motions</summary>
+
+Check flit.nvim, an extension plugin for Leap.
+
 </details>
 
 <details>
@@ -198,7 +213,7 @@ require('leap').opts.safe_labels = {}
 <summary>Greying out the search area</summary>
 
 ```lua
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 ```
 
 </details>
@@ -224,14 +239,12 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = '#707070' })
 
 ### Installation
 
-Use your preferred plugin manager. No extra steps needed, besides optionally
-setting the default keymaps. In your `init.lua`, this would be:
+Use your preferred plugin manager. No extra steps needed, besides setting
+keybindings. To use the defaults, add the following line to your config:
 
-`require('leap').set_default_keymaps()`
+`require('leap').set_default_keymaps()` (init.lua)
 
-and in your `init.vim`, this would be
-
-`lua require('leap').set_default_keymaps()`
+`lua require('leap').set_default_keymaps()` (init.vim)
 
 ## Usage
 
@@ -244,18 +257,22 @@ direction. Let's target some word containing `ol`. After entering the letter
 `o`, the plugin processes all character pairs starting with it, and from here
 on, you have all the visual information you need to reach your specific target.
 
-To reach the unlabeled matches, just finish the pattern, i.e., type the second
-character. For the others, you also need to type the label character that is
-displayed right next to the match.
+To reach an unlabeled match, just finish the pattern, i.e., type the second
+character. (Note: the highlighting of unlabeled matches - green underlined on
+the screenshots - is opt-in, turned on for clarity here.) For the rest, you also
+need to type the label character that is displayed right next to the match.
 
 ![quick example 1](../media/quick_example_1.png?raw=true)
 
-Now type `l`. If you aimed for the first match (in `oldwin->w_frame`), you are
-good to go, just continue the work! (The labels for the subsequent matches of
-`ol` remain visible until the next keypress, but they are carefully chosen
-"safe" letters, guaranteed to not interfere with your following editing
-command.) If you aimed for some other match, then type the label, for example
-`u`, and move on to that.
+To continue with the example, type `l`.
+
+If you aimed for the first match (in `oldwin->w_frame`), you are good to go,
+just continue your work! The labels for the subsequent matches of `ol` remain
+visible until the next keypress, but they are carefully chosen "safe" letters,
+guaranteed to not interfere with your following editing command.
+
+If you aimed for some other match, then type the label, for example `u`, and
+move on to that.
 
 ![quick example 2](../media/quick_example_2.png?raw=true)
 
@@ -269,11 +286,12 @@ The blue labels indicate the "secondary" group of matches, where we start to
 reuse the available labels for a given pair (`s`, `f`, `n`... again). You can
 reach those by prefixing the label with `<space>`, that switches to the
 subsequent match group. For example, to jump to the "blue" `j` target, you
-should now press `r<space>j`. In very rare cases, if the large number of matches
-cannot be covered even by two label groups, you might need to press `<space>`
-multiple times, until you see the target labeled, first with blue, and then,
-after one more `<space>`, green. (Substitute "green" and "blue" with the actual
-colors in the current theme.)
+should now press `r<space>j`.
+
+In very rare cases, if the large number of matches cannot be covered even by two
+label groups, you might need to press `<space>` multiple times, until you see
+the target labeled, first with blue, and then, after one more `<space>`, green.
+(Substitute "green" and "blue" with the actual colors in the current theme.)
 
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
@@ -283,16 +301,17 @@ the default settings):
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
 - enter the first character of the search pattern
-    - _the "beacons" are lit at this point; all potential matches (char1 + ?)
+    - _the "beacons" are lit at this point; all potential matches (`{char1}?`)
       are labeled_
-- enter the second character of the search pattern (might short-circuit after
-  this, if there is only one match)
-    - _certain beacons are extinguished; only char1 + char2 matches remain_
-    - _the cursor automatically jumps to the first match if there are enough
-      "safe" labels; pressing any other key than a group-switch or a target
-      label exits the plugin now_
-- optionally cycle through the groups of matches that can be labeled at once
-- choose a labeled target to jump to (in the current group)
+- enter the second character of the search pattern (the plugin might
+  short-circuit here, if there is only one match)
+    - _certain beacons are extinguished; only `{char1}{char2}` matches remain_
+    - _the cursor have automatically jumped to the first match if there were
+      enough "safe" labels_ 
+    - _pressing any other key than a group-switch or a target label exits the
+      plugin now_
+- switch to the proper match group if necessary
+- choose a labeled target to jump to (in the active group)
 
 ### Smart autojump
 
@@ -408,9 +427,9 @@ previous jump(s) in case you accidentally overshoot your target.
 `setup` has no implicit side effects, it is just a convenience function for
 changing the values in the configuration table (which can also be accessed
 directly as `require('leap').opts`). There is no need to call it if you're
-fine with the defaults. Also note that table values are not extended, but simply
-overwritten by the given ones, so in many cases, it might be more
-straightforward to set `opts` directly.
+fine with the defaults. Also note that table values (like `special_keys`) are
+not extended, but simply overwritten by the given ones, so in many cases, it
+might be more straightforward to set `opts` directly.
 
 ```Lua
 require('leap').setup {
@@ -686,5 +705,5 @@ vim.api.nvim_create_autocmd('User', {
 ## Plugins using Leap
 
 - [flit.nvim](https://github.com/ggandor/flit.nvim) (enhanced f/t motions)
-- [leap-ast.nvim](https://github.com/ggandor/leap-ast.nvim) (TreeSitter nodes)
+- [leap-ast.nvim](https://github.com/ggandor/leap-ast.nvim) (Tree-sitter nodes)
 

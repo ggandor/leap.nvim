@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 October 06
+Last change: 2022 October 10
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -23,22 +23,26 @@ Command sequence in Normal mode, with the default settings:
 That is,
 
 - invoke in the forward (`s`) or backward (`S`) direction
+
 - enter the first character of the search pattern
 
-  | the "beacons" are lit at this point; all potential matches (`char1` + `?`)
+  | the "beacons" are lit at this point; all potential matches (`{char1}?`)
   | are labeled
 
-- enter the second character of the search pattern (might short-circuit after
-  this, if there is only one match)
+- enter the second character of the search pattern (the plugin might
+  short-circuit here, if there is only one match)
 
-  | certain beacons are extinguished; only `char1` + `char2` matches remain
+  | certain beacons are extinguished; only `{char1}{char2}` matches remain
 
-  | the cursor automatically jumps to the first match if there are enough
-  | "safe" labels (|leap-config|); pressing any other key than a group-switch
-  | or a target label exits the plugin now
+  | the cursor have automatically jumped to the first match if there were
+  | enough "safe" labels (|leap-config|)
 
-- optionally cycle through the groups of matches that can be labeled at once
-- choose a labeled target to jump to (in the current group)
+  | pressing any other key than a group-switch or a target label exits the
+  | plugin now
+
+- switch to the proper match group if necessary
+
+- choose a labeled target to jump to (in the active group)
 
                                        *leap-operator-pending-mode* *leap-z/Z/x/X*
 In Operator-pending mode, there are two different (pairs of) default motions
@@ -173,7 +177,7 @@ Available options~
     either be defined as strings or tables.
 
     Note: Make sure to define a set containing `\n` if you want to be able to
-    target characters at the end of the line. 
+    target characters at the end of the line.
 
     Example: >
     {
@@ -182,7 +186,7 @@ Available options~
       '([{<',
       { '"', "'", '`' },
     }
-< 
+<
                                                     *leap.opts.substitute_chars*
 `substitute_chars = {}`
 
@@ -405,7 +409,7 @@ leap({opts})                                                       *leap.leap()*
                • offset: Where to land with the cursor compared to the target
                  position (-1, 0, 1, 2).
                • inclusive_op: A flag indicating whether an operation should
-                 behave as |inclusive|. 
+                 behave as |inclusive|.
                • backward: Search backward instead of forward in the current
                  window.
                • target_windows: A list of windows (as |winid|s) to be
@@ -425,7 +429,7 @@ leap({opts})                                                       *leap.leap()*
                  `wininfo` field for each (|getwininfo()|). Targets can
                  represent anything with a position, like Tree-sitter nodes,
                  etc.
-                                                            *leap-custom-action* 
+                                                            *leap-custom-action*
                • action: A Lua function that will be executed by Leap in place
                  of the jump. (You could obviously implement some custom jump
                  logic here too.) Its only argument is either a target, or a
