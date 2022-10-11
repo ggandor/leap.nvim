@@ -234,6 +234,8 @@ Available options~
       prev_match     = {',', '<tab>'},
       next_group     = '<space>',
       prev_group     = '<tab>',
+      multi_accept   = '<enter>',
+      multi_revert   = '<backspace>',
     }
 <
     Keys captured by the plugin at runtime, to:
@@ -241,6 +243,8 @@ Available options~
     - jump to the next/previous match in traversal mode (|leap-traversal|)
     - switch to the next/previous group of matches, when there are more
       matches than labels available (|leap-usage|)
+    - accept the selection, and deselect the last selected target in
+      |leap-multiselect| mode
 
 ==============================================================================
 DEFAULT MAPPINGS                                         *leap-default-mappings*
@@ -298,12 +302,15 @@ Special keys~
 
 <enter>                 Repeat search with the previous input (after
                         invocation); jump to the next match in
-                        |leap-traversal| mode.
+                        |leap-traversal| mode; accept the selection in
+                        |leap-multiselect| mode.
 <space>                 Substitute for an EOL character (after the first
                         input); shift to the next group of labeled matches
                         (after the second input).
 <tab>                   Revert the previous jump (|leap-traversal| mode) or
                         the previous group shift.
+<backspace>             Deselect the last selected target in
+                        |leap-multiselect| mode.
 <esc>                   Exit Leap at any stage cleanly.
 
 ==============================================================================
@@ -459,7 +466,8 @@ leap({opts})                                                       *leap.leap()*
                • multiselect: A flag allowing for selecting multiple targets
                  for `action`. In this mode, you can just start picking labels
                  one after the other. You can revert the most recent pick with
-                 `<backspace>`, and accept the selection with `<enter>`.
+                 `<backspace>` (`special_keys.multi_revert`), and accept the
+                 selection with `<enter>` (`special_keys.multi_accept`).
 
                                                   *leap.state* *leap-runtime-args*
 Accessing the arguments passed to leap() ~
