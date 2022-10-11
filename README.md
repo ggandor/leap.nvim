@@ -226,6 +226,18 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 
 </details>
 
+<details>
+<summary>Was the name inspired by Jef Raskin's Leap?</summary>
+
+To paraphrase Steve Jobs, I wish it was, but it is a coincidence. "Leap" is just
+another synonym for "jump", that happens to rhyme with Sneak. That said, in some
+respects you can indeed think of leap.nvim as a spiritual successor to Raskin's
+work, and thus the name as a little tribute to the great pioneer of interface
+design, even though embracing the modal paradigm is a fundamental difference
+in our approach.
+
+</details>
+
 ## Getting started
 
 ### Requirements
