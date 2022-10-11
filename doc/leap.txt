@@ -1,14 +1,14 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 October 10
+Last change: 2022 October 11
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
 
   Usage ··························································· |leap-usage|
   Configuration ·················································· |leap-config|
-  Default keymaps ········································|leap-default-keymaps|
-  Custom keymaps ········································· |leap-custom-keymaps|
+  Default mappings ······································|leap-default-mappings|
+  Custom mappings ······································· |leap-custom-mappings|
   Highlighting ················································ |leap-highlight|
   Events ························································· |leap-events|
   Extending Leap ············································· |leap-extensions|
@@ -44,33 +44,25 @@ That is,
 
 - choose a labeled target to jump to (in the active group)
 
-                                       *leap-operator-pending-mode* *leap-z/Z/x/X*
-In Operator-pending mode, there are two different (pairs of) default motions
-available, providing the necessary additional comfort and precision, since in
-that case we are targeting exact positions, and can only aim once, without the
-means of easy correction.
+                                   *leap-visual-mode* *leap-operator-pending-mode*
+In these modes, there are two different pairs of default motions available,
+providing the necessary additional comfort and precision.
 
-`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and behave like `/` and
-`?`, that is, they are |exclusive| motions.
+`s`/`S` are like their Normal-mode counterparts, except that `s` includes the
+whole match in the selection/operation (which might be considered the more
+intuitive behaviour for these modes).
 
-`x`/`X` provide missing variants for the two directions; the mnemonics could
-be e(x)tend/e(X)clude:
+On the other hand, `x`/`X` are like `t`/`T` for `f`/`F` - they exclude the
+matched pair:
 
 ```
 abcd|                    |bcde
-████e  ←  Zab    zde  →  ███de
-ab██e  ←  Xab    xde  →  █████
+████e  ←  Sab    sde  →  █████
+ab██e  ←  Xab    xde  →  ███de
 ```
 
-In the end, `x`/`X` both push the relevant edge of the operated area forward
-by 2, but there is a subtlety here:
-
-`X` = +2
-`x` = +1 |inclusive|
-
-This is relevant when using the `v` modifier (|forced-motion|). `v` works as
-expected: for example, `vx` becomes an exclusive motion, while `vz` becomes
-inclusive (so ultimately they have equivalent results).
+Note that each of the forward motions are |inclusive|, and |o_v| works as
+expected on them.
 
                                                             *leap-match-newline*
 A character at the end of a line can be targeted by pressing `<space>` after it.
@@ -251,9 +243,10 @@ Available options~
       matches than labels available (|leap-usage|)
 
 ==============================================================================
-DEFAULT KEYMAPS                                           *leap-default-keymaps*
+DEFAULT MAPPINGS                                         *leap-default-mappings*
 
-The defaults can be set by calling `require('leap').set_default_keymaps()`.
+The defaults can be set by calling `require('leap').add_default_mappings()`.
+
 Note that the function will check for conflicts with any custom mappings
 created by you or other plugins, and will not overwite them, unless explicitly
 told so (called with a `true` argument).
@@ -261,63 +254,91 @@ told so (called with a `true` argument).
 Trigger keys~
 
 Normal mode
+                         
+                                                        *leap_s*
+s{char1}{char2}         Jump forward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor is placed on
+                        {char1}.
 
-s{char}{char}              Jump to the first character of {char}{char}
-                           in the forward direction.
-S{char}{char}              Jump to the first character of {char}{char}
-                           in the backward direction.
+                                                        *leap_S*
+S{char1}{char2}         Jump backward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor is placed on
+                        {char1}.
 
-Visual mode
+Visual and Operator-pending mode
+                                                        *leap_v_s* *leap_o_s*
+s{char1}{char2}         Jump forward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor is
+                        placed on {char2} |inclusive|.
 
-s{char}{char}              Extend visual selection up to and including the
-                           first character of {char}{char} in the forward
-                           direction.
-S{char}{char}              Extend visual selection up to and including the
-                           first character of {char}{char} in the backward
-                           direction.
+                                                        *leap_v_S* *leap_o_S*
+S{char1}{char2}         Jump backward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor
+                        is placed on {char1}.
 
-Operator-pending mode
+                                                        *leap_v_x* *leap_o_x*
+x{char1}{char2}         Jump forward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor is
+                        placed on the character preceding {char1}
+                        |inclusive|.
 
-{operator}z{char}{char}    Perform {operator} from the cursor up to the first
-                           character of {char}{char} in the forward direction.
-{operator}Z{char}{char}    Perform {operator} from the cursor up to and
-                           including the first character of {char}{char} in
-                           the backward direction. (|exclusive| motion: the
-                           cursor position is not included without |o_v|.)
+                                                        *leap_v_X* *leap_o_X*
+X{char1}{char2}         Jump backward to a labeled or [count]'th visible
+                        occurrence of {char1}{char2}. The cursor
+                        is placed on the character following {char2}.
 
-{operator}x{char}{char}    Perform {operator} from the cursor up to and
-                           including the second character of {char}{char} in
-                           the forward direction.
-{operator}X{char}{char}    Perform {operator} from the cursor up to the second
-                           character of {char}{char} in the backward
-                           direction. (|exclusive| motion: the cursor position
-                           is not included without |o_v|.)
+All modes
+                                                        *leap_gs*
+gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
+                        of the other windows on the tab page. The cursor is
+                        placed on {char1} |exclusive|.
+                        Mnemonic: "global search".
 
 Special keys~
 
-<enter>                    Repeat with the previous input (after invocation);
-                           jump to the next match in |leap-traversal| mode.
-<space>                    Substitute for an EOL character (after the first
-                           input); shift to the next group of labeled matches
-                           (after the second input).
-<tab>                      Revert the previous jump (|leap-traversal| mode) or
-                           the previous group shift.
-<esc>                      Exit Leap at any stage cleanly.
+<enter>                 Repeat search with the previous input (after
+                        invocation); jump to the next match in
+                        |leap-traversal| mode.
+<space>                 Substitute for an EOL character (after the first
+                        input); shift to the next group of labeled matches
+                        (after the second input).
+<tab>                   Revert the previous jump (|leap-traversal| mode) or
+                        the previous group shift.
+<esc>                   Exit Leap at any stage cleanly.
 
 ==============================================================================
-CUSTOM KEYMAPS                                             *leap-custom-keymaps*
+CUSTOM MAPPINGS                                           *leap-custom-mappings*
 
-<Plug> keys are aliases for right hand sides of mappings - in our case, Lua
-method calls. If you are not familiar with the concept, see |<Plug>| and
+<Plug> keys are aliases for right hand sides of mappings - in our case, calls
+to |leap.leap()|. If you are not familiar with the concept, see |<Plug>| and
 |using-<Plug>|.
 
-Available <Plug> keys:
+Available <Plug> keys (with their corresponding argument tables):
 
-*<Plug>(leap-forward)*        /-like (offset: 0; as operation: exclusive)
-*<Plug>(leap-backward)*       ?-like (offset: 0; as operation: exclusive)
-*<Plug>(leap-forward-x)*             (offset: 1; as operation: inclusive)
-*<Plug>(leap-backward-x)*            (offset: 2; as operation: exclusive)
+*<Plug>(leap-forward-to)*
+arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
+default mapping: `s`
+
+*<Plug>(leap-forward-till)*
+arguments: `{ offset = -1, inclusive_op = true }`
+default mapping: `x` (Visual and Operator-pending mode)
+
+*<Plug>(leap-backward-to)*
+arguments: `{ backward = true }`
+default mapping: `S`
+
+*<Plug>(leap-backward-till)*
+arguments: `{ backward = true, offset = 2 }`
+default mapping: `X` (Visual and Operator-pending mode)
+
 *<Plug>(leap-cross-window)*
+arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
+default mapping: `gs`
+
+Example: `vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward-to)')`
+
+For creating custom motions with behaviours different from the above, see
+|leap.leap()|.
 
 The keys for repeating the search, and for switching between groups of matches
 can be set via |leap.opts.special_keys|.
