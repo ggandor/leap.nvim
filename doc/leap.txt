@@ -1,10 +1,11 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 October 11
+Last change: 2022 October 12
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
 
+  Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
   Configuration ·················································· |leap-config|
   Default mappings ······································|leap-default-mappings|
@@ -14,39 +15,37 @@ CONTENTS                                               *leap.nvim* *leap-content
   Extending Leap ············································· |leap-extensions|
 
 ==============================================================================
+INTRODUCTION                                                 *leap-introduction*
+
+Leap allows you to jump to any positions in the visible window / tab page area
+by entering a 2-character search pattern, and then potentially a "label"
+character to choose among multiple matches, similar to Justin M. Keyes'
+vim-sneak plugin. The novel idea in Leap is its "clairvoyant" ability: it maps
+possible futures, and shows you which key(s) you will need to press _before_
+you actually need to do that.
+
+==============================================================================
 USAGE                                                               *leap-usage*
 
-Command sequence in Normal mode, with the default settings:
+- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
+  the other windows (`gs`).
+- Start typing a 2-character pattern (`{c1}{c2}`).
+- After typing the first character, you see "labels" appearing next to some of
+  the `{c1}{?}` pairs. You cannot _use_ the labels yet.
+- Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
+  No need to be bothered by remaining labels, just continue editing.
+- Else: select a label. In case of multiple groups, first switch to the desired
+  one, using `<space>` (step back with `<tab>`, if needed).
 
-`s|S char1 char2 <space>? (<space>|<tab>)* label?`
-
-That is,
-
-- invoke in the forward (`s`) or backward (`S`) direction
-
-- enter the first character of the search pattern
-
-  | the "beacons" are lit at this point; all potential matches (`{char1}?`)
-  | are labeled
-
-- enter the second character of the search pattern (the plugin might
-  short-circuit here, if there is only one match)
-
-  | certain beacons are extinguished; only `{char1}{char2}` matches remain
-
-  | the cursor have automatically jumped to the first match if there were
-  | enough "safe" labels (|leap-config|)
-
-  | pressing any other key than a group-switch or a target label exits the
-  | plugin now
-
-- switch to the proper match group if necessary
-
-- choose a labeled target to jump to (in the active group)
+                                                             *leap-cross-window*
+`gs` searches in all the other windows on the tab page. In this case, the
+matches are sorted by their screen distance from the cursor, advancing in
+concentric circles.
 
                                    *leap-visual-mode* *leap-operator-pending-mode*
-In these modes, there are two different pairs of default motions available,
-providing the necessary additional comfort and precision.
+In Visual and Operator-pending mode, there are two different pairs of
+directional motions available, providing the necessary additional comfort and
+precision.
 
 `s`/`S` are like their Normal-mode counterparts, except that `s` includes the
 whole match in the selection/operation (which might be considered the more
@@ -69,11 +68,6 @@ A character at the end of a line can be targeted by pressing `<space>` after it.
 (There is no special mechanism behind this: you can set aliases for the
 newline character simply by defining a set in |leap.opts.equivalence_classes|
 that contains it.)
-
-                                                             *leap-cross-window*
-`gs` searches in all the other windows on the tab page. In this case, the
-matches are sorted by their screen distance from the cursor, advancing in
-concentric circles.
 
                                                                    *leap-repeat*
 Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
@@ -285,18 +279,20 @@ x{char1}{char2}         Jump forward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is
                         placed on the character preceding {char1}
                         |inclusive|.
+                        Mnemonic: "exclusive (s)".
 
                                                         *leap_v_X* *leap_o_X*
 X{char1}{char2}         Jump backward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor
                         is placed on the character following {char2}.
+                        Mnemonic: "eXclusive (S)".
 
 All modes
                                                         *leap_gs*
 gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
                         placed on {char1} |exclusive|.
-                        Mnemonic: "global search".
+                        Mnemonic: "global (s)".
 
 Special keys~
 
@@ -328,7 +324,7 @@ default mapping: `s`
 
 *<Plug>(leap-forward-till)*
 arguments: `{ offset = -1, inclusive_op = true }`
-default mapping: `x` (Visual and Operator-pending mode)
+default mapping: `x` (Visual and Operator-pending mode only)
 
 *<Plug>(leap-backward-to)*
 arguments: `{ backward = true }`
@@ -336,7 +332,7 @@ default mapping: `S`
 
 *<Plug>(leap-backward-till)*
 arguments: `{ backward = true, offset = 2 }`
-default mapping: `X` (Visual and Operator-pending mode)
+default mapping: `X` (Visual and Operator-pending mode only)
 
 *<Plug>(leap-cross-window)*
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
@@ -378,8 +374,10 @@ liking (using |nvim_set_hl()|):
     *LeapBackdrop*
         In some cases it might be useful or even necessary to apply certain
         settings on the rest of the area, like disabling all `gui` attributes,
-        or adding a uniform grey foreground color, to make the Leap matches
-        and labels more distinguishable.
+        or adding a uniform grey foreground color, to make Leap matches and
+        labels more distinguishable. This group is not set by default.
+
+Example: `vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = 'grey' })`
 
 In order to preserve your custom settings after changing the colorscheme, you
 might want to wrap them in a function, and define an autocommand like below.

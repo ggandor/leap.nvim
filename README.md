@@ -103,8 +103,8 @@ The one-step shift between perception and action - that is, ahead-of-time
 labeling - cuts the Gordian knot: while the input sequence can be extended
 dynamically, to scale to any number of targets (by adding new labeled groups you
 can switch to), it still behaves as if it would be an already known pattern,
-that you just have to type out. Leaping is like `/?` search on some kind of
-autopilot, where you know it in advance when to finish.
+that you just have to type out. Leaping is like incremental search on some kind
+of autopilot, where you know it in advance when to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
 play this trick - is also long enough to sufficiently narrow down the matches in
@@ -121,7 +121,7 @@ characters altogether to reach a given target.
   [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
-  build on the native interface, and aim for synergy as much as possible. The
+  build on Vim's native interface, and aim for synergy as much as possible. The
   plugin supports macros, operators, dot-repeat (`.`), inclusive/exclusive
   toggle (`v`), multibyte text and
   [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
@@ -159,14 +159,19 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 <summary>Bidirectional search</summary>
 
 ```lua
--- Initiate multi-window mode with the current window as the only target:
-require('leap').leap { target_windows = { vim.fn.win_getid() } }
-
 -- Beware that the trade-off in this mode is that you always have to
 -- select a label, as there is no automatic jump to the first target (it
 -- would be very confusing if the cursor would suddenly jump in the
--- opposite direction than your goal). Moreover, operations cannot be
--- dot-repeated.
+-- opposite direction than your goal). Former vim-sneak users will know
+-- how awesome a feature that is. I really suggest trying out the plugin
+-- with the defaults for a while first.
+-- An additional disadvantage is that operations cannot be dot-repeated
+-- if the search is non-directional.
+
+-- Now that you have carefully considered my wise advice above, I'll
+-- tell you the simple trick: just initiate multi-window mode with the
+-- current window as the only target.
+require('leap').leap { target_windows = { vim.fn.win_getid() } }
 ```
 
 </details>
@@ -175,12 +180,12 @@ require('leap').leap { target_windows = { vim.fn.win_getid() } }
 <summary>Search in all windows</summary>
 
 ```lua
+-- The same caveats as above about bidirectional search apply here.
+
 require('leap').leap { target_windows = vim.tbl_filter(
   function (win) return vim.api.nvim_win_get_config(win).focusable end,
   vim.api.nvim_tabpage_list_wins(0)
 )}
-
--- The same caveats as above about bidirectional search apply here.
 ```
 </details>
 
@@ -236,10 +241,13 @@ All of them have aliases or obvious equivalents:
 <summary>I am too used to using `x` instead of `d` in Visual mode</summary>
 
 ```lua
--- After adding the defaults:
+-- Getting used to `d` shouldn't take long - after all, it is more comfortable
+-- than `x`, and even has a better mnemonic.
+-- If you still desperately want your old `x` back, then just delete these
+-- mappings set by Leap:
 vim.keymap.del({'x', 'o'}, 'x')
 vim.keymap.del({'x', 'o'}, 'X')
--- If you still want "exclusive" selection:
+-- To set alternative keys for "exclusive" selection:
 vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-forward-till)')
 vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
 ```
@@ -325,60 +333,15 @@ label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, green.
 (Substitute "green" and "blue" with the actual colors in the current theme.)
 
-To summarize, here is the general flow again (in Normal and Visual mode, with
-the default settings):
+### Cross-window motions
 
-`s|S char1 char2 <space>? (<space>|<tab>)* label?`
-
-That is,
-- invoke in the forward (`s`) or backward (`S`) direction
-- enter the first character of the search pattern
-    - _the "beacons" are lit at this point; all potential matches (`{char1}?`)
-      are labeled_
-- enter the second character of the search pattern (the plugin might
-  short-circuit here, if there is only one match)
-    - _certain beacons are extinguished; only `{char1}{char2}` matches remain_
-    - _the cursor have automatically jumped to the first match if there were
-      enough "safe" labels_ 
-    - _pressing any other key than a group-switch or a target label exits the
-      plugin now_
-- switch to the proper match group if necessary
-- choose a labeled target to jump to (in the active group)
-
-### Smart autojump
-
-Leap automatically jumps to the first match if the remaining matches can be
-covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended, more comfortable
-label set otherwise. For fine-tuning, see `:h leap-config`.
-
-<details>
-<summary>Rationale</summary>
-
-The reasoning behind this is that the probability of the user aiming for the
-very first target lessens with the number of targets; at the same time, the
-probability of being able to reach the first target by other means (`www`, `f`,
-etc.) increases. That is, staying in place in exchange for more comfortable
-labels becomes a more and more acceptable trade-off.
-
-Smart autojump gives the best of both worlds between Sneak (jumps
-unconditionally, can only use a seriously limited label set) and Hop (labels
-everything, always requires that one extra keystroke).
-
-</details>
-
-### Resolving highlighting conflicts in the first phase
-
-If a directly reachable match covers a label, the match will get highlighted
-(telling the user, "Label underneath!"), and the label will only be displayed
-after the second input, that resolves the ambiguity. If a label gets positioned
-over another label (this might occur before EOL or the window edge, when the
-labels need to be shifted left), an "empty" label will be displayed until
-entering the second input.
+`gs` searches in all the other windows on the tab page. In this case, the
+matches are sorted by their screen distance from the cursor, advancing in
+concentric circles.
 
 ### Visual and Operator-pending mode
 
-In these modes, there are two different pairs of default motions available,
+In these modes, there are two different pairs of directional motions available,
 providing the necessary additional comfort and precision.
 
 `s`/`S` are like their Normal-mode counterparts, except that `s` includes _the
@@ -403,12 +366,6 @@ A character at the end of a line can be targeted by pressing `<space>` after it.
 (There is no special mechanism behind this: you can set aliases for the newline
 character simply by defining a set in `opts.equivalence_classes` that contains
 it.)
-
-### Cross-window motions
-
-`gs` searches in all the other windows on the tab page. In this case, the
-matches are sorted by their screen distance from the cursor, advancing in
-concentric circles.
 
 ### Repeating the previous search
 
@@ -443,6 +400,32 @@ previous jump(s) in case you accidentally overshoot your target.
 
 - For cross-window search, traversal mode is not supported (since there's no
   direction to follow).
+
+### Resolving highlighting conflicts in the first phase
+
+If a directly reachable match covers a label, the match will get highlighted
+(telling the user, "Label underneath!"), and the label will only be displayed
+after the second input, that resolves the ambiguity. If a label gets positioned
+over another label (this might occur before EOL or the window edge, when the
+labels need to be shifted left), an "empty" label will be displayed until
+entering the second input.
+
+### Smart autojump
+
+Leap automatically jumps to the first match if the remaining matches can be
+covered by a limited set of "safe" target labels (keys you would not use right
+after a jump), but stays in place, and switches to an extended, more comfortable
+label set otherwise. For fine-tuning, see `:h leap-config`.
+
+The rationale behind this is that the probability of the user aiming for the
+very first target lessens with the number of targets; at the same time, the
+probability of being able to reach the first target by other means (`www`, `f`,
+etc.) increases. That is, staying in place in exchange for more comfortable
+labels becomes a more and more acceptable trade-off.
+
+Smart autojump gives the best of both worlds between Sneak (jumps
+unconditionally, can only use a seriously limited label set) and Hop (labels
+everything, always requires that one extra keystroke).
 
 ## Configuration
 
