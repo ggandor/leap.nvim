@@ -252,7 +252,7 @@ local function set_beacon_for_labeled(target, _43_)
     elseif (_47_ == "active-secondary") then
       virttext = {{text, hl.group["label-secondary"]}}
     elseif (_47_ == "inactive") then
-      if (aot_3f and not opts.highlight_unlabeled) then
+      if (aot_3f and not opts.highlight_unlabeled_phase_one_targets) then
         virttext = {{(" " .. pad), hl.group["label-secondary"]}}
       elseif "else" then
         virttext = nil
@@ -355,7 +355,7 @@ local function set_beacons(targets, _65_)
     for _, target in ipairs(targets) do
       if target.label then
         set_beacon_for_labeled(target, {["user-given-targets?"] = user_given_targets_3f, ["aot?"] = aot_3f})
-      elseif (aot_3f and opts.highlight_unlabeled) then
+      elseif (aot_3f and opts.highlight_unlabeled_phase_one_targets) then
         set_beacon_to_match_hl(target)
       else
       end
@@ -475,7 +475,7 @@ local function leap(kwargs)
     count = vim.v.count
   end
   local force_noautojump_3f = (op_mode_3f or multi_select_3f or not directional_3f or user_given_action)
-  local max_aot_targets = (opts.max_aot_targets or math.huge)
+  local max_phase_one_targets = (opts.max_phase_one_targets or math.huge)
   local user_given_targets_3f = user_given_targets
   local prompt = {str = ">"}
   local spec_keys
@@ -483,7 +483,7 @@ local function leap(kwargs)
     local _86_ = opts.special_keys[k]
     if (nil ~= _86_) then
       local v = _86_
-      if ((k == "next_match") or (k == "prev_match")) then
+      if ((k == "next_target") or (k == "prev_target")) then
         local _87_ = type(v)
         if (_87_ == "table") then
           local tbl_15_auto = {}
@@ -520,7 +520,7 @@ local function leap(kwargs)
     return
   else
   end
-  local aot_3f = not ((max_aot_targets == 0) or count or no_labels_3f or multi_select_3f or user_given_targets_3f)
+  local aot_3f = not ((max_phase_one_targets == 0) or count or no_labels_3f or multi_select_3f or user_given_targets_3f)
   local current_idx = 0
   local function echo_not_found(s)
     return echo(("not found: " .. s))
@@ -732,7 +732,7 @@ local function leap(kwargs)
     end
   end
   local function get_second_pattern_input(targets)
-    if (#targets <= max_aot_targets) then
+    if (#targets <= max_phase_one_targets) then
       hl:cleanup(hl_affected_windows)
       if not count then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
@@ -924,9 +924,9 @@ local function leap(kwargs)
     if (nil ~= _160_) then
       local input = _160_
       local _162_
-      if contains_3f(spec_keys.next_match, input) then
+      if contains_3f(spec_keys.next_target, input) then
         _162_ = min(inc(idx), #targets)
-      elseif contains_3f(spec_keys.prev_match, input) then
+      elseif contains_3f(spec_keys.prev_target, input) then
         _162_ = max(dec(idx), 1)
       else
         _162_ = nil
@@ -998,7 +998,7 @@ local function leap(kwargs)
             local _179_ = ...
             if (nil ~= _179_) then
               local in2 = _179_
-              if ((in2 == spec_keys.next_aot_match) and directional_3f) then
+              if ((in2 == spec_keys.next_phase_one_target) and directional_3f) then
                 local in20 = targets[1].chars[2]
                 update_repeat_state({in1 = in1, in2 = in20})
                 do_action(targets[1])
@@ -1100,7 +1100,7 @@ local function leap(kwargs)
                       local _192_ = post_pattern_input_loop(targets_2a)
                       if (nil ~= _192_) then
                         local in_final = _192_
-                        if (contains_3f(spec_keys.next_match, in_final) and directional_3f) then
+                        if (contains_3f(spec_keys.next_target, in_final) and directional_3f) then
                           if (op_mode_3f or user_given_action) then
                             return exit_with_action(1)
                           else
@@ -1208,7 +1208,7 @@ local function leap(kwargs)
                   prepare_targets(sublist)
                 end
               end
-              if (#targets > max_aot_targets) then
+              if (#targets > max_phase_one_targets) then
                 aot_3f = false
               else
               end

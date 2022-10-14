@@ -207,7 +207,7 @@ char separately.
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (if (and aot? (not opts.highlight_unlabeled))
+                   :inactive (if (and aot? (not opts.highlight_unlabeled_phase_one_targets))
                                  ; In this case, "no highlight" should
                                  ; unambiguously signal "no further keystrokes
                                  ; needed", so it is mandatory to show all labeled
@@ -271,7 +271,7 @@ where labels need to be shifted left).
             (if target.label
                 (set-beacon-for-labeled target {: user-given-targets? : aot?})
 
-                (and aot? opts.highlight_unlabeled)
+                (and aot? opts.highlight_unlabeled_phase_one_targets)
                 (set-beacon-to-match-hl target)))
           (when aot?
             (resolve-conflicts targets)))))
@@ -352,13 +352,13 @@ where labels need to be shifted left).
                               multi-select?       ; likewise
                               (not directional?)  ; potentially disorienting
                               user-given-action)  ; no jump, doing sg else
-        max-aot-targets (or opts.max_aot_targets math.huge)
+        max-phase-one-targets (or opts.max_phase_one_targets math.huge)
         user-given-targets? user-given-targets
         prompt {:str ">"}  ; pass by reference hack (for input fns)
         spec-keys (setmetatable {}
                     {:__index (fn [_ k]
                                 (match (. opts.special_keys k)
-                                  v (if (or (= k :next_match) (= k :prev_match))
+                                  v (if (or (= k :next_target) (= k :prev_target))
                                         ; Force those into a table.
                                         (match (type v)
                                           :table (icollect [_ str (ipairs v)]
@@ -375,7 +375,7 @@ where labels need to be shifted left).
 
     ; Show beacons (labels & match highlights) ahead of time,
     ; right after the first input?
-    (var aot? (not (or (= max-aot-targets 0)
+    (var aot? (not (or (= max-phase-one-targets 0)
                        count
                        no-labels?
                        multi-select?
@@ -527,7 +527,7 @@ where labels need to be shifted left).
         in1 in1))
 
     (fn get-second-pattern-input [targets]
-      (when (<= (length targets) max-aot-targets)
+      (when (<= (length targets) max-phase-one-targets)
         (with-highlight-chores (light-up-beacons targets)))
       (or (get-input-by-keymap prompt) (exit-early)))
 
@@ -596,8 +596,8 @@ where labels need to be shifted left).
           (light-up-beacons targets start end)))
       (match (or (get-input) (exit))
         input
-        (match (if (contains? spec-keys.next_match input) (min (inc idx) (length targets))
-                   (contains? spec-keys.prev_match input) (max (dec idx) 1))
+        (match (if (contains? spec-keys.next_target input) (min (inc idx) (length targets))
+                   (contains? spec-keys.prev_target input) (max (dec idx) 1))
           new-idx (do
                     ; We need to update the repeat state continuously, in case
                     ; we have entered traversal mode after the first input
@@ -651,7 +651,7 @@ where labels need to be shifted left).
                         (do (populate-sublists targets)
                             (each [_ sublist (pairs targets.sublists)]
                               (prepare-targets sublist))))
-                    (when (> (length targets) max-aot-targets)
+                    (when (> (length targets) max-phase-one-targets)
                       (set aot? false))
                     (or ?in2
                         (do (doto targets
@@ -660,7 +660,7 @@ where labels need to be shifted left).
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
-            (and (= in2 spec-keys.next_aot_match) directional?)
+            (and (= in2 spec-keys.next_phase_one_target) directional?)
             (let [in2 (. targets 1 :chars 2)]
               (update-repeat-state {: in1 : in2})
               (do-action (. targets 1))
@@ -692,7 +692,7 @@ where labels need to be shifted left).
                               in-final
                               (if
                                 ; Jump to the first match on the [rest of the] target list?
-                                (and (contains? spec-keys.next_match in-final) directional?)
+                                (and (contains? spec-keys.next_target in-final) directional?)
                                 (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (inc current-idx)]
                                       (do-action (. targets* new-idx))

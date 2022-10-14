@@ -1,9 +1,9 @@
 (local current_call {})  ; will be updated by `leap` on invocation
 
 (local default
-       {:max_aot_targets nil
+       {:max_phase_one_targets nil
+        :highlight_unlabeled_phase_one_targets false
         :max_highlighted_traversal_targets 10
-        :highlight_unlabeled false
         :case_sensitive false
         :equivalence_classes [" \t\r\n"]
         :substitute_chars {}
@@ -16,9 +16,9 @@
                  "J" "K" "L" "H" "O" "D" "W" "E" "M" "B"
                  "U" "Y" "V" "R" "G" "T" "C" "X" "?" "Z"]
         :special_keys {:repeat_search "<enter>"
-                       :next_aot_match "<enter>"
-                       :next_match [";" "<enter>"]
-                       :prev_match ["," "<tab>"]
+                       :next_phase_one_target "<enter>"
+                       :next_target ["<enter>" ";"]
+                       :prev_target ["<tab>" ","]
                        :next_group "<space>"
                        :prev_group "<tab>"
                        :multi_accept "<enter>"

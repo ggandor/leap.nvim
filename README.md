@@ -375,9 +375,9 @@ motions sets the search pattern to the previous one.
 ### Traversal mode
 
 After entering at least one input character, `<enter>`
-(`special_keys.next_aot_match`) initiates "traversal" mode, moving on to the
-next match on each keypress. `<tab>` (`special_keys.prev_match`) can revert the
-previous jump(s) in case you accidentally overshoot your target.
+(`special_keys.next_phase_one_target`) initiates "traversal" mode, moving on to
+the next match on each keypress. `<tab>` (`special_keys.prev_target`) can revert
+the previous jump(s) in case you accidentally overshoot your target.
 
 `s|S ch1 ch2? <enter> (<enter>|<tab>)*`
 
@@ -438,8 +438,8 @@ might be more straightforward to set `opts` directly.
 
 ```Lua
 require('leap').setup {
-  max_aot_targets = nil,
-  highlight_unlabeled = false,
+  max_phase_one_targets = nil,
+  highlight_unlabeled_phase_one_targets = false,
   max_highlighted_traversal_targets = 10,
   case_sensitive = false,
   -- Sets of characters that should match each other.
@@ -451,14 +451,14 @@ require('leap').setup {
   safe_labels = { . . . },
   labels = { . . . },
   special_keys = {
-    repeat_search  = '<enter>',
-    next_aot_match = '<enter>',
-    next_match     = {';', '<enter>'}
-    prev_match     = {',', '<tab>'}
-    next_group     = '<space>',
-    prev_group     = '<tab>',
-    multi_accept   = '<enter>',
-    multi_revert   = '<backspace>',
+    repeat_search = '<enter>',
+    next_phase_one_target = '<enter>',
+    next_target = {'<enter>', ';'},
+    prev_target = {'<tab>', ','},
+    next_group = '<space>',
+    prev_group = '<tab>',
+    multi_accept = '<enter>',
+    multi_revert = '<backspace>',
   },
 }
 ```

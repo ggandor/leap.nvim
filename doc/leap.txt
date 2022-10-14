@@ -75,9 +75,9 @@ motions sets the search pattern to the previous one.
 
                                                                 *leap-traversal*
 After entering at least one input character, `<enter>`
-(`special_keys.next_aot_match`) initiates "traversal" mode, moving on to the
-next match on each keypress. `<tab>` (`special_keys.prev_match`) can revert
-the previous jump(s) in case you accidentally overshoot your target.
+(`special_keys.next_phase_one_target`) initiates "traversal" mode, moving on
+to the next match on each keypress. `<tab>` (`special_keys.prev_target`) can
+revert the previous jump(s) in case you accidentally overshoot your target.
 
 `s|S ch1 ch2? <enter> (<enter>|<tab>)*`
 
@@ -122,28 +122,28 @@ Setting multiple options via the `setup` function: >
 
 Available options~
 
-                                                     *leap.opts.max_aot_targets*
-`max_aot_targets = nil`
+                                               *leap.opts.max_phase_one_targets*
+`max_phase_one_targets = nil`
 
     By default, the plugin shows labels and/or highlights matches right after
     the first input character. This option disables ahead-of-time displaying
-    of target beacons beyond a certain number of phase 1 targets (to mitigate
-    visual noise in extreme cases). Setting it to 0 disables two-step
-    processing altogether.
+    of target beacons beyond a certain number of phase one targets (to
+    mitigate visual noise in extreme cases). Setting it to 0 disables
+    two-phase processing altogether.
 
     Note: If this option is set to some non-zero number, and there are
-    `safe_labels` (i.e., autojump is possible), enabling `highlight_unlabeled`
-    might be helpful: then you can be sure whether you will jump to the target
-    automatically at the next keypress or you should prepare for some label to
-    appear.
+    `safe_labels` (i.e., autojump is possible), enabling
+    `highlight_unlabeled_phase_one_targets` might be helpful: then you can be
+    sure whether you will jump to the target automatically at the next
+    keypress or you should prepare for some label to appear.
 
-                                                 *leap.opts.highlight_unlabeled*
-`highlight_unlabeled = false`
+                               *leap.opts.highlight_unlabeled_phase_one_targets*
+`highlight_unlabeled_phase_one_targets = false`
 
     Whether to highlight all unlabeled matches. (Matches covering labels will
     get highlighted anyway.)
 
-    Note: This is only relevant if `max_aot_targets` is not 0.
+    Note: This is only relevant if `max_phase_one_targets` is not 0.
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
@@ -223,13 +223,13 @@ Available options~
 `special_keys` >
     {
       repeat_search  = '<enter>',
-      next_aot_match = '<enter>',
-      next_match     = {';', '<enter>'},
-      prev_match     = {',', '<tab>'},
-      next_group     = '<space>',
-      prev_group     = '<tab>',
-      multi_accept   = '<enter>',
-      multi_revert   = '<backspace>',
+      next_phase_one_target = '<enter>',
+      next_target = {'<enter>', ';'},
+      prev_target = {'<tab>', ','},
+      next_group = '<space>',
+      prev_group = '<tab>',
+      multi_accept = '<enter>',
+      multi_revert = '<backspace>',
     }
 <
     Keys captured by the plugin at runtime, to:
