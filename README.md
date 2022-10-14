@@ -448,13 +448,13 @@ require('leap').setup {
   substitute_chars = {},
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
-  safe_labels = { . . . },
-  labels = { . . . },
+  safe_labels = {},
+  labels = {},
   special_keys = {
     repeat_search  = '<enter>',
     next_aot_match = '<enter>',
-    next_match     = {';', '<enter>'}
-    prev_match     = {',', '<tab>'}
+    next_match     = {';', '<enter>'},
+    prev_match     = {',', '<tab>'},
     next_group     = '<space>',
     prev_group     = '<tab>',
     multi_accept   = '<enter>',
