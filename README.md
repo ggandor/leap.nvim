@@ -10,12 +10,13 @@ the visible area in Vim-like modal editors.
 
 ### How to use it (TL;DR)
 
-Leap allows you to jump to any positions in the visible window / tab page area
-by entering a 2-character search pattern, and then potentially a "label"
-character to choose among multiple matches, similar to
+Leap allows you to jump to any positions in the visible editor area by entering
+a 2-character search pattern, and then potentially a "label" character to pick
+your target from multiple matches, similar to
 [Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
-"clairvoyant" ability: it maps possible futures, and shows you which key(s) you
-will need to press _before_ you actually need to do that.
+"clairvoyant" ability: you get a **live preview** of the target labels - by
+mapping possible futures, Leap shows you which key(s) you will need to press
+_before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -114,10 +115,10 @@ characters altogether to reach a given target.
 ### Auxiliary principles
 
 - Optimize for the common case (not the pathological): a good example of this is
-  the Sneak-like "one-character labels in multiple groups" approach (instead of
-  using arbitrary-length labels), which can become awkward for, say, 200
-  targets, but usually more comfortable, eliminates all kinds of edge cases and
-  implementation problems, and allows for features like
+  the Sneak-like "one-character labels and multiple groups"-approach (instead of
+  multi-character labels and no groups, EasyMotion-style), which can become
+  awkward for, say, 200 targets, but usually more comfortable, eliminates all
+  kinds of edge cases and implementation problems, and allows for features like
   [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
@@ -224,6 +225,24 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 </details>
 
 <details>
+<summary>Lightspeed-style highlighting</summary>
+
+```lua
+-- The below settings make Leap's highlighting a bit closer to what you've been
+-- used to in Lightspeed.
+
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
+vim.api.nvim_set_hl(0, 'LeapMatch', {
+  fg = 'white',  -- for light themes, set to 'black' or similar
+  bold = true,
+  nocombine = true,
+})
+require('leap').opts.highlight_unlabeled_phase_one_targets = true
+```
+
+</details>
+
+<details>
 <summary>How to live without `s`/`S`/`x`/`X`?</summary>
 
 All of them have aliases or obvious equivalents:
@@ -297,12 +316,12 @@ direction. Let's target some word containing `ol`. After entering the letter
 `o`, the plugin processes all character pairs starting with it, and from here
 on, you have all the visual information you need to reach your specific target.
 
+![quick example 1](../media/quick_example_1.png?raw=true)
+
 To reach an unlabeled match, just finish the pattern, i.e., type the second
 character. (Note: the highlighting of unlabeled matches - green underlined on
 the screenshots - is opt-in, turned on for clarity here.) For the rest, you also
 need to type the label character that is displayed right next to the match.
-
-![quick example 1](../media/quick_example_1.png?raw=true)
 
 To continue with the example, type `l`.
 
@@ -311,10 +330,10 @@ just continue your work! The labels for the subsequent matches of `ol` remain
 visible until the next keypress, but they are carefully chosen "safe" letters,
 guaranteed to not interfere with your following editing command.
 
+![quick example 2](../media/quick_example_2.png?raw=true)
+
 If you aimed for some other match, then type the label, for example `u`, and
 move on to that.
-
-![quick example 2](../media/quick_example_2.png?raw=true)
 
 To show the last important feature, let's go back to the start position, and
 target the struct member on the line `available = oldwin->w_frame->fr_height;`
@@ -387,7 +406,7 @@ the previous jump(s) in case you accidentally overshoot your target.
   `s<enter><enter>...`
 
 - Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `dz{char}<enter>`).
+  operator-pending mode (e.g. `ds{char}<enter>`).
 
 - Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
   `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
@@ -401,7 +420,7 @@ the previous jump(s) in case you accidentally overshoot your target.
 - For cross-window search, traversal mode is not supported (since there's no
   direction to follow).
 
-### Resolving highlighting conflicts in the first phase
+### Resolving highlighting conflicts in phase one
 
 If a directly reachable match covers a label, the match will get highlighted
 (telling the user, "Label underneath!"), and the label will only be displayed
@@ -430,8 +449,8 @@ everything, always requires that one extra keystroke).
 ## Configuration
 
 Below is a list of all configurable values in the `opts` table, with their
-default values. Set them like: `require('leap').opts.<key> = <value>`. For
-details on the particular fields, see `:h leap-config`.
+defaults. Set them like: `require('leap').opts.<key> = <value>`. For details on
+the particular fields, see `:h leap-config`.
 
 ```Lua
 max_phase_one_targets = nil

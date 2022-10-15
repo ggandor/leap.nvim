@@ -17,12 +17,14 @@ CONTENTS                                               *leap.nvim* *leap-content
 ==============================================================================
 INTRODUCTION                                                 *leap-introduction*
 
-Leap allows you to jump to any positions in the visible window / tab page area
-by entering a 2-character search pattern, and then potentially a "label"
-character to choose among multiple matches, similar to Justin M. Keyes'
-vim-sneak plugin. The novel idea in Leap is its "clairvoyant" ability: it maps
-possible futures, and shows you which key(s) you will need to press _before_
-you actually need to do that.
+Leap is a motion plugin that allows you to jump to any positions in the
+visible editor area by entering a 2-character search pattern, and then
+potentially a "label" character to select your target from multiple matches,
+similar to Justin M. Keyes' Sneak plugin. The novel idea in Leap is its
+"clairvoyant" ability: you get a live preview of the target labels - by
+mapping possible futures, Leap shows you which key(s) you will need to press
+_before_ you actually need to do that, resulting in a much more frictionless
+experience.
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -87,7 +89,7 @@ Tips:
   `s|S <enter> <enter> ...`
 
 - Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `dz{char}<enter>`).
+  operator-pending mode (e.g. `ds{char}<enter>`).
 
 - Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
   `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
@@ -131,25 +133,17 @@ Available options~
     mitigate visual noise in extreme cases). Setting it to 0 disables
     two-phase processing altogether.
 
-    Note: If this option is set to some non-zero number, and there are
-    `safe_labels` (i.e., autojump is possible), enabling
-    `highlight_unlabeled_phase_one_targets` might be helpful: then you can be
-    sure whether you will jump to the target automatically at the next
-    keypress or you should prepare for some label to appear.
-
                                *leap.opts.highlight_unlabeled_phase_one_targets*
 `highlight_unlabeled_phase_one_targets = false`
 
-    Whether to highlight all unlabeled matches. (Matches covering labels will
-    get highlighted anyway.)
-
-    Note: This is only relevant if `max_phase_one_targets` is not 0.
+    Whether to highlight all unlabeled matches in phase one. (Matches covering
+    labels will get highlighted anyway.)
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
 
-    Number of targets to be highlighted after the cursor when there are no
-    labels at all. (Only for unidirectional search.)
+    Number of targets to be highlighted after the cursor in |leap-traversal|
+    mode (when there are no labels at all).
 
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
@@ -222,7 +216,7 @@ Available options~
                                                         *leap.opts.special_keys*
 `special_keys` >
     {
-      repeat_search  = '<enter>',
+      repeat_search = '<enter>',
       next_phase_one_target = '<enter>',
       next_target = {'<enter>', ';'},
       prev_target = {'<tab>', ','},
