@@ -429,41 +429,30 @@ everything, always requires that one extra keystroke).
 
 ## Configuration
 
-`setup` has no implicit side effects, it is just a convenience function for
-changing the values in the configuration table (which can also be accessed
-directly as `require('leap').opts`). There is no need to call it if you're
-fine with the defaults. Also note that table values (like `special_keys`) are
-not extended, but simply overwritten by the given ones, so in many cases, it
-might be more straightforward to set `opts` directly.
+Below is a list of all configurable values in the `opts` table, with their
+default values. Set them like: `require('leap').opts.<key> = <value>`. For
+details on the particular fields, see `:h leap-config`.
 
 ```Lua
-require('leap').setup {
-  max_phase_one_targets = nil,
-  highlight_unlabeled_phase_one_targets = false,
-  max_highlighted_traversal_targets = 10,
-  case_sensitive = false,
-  -- Sets of characters that should match each other.
-  -- Obvious candidates are braces and quotes ('([{', ')]}', '`"\'').
-  equivalence_classes = { ' \t\r\n', },
-  substitute_chars = {},
-  -- Leaving the appropriate list empty effectively disables "smart" mode,
-  -- and forces auto-jump to be on or off.
-  safe_labels = { . . . },
-  labels = { . . . },
-  special_keys = {
-    repeat_search = '<enter>',
-    next_phase_one_target = '<enter>',
-    next_target = {'<enter>', ';'},
-    prev_target = {'<tab>', ','},
-    next_group = '<space>',
-    prev_group = '<tab>',
-    multi_accept = '<enter>',
-    multi_revert = '<backspace>',
-  },
+max_phase_one_targets = nil
+highlight_unlabeled_phase_one_targets = false
+max_highlighted_traversal_targets = 10
+case_sensitive = false
+equivalence_classes = { ' \t\r\n', }
+substitute_chars = {}
+safe_labels = { 's', 'f', 'n', 'u', 't', . . . }
+labels = { 's', 'f', 'n', 'j', 'k', . . . }
+special_keys = {
+  repeat_search = '<enter>',
+  next_phase_one_target = '<enter>',
+  next_target = {'<enter>', ';'},
+  prev_target = {'<tab>', ','},
+  next_group = '<space>',
+  prev_group = '<tab>',
+  multi_accept = '<enter>',
+  multi_revert = '<backspace>',
 }
 ```
-
-For details, see `:h leap-config`.
 
 ### Mappings
 
