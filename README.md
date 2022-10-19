@@ -478,7 +478,7 @@ special_keys = {
 You can add the default mappings (listed in `:h leap-default-mappings`) by
 calling `require('leap').add_default_mappings()`. Note that the function will
 check for conflicts with any custom mappings created by you or other plugins,
-and will not overwite them, unless explicitly told so (called with a `true`
+and will not overwrite them, unless explicitly told so (called with a `true`
 argument).
 
 To define alternative mappings, you can use the `<Plug>` keys listed in `:h
