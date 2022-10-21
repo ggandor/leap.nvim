@@ -15,7 +15,7 @@ a 2-character search pattern, and then potentially a "label" character to pick
 your target from multiple matches, similar to
 [Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
 "clairvoyant" ability: you get a **live preview** of the target labels - by
-mapping possible futures, Leap shows you which key(s) you will need to press
+mapping possible futures, Leap can show you which key(s) you will need to press
 _before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
@@ -100,12 +100,12 @@ It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
 
-The one-step shift between perception and action - that is, ahead-of-time
-labeling - cuts the Gordian knot: while the input sequence can be extended
-dynamically, to scale to any number of targets (by adding new labeled groups you
-can switch to), it still behaves as if it would be an already known pattern,
-that you just have to type out. Leaping is like incremental search on some kind
-of autopilot, where you know it in advance when to finish.
+The one-step shift between perception and action cuts the Gordian knot: on the
+one hand, the input sequence can be extended dynamically, to scale to any number
+of targets, by adding new groups you can switch to; however, thanks to
+ahead-of-time labeling, it still behaves as if it would be an already known
+pattern, that you just have to type out. Leaping is like incremental search on
+some kind of autopilot, where you know it in advance when to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
 play this trick - is also long enough to sufficiently narrow down the matches in
@@ -250,7 +250,7 @@ All of them have aliases or obvious equivalents:
 - `s` = `cl`
 - `S` = `cc`
 - `v_s` = `v_c`
-- `v_S` = `Vc` if not already in linewise mode (else = `v_c`)
+- `v_S` = `Vc`, unless already in linewise mode (then = `v_c`)
 - `v_x` = `v_d`
 - `v_X` -> `vnoremap D X`, and use `$D` for vanilla `v_b_D` behaviour
 
@@ -276,12 +276,12 @@ vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
 <details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>
 
-To paraphrase Steve Jobs, I wish it was, but it is a coincidence. "Leap" is just
-another synonym for "jump", that happens to rhyme with Sneak. That said, in some
-respects you can indeed think of leap.nvim as a spiritual successor to Raskin's
-work, and thus the name as a little tribute to the great pioneer of interface
-design, even though embracing the modal paradigm is a fundamental difference
-in our approach.
+To paraphrase Steve Jobs, I wish it were, but it is a coincidence. "Leap" is
+just another synonym for "jump", that happens to rhyme with Sneak. That said, in
+some respects you can indeed think of leap.nvim as a spiritual successor to
+Raskin's work, and thus the name as a little tribute to the great pioneer of
+interface design, even though embracing the modal paradigm is a fundamental
+difference in our approach.
 
 </details>
 
@@ -478,7 +478,7 @@ special_keys = {
 You can add the default mappings (listed in `:h leap-default-mappings`) by
 calling `require('leap').add_default_mappings()`. Note that the function will
 check for conflicts with any custom mappings created by you or other plugins,
-and will not overwite them, unless explicitly told so (called with a `true`
+and will not overwrite them, unless explicitly told so (called with a `true`
 argument).
 
 To define alternative mappings, you can use the `<Plug>` keys listed in `:h
