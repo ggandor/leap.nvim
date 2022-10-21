@@ -1,3 +1,5 @@
+(local opts (require "leap.opts"))
+
 (local api vim.api)
 (local filter vim.tbl_filter)
 
@@ -46,6 +48,12 @@ character instead."
                   (or normal-mode?  ; else no sense in buffer switching
                       (= (api.nvim_win_get_buf $) curr-buf)))
             wins)))
+
+
+(fn ->representative-char [ch]
+  (or (. opts.eq_class_of ch)
+      (when (not opts.case_sensitive) (ch:lower))
+      ch))
 
 
 ; Input
@@ -106,5 +114,6 @@ character instead."
  : push-cursor!
  : get-char-at
  :get_enterable_windows get-enterable-windows
+ : ->representative-char
  : get-input
  : get-input-by-keymap}

@@ -10,6 +10,7 @@
         : replace-keycodes
         : get-cursor-pos
         : push-cursor!
+        : ->representative-char
         : get-input
         : get-input-by-keymap}
        (require "leap.util"))
@@ -158,18 +159,16 @@ char separately.
 "
   ; Setting a metatable to handle case insensitivity and equivalence
   ; classes (in both cases: multiple keys -> one value).
-  ; If `k` is not found, try to get a sublist belonging to some common
-  ; key: the equivalence class that `k` belongs to (if there is one),
-  ; or, if case insensivity is set, the lowercased verison of `k`.
-  ; (And in the above cases, `k` will not be found, since we also
+  ; If `ch` is not found, try to get a sublist belonging to some common
+  ; key: the equivalence class that `ch` belongs to (if there is one),
+  ; or, if case insensivity is set, the lowercased verison of `ch`.
+  ; (And in the above cases, `ch` will not be found, since we also
   ; redirect to the common keys when inserting a new sublist.)
   (tset targets :sublists
         (setmetatable {}
-          (let [->common-key #(or (. opts.eq_class_of $)
-                                  (when-not opts.case_sensitive ($:lower))
-                                  $)]
-            {:__index (fn [t k] (rawget t (->common-key k)))
-             :__newindex (fn [t k v] (rawset t (->common-key k) v))})))
+          {:__index (fn [self ch] (rawget self (->representative-char ch)))
+           :__newindex (fn [self ch sublist]
+                         (rawset self (->representative-char ch) sublist))}))
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets.sublists ch2)

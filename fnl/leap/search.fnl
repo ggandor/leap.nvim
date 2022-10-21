@@ -3,7 +3,8 @@
         : replace-keycodes
         : get-cursor-pos
         : push-cursor!
-        : get-char-at}
+        : get-char-at
+        : ->representative-char}
        (require "leap.util"))
 
 (local api vim.api)
@@ -160,23 +161,27 @@ Dynamic attributes
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
         skip-curpos? (and whole-window? (= (vim.fn.win_getid) source-winid))
-        match-positions (get-match-positions pattern [left-bound right-bound]
-                                             {: backward? : skip-curpos? : whole-window?})]
+        match-positions (get-match-positions pattern
+                                             [left-bound right-bound]
+                                             {: backward?
+                                              : skip-curpos?
+                                              : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
       (match (get-char-at pos {})  ; EOL might fail (make this future-proof)
         ch1  ; not necessarily = `input` (if case-insensitive or input mapping)
-        (let [(ch2 eol?) (match (get-char-at pos {:char-offset +1})
-                           nil (values "\n" true)
-                           ch ch)
-              same-char-triplet? (and (= ch2 prev-match.ch2)
-                                      (= line prev-match.line)
-                                      (= col ((if backward? dec inc) prev-match.col)))]
+        (let [ch2 (or (get-char-at pos {:char-offset +1}) "\n")
+              same-char-triplet? (and (= line prev-match.line)
+                                      (= col ((if backward? dec inc) prev-match.col))
+                                      (= (->representative-char ch2)
+                                         (->representative-char (or prev-match.ch2 ""))))]
           (set prev-match {: line : col : ch2})
           (when (not same-char-triplet?)
-            (table.insert targets {: wininfo : pos :chars [ch1 ch2]
+            (table.insert targets {: wininfo : pos
+                                   :chars [ch1 ch2]
                                    ; TODO: `right-bound` = virtcol, but `col` = byte col!
-                                   :edge-pos? (or eol? (= col right-bound))})))))
+                                   :edge-pos? (or (= ch2 "\n")
+                                                  (= col right-bound))})))))
     (when (next targets)
       targets)))
 
