@@ -321,7 +321,7 @@ on, you have all the visual information you need to reach your specific target.
 To reach an unlabeled match, just finish the pattern, i.e., type the second
 character. For the rest, you also need to type the label character that is
 displayed right next to the match. (Note: the highlighting of unlabeled matches
-- green underlined on the screenshots - is opt-in, turned on for clarity here.)
+\- green underlined on the screenshots - is opt-in, turned on for clarity here.)
 
 To continue with the example, type `l`.
 
