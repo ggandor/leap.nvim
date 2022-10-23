@@ -319,9 +319,9 @@ on, you have all the visual information you need to reach your specific target.
 ![quick example 1](../media/quick_example_1.png?raw=true)
 
 To reach an unlabeled match, just finish the pattern, i.e., type the second
-character. (Note: the highlighting of unlabeled matches - green underlined on
-the screenshots - is opt-in, turned on for clarity here.) For the rest, you also
-need to type the label character that is displayed right next to the match.
+character. For the rest, you also need to type the label character that is
+displayed right next to the match. (Note: the highlighting of unlabeled matches
+- green underlined on the screenshots - is opt-in, turned on for clarity here.)
 
 To continue with the example, type `l`.
 
@@ -386,19 +386,17 @@ A character at the end of a line can be targeted by pressing `<space>` after it.
 character simply by defining a set in `opts.equivalence_classes` that contains
 it.)
 
-### Repeating the previous search
+### Repeat and traversal
 
-Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
-motions sets the search pattern to the previous one.
+Pressing `<enter>` after invoking any of Leap's motions sets the search pattern
+to the previous one (`special_keys.repeat_search`).
 
-### Traversal mode
+After entering at least one input character, `<enter>` initiates "traversal"
+mode, moving on to the next match on each keypress
+(`special_keys.next_phase_one_target` or `special_keys.next_target`).
 
-After entering at least one input character, `<enter>`
-(`special_keys.next_phase_one_target`) initiates "traversal" mode, moving on to
-the next match on each keypress. `<tab>` (`special_keys.prev_target`) can revert
-the previous jump(s) in case you accidentally overshoot your target.
-
-`s|S ch1 ch2? <enter> (<enter>|<tab>)*`
+`<tab>` can revert the previous jump(s) in case you accidentally overshoot your
+target (`special_keys.prev_target`).
 
 #### Tips
 

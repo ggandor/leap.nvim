@@ -19,12 +19,12 @@ INTRODUCTION                                                 *leap-introduction*
 
 Leap is a motion plugin that allows you to jump to any positions in the
 visible editor area by entering a 2-character search pattern, and then
-potentially a "label" character to select your target from multiple matches,
+potentially a "label" character to pick your target from multiple matches,
 similar to Justin M. Keyes' Sneak plugin. The novel idea in Leap is its
 "clairvoyant" ability: you get a live preview of the target labels - by
-mapping possible futures, Leap shows you which key(s) you will need to press
-_before_ you actually need to do that, resulting in a much more frictionless
-experience.
+mapping possible futures, Leap can show you which key(s) you will need to
+press before you actually need to do that, resulting in a much more
+frictionless experience.
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -72,16 +72,16 @@ newline character simply by defining a set in |leap.opts.equivalence_classes|
 that contains it.)
 
                                                                    *leap-repeat*
-Pressing `<enter>` (`special_keys.repeat_search`) after invoking any of Leap's
-motions sets the search pattern to the previous one.
+Pressing `<enter>` after invoking any of Leap's motions sets the search
+pattern to the previous one (`special_keys.repeat_search`).
 
                                                                 *leap-traversal*
-After entering at least one input character, `<enter>`
-(`special_keys.next_phase_one_target`) initiates "traversal" mode, moving on
-to the next match on each keypress. `<tab>` (`special_keys.prev_target`) can
-revert the previous jump(s) in case you accidentally overshoot your target.
+After entering at least one input character, `<enter>` initiates "traversal"
+mode, moving on to the next match on each keypress
+(`special_keys.next_phase_one_target` or `special_keys.next_target`).
 
-`s|S ch1 ch2? <enter> (<enter>|<tab>)*`
+`<tab>` can revert the previous jump(s) in case you accidentally overshoot
+your target (`special_keys.prev_target`).
 
 Tips:
 
@@ -108,19 +108,17 @@ repeat.vim (https://github.com/tpope/vim-repeat) is installed.
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 
-Setting an individual option via the `opts` table directly:
+Setting an individual option in the `opts` table directly:
 
 `   require('leap').opts.case_sensitive = true`
 
-Setting multiple options via the `setup` function: >
+Setting multiple options using the `setup` function: >
 
     require('leap').setup {
         case_sensitive = true,
         labels = { ... }
     }
 <
-    Note: These will be merged with the current/default settings. (Settings
-    not mentioned here are not disturbed.)
 
 Available options~
 
@@ -156,9 +154,6 @@ Available options~
     A character will match any other in its equivalence class. The sets can
     either be defined as strings or tables.
 
-    Note: Make sure to define a set containing `\n` if you want to be able to
-    target characters at the end of the line.
-
     Example: >
     {
       '\r\n',
@@ -167,6 +162,15 @@ Available options~
       { '"', "'", '`' },
     }
 <
+
+    Note: Make sure to have a set containing `\n` if you want to be able to
+    target characters at the end of the line.
+
+    Note: Non-mutual aliases are not possible in Leap, for the same reason
+    that supporting |smartcase| is not possible: we would need to show two
+    different labels, corresponding to two different futures, at the same
+    time.
+
                                                     *leap.opts.substitute_chars*
 `substitute_chars = {}`
 
@@ -185,10 +189,11 @@ Available options~
     labels plus one, the plugin jumps to the first match automatically after
     entering the pattern. Obviously, for this purpose you should choose keys
     that are unlikely to be used right after a jump!
-    Setting the list to `{}` effectively disables the auto-jump feature.
 
-    Note: Operator-pending mode ignores this, all targets (if multiple found)
-    are labeled then (using the `labels` list, if not empty).
+    Setting the list to `{}` effectively disables the autojump feature.
+
+    Note: Operator-pending mode ignores this, since we need to be able to
+    select the actual target before executing the operation.
 
                                                               *leap.opts.labels*
 `labels` >
@@ -201,9 +206,10 @@ Available options~
 <
     Target labels to be used when there are more matches than the number of
     safe labels plus one.
-    Setting the list to `{}` forces auto-jump to always be on, except for
-    Operator-pending mode. In this case, do not forget to set
-    `special_keys.next_group` to something "safe" too.
+
+    Setting the list to `{}` forces autojump to always be on (except for
+    Operator-pending mode, where it makes no sense). In this case, do not
+    forget to set `special_keys.next_group` to something "safe" too.
 
     Heuristics behind the defaults:
     - At least the first few labels should be the same on the two lists, since
@@ -227,10 +233,10 @@ Available options~
     }
 <
     Keys captured by the plugin at runtime, to:
-    - repeat with the previous input after invocation (|leap-repeat|)
+    - repeat with the previous input after invocation
     - jump to the next/previous match in traversal mode (|leap-traversal|)
     - switch to the next/previous group of matches, when there are more
-      matches than labels available (|leap-usage|)
+      matches than available labels
     - accept the selection, and deselect the last selected target in
       |leap-multiselect| mode
 
@@ -286,7 +292,7 @@ All modes
 gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
                         placed on {char1} |exclusive|.
-                        Mnemonic: "global (s)".
+                        Mnemonic: "global s".
 
 Special keys~
 
@@ -453,7 +459,7 @@ leap({opts})                                                       *leap.leap()*
                • action: A Lua function that will be executed by Leap in place
                  of the jump. (You could obviously implement some custom jump
                  logic here too.) Its only argument is either a target, or a
-                 list of targets (in `multiselect` mode).
+                 list of targets (in multiselect mode).
                                                               *leap-multiselect*
                • multiselect: A flag allowing for selecting multiple targets
                  for `action`. In this mode, you can just start picking labels

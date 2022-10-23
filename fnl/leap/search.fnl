@@ -152,7 +152,10 @@ edge-pos?    : bool
 ?label       : char
 
 Dynamic attributes
-?label-state : 'active-primary' | 'active-secondary' | 'inactive'
+?label-state :   'active-primary'
+               | 'active-secondary'
+               | 'selected'
+               | 'inactive'
 ?beacon      : [col-offset [[char hl-group]]]
 "
   (let [targets (or targets [])
