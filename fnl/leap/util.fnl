@@ -39,14 +39,11 @@ character instead."
 
 
 (fn get-enterable-windows []
-  (let [normal-mode? (string.match (vim.fn.mode 1) "^n?t?$")
-        wins (api.nvim_tabpage_list_wins 0)
+  (let [wins (api.nvim_tabpage_list_wins 0)
         curr-win (api.nvim_get_current_win)
         curr-buf (api.nvim_get_current_buf)]
     (filter #(and (. (api.nvim_win_get_config $) :focusable)
-                  (not= $ curr-win)
-                  (or normal-mode?  ; else no sense in buffer switching
-                      (= (api.nvim_win_get_buf $) curr-buf)))
+                  (not= $ curr-win))
             wins)))
 
 

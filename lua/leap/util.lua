@@ -54,12 +54,11 @@ local function get_char_at(_5_, _7_)
   end
 end
 local function get_enterable_windows()
-  local normal_mode_3f = string.match(vim.fn.mode(1), "^n?t?$")
   local wins = api.nvim_tabpage_list_wins(0)
   local curr_win = api.nvim_get_current_win()
   local curr_buf = api.nvim_get_current_buf()
   local function _10_(_241)
-    return ((api.nvim_win_get_config(_241)).focusable and (_241 ~= curr_win) and (normal_mode_3f or (api.nvim_win_get_buf(_241) == curr_buf)))
+    return ((api.nvim_win_get_config(_241)).focusable and (_241 ~= curr_win))
   end
   return filter(_10_, wins)
 end
