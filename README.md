@@ -177,6 +177,7 @@ require('leap').leap { target_windows = { vim.fn.win_getid() } }
 
 </details>
 
+
 <details>
 <summary>Search in all windows</summary>
 
@@ -190,6 +191,7 @@ require('leap').leap { target_windows = vim.tbl_filter(
 ```
 </details>
 
+
 <details>
 <summary>Enhanced f/t motions</summary>
 
@@ -197,10 +199,19 @@ Check flit.nvim, an extension plugin for Leap.
 
 </details>
 
+
 <details>
 <summary>Linewise motions</summary>
 
 See the "Extending Leap" section below for an example snippet.
+
+</details>
+
+
+<details>
+<summary>Other supernatural powers besides clairvoyance?</summary>
+
+You might be interested in leap-spooky.nvim.
 
 </details>
 
@@ -224,6 +235,7 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 
 </details>
 
+
 <details>
 <summary>Lightspeed-style highlighting</summary>
 
@@ -242,6 +254,7 @@ require('leap').opts.highlight_unlabeled_phase_one_targets = true
 
 </details>
 
+
 <details>
 <summary>How to live without `s`/`S`/`x`/`X`?</summary>
 
@@ -255,6 +268,7 @@ All of them have aliases or obvious equivalents:
 - `v_X` -> `vnoremap D X`, and use `$D` for vanilla `v_b_D` behaviour
 
 </details>
+
 
 <details>
 <summary>I am too used to using `x` instead of `d` in Visual mode</summary>
@@ -272,6 +286,7 @@ vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
 ```
 
 </details>
+
 
 <details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>
@@ -719,6 +734,8 @@ vim.api.nvim_create_autocmd('User', {
 
 ## Plugins using Leap
 
+- [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim) (remote
+  operations on text objects)
 - [flit.nvim](https://github.com/ggandor/flit.nvim) (enhanced f/t motions)
 - [leap-ast.nvim](https://github.com/ggandor/leap-ast.nvim) (Tree-sitter nodes)
 
