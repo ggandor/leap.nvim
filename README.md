@@ -431,7 +431,8 @@ target (`special_keys.prev_target`).
   whole time.
 
 - For cross-window search, traversal mode is not supported (since there's no
-  direction to follow).
+  direction to follow), but you can still accept the first (presumably only)
+  match with `<enter>`, even after one input.
 
 ### Resolving highlighting conflicts in phase one
 

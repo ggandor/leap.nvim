@@ -984,11 +984,11 @@ local function leap(kwargs)
             local _175_ = ...
             if (nil ~= _175_) then
               local in2 = _175_
-              if ((in2 == spec_keys.next_phase_one_target) and directional_3f) then
+              if (in2 == spec_keys.next_phase_one_target) then
                 local in20 = targets[1].chars[2]
                 update_repeat_state({in1 = in1, in2 = in20})
                 do_action(targets[1])
-                if ((#targets == 1) or op_mode_3f or user_given_action) then
+                if ((#targets == 1) or op_mode_3f or not directional_3f or user_given_action) then
                   do
                     set_dot_repeat(in1, in20, 1)
                   end
@@ -1086,8 +1086,8 @@ local function leap(kwargs)
                       local _188_ = post_pattern_input_loop(targets_2a)
                       if (nil ~= _188_) then
                         local in_final = _188_
-                        if (contains_3f(spec_keys.next_target, in_final) and directional_3f) then
-                          if (op_mode_3f or user_given_action) then
+                        if contains_3f(spec_keys.next_target, in_final) then
+                          if (op_mode_3f or not directional_3f or user_given_action) then
                             return exit_with_action(1)
                           else
                             local new_idx = inc(current_idx)

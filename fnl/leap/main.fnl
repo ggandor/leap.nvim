@@ -659,11 +659,12 @@ where labels need to be shifted left).
                             (get-second-pattern-input targets)))))  ; REDRAW
       in2 (if
             ; Jump to the very first match?
-            (and (= in2 spec-keys.next_phase_one_target) directional?)
+            (= in2 spec-keys.next_phase_one_target)
             (let [in2 (. targets 1 :chars 2)]
               (update-repeat-state {: in1 : in2})
               (do-action (. targets 1))
-              (if (or (= (length targets) 1) op-mode? user-given-action)
+              (if (or (= (length targets) 1)
+                      op-mode? (not directional?) user-given-action)
                   (exit (set-dot-repeat in1 in2 1))
                   (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
             (do
@@ -691,8 +692,9 @@ where labels need to be shifted left).
                               in-final
                               (if
                                 ; Jump to the first match on the [rest of the] target list?
-                                (and (contains? spec-keys.next_target in-final) directional?)
-                                (if (or op-mode? user-given-action) (exit-with-action 1)  ; (no autojump)
+                                (contains? spec-keys.next_target in-final)
+                                (if (or op-mode? (not directional?) user-given-action)
+                                    (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (inc current-idx)]
                                       (do-action (. targets* new-idx))
                                       (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))

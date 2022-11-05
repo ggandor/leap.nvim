@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 October 12
+Last change: 2022 November 05
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -99,7 +99,8 @@ Note: If |leap.opts.safe_labels| is in use, the labels will remain available
 during the whole time.
 
 Note: For cross-window search, traversal mode is not supported (since there's
-no direction to follow).
+no direction to follow), but you can still accept the first (presumably only)
+match with `<enter>`, even after one input.
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
