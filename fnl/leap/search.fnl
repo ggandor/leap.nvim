@@ -171,9 +171,18 @@ Dynamic attributes
                                               : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
-      (match (get-char-at pos {})  ; EOL might fail (make this future-proof)
-        ch1  ; not necessarily = `input` (if case-insensitive or input mapping)
-        (let [ch2 (or (get-char-at pos {:char-offset +1}) "\n")
+      (match (get-char-at pos {})
+        nil
+        ; `get-char-at` works on "inner" lines, it cannot get \n.
+        ; We provide it here for empty lines...
+        (when (= col 1)
+          (table.insert targets {: wininfo : pos
+                                 :chars ["\n"]
+                                 :empty-line? true}))
+
+        ch1
+        (let [ch2 (or (get-char-at pos {:char-offset +1})
+                      "\n")  ; ...and for pre-\n chars
               same-char-triplet? (and (= line prev-match.line)
                                       (= col ((if backward? dec inc) prev-match.col))
                                       (= (->representative-char ch2)

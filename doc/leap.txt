@@ -1,6 +1,6 @@
 *leap.txt*
 For Neovim version 0.7.0
-Last change: 2022 November 05
+Last change: 2022 November 18
 
 ==============================================================================
 CONTENTS                                               *leap.nvim* *leap-contents*
@@ -67,9 +67,12 @@ expected on them.
 
                                                             *leap-match-newline*
 A character at the end of a line can be targeted by pressing `<space>` after it.
-(There is no special mechanism behind this: you can set aliases for the
+There is no special mechanism behind this: you can set aliases for the
 newline character simply by defining a set in |leap.opts.equivalence_classes|
-that contains it.)
+that contains it. Empty lines can also be targeted, by pressing the newline
+alias twice (`<space><space>` by default). This latter is a slightly more
+magical feature, but fulfills the principle that any visible position you can
+move to with the cursor should be reachable by Leap too.
 
                                                                    *leap-repeat*
 Pressing `<enter>` after invoking any of Leap's motions sets the search

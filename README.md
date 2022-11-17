@@ -394,12 +394,15 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are inclusive (`:h inclusive`), and the
 `v` modifier (`:h o_v`) works as expected on them.
 
-### Jumping to the last character on a line
+### Jumping to the end of the line and to empty lines
 
 A character at the end of a line can be targeted by pressing `<space>` after it.
-(There is no special mechanism behind this: you can set aliases for the newline
+There is no special mechanism behind this: you can set aliases for the newline
 character simply by defining a set in `opts.equivalence_classes` that contains
-it.)
+it. Empty lines can also be targeted, by pressing the newline alias twice
+(`<space><space>` by default). This latter is a slightly more magical feature,
+but fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
 
 ### Repeat and traversal
 
