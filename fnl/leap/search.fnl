@@ -183,11 +183,20 @@ Dynamic attributes
         ch1
         (let [ch2 (or (get-char-at pos {:char-offset +1})
                       "\n")  ; ...and for pre-\n chars
-              same-char-triplet? (and (= line prev-match.line)
-                                      (= col ((if backward? dec inc) prev-match.col))
-                                      (= (->representative-char ch2)
-                                         (->representative-char (or prev-match.ch2 ""))))]
-          (set prev-match {: line : col : ch2})
+              same-char-triplet?
+              (and (= line prev-match.line)
+                   (if backward?
+                       ; |     |ch1 |ch2
+                       ; |ch1  |ch2 |
+                       ; curr  prev       <---
+                       (= (- prev-match.col col) (ch1:len))
+                       ; |ch1  |ch2 |
+                       ; |     |ch1 |ch2
+                       ; prev  curr       --->
+                       (= (- col prev-match.col) (prev-match.ch1:len)))
+                   (= (->representative-char ch2)
+                      (->representative-char (or prev-match.ch2 ""))))]
+          (set prev-match {: line : col : ch1 : ch2})
           (when (not same-char-triplet?)
             (table.insert targets {: wininfo : pos
                                    :chars [ch1 ch2]
