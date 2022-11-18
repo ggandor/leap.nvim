@@ -67,7 +67,7 @@ interrupted change operation."
   (let [res {}]
     (each [_ eqcl (ipairs eqcls)]
       (let [eqcl* (if (= (type eqcl) :string)
-                      (icollect [ch (eqcl:gmatch ".")] ch)
+                      (vim.fn.split eqcl "\\zs")
                       eqcl)]
         (each [_ ch (ipairs eqcl*)]
           (tset res ch eqcl*))))
