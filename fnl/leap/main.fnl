@@ -10,6 +10,7 @@
         : replace-keycodes
         : get-cursor-pos
         : push-cursor!
+        : get-eq-class-of
         : ->representative-char
         : get-input
         : get-input-by-keymap}
@@ -473,8 +474,8 @@ conflicts can occur:
            fill-wininfo))
 
     (fn expand-to-equivalence-class [in]  ; <-- "b"
-      (match (. opts.eq_class_of in)
-        chars  ; {"a","b","c"}
+      (match (get-eq-class-of in)
+        chars                             ; --> {"a","b","c"}
         ; `vim.fn.search` cannot interpret actual newline (LF) chars in
         ; the regex pattern, we need to insert them as raw \ + n.
         ; Backslash itself might appear in the class, needs to be escaped.
@@ -493,7 +494,7 @@ conflicts can occur:
           (if opts.case_sensitive "\\C" "\\c")
           (or (expand-to-equivalence-class in1)
               (in1:gsub "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
-          (or (expand-to-equivalence-class ?in2)
+          (or (-?> ?in2 expand-to-equivalence-class)
               ?in2
               "\\_.")))  ; match anything, including EOL
 

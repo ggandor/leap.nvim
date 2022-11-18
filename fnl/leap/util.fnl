@@ -47,10 +47,20 @@ character instead."
             wins)))
 
 
+; NOTE: Lua's string.lower/upper are only for ASCII,
+; use vim.fn.tolower/toupper everywhere.
+
+(fn get-eq-class-of [ch]
+  (if opts.case_sensitive
+      (. opts.eq_class_of ch)
+      (or (. opts.eq_class_of (vim.fn.tolower ch))
+          (. opts.eq_class_of (vim.fn.toupper ch)))))
+
+
 (fn ->representative-char [ch]
-  (or (. opts.eq_class_of ch)
-      (when (not opts.case_sensitive) (ch:lower))
-      ch))
+  ; We choose the first one from an equiv-class (arbitrary).
+  (local ch* (or (?. (get-eq-class-of ch) 1) ch))
+  (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
 ; Input
@@ -111,6 +121,7 @@ character instead."
  : push-cursor!
  : get-char-at
  :get_enterable_windows get-enterable-windows
+ : get-eq-class-of
  : ->representative-char
  : get-input
  : get-input-by-keymap}
