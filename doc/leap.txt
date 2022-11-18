@@ -112,18 +112,15 @@ repeat.vim (https://github.com/tpope/vim-repeat) is installed.
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 
-Setting an individual option in the `opts` table directly:
+Below is the description of all configurable values in the `opts` table, with
+their defaults.
 
-`   require('leap').opts.case_sensitive = true`
-
-Setting multiple options using the `setup` function: >
-
-    require('leap').setup {
-        case_sensitive = true,
-        labels = { ... }
-    }
+Example configuration: >
+    local leap = require('leap')
+    leap.opts.case_sensitive = true
+    leap.opts.substitute_chars = { ['\r'] = '¬' }
+    leap.opts.special_keys.prev_target = { '<s-enter>', ',' }
 <
-
 Available options~
 
                                                *leap.opts.max_phase_one_targets*
@@ -166,7 +163,6 @@ Available options~
       { '"', "'", '`' },
     }
 <
-
     Note: Make sure to have a set containing `\n` if you want to be able to
     target characters at the end of the line.
 

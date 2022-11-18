@@ -1,9 +1,3 @@
-local function setup(user_opts)
-  for k, v in pairs(user_opts) do
-    require("leap.opts")["default"][k] = v
-  end
-  return nil
-end
 local function add_default_mappings(force_3f)
   for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)"}}) do
     local _each_2_ = _1_
@@ -32,4 +26,10 @@ local function set_default_keymaps(force_3f)
   end
   return nil
 end
-return {setup = setup, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps}
+local function setup(user_opts)
+  for k, v in pairs(user_opts) do
+    require("leap.opts")["default"][k] = v
+  end
+  return nil
+end
+return {add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}

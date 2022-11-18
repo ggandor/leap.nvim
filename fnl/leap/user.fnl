@@ -1,9 +1,5 @@
 ; Convenience functions for users.
 
-(fn setup [user-opts]
-  (each [k v (pairs user-opts)]
-    (tset (require "leap.opts") :default k v)))
-
 (fn add-default-mappings [force?]
   (each [_ [modes lhs rhs]
          (ipairs
@@ -42,6 +38,11 @@
                    (= (vim.fn.hasmapto rhs mode) 0)))
       (vim.keymap.set mode lhs rhs {:silent true}))))
 
-{: setup
- :add_default_mappings add-default-mappings
- :set_default_keymaps set-default-keymaps}
+; Deprecated.
+(fn setup [user-opts]
+  (each [k v (pairs user-opts)]
+    (tset (require "leap.opts") :default k v)))
+
+{:add_default_mappings add-default-mappings
+ :set_default_keymaps set-default-keymaps
+ : setup}
