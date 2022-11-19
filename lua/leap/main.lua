@@ -401,6 +401,7 @@ local function leap(kwargs)
   end
   local _let_78_ = _79_()
   local backward_3f = _let_78_["backward"]
+  local match_last_overlapping_3f = _let_78_["match_last_overlapping"]
   local inclusive_op_3f = _let_78_["inclusive_op"]
   local offset = _let_78_["offset"]
   local _
@@ -1256,7 +1257,7 @@ local function leap(kwargs)
           local function _225_(...)
             local search = require("leap.search")
             local pattern = prepare_pattern(in1, _3fin2)
-            local kwargs0 = {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}
+            local kwargs0 = {["backward?"] = backward_3f, ["match-last-overlapping?"] = match_last_overlapping_3f, ["target-windows"] = _3ftarget_windows}
             return search["get-targets"](pattern, kwargs0)
           end
           local function _226_(...)

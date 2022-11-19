@@ -138,7 +138,11 @@ early termination in loops."
 
 
 (fn get-targets* [pattern  ; assumed to match 2 logical/multibyte chars
-                  {: backward? : wininfo : targets : source-winid}]
+                  {: backward?
+                   : match-last-overlapping?
+                   : wininfo
+                   : targets
+                   : source-winid}]
   "Return a table that will store the positions and other metadata of
 all in-window pairs that match `pattern`, in the order of discovery. A
 target element in its final form has the following fields (the latter
@@ -158,8 +162,7 @@ Dynamic attributes
                | 'inactive'
 ?beacon      : [col-offset [[char hl-group]]]
 "
-  (let [targets (or targets [])
-        [left-bound right-bound*] (get-horizontal-bounds)
+  (let [[left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole match should be visible
         whole-window? wininfo
         wininfo (or wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1))
@@ -169,6 +172,7 @@ Dynamic attributes
                                              {: backward?
                                               : skip-curpos?
                                               : whole-window?})]
+    (local targets (or targets []))
     (var prev-match {})  ; to find overlaps
     (each [[line col &as pos] match-positions]
       (match (get-char-at pos {})
@@ -183,7 +187,7 @@ Dynamic attributes
         ch1
         (let [ch2 (or (get-char-at pos {:char-offset +1})
                       "\n")  ; ...and for pre-\n chars
-              same-char-triplet?
+              overlap?
               (and (= line prev-match.line)
                    (if backward?
                        ; |     |ch1 |ch2
@@ -197,7 +201,9 @@ Dynamic attributes
                    (= (->representative-char ch2)
                       (->representative-char (or prev-match.ch2 ""))))]
           (set prev-match {: line : col : ch1 : ch2})
-          (when (not same-char-triplet?)
+          (when (and overlap? match-last-overlapping?)
+            (table.remove targets))  ; replace the previous
+          (when (or (not overlap?) match-last-overlapping?)
             (table.insert targets {: wininfo : pos
                                    :chars [ch1 ch2]
                                    ; TODO: `right-bound` = virtcol, but `col` = byte col!
@@ -214,8 +220,9 @@ Dynamic attributes
     (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
 
-(fn get-targets [pattern {: backward? : target-windows}]
-  (if (not target-windows) (get-targets* pattern {: backward?})
+(fn get-targets [pattern kwargs]
+  (local {: backward? : match-last-overlapping? : target-windows} kwargs)
+  (if (not target-windows) (get-targets* pattern kwargs)
       (let [targets []
             cursor-positions {}
             source-winid (vim.fn.win_getid)
@@ -227,7 +234,8 @@ Dynamic attributes
             (api.nvim_set_current_win winid))
           (tset cursor-positions winid (get-cursor-pos))
           ; Fill up the provided `targets`, instead of returning a new table.
-          (get-targets* pattern {: targets : wininfo : source-winid}))
+          (get-targets* pattern {: targets : wininfo : source-winid
+                                 : match-last-overlapping?}))
         (when cross-win?
           (api.nvim_set_current_win source-winid))
         (when (not (empty? targets))

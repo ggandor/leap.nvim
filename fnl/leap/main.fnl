@@ -368,6 +368,7 @@ conflicts can occur:
          :multiselect multi-select?}
         kwargs
         {:backward backward?
+         :match_last_overlapping match-last-overlapping?
          :inclusive_op inclusive-op?
          : offset}
         (if dot-repeat? state.dot_repeat kwargs)
@@ -683,7 +684,8 @@ conflicts can occur:
                                              (exit-early (echo "no targets")))
                      (or (let [search (require "leap.search")
                                pattern (prepare-pattern in1 ?in2)
-                               kwargs {: backward? :target-windows ?target-windows}]
+                               kwargs {: backward? : match-last-overlapping?
+                                       :target-windows ?target-windows}]
                            (search.get-targets pattern kwargs))
                          (exit-early (echo-not-found (.. in1 (or ?in2 ""))))))
       targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)

@@ -201,10 +201,10 @@ end
 local function get_targets_2a(pattern, _36_)
   local _arg_37_ = _36_
   local backward_3f = _arg_37_["backward?"]
+  local match_last_overlapping_3f = _arg_37_["match-last-overlapping?"]
   local wininfo = _arg_37_["wininfo"]
   local targets = _arg_37_["targets"]
   local source_winid = _arg_37_["source-winid"]
-  local targets0 = (targets or {})
   local _let_38_ = get_horizontal_bounds()
   local left_bound = _let_38_[1]
   local right_bound_2a = _let_38_[2]
@@ -213,6 +213,7 @@ local function get_targets_2a(pattern, _36_)
   local wininfo0 = (wininfo or vim.fn.getwininfo(vim.fn.win_getid())[1])
   local skip_curpos_3f = (whole_window_3f and (vim.fn.win_getid() == source_winid))
   local match_positions = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["skip-curpos?"] = skip_curpos_3f, ["whole-window?"] = whole_window_3f})
+  local targets0 = (targets or {})
   local prev_match = {}
   for _39_ in match_positions do
     local _each_40_ = _39_
@@ -228,7 +229,7 @@ local function get_targets_2a(pattern, _36_)
     elseif (nil ~= _41_) then
       local ch1 = _41_
       local ch2 = (get_char_at(pos, {["char-offset"] = 1}) or "\n")
-      local same_char_triplet_3f
+      local overlap_3f
       local function _43_()
         if backward_3f then
           return ((prev_match.col - col) == ch1:len())
@@ -236,9 +237,13 @@ local function get_targets_2a(pattern, _36_)
           return ((col - prev_match.col) == (prev_match.ch1):len())
         end
       end
-      same_char_triplet_3f = ((line == prev_match.line) and _43_() and (__3erepresentative_char(ch2) == __3erepresentative_char((prev_match.ch2 or ""))))
+      overlap_3f = ((line == prev_match.line) and _43_() and (__3erepresentative_char(ch2) == __3erepresentative_char((prev_match.ch2 or ""))))
       prev_match = {line = line, col = col, ch1 = ch1, ch2 = ch2}
-      if not same_char_triplet_3f then
+      if (overlap_3f and match_last_overlapping_3f) then
+        table.remove(targets0)
+      else
+      end
+      if (not overlap_3f or match_last_overlapping_3f) then
         table.insert(targets0, {wininfo = wininfo0, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = ((ch2 == "\n") or (col == right_bound))})
       else
       end
@@ -251,26 +256,27 @@ local function get_targets_2a(pattern, _36_)
     return nil
   end
 end
-local function distance(_47_, _49_)
-  local _arg_48_ = _47_
-  local l1 = _arg_48_[1]
-  local c1 = _arg_48_[2]
-  local _arg_50_ = _49_
-  local l2 = _arg_50_[1]
-  local c2 = _arg_50_[2]
+local function distance(_48_, _50_)
+  local _arg_49_ = _48_
+  local l1 = _arg_49_[1]
+  local c1 = _arg_49_[2]
+  local _arg_51_ = _50_
+  local l2 = _arg_51_[1]
+  local c2 = _arg_51_[2]
   local editor_grid_aspect_ratio = 0.3
-  local _let_51_ = {abs((c1 - c2)), abs((l1 - l2))}
-  local dx = _let_51_[1]
-  local dy = _let_51_[2]
+  local _let_52_ = {abs((c1 - c2)), abs((l1 - l2))}
+  local dx = _let_52_[1]
+  local dy = _let_52_[2]
   local dx0 = (dx * editor_grid_aspect_ratio)
   return pow((pow(dx0, 2) + pow(dy, 2)), 0.5)
 end
-local function get_targets(pattern, _52_)
-  local _arg_53_ = _52_
-  local backward_3f = _arg_53_["backward?"]
-  local target_windows = _arg_53_["target-windows"]
+local function get_targets(pattern, kwargs)
+  local _local_53_ = kwargs
+  local backward_3f = _local_53_["backward?"]
+  local match_last_overlapping_3f = _local_53_["match-last-overlapping?"]
+  local target_windows = _local_53_["target-windows"]
   if not target_windows then
-    return get_targets_2a(pattern, {["backward?"] = backward_3f})
+    return get_targets_2a(pattern, kwargs)
   else
     local targets = {}
     local cursor_positions = {}
@@ -294,7 +300,7 @@ local function get_targets(pattern, _52_)
       else
       end
       cursor_positions[winid] = get_cursor_pos()
-      get_targets_2a(pattern, {targets = targets, wininfo = wininfo, ["source-winid"] = source_winid})
+      get_targets_2a(pattern, {targets = targets, wininfo = wininfo, ["source-winid"] = source_winid, ["match-last-overlapping?"] = match_last_overlapping_3f})
     end
     if cross_win_3f then
       api.nvim_set_current_win(source_winid)
