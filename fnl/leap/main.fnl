@@ -247,67 +247,107 @@ conflicts can occur:
     left). This is unacceptable - it looks like the label is for X:
           y1 ylabel |
        x1 x2        |
-       ----------------- 
+       -----------------
        -3 -2 -1     edge-pos
+
     Fix: Force highlighting of the unlabeled match, to avoid confusion.
 
 (C) Two labels on top of each other. (Possible if one of the
     labels is shifted, like above.)
-    Fix: Display an 'empty' label at the position."
+    Fix: Display an 'empty' label at the position.
 
+Note: The three cases are mutually exclusive. Case A implies the label
+is not shifted (if there is a match after us, we cannot be at the edge).
+And if we have a target with a shifted label, then the conflicting other
+is either labeled (C) or not (B).
+"
   ; Tables to help us check potential conflicts (we'll be filling them
-  ; as we go [>>]).
-  ; Structure: { "<bufnr> <winid> <lnum> <col>" = <target> }.
-  (let [unlabeled-pos {}
-        label-pos {}]
+  ; as we go).
+  ; { "<bufnr> <winid> <lnum> <col>" = <target> }
+  (let [pos-unlabeled-match {}
+        pos-labeled-match {}
+        pos-label {}]
+    ; Note: A1-A2, B1-B2, C1-C2 are all necessary, as we do only one
+    ; traversal run, and we don't assume anything about the direction
+    ; and the ordering; we always resolve the conflict at the second
+    ; target - at that point, the first one has already been registered
+    ; as a potential source of conflict.
     (each [_ target (ipairs targets)]
       (when-not target.empty-line?
-        (local {:wininfo {: bufnr : winid} :pos [lnum col]} target)
+        (local {: bufnr : winid} target.wininfo)
+        (local [lnum col] target.pos)
+        (local col-ch2 (+ col (string.len (. target.chars 1))))
         (macro ->key [col*]
           `(.. bufnr " " winid " " lnum " " ,col*))
-        ; Note: A1-A2 and B1-B2 are all necessary, as we do only one
-        ; traversal run, and we don't assume anything about the direction
-        ; and the ordering; we always resolve the conflict at the second
-        ; target - at that point, the first one has already been
-        ; registered as a potential source of conflict.
-        (if target.label
-            (when target.beacon  ; can be nil if the label is inactive
-              (let [{:chars [ch1 ch2]} target
-                    label-offset (. target.beacon 1)
-                    key (->key (+ col label-offset))]
-                ; A1 - (unlabeled) other covers current's label?
-                ; Note: A1 implies the label is not shifted (if there is a
-                ; match after us, we cannot be at an edge position).
-                (match (. unlabeled-pos key)
-                  other (do (set target.beacon nil)
-                            (set-beacon-to-match-hl other)))
-                (when (= label-offset 1)
-                  ; B1 - (unlabeled) other touches current's label?
-                  ; For this case we can check whether current's 1st char
-                  ; is over an unlabeled match (see fig. above, y1-x2).
-                  (match (. unlabeled-pos (->key col))
-                    other (set-beacon-to-match-hl other)
-                    ; C - conflicting labels?
-                    _ (match (. label-pos key)
-                        other (do (set target.beacon nil)
-                                  (set-beacon-to-empty-label other)))))
-                ; NOTE: We should register the label position _after_
-                ; checking case C, as we don't want to - literally - chase
-                ; our own tail. (And worse, get an error when at the other
-                ; target we try to tweak our niled out beacon).
-                (tset label-pos key target)))  ; (>>)
+        ; Beacon can be nil (if label-state is inactive).
+        (if (and target.label target.beacon)
+            (let [label-offset (. target.beacon 1)
+                  col-label (+ col label-offset)
+                  shifted-label? (= col-label col-ch2)]
+              ; ------------------------------
+              ; (A1)
+              ;   [a][b][L][-]  --> nil       | current
+              ;   [-][-][a][c]  --> match-hl  | other
+              ;          ^                    | column to check
+              ; or
+              ;   [a][a][L]     --> nil
+              ;   [-][a][b]     --> match-hl
+              ;          ^
+              (match (. pos-unlabeled-match (->key col-label))
+                other (do (set target.beacon nil)
+                          (set-beacon-to-match-hl other)))
+              ; ------------------------------
+              ; (B1)
+              ;   [-][a][L]|
+              ;   [a][a][-]|    --> match-hl
+              ;       ^
+              (when shifted-label?
+                (match (. pos-unlabeled-match (->key col))
+                  other (set-beacon-to-match-hl other)))
+              ; ------------------------------
+              ; (C)
+              ;   [-][a][L]|    --> nil
+              ;   [a][a][L]|    --> empty
+              ;          ^
+              ; or
+              ;   [a][a][L]|    --> nil
+              ;   [-][a][L]|    --> empty
+              ;          ^
+              (match (. pos-label (->key col-label))
+                other (do (set target.beacon nil)
+                          (set-beacon-to-empty-label other)))
+              ; ------------------------------
+              ; NOTE: We should register the label position _after_
+              ; checking case C, as we don't want to literally chase our
+              ; own tail, i.e., our own label.
+              (tset pos-label (->key col-label) target)
+              (tset pos-labeled-match (->key col) target)
+              (when-not shifted-label?
+                (tset pos-labeled-match (->key col-ch2) target)))
+
+            (not target.label)
             (do
-              (local {:chars [ch1 ch2]} target)
-              (each [_ key (ipairs [(->key col)
-                                    (->key (+ col (ch1:len)))])]
-                (tset unlabeled-pos key target)  ; (>>)
-                ; A2 - (unlabeled) current covers other's label?
-                (match (. label-pos key)
+              (each [_ key (ipairs [(->key col) (->key col-ch2)])]
+                (tset pos-unlabeled-match key target)
+                ; ------------------------------
+                ; (A2)
+                ;   [-][-][a][b]  --> match-hl
+                ;   [a][c][L][-]  --> nil
+                ;          ^
+                ; and
+                ;   [-][a][b]     --> match-hl
+                ;   [a][a][L]     --> nil
+                ;          ^
+                (match (. pos-label key)
                   other (do (set other.beacon nil)
                             (set-beacon-to-match-hl target))))
-              ; B2 - (unlabeled) current touches other's label?
-              (local key (->key (+ col (ch1:len) (ch2:len))))
-              (match (. label-pos key)
+              ; ------------------------------
+              ; (B2)
+              ;   [a][a][-]|      --> match-hl
+              ;   [-][a][L]|
+              ;          ^
+              (local col-after (+ col-ch2 (string.len (. target :chars 2))))
+              (match (. pos-label (->key col-after))
                 other (set-beacon-to-match-hl target))))))))
 
 
