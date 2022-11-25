@@ -195,7 +195,7 @@ require('leap').leap { target_windows = vim.tbl_filter(
 <details>
 <summary>Enhanced f/t motions</summary>
 
-Check flit.nvim, an extension plugin for Leap.
+Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
 
 </details>
 
@@ -203,7 +203,7 @@ Check flit.nvim, an extension plugin for Leap.
 <details>
 <summary>Linewise motions</summary>
 
-See the "Extending Leap" section below for an example snippet.
+See [Extending Leap](#extending-leap) section below for an example snippet.
 
 </details>
 
@@ -211,7 +211,7 @@ See the "Extending Leap" section below for an example snippet.
 <details>
 <summary>Other supernatural powers besides clairvoyance?</summary>
 
-You might be interested in leap-spooky.nvim.
+You might be interested in [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
 
 </details>
 
