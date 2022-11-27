@@ -531,13 +531,25 @@ is either labeled (C) or not (B).
     ;   2. For the second input, we need to play with the sublist keys
     ;      (see `populate-sublists`).
     (fn prepare-pattern [in1 ?in2]
-      (.. "\\V"
-          (if opts.case_sensitive "\\C" "\\c")
-          (or (expand-to-equivalence-class in1)
-              (in1:gsub "\\" "\\\\"))  ; sole backslash needs to be escaped even for \V
-          (or (-?> ?in2 expand-to-equivalence-class)
-              ?in2
-              "\\_.")))  ; match anything, including EOL
+      (let [pat1 (or (expand-to-equivalence-class in1)
+                     ; Sole '\' needs to be escaped even for \V.
+                     (in1:gsub "\\" "\\\\"))
+            pat2 (or (-?> ?in2 expand-to-equivalence-class)
+                     ?in2
+                     "\\_.")  ; match anything, including EOL
+            pat (if (and (pat1:match "\\n") (pat2:match "\\n"))
+                    ; If \n\n is a possible sequence to appear, add ^\n
+                    ; to the pattern, to make our convenience feature -
+                    ; targeting empty lines by typing the newline alias
+                    ; twice - work with single-step processing too.
+                    ; (In case of two-step processing, we handle the
+                    ; special case of \n as first input in
+                    ; `search.get-targets`, but when we already have the
+                    ; full pattern - this includes repeating the
+                    ; previous search -, we need this hack here).
+                    (.. pat1 pat2 "\\|\\^\\n")
+                    (.. pat1 pat2))]
+        (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
 
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
