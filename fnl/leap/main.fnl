@@ -514,14 +514,13 @@ is either labeled (C) or not (B).
       (-?> (match targets [&as tbl] tbl func (func))
            fill-wininfo))
 
-    (fn expand-to-equivalence-class [in]  ; <-- "b"
-      (match (get-eq-class-of in)
-        chars                             ; --> {"a","b","c"}
-        ; `vim.fn.search` cannot interpret actual newline (LF) chars in
-        ; the regex pattern, we need to insert them as raw \ + n.
-        ; Backslash itself might appear in the class, needs to be escaped.
-        (let [chars* (map #(match $ "\n" "\\n" "\\" "\\\\" _ $) chars)]
-          (.. "\\(" (table.concat chars* "\\|") "\\)"))))  ; --> "\(a\|b\|c\)"
+    (fn expand-to-equivalence-class [in]                  ; <-- "b"
+      (-?>> (get-eq-class-of in)                          ; --> {"a","b","c"}
+            ; (1) `vim.fn.search` cannot interpret actual newline chars in
+            ;     the regex pattern, we need to insert them as raw \ + n.
+            ; (2) '\' itself might appear in the class, needs to be escaped.
+            (map #(match $  "\n" "\\n"  "\\" "\\\\"  _ $))
+            (#(.. "\\(" (table.concat $ "\\|") "\\)"))))  ; --> "\(a\|b\|c\)"
 
     ; NOTE: If two-step processing is ebabled (AOT beacons), for any
     ; kind of input mapping (case-insensitivity, character classes,
