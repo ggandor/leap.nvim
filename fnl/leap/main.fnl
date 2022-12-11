@@ -560,12 +560,6 @@ is either labeled (C) or not (B).
                     :target-windows ?target-windows}]
         (search.get-targets pattern kwargs)))
 
-    (fn prepare-targets [targets]
-      (doto targets
-        (set-autojump force-noautojump?)
-        (attach-label-set)
-        (set-labels multi-select?)))
-
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
       (each [idx {: label : label-state &as target} (ipairs sublist)
@@ -737,105 +731,128 @@ is either labeled (C) or not (B).
 
     (exec-user-autocmds :LeapEnter)
 
-    (match-try (if dot-repeat?
-                   (if state.dot_repeat.callback
-                       (values true true)
-                       (values state.dot_repeat.in1 state.dot_repeat.in2))
-                   user-given-targets? (values true true)
-                   ; This might also return in2 too, if using the `repeat_search` key.
-                   aot? (get-first-pattern-input)  ; REDRAW
-                   (get-full-pattern-input))  ; REDRAW
-      (in1 ?in2) (if (and dot-repeat? state.dot_repeat.callback)
-                     (get-user-given-targets state.dot_repeat.callback)
+    (local (in1 ?in2) (if dot-repeat?
+                          (if state.dot_repeat.callback
+                              (values true true)
+                              (values state.dot_repeat.in1 state.dot_repeat.in2))
+                          user-given-targets? (values true true)
+                          ; This might also return in2 too, if using the
+                          ; `repeat_search` key.
+                          aot? (get-first-pattern-input)  ; REDRAW
+                          (get-full-pattern-input)))  ; REDRAW
+    (when-not in1
+      (lua :return))
 
-                     user-given-targets?
-                     (or (get-user-given-targets user-given-targets)
-                         (exit-early (echo "no targets")))
+    (local targets (if (and dot-repeat? state.dot_repeat.callback)
+                       (get-user-given-targets state.dot_repeat.callback)
 
-                     (or (get-targets in1 ?in2)
-                         (exit-early (echo-not-found (.. in1 (or ?in2 ""))))))
-      targets (if dot-repeat?
-                  (match (. targets state.dot_repeat.target_idx)
-                    target (exit (do-action target))
-                    _ (exit-early))
+                       user-given-targets?
+                       (or (get-user-given-targets user-given-targets)
+                           (exit-early (echo "no targets")))
 
-                  ?in2
-                  (do (if no-labels?
-                          (tset targets :autojump? true)
-                          ; set-autojump + attach-label-set + set-labels
-                          (prepare-targets targets))
-                      ?in2)
+                       (or (get-targets in1 ?in2)
+                           (exit-early (echo-not-found (.. in1 (or ?in2 "")))))))
+    (when-not targets
+      (lua :return))
 
-                  (do (when (> (length targets) max-phase-one-targets)
-                        (set aot? false))
-                      (populate-sublists targets)
-                      (each [_ sublist (pairs targets.sublists)]
-                         (prepare-targets sublist))
-                      (doto targets
-                        (set-initial-label-states)
-                        (set-beacons {: aot?}))
-                      (get-second-pattern-input targets)))  ; REDRAW
-      in2 (if
-            (= in2 spec-keys.next_phase_one_target)
-            (let [in2 (. targets 1 :chars 2)]
-              (update-repeat-state {: in1 : in2})
-              (do-action (. targets 1))
-              (if (or (= (length targets) 1)
-                      op-mode? (not directional?) user-given-action)
-                  (exit (set-dot-repeat in1 in2 1))
-                  (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
+    (when dot-repeat?
+      (match (. targets state.dot_repeat.target_idx)
+        target (exit (do-action target))
+        _ (exit-early))
+      (lua :return))
 
-            (do
-              (update-repeat-state {: in1 : in2})  ; do this now - repeat can succeed
-              (match (or (if targets.sublists
-                             (. targets.sublists in2)
-                             targets)
-                         (exit-early (echo-not-found (.. in1 in2))))
-                targets*
-                (if multi-select?
-                    (match (multi-select-loop targets*)
-                      targets** (exit (with-highlight-chores
-                                        (light-up-beacons targets**))
-                                      (do-action targets**)))
-                    (let [|targets*| (length targets*)
-                          exit-with-action (fn [idx]
-                                             (exit (set-dot-repeat in1 in2 idx)
-                                                   (do-action (. targets* idx))))]
-                      (if count (if (<= count |targets*|)
-                                    (exit-with-action count)
-                                    (exit-early))
+    (do
+      (local prepare #(doto $
+                        (set-autojump force-noautojump?)
+                        (attach-label-set)
+                        (set-labels multi-select?)))
+      (if ?in2
+          (if no-labels?
+              (tset targets :autojump? true)
+              (prepare targets))
+          (do
+            (when (> (length targets) max-phase-one-targets)
+              (set aot? false))
+            (populate-sublists targets)
+            (each [_ sublist (pairs targets.sublists)]
+               (prepare sublist))
+            (doto targets
+              (set-initial-label-states)
+              (set-beacons {: aot?})))))
+    (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
+    (when-not in2
+      (lua :return))
 
-                          (= |targets*| 1) (exit-with-action 1)
+    ; Jump eagerly to the very first match (without giving the full pattern)?
+    (when (= in2 spec-keys.next_phase_one_target)
+      (let [in2 (. targets 1 :chars 2)]
+        (update-repeat-state {: in1 : in2})
+        (do-action (. targets 1))
+        (if (or (= (length targets) 1) op-mode? (not directional?)
+                user-given-action)
+            (exit (set-dot-repeat in1 in2 1))
+            (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
+      (lua :return))
 
-                          (do
-                            (when targets*.autojump?
-                              (set current-idx 1)
-                              (do-action (. targets* 1)))
-                            ; This sets label states (i.e., modifies targets*) in each cycle.
-                            (match (post-pattern-input-loop targets*)  ; REDRAW (LOOP)
-                              in-final
-                              (if
-                                ; Jump to the first match on the [rest of the] target list?
-                                (contains? spec-keys.next_target in-final)
-                                (if (or op-mode? (not directional?) user-given-action)
-                                    (exit-with-action 1)  ; (no autojump)
-                                    (let [new-idx (inc current-idx)]
-                                      (do-action (. targets* new-idx))
-                                      ; TODO: doc (or extract)
-                                      (when (and (empty? opts.labels)
-                                                 (not (empty? opts.safe_labels)))
-                                        (for [i (+ (length opts.safe_labels) 2) |targets*|]
-                                          (tset targets* i :label nil)
-                                          (tset targets* i :beacon nil)))
-                                      (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                                                      {:no-labels?
-                                                       (or no-labels?
-                                                           (not targets*.autojump?))})))
-                                (match (get-target-with-active-primary-label targets* in-final)
-                                  [idx _] (exit-with-action idx)
-                                  _ (if targets*.autojump?
-                                        (exit (vim.fn.feedkeys in-final :i))
-                                        (exit-early)))))))))))))))
+    ; Do this now - repeat can succeed, even if we fail this time.
+    (update-repeat-state {: in1 : in2})
+
+    ; Get the sublist for in2, and work with that from here on (except if
+    ; we've been given custom targets).
+    (local targets* (or (if targets.sublists (. targets.sublists in2) targets)
+                        (exit-early (echo-not-found (.. in1 in2)))))
+    (when-not targets*
+      (lua :return))
+
+    (when multi-select?
+      (match (multi-select-loop targets*)
+        targets** (exit (with-highlight-chores (light-up-beacons targets**))
+                        (do-action targets**)))
+      (lua :return))
+
+    (fn exit-with-action [idx]
+       (exit (set-dot-repeat in1 in2 idx)
+             (do-action (. targets* idx))))
+
+    (when count
+      (if (<= count (length targets*))
+          (exit-with-action count)
+          (exit-early))
+      (lua :return))
+
+    (when (= (length targets*) 1)
+      (exit-with-action 1)
+      (lua :return))
+
+    (when targets*.autojump?
+      (set current-idx 1)
+      (do-action (. targets* 1)))
+    ; This sets label states (i.e., modifies targets*) in each cycle.
+    (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
+    (when-not in-final
+      (lua :return))
+
+    ; Jump to the first match on the [rest of the] target list?
+    (when (contains? spec-keys.next_target in-final)
+      (if (or op-mode? (not directional?) user-given-action)
+          (exit-with-action 1)  ; (no autojump)
+          (let [new-idx (inc current-idx)]
+            (do-action (. targets* new-idx))
+            ; TODO: doc (or extract)
+            (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
+              (for [i (+ (length opts.safe_labels) 2) (length targets*)]
+                (tset targets* i :label nil)
+                (tset targets* i :beacon nil)))
+            (traversal-loop targets* new-idx  ; REDRAW (LOOP)
+                            {:no-labels? (or no-labels?
+                                             (not targets*.autojump?))})))
+      (lua :return))
+
+    (match (get-target-with-active-primary-label targets* in-final)
+      [idx _] (exit-with-action idx)
+      _ (if targets*.autojump?
+            (exit (vim.fn.feedkeys in-final :i))
+            (exit-early)))))
 
 
 ; Init ///1
