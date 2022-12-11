@@ -560,6 +560,12 @@ is either labeled (C) or not (B).
                     :target-windows ?target-windows}]
         (search.get-targets pattern kwargs)))
 
+    (fn prepare-targets [targets]
+      (doto targets
+        (set-autojump force-noautojump?)
+        (attach-label-set)
+        (set-labels multi-select?)))
+
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
       (each [idx {: label : label-state &as target} (ipairs sublist)
@@ -629,10 +635,10 @@ is either labeled (C) or not (B).
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
         spec-keys.repeat_search
-        (if state.repeat.in1
-            (do (set aot? false)
-                (values state.repeat.in1 state.repeat.in2))
-            (exit-early (echo "no previous search")))
+        (do (set aot? false)
+            (if state.repeat.in1
+                (values state.repeat.in1 state.repeat.in2)
+                (exit-early (echo "no previous search"))))
 
         in1 in1))
 
@@ -693,8 +699,8 @@ is either labeled (C) or not (B).
                 (set first-invoc? false)
                 (match (get-target-with-active-primary-label targets in)
                   [_ target] (when-not (contains? selection target)
-                                 (table.insert selection target)
-                                 (tset target :label-state :selected)))
+                               (table.insert selection target)
+                               (tset target :label-state :selected)))
                 (loop targets))))))
 
     (fn traversal-loop [targets idx {: no-labels?}]
@@ -731,9 +737,10 @@ is either labeled (C) or not (B).
 
     (exec-user-autocmds :LeapEnter)
 
-    (match-try (if dot-repeat? (if state.dot_repeat.callback (values true true)
-                                   (values state.dot_repeat.in1
-                                           state.dot_repeat.in2))
+    (match-try (if dot-repeat?
+                   (if state.dot_repeat.callback
+                       (values true true)
+                       (values state.dot_repeat.in1 state.dot_repeat.in2))
                    user-given-targets? (values true true)
                    ; This might also return in2 too, if using the `repeat_search` key.
                    aot? (get-first-pattern-input)  ; REDRAW
@@ -747,28 +754,28 @@ is either labeled (C) or not (B).
 
                      (or (get-targets in1 ?in2)
                          (exit-early (echo-not-found (.. in1 (or ?in2 ""))))))
-      targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
-                                target (exit (do-action target))
-                                _ (exit-early))
-                  (let [prepare-targets #(doto $
-                                           (set-autojump force-noautojump?)
-                                           (attach-label-set)
-                                           (set-labels multi-select?))]
-                    (if ?in2
-                        (if no-labels? (tset targets :autojump? true)
-                            (prepare-targets targets))
-                        (do (populate-sublists targets)
-                            (each [_ sublist (pairs targets.sublists)]
-                              (prepare-targets sublist))))
-                    (when (> (length targets) max-phase-one-targets)
-                      (set aot? false))
-                    (or ?in2
-                        (do (doto targets
-                              (set-initial-label-states)
-                              (set-beacons {: aot?}))
-                            (get-second-pattern-input targets)))))  ; REDRAW
+      targets (if dot-repeat?
+                  (match (. targets state.dot_repeat.target_idx)
+                    target (exit (do-action target))
+                    _ (exit-early))
+
+                  ?in2
+                  (do (if no-labels?
+                          (tset targets :autojump? true)
+                          ; set-autojump + attach-label-set + set-labels
+                          (prepare-targets targets))
+                      ?in2)
+
+                  (do (when (> (length targets) max-phase-one-targets)
+                        (set aot? false))
+                      (populate-sublists targets)
+                      (each [_ sublist (pairs targets.sublists)]
+                         (prepare-targets sublist))
+                      (doto targets
+                        (set-initial-label-states)
+                        (set-beacons {: aot?}))
+                      (get-second-pattern-input targets)))  ; REDRAW
       in2 (if
-            ; Jump to the very first match?
             (= in2 spec-keys.next_phase_one_target)
             (let [in2 (. targets 1 :chars 2)]
               (update-repeat-state {: in1 : in2})
@@ -777,22 +784,29 @@ is either labeled (C) or not (B).
                       op-mode? (not directional?) user-given-action)
                   (exit (set-dot-repeat in1 in2 1))
                   (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
+
             (do
               (update-repeat-state {: in1 : in2})  ; do this now - repeat can succeed
-              (match (or (if targets.sublists (. targets.sublists in2) targets)
+              (match (or (if targets.sublists
+                             (. targets.sublists in2)
+                             targets)
                          (exit-early (echo-not-found (.. in1 in2))))
                 targets*
-                (if multi-select? (match (multi-select-loop targets*)
-                                    targets** (exit (with-highlight-chores
-                                                      (light-up-beacons targets**))
-                                                    (do-action targets**)))
-                    (let [exit-with-action (fn [idx]
+                (if multi-select?
+                    (match (multi-select-loop targets*)
+                      targets** (exit (with-highlight-chores
+                                        (light-up-beacons targets**))
+                                      (do-action targets**)))
+                    (let [|targets*| (length targets*)
+                          exit-with-action (fn [idx]
                                              (exit (set-dot-repeat in1 in2 idx)
-                                                   (do-action (. targets* idx))))
-                          |targets*| (length targets*)]
-                      (if count (if (<= count |targets*|) (exit-with-action count)
+                                                   (do-action (. targets* idx))))]
+                      (if count (if (<= count |targets*|)
+                                    (exit-with-action count)
                                     (exit-early))
+
                           (= |targets*| 1) (exit-with-action 1)
+
                           (do
                             (when targets*.autojump?
                               (set current-idx 1)
@@ -807,16 +821,20 @@ is either labeled (C) or not (B).
                                     (exit-with-action 1)  ; (no autojump)
                                     (let [new-idx (inc current-idx)]
                                       (do-action (. targets* new-idx))
-                                      (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
+                                      ; TODO: doc (or extract)
+                                      (when (and (empty? opts.labels)
+                                                 (not (empty? opts.safe_labels)))
                                         (for [i (+ (length opts.safe_labels) 2) |targets*|]
                                           (tset targets* i :label nil)
                                           (tset targets* i :beacon nil)))
                                       (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                                                       {:no-labels?
-                                                       (or no-labels? (not targets*.autojump?))})))
+                                                       (or no-labels?
+                                                           (not targets*.autojump?))})))
                                 (match (get-target-with-active-primary-label targets* in-final)
                                   [idx _] (exit-with-action idx)
-                                  _ (if targets*.autojump? (exit (vim.fn.feedkeys in-final :i))
+                                  _ (if targets*.autojump?
+                                        (exit (vim.fn.feedkeys in-final :i))
                                         (exit-early)))))))))))))))
 
 
