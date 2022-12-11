@@ -503,24 +503,26 @@ is either labeled (C) or not (B).
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
 
-    (fn fill-wininfo [targets]
-      (when-not (empty? targets)
-        (when-not (. targets 1 :wininfo)
-          (each [_ t (ipairs targets)]
-            (set t.wininfo curr-win)))
-        targets))
-
     (fn get-user-given-targets [targets]
-      (-?> (match targets [&as tbl] tbl func (func))
-           fill-wininfo))
+      (match (if (= (type targets) :function) (targets) targets)
+        targets*
+        (when (> (length targets*) 0)
+          ; Fill wininfo-s when not provided.
+          (when-not (. targets* 1 :wininfo)
+            (each [_ t (ipairs targets*)]
+              (tset t :wininfo curr-win)))
+          targets*)))
 
-    (fn expand-to-equivalence-class [in]                  ; <-- "b"
-      (-?>> (get-eq-class-of in)                          ; --> {"a","b","c"}
-            ; (1) `vim.fn.search` cannot interpret actual newline chars in
-            ;     the regex pattern, we need to insert them as raw \ + n.
-            ; (2) '\' itself might appear in the class, needs to be escaped.
-            (map #(match $  "\n" "\\n"  "\\" "\\\\"  _ $))
-            (#(.. "\\(" (table.concat $ "\\|") "\\)"))))  ; --> "\(a\|b\|c\)"
+    (fn expand-to-equivalence-class [in]               ; <-- "b"
+      (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
+      (when chars
+        ; (1) `vim.fn.search` cannot interpret actual newline chars in
+        ;     the regex pattern, we need to insert them as raw \ + n.
+        ; (2) '\' itself might appear in the class, needs to be escaped.
+        (each [i ch (ipairs chars)]
+          (if (= ch "\n") (tset chars i "\\n")
+              (= ch "\\") (tset chars i "\\\\")))
+        (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
 
     ; NOTE: If two-step processing is ebabled (AOT beacons), for any
     ; kind of input mapping (case-insensitivity, character classes,
@@ -549,6 +551,14 @@ is either labeled (C) or not (B).
                     (.. pat1 pat2 "\\|\\^\\n")
                     (.. pat1 pat2))]
         (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
+
+    (fn get-targets [in1 ?in2]
+      (let [search (require :leap.search)
+            pattern (prepare-pattern in1 ?in2)
+            kwargs {: backward?
+                    : match-last-overlapping?
+                    :target-windows ?target-windows}]
+        (search.get-targets pattern kwargs)))
 
     (fn get-target-with-active-primary-label [sublist input]
       (var res nil)
@@ -730,14 +740,12 @@ is either labeled (C) or not (B).
                    (get-full-pattern-input))  ; REDRAW
       (in1 ?in2) (if (and dot-repeat? state.dot_repeat.callback)
                      (get-user-given-targets state.dot_repeat.callback)
-                     user-given-targets? (or (get-user-given-targets
-                                               user-given-targets)
-                                             (exit-early (echo "no targets")))
-                     (or (let [search (require "leap.search")
-                               pattern (prepare-pattern in1 ?in2)
-                               kwargs {: backward? : match-last-overlapping?
-                                       :target-windows ?target-windows}]
-                           (search.get-targets pattern kwargs))
+
+                     user-given-targets?
+                     (or (get-user-given-targets user-given-targets)
+                         (exit-early (echo "no targets")))
+
+                     (or (get-targets in1 ?in2)
                          (exit-early (echo-not-found (.. in1 (or ?in2 ""))))))
       targets (if dot-repeat? (match (. targets state.dot_repeat.target_idx)
                                 target (exit (do-action target))
