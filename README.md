@@ -88,8 +88,10 @@ That is, **you do not want to think about**
   derivatives)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and you
   should be able to type the sequence in one go, without having to make
-  semi-conscious decisions on the fly ("Shall I start a `<C-g>` streak, or try
-  one more input character?"), or instantly react to events (labels appearing).
+  semi-conscious decisions on the fly (the ever-present dilemma when using
+  `/`/`?`: "Shall I try one more input character, or it's time to start a
+  `<C-g>` streak?"), or having to instantly react to events (labels appearing on
+  the screen).
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -115,10 +117,10 @@ characters altogether to reach a given target.
 ### Auxiliary principles
 
 - Optimize for the common case (not the pathological): a good example of this is
-  the Sneak-like "one-character labels and multiple groups"-approach (instead of
-  multi-character labels and no groups, EasyMotion-style), which can become
-  awkward for, say, 200 targets, but usually more comfortable, eliminates all
-  kinds of edge cases and implementation problems, and allows for features like
+  the Sneak-like "one-character labels in multiple groups"-approach (instead of
+  using multi-character labels, EasyMotion-style), which can become awkward for,
+  say, 200 targets, but usually more comfortable, eliminates all kinds of edge
+  cases and implementation problems, and allows for features like
   [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
@@ -166,6 +168,7 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 -- opposite direction than your goal). Former vim-sneak users will know
 -- how awesome a feature that is. I really suggest trying out the plugin
 -- with the defaults for a while first.
+
 -- An additional disadvantage is that operations cannot be dot-repeated
 -- if the search is non-directional.
 
@@ -203,7 +206,7 @@ Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for
 <details>
 <summary>Linewise motions</summary>
 
-See [Extending Leap](#extending-leap) section below for an example snippet.
+See [Extending Leap](#extending-leap) for an example snippet (30-40 lines).
 
 </details>
 
@@ -211,7 +214,7 @@ See [Extending Leap](#extending-leap) section below for an example snippet.
 <details>
 <summary>Other supernatural powers besides clairvoyance?</summary>
 
-You might be interested in [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
+You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.nvim).
 
 </details>
 
@@ -275,7 +278,9 @@ All of them have aliases or obvious equivalents:
 
 ```lua
 -- Getting used to `d` shouldn't take long - after all, it is more comfortable
--- than `x`, and even has a better mnemonic.
+-- than `x`. Also Visual `x`/`d` are the counterparts of Operator-pending `d`
+-- (not Normal `x`), so `d` is a much more obvious default choice among the two
+-- redundant alternatives.
 -- If you still desperately want your old `x` back, then just delete these
 -- mappings set by Leap:
 vim.keymap.del({'x', 'o'}, 'x')
@@ -411,10 +416,10 @@ to the previous one (`special_keys.repeat_search`).
 
 After entering at least one input character, `<enter>` initiates "traversal"
 mode, moving on to the next match on each keypress
-(`special_keys.next_phase_one_target` or `special_keys.next_target`).
-
-`<tab>` can revert the previous jump(s) in case you accidentally overshoot your
-target (`special_keys.prev_target`).
+(`special_keys.next_phase_one_target` or `special_keys.next_target`). In case
+you accidentally overshoot your target, `<tab>` can revert the previous jump(s)
+(`special_keys.prev_target`). Note that if the safe label set is in use, the
+labels will remain available the whole time!
 
 #### Tips
 
@@ -427,11 +432,6 @@ target (`special_keys.prev_target`).
 - Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
   `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
   lines.
-
-#### Notes
-
-- If the safe label set is in use, the labels will remain available during the
-  whole time.
 
 - For cross-window search, traversal mode is not supported (since there's no
   direction to follow), but you can still accept the first (presumably only)
