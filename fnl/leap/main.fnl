@@ -475,26 +475,17 @@ is either labeled (C) or not (B).
 
     ; Helpers ///
 
-    (fn echo-not-found [s] (echo (.. "not found: " s)))
-
-    ; Note: One of the main purpose of these macros, besides wrapping
-    ; cleanup stuff, is to enforce and encapsulate the requirement that
-    ; tail-positioned "exit" forms in `match` blocks should always
-    ; return nil. (Interop with side-effecting VimL functions can be
-    ; dangerous, they might return 0 for example, like `feedkey`, and
-    ; with that they can screw up Fennel match forms in a breeze,
-    ; resulting in misterious bugs, so it's better to be paranoid.)
-    (macro exit [...]
-      `(do (do ,...)
-           (hl:cleanup hl-affected-windows)
+    (macro exit []
+      `(do (hl:cleanup hl-affected-windows)
            (exec-user-autocmds :LeapLeave)
-           nil))
+           (lua :return)))
 
     ; Be sure not to call the macro twice accidentally,
     ; `handle-interrupted-change-op!` moves the cursor!
-    (macro exit-early [...]
-      `(do (when change-op? (handle-interrupted-change-op!))
-           (exit ,...)))
+    (macro exit-early []
+      `(do (when change-op?
+             (handle-interrupted-change-op!))
+           (exit)))
 
     (macro with-highlight-chores [...]
       `(do (hl:cleanup hl-affected-windows)
@@ -503,6 +494,9 @@ is either labeled (C) or not (B).
            (do ,...)
            (hl:highlight-cursor)
            (vim.cmd :redraw)))
+
+    (fn echo-not-found [s]
+      (echo (.. "not found: " s)))
 
     (fn get-user-given-targets [targets]
       (match (if (= (type targets) :function) (targets) targets)
@@ -562,9 +556,9 @@ is either labeled (C) or not (B).
         (search.get-targets pattern kwargs)))
 
     (fn get-target-with-active-primary-label [sublist input]
-      (var res nil)
+      (var res [])
       (each [idx {: label : label-state &as target} (ipairs sublist)
-             &until (or res (= label-state :inactive))]
+             &until (or (next res) (= label-state :inactive))]
         (when (and (= label input) (= label-state :active-primary))
           (set res [idx target])))
       res)
@@ -629,28 +623,27 @@ is either labeled (C) or not (B).
 
     (fn get-first-pattern-input []
       (with-highlight-chores (echo ""))  ; clean up the command line
-      (match (or (get-input-by-keymap prompt) (exit-early))
+      (match (get-input-by-keymap prompt)
         ; Here we can handle any other modifier key as "zeroth" input,
         ; if the need arises.
         spec-keys.repeat_search
         (do (set aot? false)
             (if state.repeat.in1
                 (values state.repeat.in1 state.repeat.in2)
-                (exit-early (echo "no previous search"))))
+                (do (echo "no previous search") nil)))
 
         in1 in1))
 
     (fn get-second-pattern-input [targets]
       (when (<= (length targets) max-phase-one-targets)
         (with-highlight-chores (light-up-beacons targets)))
-      (or (get-input-by-keymap prompt) (exit-early)))
+      (get-input-by-keymap prompt))
 
     (fn get-full-pattern-input []
       (match (get-first-pattern-input)
         (in1 in2) (values in1 in2)
         (in1 nil) (match (get-input-by-keymap prompt)
-                    in2 (values in1 in2)
-                    _ (exit-early))))
+                    in2 (values in1 in2))))
 
     (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
       ;;;
@@ -663,7 +656,7 @@ is either labeled (C) or not (B).
         (with-highlight-chores
           (local (start end) (get-highlighted-idx-range targets no-labels?))
           (light-up-beacons targets start end))
-        (match (or (get-input) (exit-early))
+        (match (get-input)
           input
           (if (and (or (= input spec-keys.next_group)
                        (and (= input spec-keys.prev_group) (not first-invoc?)))
@@ -715,7 +708,7 @@ is either labeled (C) or not (B).
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end))
-      (match (or (get-input) (exit))
+      (match (get-input)
         input
         (match (if (contains? spec-keys.next_target input)
                    (min (inc idx) (length targets))
@@ -733,8 +726,8 @@ is either labeled (C) or not (B).
                     (traversal-loop targets new-idx {: no-labels?}))
             ; We still want the labels (if there are) to function.
           _ (match (get-target-with-active-primary-label targets input)
-              [_ target] (exit (jump-to! target))
-              _ (exit (vim.fn.feedkeys input :i))))))
+              [_ target] (jump-to! target)
+              _ (vim.fn.feedkeys input :i)))))
 
     ; //> Helpers
 
@@ -755,25 +748,24 @@ is either labeled (C) or not (B).
                           aot? (get-first-pattern-input)  ; REDRAW
                           (get-full-pattern-input)))  ; REDRAW
     (when-not in1
-      (lua :return))
+      (exit-early))
 
     (local targets (if (and dot-repeat? state.dot_repeat.callback)
                        (get-user-given-targets state.dot_repeat.callback)
 
                        user-given-targets?
                        (or (get-user-given-targets user-given-targets)
-                           (exit-early (echo "no targets")))
+                           (do (echo "no targets") nil))
 
                        (or (get-targets in1 ?in2)
-                           (exit-early (echo-not-found (.. in1 (or ?in2 "")))))))
+                           (do (echo-not-found (.. in1 (or ?in2 ""))) nil))))
     (when-not targets
-      (lua :return))
+      (exit-early))
 
     (when dot-repeat?
       (match (. targets state.dot_repeat.target_idx)
-        target (exit (do-action target))
-        _ (exit-early))
-      (lua :return))
+        target (do (do-action target) (exit))
+        _ (exit-early)))
 
     (do
       (local prepare #(doto $
@@ -795,7 +787,7 @@ is either labeled (C) or not (B).
               (set-beacons {: aot?})))))
     (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
     (when-not in2
-      (lua :return))
+      (exit-early))
 
     ; Jump eagerly to the very first match (without giving the full pattern)?
     (when (= in2 spec-keys.next_phase_one_target)
@@ -804,39 +796,38 @@ is either labeled (C) or not (B).
       (update-repeat-state {: in1 :in2 in2*})
       (do-action first)
       (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
-          (exit (set-dot-repeat in1 in2* 1))
+          (set-dot-repeat in1 in2* 1)
           (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
-      (lua :return))
+      (exit))
 
     ; Do this now - repeat can succeed, even if we fail this time.
     (update-repeat-state {: in1 : in2})
 
     ; Get the sublist for in2, and work with that from here on (except if
     ; we've been given custom targets).
-    (local targets* (or (if targets.sublists (. targets.sublists in2) targets)
-                        (exit-early (echo-not-found (.. in1 in2)))))
+    (local targets* (if targets.sublists (. targets.sublists in2) targets))
     (when-not targets*
-      (lua :return))
+      (echo-not-found (.. in1 in2))
+      (exit-early))
 
     (when multi-select?
       (match (multi-select-loop targets*)
-        targets** (exit (with-highlight-chores (light-up-beacons targets**))
-                        (do-action targets**)))
-      (lua :return))
+        targets** (do (with-highlight-chores (light-up-beacons targets**))
+                      (do-action targets**)))
+      (exit))
 
-    (fn exit-with-action [idx]
-       (exit (set-dot-repeat in1 in2 idx)
-             (do-action (. targets* idx))))
+    (macro exit-with-action-on [idx]
+      `(do (set-dot-repeat in1 in2 ,idx)
+           (do-action (. targets* ,idx))
+           (exit)))
 
     (when count
       (if (<= count (length targets*))
-          (exit-with-action count)
-          (exit-early))
-      (lua :return))
+          (exit-with-action-on count)
+          (exit-early)))
 
     (when (= (length targets*) 1)
-      (exit-with-action 1)
-      (lua :return))
+      (exit-with-action-on 1))
 
     (when targets*.autojump?
       (set current-idx 1)
@@ -844,12 +835,12 @@ is either labeled (C) or not (B).
     ; This sets label states (i.e., modifies targets*) in each cycle.
     (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
     (when-not in-final
-      (lua :return))
+      (exit-early))
 
     ; Jump to the first match on the [rest of the] target list?
     (when (contains? spec-keys.next_target in-final)
       (if (or op-mode? (not directional?) user-given-action)
-          (exit-with-action 1)  ; (no autojump)
+          (exit-with-action-on 1)  ; (no autojump)
           (let [new-idx (inc current-idx)]
             (do-action (. targets* new-idx))
             ; TODO: doc (or extract)
@@ -859,14 +850,17 @@ is either labeled (C) or not (B).
                 (tset targets* i :beacon nil)))
             (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                             {:no-labels? (or no-labels?
-                                             (not targets*.autojump?))})))
-      (lua :return))
+                                             (not targets*.autojump?))})
+            (exit))))
 
-    (match (get-target-with-active-primary-label targets* in-final)
-      [idx _] (exit-with-action idx)
-      _ (if targets*.autojump?
-            (exit (vim.fn.feedkeys in-final :i))
-            (exit-early)))))
+    (local [idx _] (get-target-with-active-primary-label targets* in-final))
+    (if idx (exit-with-action-on idx)
+        targets*.autojump? (do (vim.fn.feedkeys in-final :i) (exit))
+        (exit-early))
+    ; Without this, Fennel inserts `return nil` into the if branches
+    ; above (to wrap up the big let block), which in combination with
+    ; the exit macros results in compile error.
+    nil))
 
 
 ; Init ///1
