@@ -412,6 +412,7 @@ is either labeled (C) or not (B).
          :inclusive_op inclusive-op?
          : offset}
         (if dot-repeat? state.dot_repeat kwargs)
+        ;;;
         _ (set state.args kwargs)
         _ (set opts.current_call (or user-given-opts {}))
         _ (tset opts.current_call :eq_class_of
@@ -577,11 +578,14 @@ is either labeled (C) or not (B).
                  (not (or dot-repeat? (= (type user-given-targets) :table))))
         (set state.dot_repeat
              (vim.tbl_extend :error
-               {: target_idx
-                ; Mind the naming conventions.
-                :backward backward? :inclusive_op inclusive-op? : offset}
-               (if user-given-targets {:callback user-given-targets}
-                   {: in1 : in2})))
+                             (if user-given-targets
+                                 {:callback user-given-targets}
+                                 {: in1 : in2})
+                             {: target_idx
+                              : offset
+                              ; Mind the naming conventions.
+                              :backward backward?
+                              :inclusive_op inclusive-op?}))
         (set-dot-repeat*)))
 
     (local jump-to!
@@ -649,6 +653,7 @@ is either labeled (C) or not (B).
                     _ (exit-early))))
 
     (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
+      ;;;
       (fn loop [group-offset first-invoc?]
         ; Do _not_ skip this on initial invocation - we might have skipped
         ; setting the initial label states if using `spec-keys.repeat_search`.
@@ -656,8 +661,8 @@ is either labeled (C) or not (B).
           (set-label-states targets {: group-offset}))
         (set-beacons targets {: aot? : no-labels? : user-given-targets?})
         (with-highlight-chores
-          (let [(start end) (get-highlighted-idx-range targets no-labels?)]
-            (light-up-beacons targets start end)))
+          (local (start end) (get-highlighted-idx-range targets no-labels?))
+          (light-up-beacons targets start end))
         (match (or (get-input) (exit-early))
           input
           (if (and (or (= input spec-keys.next_group)
@@ -671,16 +676,21 @@ is either labeled (C) or not (B).
                     group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
                 (loop group-offset* false))
               (values input group-offset))))
-      (loop (or ?group-offset 0) (or (= nil first-invoc?) first-invoc?)))
+      ;;;
+      (loop (or ?group-offset 0)
+            (or (= nil first-invoc?) first-invoc?)))
 
     (local multi-select-loop
-      (let [selection []]
+      (do
+        (local selection [])
         (var group-offset 0)
         (var first-invoc? true)
+        ;;;
         (fn loop [targets]
           (match (post-pattern-input-loop targets group-offset first-invoc?)
             spec-keys.multi_accept
-            (if (next selection) selection  ; accept selection
+            (if (not (empty? selection))
+                selection
                 (loop targets))
 
             spec-keys.multi_revert
@@ -699,25 +709,29 @@ is either labeled (C) or not (B).
 
     (fn traversal-loop [targets idx {: no-labels?}]
       (set current-idx idx)
-      (when no-labels? (inactivate-labels targets))
+      (when no-labels?
+        (inactivate-labels targets))
       (set-beacons targets {: no-labels? : aot? : user-given-targets?})
       (with-highlight-chores
-        (let [(start end) (get-highlighted-idx-range targets no-labels?)]
-          (light-up-beacons targets start end)))
+        (local (start end) (get-highlighted-idx-range targets no-labels?))
+        (light-up-beacons targets start end))
       (match (or (get-input) (exit))
         input
-        (match (if (contains? spec-keys.next_target input) (min (inc idx) (length targets))
-                   (contains? spec-keys.prev_target input) (max (dec idx) 1))
+        (match (if (contains? spec-keys.next_target input)
+                   (min (inc idx) (length targets))
+                   (contains? spec-keys.prev_target input)
+                   (max (dec idx) 1))
           new-idx (do
-                    ; We need to update the repeat state continuously, in case
-                    ; we have entered traversal mode after the first input
-                    ; (i.e., traversing all matches, not just a given sublist)!
-                    (update-repeat-state {:in1 state.repeat.in1
-                                          ; ?. -> user-given targets might not have :chars
-                                          :in2 (?. targets new-idx :chars 2)})
+                    ; We need to do this, in case we have entered
+                    ; traversal mode after the first input (i.e.,
+                    ; traversing all matches, not just a given sublist)!
+                    (update-repeat-state
+                      {:in1 state.repeat.in1
+                       ; ?. -> user-given targets might not have :chars
+                       :in2 (?. targets new-idx :chars 2)})
                     (jump-to! (. targets new-idx))
                     (traversal-loop targets new-idx {: no-labels?}))
-          ; We still want the labels (if there are) to function.
+            ; We still want the labels (if there are) to function.
           _ (match (get-target-with-active-primary-label targets input)
               [_ target] (exit (jump-to! target))
               _ (exit (vim.fn.feedkeys input :i))))))
@@ -785,13 +799,13 @@ is either labeled (C) or not (B).
 
     ; Jump eagerly to the very first match (without giving the full pattern)?
     (when (= in2 spec-keys.next_phase_one_target)
-      (let [in2 (. targets 1 :chars 2)]
-        (update-repeat-state {: in1 : in2})
-        (do-action (. targets 1))
-        (if (or (= (length targets) 1) op-mode? (not directional?)
-                user-given-action)
-            (exit (set-dot-repeat in1 in2 1))
-            (traversal-loop targets 1 {:no-labels? true})))  ; REDRAW (LOOP)
+      (local first (. targets 1))
+      (local in2* (. first :chars 2))
+      (update-repeat-state {: in1 :in2 in2*})
+      (do-action first)
+      (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
+          (exit (set-dot-repeat in1 in2* 1))
+          (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
       (lua :return))
 
     ; Do this now - repeat can succeed, even if we fail this time.
