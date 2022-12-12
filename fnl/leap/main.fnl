@@ -462,6 +462,9 @@ is either labeled (C) or not (B).
     (when (and (not directional?) no-labels?)
       (echo "no labels to use")
       (lua :return))
+    (when (and multi-select? (not user-given-action))
+      (echo "error: multiselect mode requires user-provided `action` callback")
+      (lua :return))
 
     ; Show beacons (labels & match highlights) ahead of time,
     ; right after the first input?
@@ -813,6 +816,8 @@ is either labeled (C) or not (B).
     (when multi-select?
       (match (multi-select-loop targets*)
         targets** (do (with-highlight-chores (light-up-beacons targets**))
+                      ; This should be a user-given callback in this case,
+                      ; which expects a _list_ of targets.
                       (do-action targets**)))
       (exit))
 
