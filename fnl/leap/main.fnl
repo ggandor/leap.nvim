@@ -416,9 +416,9 @@ is either labeled (C) or not (B).
          (if dot-repeat? state.dot_repeat kwargs))
   (local curr-winid (vim.fn.win_getid))
   (local directional? (not target-windows))
-  (local no-labels? (and (empty? opts.labels) (empty? opts.safe_labels)))
+  (local empty-label-lists? (and (empty? opts.labels) (empty? opts.safe_labels)))
 
-  (when (and (not directional?) no-labels?)
+  (when (and (not directional?) empty-label-lists?)
     (echo "no labels to use")
     (lua :return))
   (when (and target-windows (empty? target-windows))
@@ -449,7 +449,7 @@ is either labeled (C) or not (B).
   (local change-op? (and op-mode? (= vim.v.operator :c)))
   (local dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y)))
   (local count (if (not directional?) nil
-                   (= vim.v.count 0) (if (and op-mode? no-labels?) 1 nil)
+                   (= vim.v.count 0) (if (and op-mode? empty-label-lists?) 1 nil)
                    vim.v.count))
   (local force-noautojump? (or op-mode?             ; should be able to select a target
                                multi-select?        ; likewise
@@ -475,7 +475,7 @@ is either labeled (C) or not (B).
   ; right after the first input?
   (var aot? (not (or (= max-phase-one-targets 0)
                      count
-                     no-labels?
+                     empty-label-lists?
                      multi-select?
                      user-given-targets?)))
 
@@ -659,6 +659,7 @@ is either labeled (C) or not (B).
   (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
     ;;;
     (fn loop [group-offset first-invoc?]
+      (local no-labels? empty-label-lists?)
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.repeat_search`.
       (when targets.label-set
@@ -785,7 +786,7 @@ is either labeled (C) or not (B).
                       (attach-label-set)
                       (set-labels multi-select?)))
     (if ?in2
-        (if no-labels?
+        (if empty-label-lists?
             (tset targets :autojump? true)
             (prepare targets))
         (do
@@ -864,7 +865,7 @@ is either labeled (C) or not (B).
               (tset targets* i :label nil)
               (tset targets* i :beacon nil)))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                          {:no-labels? (or no-labels?
+                          {:no-labels? (or empty-label-lists?
                                            (not targets*.autojump?))})
           (exit))))
 

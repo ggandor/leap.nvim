@@ -403,8 +403,8 @@ local function leap(kwargs)
   local offset = _local_73_["offset"]
   local curr_winid = vim.fn.win_getid()
   local directional_3f = not target_windows
-  local no_labels_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
-  if (not directional_3f and no_labels_3f) then
+  local empty_label_lists_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
+  if (not directional_3f and empty_label_lists_3f) then
     echo("no labels to use")
     return
   else
@@ -469,7 +469,7 @@ local function leap(kwargs)
   if not directional_3f then
     count = nil
   elseif (vim.v.count == 0) then
-    if (op_mode_3f and no_labels_3f) then
+    if (op_mode_3f and empty_label_lists_3f) then
       count = 1
     else
       count = nil
@@ -515,7 +515,7 @@ local function leap(kwargs)
     end
     spec_keys = setmetatable({}, {__index = __index})
   end
-  local aot_3f = not ((max_phase_one_targets == 0) or count or no_labels_3f or multi_select_3f or user_given_targets_3f)
+  local aot_3f = not ((max_phase_one_targets == 0) or count or empty_label_lists_3f or multi_select_3f or user_given_targets_3f)
   local current_idx = 0
   local function echo_not_found(s)
     return echo(("not found: " .. s))
@@ -658,13 +658,13 @@ local function leap(kwargs)
       return nil
     end
   end
-  local function get_highlighted_idx_range(targets, no_labels_3f0)
-    if (no_labels_3f0 and (opts.max_highlighted_traversal_targets == 0)) then
+  local function get_highlighted_idx_range(targets, no_labels_3f)
+    if (no_labels_3f and (opts.max_highlighted_traversal_targets == 0)) then
       return 0, -1
     else
       local start = inc(current_idx)
       local _end
-      if no_labels_3f0 then
+      if no_labels_3f then
         local _116_ = get_number_of_highlighted_targets()
         if (nil ~= _116_) then
           local _117_ = (_116_ + dec(start))
@@ -748,6 +748,7 @@ local function leap(kwargs)
   end
   local function post_pattern_input_loop(targets, _3fgroup_offset, first_invoc_3f)
     local function loop(group_offset, first_invoc_3f0)
+      local no_labels_3f = empty_label_lists_3f
       if targets["label-set"] then
         set_label_states(targets, {["group-offset"] = group_offset})
       else
@@ -838,13 +839,13 @@ local function leap(kwargs)
   end
   local function traversal_loop(targets, idx, _148_)
     local _arg_149_ = _148_
-    local no_labels_3f0 = _arg_149_["no-labels?"]
+    local no_labels_3f = _arg_149_["no-labels?"]
     current_idx = idx
-    if no_labels_3f0 then
+    if no_labels_3f then
       inactivate_labels(targets)
     else
     end
-    set_beacons(targets, {["no-labels?"] = no_labels_3f0, ["aot?"] = aot_3f, ["user-given-targets?"] = user_given_targets_3f})
+    set_beacons(targets, {["no-labels?"] = no_labels_3f, ["aot?"] = aot_3f, ["user-given-targets?"] = user_given_targets_3f})
     do
       hl:cleanup(hl_affected_windows)
       if not count then
@@ -852,7 +853,7 @@ local function leap(kwargs)
       else
       end
       do
-        local start, _end = get_highlighted_idx_range(targets, no_labels_3f0)
+        local start, _end = get_highlighted_idx_range(targets, no_labels_3f)
         light_up_beacons(targets, start, _end)
       end
       hl["highlight-cursor"](hl)
@@ -890,7 +891,7 @@ local function leap(kwargs)
         end
         update_repeat_state({in1 = state["repeat"].in1, in2 = _156_})
         jump_to_21(targets[new_idx])
-        return traversal_loop(targets, new_idx, {["no-labels?"] = no_labels_3f0})
+        return traversal_loop(targets, new_idx, {["no-labels?"] = no_labels_3f})
       elseif true then
         local _ = _153_
         local _160_ = get_target_with_active_primary_label(targets, input)
@@ -994,7 +995,7 @@ local function leap(kwargs)
     end
     prepare = _177_
     if _3fin2 then
-      if no_labels_3f then
+      if empty_label_lists_3f then
         targets["autojump?"] = true
       else
         prepare(targets)
@@ -1141,7 +1142,7 @@ local function leap(kwargs)
         end
       else
       end
-      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (no_labels_3f or not targets_2a["autojump?"])})
+      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or not targets_2a["autojump?"])})
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
