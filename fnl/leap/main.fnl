@@ -389,8 +389,10 @@ is either labeled (C) or not (B).
 ; State that is persisted between invocations.
 (local state {:args nil  ; arguments passed to the current call
               :source_window nil
-              :repeat {:in1 nil :in2 nil}
-              :dot_repeat {:in1 nil :in2 nil
+              :repeat {:in1 nil
+                       :in2 nil}
+              :dot_repeat {:in1 nil
+                           :in2 nil
                            :target_idx nil
                            :backward nil
                            :inclusive_op nil
@@ -400,472 +402,487 @@ is either labeled (C) or not (B).
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (let [{:dot_repeat dot-repeat?
-         :target_windows target-windows
-         :opts user-given-opts
-         :targets user-given-targets
-         :action user-given-action
-         :multiselect multi-select?}
-        kwargs
-        {:backward backward?
-         :match_last_overlapping match-last-overlapping?
-         :inclusive_op inclusive-op?
-         : offset}
-        (if dot-repeat? state.dot_repeat kwargs)
-        ;;;
-        _ (set state.args kwargs)
-        _ (set opts.current_call (or user-given-opts {}))
-        _ (tset opts.current_call :eq_class_of
-                (-?> opts.current_call.equivalence_classes
-                     eq-classes->membership-lookup))
-        ;;;
-        id->wininfo #(. (vim.fn.getwininfo $) 1)
-        curr-winid (vim.fn.win_getid)
-        _ (set state.source_window curr-winid)
-        curr-win (id->wininfo curr-winid)
-        ?target-windows (-?>> target-windows (map id->wininfo))
-        hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
-                                       &into [curr-win]]  ; cursor is always highlighted
-                              w)
-        directional? (not target-windows)
-        ; We need to save the mode here, because the `:normal` command
-        ; in `jump.jump-to!` can change the state. See vim/vim#9332.
-        mode (. (api.nvim_get_mode) :mode)
-        op-mode? (mode:match :o)
-        change-op? (and op-mode? (= vim.v.operator :c))
-        dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y))
-        no-labels? (and (empty? opts.labels) (empty? opts.safe_labels))
-        count (if (not directional?) nil
-                  (= vim.v.count 0) (if (and op-mode? no-labels?) 1 nil)
-                  vim.v.count)
-        force-noautojump? (or op-mode?            ; should be able to select a target
-                              multi-select?       ; likewise
-                              (not directional?)  ; potentially disorienting
-                              user-given-action)  ; no jump, doing sg else
-        max-phase-one-targets (or opts.max_phase_one_targets math.huge)
-        user-given-targets? user-given-targets
-        prompt {:str ">"}  ; pass by reference hack (for input fns)
-        spec-keys (setmetatable {}
-                    {:__index (fn [_ k]
-                                (match (. opts.special_keys k)
-                                  v (if (or (= k :next_target) (= k :prev_target))
-                                        ; Force those into a table.
-                                        (match (type v)
-                                          :table (icollect [_ str (ipairs v)]
-                                                   (replace-keycodes str))
-                                          :string [(replace-keycodes v)])
-                                        (replace-keycodes v))))})]
+  (local {:dot_repeat dot-repeat?
+          :target_windows target-windows
+          :opts user-given-opts
+          :targets user-given-targets
+          :action user-given-action
+          :multiselect multi-select?}
+         kwargs)
+  (local {:backward backward?
+          :match_last_overlapping match-last-overlapping?
+          :inclusive_op inclusive-op?
+          : offset}
+         (if dot-repeat? state.dot_repeat kwargs))
 
-    (when (and target-windows (empty? target-windows))
-      (echo "no targetable windows")
-      (lua :return))
-    (when (and (not directional?) no-labels?)
-      (echo "no labels to use")
-      (lua :return))
-    (when (and multi-select? (not user-given-action))
-      (echo "error: multiselect mode requires user-provided `action` callback")
-      (lua :return))
+  (local curr-winid (vim.fn.win_getid))
+  (local directional? (not target-windows))
+  (local no-labels? (and (empty? opts.labels) (empty? opts.safe_labels)))
 
-    ; Show beacons (labels & match highlights) ahead of time,
-    ; right after the first input?
-    (var aot? (not (or (= max-phase-one-targets 0)
-                       count
-                       no-labels?
-                       multi-select?
-                       user-given-targets?)))
+  (when (and (not directional?) no-labels?)
+    (echo "no labels to use")
+    (lua :return))
+  (when (and target-windows (empty? target-windows))
+    (echo "no targetable windows")
+    (lua :return))
+  (when (and multi-select? (not user-given-action))
+    (echo "error: multiselect mode requires user-provided `action` callback")
+    (lua :return))
 
-    (var current-idx 0)
+  (set state.args kwargs)
+  (set opts.current_call (or user-given-opts {}))
+  (tset opts.current_call
+        :eq_class_of
+        (-?> opts.current_call.equivalence_classes
+             eq-classes->membership-lookup))
+  (set state.source_window curr-winid)
 
-    ; Helpers ///
+  (local id->wininfo #(. (vim.fn.getwininfo $) 1))
+  (local curr-win (id->wininfo curr-winid))
+  (local ?target-windows (-?>> target-windows (map id->wininfo)))
 
-    (macro exit []
-      `(do (hl:cleanup hl-affected-windows)
-           (exec-user-autocmds :LeapLeave)
-           (lua :return)))
+  (local hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
+                                        &into [curr-win]]  ; cursor is always highlighted
+                               w))
+  ; We need to save the mode here, because the `:normal` command in
+  ; `jump.jump-to!` can change the state. See vim/vim#9332.
+  (local mode (. (api.nvim_get_mode) :mode))
+  (local op-mode? (mode:match :o))
+  (local change-op? (and op-mode? (= vim.v.operator :c)))
+  (local dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y)))
 
-    ; Be sure not to call the macro twice accidentally,
-    ; `handle-interrupted-change-op!` moves the cursor!
-    (macro exit-early []
-      `(do (when change-op?
-             (handle-interrupted-change-op!))
-           (exit)))
+  (local count (if (not directional?) nil
+                   (= vim.v.count 0) (if (and op-mode? no-labels?) 1 nil)
+                   vim.v.count))
 
-    (macro with-highlight-chores [...]
-      `(do (hl:cleanup hl-affected-windows)
-           (when-not count
-             (hl:apply-backdrop backward? ?target-windows))
-           (do ,...)
-           (hl:highlight-cursor)
-           (vim.cmd :redraw)))
+  (local force-noautojump? (or op-mode?             ; should be able to select a target
+                               multi-select?        ; likewise
+                               (not directional?)   ; potentially disorienting
+                               user-given-action))  ; no jump, doing sg else
 
-    (fn echo-not-found [s]
-      (echo (.. "not found: " s)))
+  (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
+  (local user-given-targets? user-given-targets)
+  (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
-    (fn get-user-given-targets [targets]
-      (match (if (= (type targets) :function) (targets) targets)
-        targets*
-        (when (> (length targets*) 0)
-          ; Fill wininfo-s when not provided.
-          (when-not (. targets* 1 :wininfo)
-            (each [_ t (ipairs targets*)]
-              (tset t :wininfo curr-win)))
-          targets*)))
+  (local spec-keys (do (fn __index [_ k]
+                         (match (. opts.special_keys k)
+                           v (if (or (= k :next_target) (= k :prev_target))
+                                 ; Force those into a table.
+                                 (match (type v)
+                                   :table (icollect [_ str (ipairs v)]
+                                            (replace-keycodes str))
+                                   :string [(replace-keycodes v)])
+                                 (replace-keycodes v))))
+                       (setmetatable {} {: __index})))
 
-    (fn expand-to-equivalence-class [in]               ; <-- "b"
-      (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
-      (when chars
-        ; (1) `vim.fn.search` cannot interpret actual newline chars in
-        ;     the regex pattern, we need to insert them as raw \ + n.
-        ; (2) '\' itself might appear in the class, needs to be escaped.
-        (each [i ch (ipairs chars)]
-          (if (= ch "\n") (tset chars i "\\n")
-              (= ch "\\") (tset chars i "\\\\")))
-        (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
+  ; Vars
 
-    ; NOTE: If two-step processing is ebabled (AOT beacons), for any
-    ; kind of input mapping (case-insensitivity, character classes,
-    ; etc.) we need to tweak things in two different places:
-    ;   1. For the first input, we modify the search pattern itself
-    ;      (here).
-    ;   2. For the second input, we need to play with the sublist keys
-    ;      (see `populate-sublists`).
-    (fn prepare-pattern [in1 ?in2]
-      (let [pat1 (or (expand-to-equivalence-class in1)
-                     ; Sole '\' needs to be escaped even for \V.
-                     (in1:gsub "\\" "\\\\"))
-            pat2 (or (-?> ?in2 expand-to-equivalence-class)
-                     ?in2
-                     "\\_.")  ; match anything, including EOL
-            pat (if (and (pat1:match "\\n") (pat2:match "\\n"))
-                    ; If \n\n is a possible sequence to appear, add ^\n
-                    ; to the pattern, to make our convenience feature -
-                    ; targeting empty lines by typing the newline alias
-                    ; twice - work with single-step processing too.
-                    ; (In case of two-step processing, we handle the
-                    ; special case of \n as first input in
-                    ; `search.get-targets`, but when we already have the
-                    ; full pattern - this includes repeating the
-                    ; previous search -, we need this hack here).
-                    (.. pat1 pat2 "\\|\\^\\n")
-                    (.. pat1 pat2))]
-        (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
+  ; Show beacons (labels & match highlights) ahead of time,
+  ; right after the first input?
+  (var aot? (not (or (= max-phase-one-targets 0)
+                     count
+                     no-labels?
+                     multi-select?
+                     user-given-targets?)))
 
-    (fn get-targets [in1 ?in2]
-      (let [search (require :leap.search)
-            pattern (prepare-pattern in1 ?in2)
-            kwargs {: backward?
-                    : match-last-overlapping?
-                    :target-windows ?target-windows}]
-        (search.get-targets pattern kwargs)))
+  ; For traversal mode.
+  (var current-idx 0)
 
-    (fn get-target-with-active-primary-label [sublist input]
-      (var res [])
-      (each [idx {: label : label-state &as target} (ipairs sublist)
-             &until (or (next res) (= label-state :inactive))]
-        (when (and (= label input) (= label-state :active-primary))
-          (set res [idx target])))
-      res)
+  ; Macros
 
-    (fn update-repeat-state [state*]
-      (when-not user-given-targets?
-        (set state.repeat state*)))
+  (macro exit []
+    `(do (hl:cleanup hl-affected-windows)
+         (exec-user-autocmds :LeapLeave)
+         (lua :return)))
 
-    (fn set-dot-repeat [in1 in2 target_idx]
-      (when (and dot-repeatable-op?
-                 (not (or dot-repeat? (= (type user-given-targets) :table))))
-        (set state.dot_repeat
-             (vim.tbl_extend :error
-                             (if user-given-targets
-                                 {:callback user-given-targets}
-                                 {: in1 : in2})
-                             {: target_idx
-                              : offset
-                              ; Mind the naming conventions.
-                              :backward backward?
-                              :inclusive_op inclusive-op?}))
-        (set-dot-repeat*)))
+  ; Be sure not to call the macro twice accidentally,
+  ; `handle-interrupted-change-op!` moves the cursor!
+  (macro exit-early []
+    `(do (when change-op?
+           (handle-interrupted-change-op!))
+         (exit)))
 
-    (local jump-to!
-      (do
-        (var first-jump? true)  ; better be managed by the function itself
-        (fn [target]
-          (local jump (require "leap.jump"))
-          (jump.jump-to! target.pos
-                         {:winid target.wininfo.winid
-                          :add-to-jumplist? first-jump?
-                          : mode : offset : backward? : inclusive-op?})
-          (set first-jump? false))))
+  (macro with-highlight-chores [...]
+    `(do (hl:cleanup hl-affected-windows)
+         (when-not count
+           (hl:apply-backdrop backward? ?target-windows))
+         (do ,...)
+         (hl:highlight-cursor)
+         (vim.cmd :redraw)))
 
-    ; When traversing without labels, keep highlighting the same one group
-    ; of targets, and do not shift until reaching the end of the group - it
-    ; is less disorienting if the "snake" does not move continuously, on
-    ; every jump.
-    (fn get-number-of-highlighted-targets []
-      (match opts.max_highlighted_traversal_targets
-        group-size
-        ; Assumption: being here means we are after an autojump, and
-        ; started highlighting from the 2nd target (no `count`).
-        ; Thus, we can use `current-idx` as the reference, instead of
-        ; some separate counter (but only because of the above).
-        (let [consumed (% (dec current-idx) group-size)
-              remaining (- group-size consumed)]
-          ; Switch just before the whole group gets eaten up.
-          (if (= remaining 1) (inc group-size)
-              (= remaining 0) group-size
-              remaining))))
+  ; Helper functions ///
 
-    (fn get-highlighted-idx-range [targets no-labels?]
-      (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
-          (values 0 -1)  ; empty range
-          (let [start (inc current-idx)
-                end (when no-labels?
-                      (-?> (get-number-of-highlighted-targets)
-                           (+ (dec start))
-                           (min (length targets))))]
-            (values start end))))
+  (fn echo-not-found [s]
+    (echo (.. "not found: " s)))
 
-    (fn get-first-pattern-input []
-      (with-highlight-chores (echo ""))  ; clean up the command line
-      (match (get-input-by-keymap prompt)
-        ; Here we can handle any other modifier key as "zeroth" input,
-        ; if the need arises.
-        spec-keys.repeat_search
-        (do (set aot? false)
-            (if state.repeat.in1
-                (values state.repeat.in1 state.repeat.in2)
-                (do (echo "no previous search") nil)))
+  (fn get-user-given-targets [targets]
+    (match (if (= (type targets) :function) (targets) targets)
+      targets*
+      (when (> (length targets*) 0)
+        ; Fill wininfo-s when not provided.
+        (when-not (. targets* 1 :wininfo)
+          (each [_ t (ipairs targets*)]
+            (tset t :wininfo curr-win)))
+        targets*)))
 
-        in1 in1))
+  (fn expand-to-equivalence-class [in]               ; <-- "b"
+    (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
+    (when chars
+      ; (1) `vim.fn.search` cannot interpret actual newline chars in
+      ;     the regex pattern, we need to insert them as raw \ + n.
+      ; (2) '\' itself might appear in the class, needs to be escaped.
+      (each [i ch (ipairs chars)]
+        (if (= ch "\n") (tset chars i "\\n")
+            (= ch "\\") (tset chars i "\\\\")))
+      (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
 
-    (fn get-second-pattern-input [targets]
-      (when (<= (length targets) max-phase-one-targets)
-        (with-highlight-chores (light-up-beacons targets)))
-      (get-input-by-keymap prompt))
+  ; NOTE: If two-step processing is ebabled (AOT beacons), for any
+  ; kind of input mapping (case-insensitivity, character classes,
+  ; etc.) we need to tweak things in two different places:
+  ;   1. For the first input, we modify the search pattern itself
+  ;      (here).
+  ;   2. For the second input, we need to play with the sublist keys
+  ;      (see `populate-sublists`).
+  (fn prepare-pattern [in1 ?in2]
+    (let [pat1 (or (expand-to-equivalence-class in1)
+                   ; Sole '\' needs to be escaped even for \V.
+                   (in1:gsub "\\" "\\\\"))
+          pat2 (or (-?> ?in2 expand-to-equivalence-class)
+                   ?in2
+                   "\\_.")  ; match anything, including EOL
+          pat (if (and (pat1:match "\\n") (pat2:match "\\n"))
+                  ; If \n\n is a possible sequence to appear, add ^\n
+                  ; to the pattern, to make our convenience feature -
+                  ; targeting empty lines by typing the newline alias
+                  ; twice - work with single-step processing too.
+                  ; (In case of two-step processing, we handle the
+                  ; special case of \n as first input in
+                  ; `search.get-targets`, but when we already have the
+                  ; full pattern - this includes repeating the
+                  ; previous search -, we need this hack here).
+                  (.. pat1 pat2 "\\|\\^\\n")
+                  (.. pat1 pat2))]
+      (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
 
-    (fn get-full-pattern-input []
-      (match (get-first-pattern-input)
-        (in1 in2) (values in1 in2)
-        (in1 nil) (match (get-input-by-keymap prompt)
-                    in2 (values in1 in2))))
+  (fn get-targets [in1 ?in2]
+    (let [search (require :leap.search)
+          pattern (prepare-pattern in1 ?in2)
+          kwargs {: backward?
+                  : match-last-overlapping?
+                  :target-windows ?target-windows}]
+      (search.get-targets pattern kwargs)))
 
-    (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
-      ;;;
-      (fn loop [group-offset first-invoc?]
-        ; Do _not_ skip this on initial invocation - we might have skipped
-        ; setting the initial label states if using `spec-keys.repeat_search`.
-        (when targets.label-set
-          (set-label-states targets {: group-offset}))
-        (set-beacons targets {: aot? : no-labels? : user-given-targets?})
-        (with-highlight-chores
-          (local (start end) (get-highlighted-idx-range targets no-labels?))
-          (light-up-beacons targets start end))
-        (match (get-input)
-          input
-          (if (and (or (= input spec-keys.next_group)
-                       (and (= input spec-keys.prev_group) (not first-invoc?)))
-                   ; Autojump, if it is not forced (by empty `labels`),
-                   ; implies that there are no subsequent groups.
-                   (or (not targets.autojump?) (empty? opts.labels)))
-              (let [inc/dec (if (= input spec-keys.next_group) inc dec)
-                    |groups| (ceil (/ (length targets) (length targets.label-set)))
-                    max-offset (dec |groups|)
-                    group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
-                (loop group-offset* false))
-              (values input group-offset))))
-      ;;;
-      (loop (or ?group-offset 0)
-            (or (= nil first-invoc?) first-invoc?)))
+  (fn get-target-with-active-primary-label [sublist input]
+    (var res [])
+    (each [idx {: label : label-state &as target} (ipairs sublist)
+           &until (or (next res) (= label-state :inactive))]
+      (when (and (= label input) (= label-state :active-primary))
+        (set res [idx target])))
+    res)
 
-    (local multi-select-loop
-      (do
-        (local selection [])
-        (var group-offset 0)
-        (var first-invoc? true)
-        ;;;
-        (fn loop [targets]
-          (match (post-pattern-input-loop targets group-offset first-invoc?)
-            spec-keys.multi_accept
-            (if (not (empty? selection))
-                selection
-                (loop targets))
+  (fn update-repeat-state [state*]
+    (when-not user-given-targets?
+      (set state.repeat state*)))
 
-            spec-keys.multi_revert
-            (do (-?> (table.remove selection)
-                     (tset :label-state nil))
-                (loop targets))
+  (fn set-dot-repeat [in1 in2 target_idx]
+    (when (and dot-repeatable-op?
+               (not (or dot-repeat? (= (type user-given-targets) :table))))
+      (set state.dot_repeat
+           (vim.tbl_extend :error
+                           (if user-given-targets
+                               {:callback user-given-targets}
+                               {: in1 : in2})
+                           {: target_idx
+                            : offset
+                            ; Mind the naming conventions.
+                            :backward backward?
+                            :inclusive_op inclusive-op?}))
+      (set-dot-repeat*)))
 
-            (in group-offset*)
-            (do (set group-offset group-offset*)
-                (set first-invoc? false)
-                (match (get-target-with-active-primary-label targets in)
-                  [_ target] (when-not (contains? selection target)
-                               (table.insert selection target)
-                               (tset target :label-state :selected)))
-                (loop targets))))))
+  (local jump-to!
+    (do
+      (var first-jump? true)  ; better be managed by the function itself
+      (fn [target]
+        (local jump (require "leap.jump"))
+        (jump.jump-to! target.pos
+                       {:winid target.wininfo.winid
+                        :add-to-jumplist? first-jump?
+                        : mode : offset : backward? : inclusive-op?})
+        (set first-jump? false))))
 
-    (fn traversal-loop [targets idx {: no-labels?}]
-      (set current-idx idx)
-      (when no-labels?
-        (inactivate-labels targets))
-      (set-beacons targets {: no-labels? : aot? : user-given-targets?})
+  ; When traversing without labels, keep highlighting the same one group
+  ; of targets, and do not shift until reaching the end of the group - it
+  ; is less disorienting if the "snake" does not move continuously, on
+  ; every jump.
+  (fn get-number-of-highlighted-targets []
+    (match opts.max_highlighted_traversal_targets
+      group-size
+      ; Assumption: being here means we are after an autojump, and
+      ; started highlighting from the 2nd target (no `count`).
+      ; Thus, we can use `current-idx` as the reference, instead of
+      ; some separate counter (but only because of the above).
+      (let [consumed (% (dec current-idx) group-size)
+            remaining (- group-size consumed)]
+        ; Switch just before the whole group gets eaten up.
+        (if (= remaining 1) (inc group-size)
+            (= remaining 0) group-size
+            remaining))))
+
+  (fn get-highlighted-idx-range [targets no-labels?]
+    (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
+        (values 0 -1)  ; empty range
+        (let [start (inc current-idx)
+              end (when no-labels?
+                    (-?> (get-number-of-highlighted-targets)
+                         (+ (dec start))
+                         (min (length targets))))]
+          (values start end))))
+
+  (fn get-first-pattern-input []
+    (with-highlight-chores (echo ""))  ; clean up the command line
+    (match (get-input-by-keymap prompt)
+      ; Here we can handle any other modifier key as "zeroth" input,
+      ; if the need arises.
+      spec-keys.repeat_search
+      (do (set aot? false)
+          (if state.repeat.in1
+              (values state.repeat.in1 state.repeat.in2)
+              (do (echo "no previous search") nil)))
+
+      in1 in1))
+
+  (fn get-second-pattern-input [targets]
+    (when (<= (length targets) max-phase-one-targets)
+      (with-highlight-chores (light-up-beacons targets)))
+    (get-input-by-keymap prompt))
+
+  (fn get-full-pattern-input []
+    (match (get-first-pattern-input)
+      (in1 in2) (values in1 in2)
+      (in1 nil) (match (get-input-by-keymap prompt)
+                  in2 (values in1 in2))))
+
+  (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
+    ;;;
+    (fn loop [group-offset first-invoc?]
+      ; Do _not_ skip this on initial invocation - we might have skipped
+      ; setting the initial label states if using `spec-keys.repeat_search`.
+      (when targets.label-set
+        (set-label-states targets {: group-offset}))
+      (set-beacons targets {: aot? : no-labels? : user-given-targets?})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end))
       (match (get-input)
         input
-        (match (if (contains? spec-keys.next_target input)
-                   (min (inc idx) (length targets))
-                   (contains? spec-keys.prev_target input)
-                   (max (dec idx) 1))
-          new-idx (do
-                    ; We need to do this, in case we have entered
-                    ; traversal mode after the first input (i.e.,
-                    ; traversing all matches, not just a given sublist)!
-                    (update-repeat-state
-                      {:in1 state.repeat.in1
-                       ; ?. -> user-given targets might not have :chars
-                       :in2 (?. targets new-idx :chars 2)})
-                    (jump-to! (. targets new-idx))
-                    (traversal-loop targets new-idx {: no-labels?}))
-            ; We still want the labels (if there are) to function.
-          _ (match (get-target-with-active-primary-label targets input)
-              [_ target] (jump-to! target)
-              _ (vim.fn.feedkeys input :i)))))
+        (if (and (or (= input spec-keys.next_group)
+                     (and (= input spec-keys.prev_group) (not first-invoc?)))
+                 ; Autojump, if it is not forced (by empty `labels`),
+                 ; implies that there are no subsequent groups.
+                 (or (not targets.autojump?) (empty? opts.labels)))
+            (let [inc/dec (if (= input spec-keys.next_group) inc dec)
+                  |groups| (ceil (/ (length targets) (length targets.label-set)))
+                  max-offset (dec |groups|)
+                  group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
+              (loop group-offset* false))
+            (values input group-offset))))
+    ;;;
+    (loop (or ?group-offset 0)
+          (or (= nil first-invoc?) first-invoc?)))
 
-    ; //> Helpers
-
-    (local do-action (or user-given-action jump-to!))
-
-    ; After all the stage-setting, here comes the main action you've all been
-    ; waiting for:
-
-    (exec-user-autocmds :LeapEnter)
-
-    (local (in1 ?in2) (if dot-repeat?
-                          (if state.dot_repeat.callback
-                              (values true true)
-                              (values state.dot_repeat.in1 state.dot_repeat.in2))
-                          user-given-targets? (values true true)
-                          ; This might also return in2 too, if using the
-                          ; `repeat_search` key.
-                          aot? (get-first-pattern-input)  ; REDRAW
-                          (get-full-pattern-input)))  ; REDRAW
-    (when-not in1
-      (exit-early))
-
-    (local targets (if (and dot-repeat? state.dot_repeat.callback)
-                       (get-user-given-targets state.dot_repeat.callback)
-
-                       user-given-targets?
-                       (or (get-user-given-targets user-given-targets)
-                           (do (echo "no targets") nil))
-
-                       (or (get-targets in1 ?in2)
-                           (do (echo-not-found (.. in1 (or ?in2 ""))) nil))))
-    (when-not targets
-      (exit-early))
-
-    (when dot-repeat?
-      (match (. targets state.dot_repeat.target_idx)
-        target (do (do-action target) (exit))
-        _ (exit-early)))
-
+  (local multi-select-loop
     (do
-      (local prepare #(doto $
-                        (set-autojump force-noautojump?)
-                        (attach-label-set)
-                        (set-labels multi-select?)))
-      (if ?in2
-          (if no-labels?
-              (tset targets :autojump? true)
-              (prepare targets))
-          (do
-            (when (> (length targets) max-phase-one-targets)
-              (set aot? false))
-            (populate-sublists targets)
-            (each [_ sublist (pairs targets.sublists)]
-               (prepare sublist))
-            (doto targets
-              (set-initial-label-states)
-              (set-beacons {: aot?})))))
-    (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
-    (when-not in2
+      (local selection [])
+      (var group-offset 0)
+      (var first-invoc? true)
+      ;;;
+      (fn loop [targets]
+        (match (post-pattern-input-loop targets group-offset first-invoc?)
+          spec-keys.multi_accept
+          (if (not (empty? selection))
+              selection
+              (loop targets))
+
+          spec-keys.multi_revert
+          (do (-?> (table.remove selection)
+                   (tset :label-state nil))
+              (loop targets))
+
+          (in group-offset*)
+          (do (set group-offset group-offset*)
+              (set first-invoc? false)
+              (match (get-target-with-active-primary-label targets in)
+                [_ target] (when-not (contains? selection target)
+                             (table.insert selection target)
+                             (tset target :label-state :selected)))
+              (loop targets))))))
+
+  (fn traversal-loop [targets idx {: no-labels?}]
+    (set current-idx idx)
+    (when no-labels?
+      (inactivate-labels targets))
+    (set-beacons targets {: no-labels? : aot? : user-given-targets?})
+    (with-highlight-chores
+      (local (start end) (get-highlighted-idx-range targets no-labels?))
+      (light-up-beacons targets start end))
+    (match (get-input)
+      input
+      (match (if (contains? spec-keys.next_target input)
+                 (min (inc idx) (length targets))
+                 (contains? spec-keys.prev_target input)
+                 (max (dec idx) 1))
+        new-idx (do
+                  ; We need to do this, in case we have entered
+                  ; traversal mode after the first input (i.e.,
+                  ; traversing all matches, not just a given sublist)!
+                  (update-repeat-state
+                    {:in1 state.repeat.in1
+                     ; ?. -> user-given targets might not have :chars
+                     :in2 (?. targets new-idx :chars 2)})
+                  (jump-to! (. targets new-idx))
+                  (traversal-loop targets new-idx {: no-labels?}))
+          ; We still want the labels (if there are) to function.
+        _ (match (get-target-with-active-primary-label targets input)
+            [_ target] (jump-to! target)
+            _ (vim.fn.feedkeys input :i)))))
+
+  ; //> Helper functions END
+
+  (local do-action (or user-given-action jump-to!))
+
+
+  ; After all the stage-setting, here comes the main action you've all been
+  ; waiting for:
+
+  (exec-user-autocmds :LeapEnter)
+
+  (local (in1 ?in2) (if dot-repeat? (if state.dot_repeat.callback
+                                        (values true true)
+                                        (values state.dot_repeat.in1
+                                                state.dot_repeat.in2))
+                        user-given-targets? (values true true)
+                        ; This might also return in2 too, if using the
+                        ; `repeat_search` key.
+                        aot? (get-first-pattern-input)  ; REDRAW
+                        (get-full-pattern-input)))  ; REDRAW
+  (when-not in1
+    (exit-early))
+
+  (local targets (if (and dot-repeat? state.dot_repeat.callback)
+                     (get-user-given-targets state.dot_repeat.callback)
+
+                     user-given-targets?
+                     (or (get-user-given-targets user-given-targets)
+                         (do (echo "no targets") nil))
+
+                     (or (get-targets in1 ?in2)
+                         (do (echo-not-found (.. in1 (or ?in2 ""))) nil))))
+  (when-not targets
+    (exit-early))
+
+  (when dot-repeat?
+    (match (. targets state.dot_repeat.target_idx)
+      target (do (do-action target) (exit))
+      _ (exit-early)))
+
+  (do
+    (local prepare #(doto $
+                      (set-autojump force-noautojump?)
+                      (attach-label-set)
+                      (set-labels multi-select?)))
+    (if ?in2
+        (if no-labels?
+            (tset targets :autojump? true)
+            (prepare targets))
+        (do
+          (when (> (length targets) max-phase-one-targets)
+            (set aot? false))
+          (populate-sublists targets)
+          (each [_ sublist (pairs targets.sublists)]
+             (prepare sublist))
+          (doto targets
+            (set-initial-label-states)
+            (set-beacons {: aot?})))))
+  (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
+  (when-not in2
+    (exit-early))
+
+  ; Jump eagerly to the very first match (without giving the full pattern)?
+  (when (= in2 spec-keys.next_phase_one_target)
+    (local first (. targets 1))
+    (local in2* (. first :chars 2))
+    (update-repeat-state {: in1 :in2 in2*})
+    (do-action first)
+    (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
+        (set-dot-repeat in1 in2* 1)
+        (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
+    (exit))
+
+  ; Do this now - repeat can succeed, even if we fail this time.
+  (update-repeat-state {: in1 : in2})
+
+  ; Get the sublist for in2, and work with that from here on (except if
+  ; we've been given custom targets).
+  (local targets* (if targets.sublists (. targets.sublists in2) targets))
+  (when-not targets*
+    (echo-not-found (.. in1 in2))
+    (exit-early))
+
+  (when multi-select?
+    (match (multi-select-loop targets*)
+      targets**
+      ; The action callback should expect a list in this case.
+      ; It might also get user input, so keep the beacons highlighted.
+      (do (with-highlight-chores (light-up-beacons targets**))
+          (do-action targets**)))
+    (exit))
+
+  (macro exit-with-action-on [idx]
+    `(do (set-dot-repeat in1 in2 ,idx)
+         (do-action (. targets* ,idx))
+         (exit)))
+
+  (when count
+    (if (<= count (length targets*))
+        (exit-with-action-on count)
+        (exit-early)))
+
+  (when (= (length targets*) 1)
+    (exit-with-action-on 1))
+
+  (when targets*.autojump?
+    (set current-idx 1)
+    (do-action (. targets* 1)))
+  ; This sets label states (i.e., modifies targets*) in each cycle.
+  (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
+  (when-not in-final
+    (exit-early))
+
+  ; Jump to the first match on the [rest of the] target list?
+  (when (contains? spec-keys.next_target in-final)
+    (if (or op-mode? (not directional?) user-given-action)
+        (exit-with-action-on 1)  ; (no autojump)
+        (let [new-idx (inc current-idx)]
+          (do-action (. targets* new-idx))
+          ; TODO: doc (or extract)
+          (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
+            (for [i (+ (length opts.safe_labels) 2) (length targets*)]
+              (tset targets* i :label nil)
+              (tset targets* i :beacon nil)))
+          (traversal-loop targets* new-idx  ; REDRAW (LOOP)
+                          {:no-labels? (or no-labels?
+                                           (not targets*.autojump?))})
+          (exit))))
+
+  (local [idx _] (get-target-with-active-primary-label targets* in-final))
+  (if idx (exit-with-action-on idx)
+      targets*.autojump? (do (vim.fn.feedkeys in-final :i) (exit))
       (exit-early))
 
-    ; Jump eagerly to the very first match (without giving the full pattern)?
-    (when (= in2 spec-keys.next_phase_one_target)
-      (local first (. targets 1))
-      (local in2* (. first :chars 2))
-      (update-repeat-state {: in1 :in2 in2*})
-      (do-action first)
-      (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
-          (set-dot-repeat in1 in2* 1)
-          (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
-      (exit))
-
-    ; Do this now - repeat can succeed, even if we fail this time.
-    (update-repeat-state {: in1 : in2})
-
-    ; Get the sublist for in2, and work with that from here on (except if
-    ; we've been given custom targets).
-    (local targets* (if targets.sublists (. targets.sublists in2) targets))
-    (when-not targets*
-      (echo-not-found (.. in1 in2))
-      (exit-early))
-
-    (when multi-select?
-      (match (multi-select-loop targets*)
-        targets** (do (with-highlight-chores (light-up-beacons targets**))
-                      ; This should be a user-given callback in this case,
-                      ; which expects a _list_ of targets.
-                      (do-action targets**)))
-      (exit))
-
-    (macro exit-with-action-on [idx]
-      `(do (set-dot-repeat in1 in2 ,idx)
-           (do-action (. targets* ,idx))
-           (exit)))
-
-    (when count
-      (if (<= count (length targets*))
-          (exit-with-action-on count)
-          (exit-early)))
-
-    (when (= (length targets*) 1)
-      (exit-with-action-on 1))
-
-    (when targets*.autojump?
-      (set current-idx 1)
-      (do-action (. targets* 1)))
-    ; This sets label states (i.e., modifies targets*) in each cycle.
-    (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
-    (when-not in-final
-      (exit-early))
-
-    ; Jump to the first match on the [rest of the] target list?
-    (when (contains? spec-keys.next_target in-final)
-      (if (or op-mode? (not directional?) user-given-action)
-          (exit-with-action-on 1)  ; (no autojump)
-          (let [new-idx (inc current-idx)]
-            (do-action (. targets* new-idx))
-            ; TODO: doc (or extract)
-            (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
-              (for [i (+ (length opts.safe_labels) 2) (length targets*)]
-                (tset targets* i :label nil)
-                (tset targets* i :beacon nil)))
-            (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                            {:no-labels? (or no-labels?
-                                             (not targets*.autojump?))})
-            (exit))))
-
-    (local [idx _] (get-target-with-active-primary-label targets* in-final))
-    (if idx (exit-with-action-on idx)
-        targets*.autojump? (do (vim.fn.feedkeys in-final :i) (exit))
-        (exit-early))
-    ; Without this, Fennel inserts `return nil` into the if branches
-    ; above (to wrap up the big let block), which in combination with
-    ; the exit macros results in compile error.
-    nil))
+  ; Do return something here, otherwise Fennel automatically inserts
+  ; return statements into the tail-positioned if branches above,
+  ; conflicting with the exit forms, and leading to compile error.
+  nil)
 
 
 ; Init ///1
