@@ -414,7 +414,6 @@ is either labeled (C) or not (B).
           :inclusive_op inclusive-op?
           : offset}
          (if dot-repeat? state.dot_repeat kwargs))
-
   (local curr-winid (vim.fn.win_getid))
   (local directional? (not target-windows))
   (local no-labels? (and (empty? opts.labels) (empty? opts.safe_labels)))
@@ -440,7 +439,6 @@ is either labeled (C) or not (B).
   (local id->wininfo #(. (vim.fn.getwininfo $) 1))
   (local curr-win (id->wininfo curr-winid))
   (local ?target-windows (-?>> target-windows (map id->wininfo)))
-
   (local hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
                                         &into [curr-win]]  ; cursor is always highlighted
                                w))
@@ -450,20 +448,16 @@ is either labeled (C) or not (B).
   (local op-mode? (mode:match :o))
   (local change-op? (and op-mode? (= vim.v.operator :c)))
   (local dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y)))
-
   (local count (if (not directional?) nil
                    (= vim.v.count 0) (if (and op-mode? no-labels?) 1 nil)
                    vim.v.count))
-
   (local force-noautojump? (or op-mode?             ; should be able to select a target
                                multi-select?        ; likewise
                                (not directional?)   ; potentially disorienting
                                user-given-action))  ; no jump, doing sg else
-
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
-
   (local spec-keys (do (fn __index [_ k]
                          (match (. opts.special_keys k)
                            v (if (or (= k :next_target) (= k :prev_target))
