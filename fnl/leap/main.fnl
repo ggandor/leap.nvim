@@ -414,9 +414,17 @@ is either labeled (C) or not (B).
           :inclusive_op inclusive-op?
           : offset}
          (if dot-repeat? state.dot_repeat kwargs))
+
+  ; Do this before accessing `opts`.
+  (set opts.current_call (or user-given-opts {}))
+  (set opts.current_call.eq_class_of
+       (-?> opts.current_call.equivalence_classes
+            eq-classes->membership-lookup))
+
   (local curr-winid (vim.fn.win_getid))
   (local directional? (not target-windows))
-  (local empty-label-lists? (and (empty? opts.labels) (empty? opts.safe_labels)))
+  (local empty-label-lists? (and (empty? opts.labels)
+                                 (empty? opts.safe_labels)))
 
   (when (and (not directional?) empty-label-lists?)
     (echo "no labels to use")
@@ -429,11 +437,6 @@ is either labeled (C) or not (B).
     (lua :return))
 
   (set state.args kwargs)
-  (set opts.current_call (or user-given-opts {}))
-  (tset opts.current_call
-        :eq_class_of
-        (-?> opts.current_call.equivalence_classes
-             eq-classes->membership-lookup))
   (set state.source_window curr-winid)
 
   (local id->wininfo #(. (vim.fn.getwininfo $) 1))
