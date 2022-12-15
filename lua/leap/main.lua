@@ -507,8 +507,8 @@ local function leap(kwargs)
     end
     spec_keys = setmetatable({}, {__index = __index})
   end
-  local aot_3f = not ((max_phase_one_targets == 0) or count or empty_label_lists_3f or multi_select_3f or user_given_targets_3f)
-  local current_idx = 0
+  local _2aaot_3f_2a = not ((max_phase_one_targets == 0) or count or empty_label_lists_3f or multi_select_3f or user_given_targets_3f)
+  local _2acurr_idx_2a = 0
   local function echo_not_found(s)
     return echo(("not found: " .. s))
   end
@@ -637,7 +637,7 @@ local function leap(kwargs)
     local _112_ = opts.max_highlighted_traversal_targets
     if (nil ~= _112_) then
       local group_size = _112_
-      local consumed = (dec(current_idx) % group_size)
+      local consumed = (dec(_2acurr_idx_2a) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
         return inc(group_size)
@@ -654,7 +654,7 @@ local function leap(kwargs)
     if (no_labels_3f and (opts.max_highlighted_traversal_targets == 0)) then
       return 0, -1
     else
-      local start = inc(current_idx)
+      local start = inc(_2acurr_idx_2a)
       local _end
       if no_labels_3f then
         local _115_ = get_number_of_highlighted_targets()
@@ -689,7 +689,7 @@ local function leap(kwargs)
     end
     local _122_ = get_input_by_keymap(prompt)
     if (_122_ == spec_keys.repeat_search) then
-      aot_3f = false
+      _2aaot_3f_2a = false
       if state["repeat"].in1 then
         return state["repeat"].in1, state["repeat"].in2
       else
@@ -745,7 +745,7 @@ local function leap(kwargs)
         set_label_states(targets, {["group-offset"] = group_offset})
       else
       end
-      set_beacons(targets, {["aot?"] = aot_3f, ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f})
+      set_beacons(targets, {["aot?"] = _2aaot_3f_2a, ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f})
       do
         hl:cleanup(hl_affected_windows)
         if not count then
@@ -833,7 +833,7 @@ local function leap(kwargs)
     local _arg_148_ = _147_
     local no_labels_3f = _arg_148_["no-labels?"]
     local traversing_3f = _arg_148_["traversing?"]
-    current_idx = idx
+    _2acurr_idx_2a = idx
     if not traversing_3f then
       if no_labels_3f then
         for _, target in ipairs(targets) do
@@ -849,7 +849,7 @@ local function leap(kwargs)
       end
     else
     end
-    set_beacons(targets, {["no-labels?"] = no_labels_3f, ["aot?"] = aot_3f, ["user-given-targets?"] = user_given_targets_3f})
+    set_beacons(targets, {["no-labels?"] = no_labels_3f, ["aot?"] = _2aaot_3f_2a, ["user-given-targets?"] = user_given_targets_3f})
     do
       hl:cleanup(hl_affected_windows)
       if not count then
@@ -927,7 +927,7 @@ local function leap(kwargs)
     end
   elseif user_given_targets_3f then
     in1, _3fin2 = true, true
-  elseif aot_3f then
+  elseif _2aaot_3f_2a then
     in1, _3fin2 = get_first_pattern_input()
   else
     in1, _3fin2 = get_full_pattern_input()
@@ -1006,7 +1006,7 @@ local function leap(kwargs)
       end
     else
       if (#targets > max_phase_one_targets) then
-        aot_3f = false
+        _2aaot_3f_2a = false
       else
       end
       populate_sublists(targets)
@@ -1014,7 +1014,7 @@ local function leap(kwargs)
         prepare(sublist)
       end
       set_initial_label_states(targets)
-      set_beacons(targets, {["aot?"] = aot_3f})
+      set_beacons(targets, {["aot?"] = _2aaot_3f_2a})
     end
   end
   local in2 = (_3fin2 or get_second_pattern_input(targets))
@@ -1112,7 +1112,7 @@ local function leap(kwargs)
   else
   end
   if targets_2a["autojump?"] then
-    current_idx = 1
+    _2acurr_idx_2a = 1
     do_action((targets_2a)[1])
   else
   end
@@ -1135,7 +1135,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     else
-      local new_idx = inc(current_idx)
+      local new_idx = inc(_2acurr_idx_2a)
       do_action((targets_2a)[new_idx])
       traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or not targets_2a["autojump?"])})
       hl:cleanup(hl_affected_windows)

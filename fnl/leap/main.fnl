@@ -471,14 +471,14 @@ is either labeled (C) or not (B).
 
   ; Show beacons (labels & match highlights) ahead of time,
   ; right after the first input?
-  (var aot? (not (or (= max-phase-one-targets 0)
-                     count
-                     empty-label-lists?
-                     multi-select?
-                     user-given-targets?)))
+  (var *aot?* (not (or (= max-phase-one-targets 0)
+                       count
+                       empty-label-lists?
+                       multi-select?
+                       user-given-targets?)))
 
   ; For traversal mode.
-  (var current-idx 0)
+  (var *curr-idx* 0)
 
   ; Macros
 
@@ -611,9 +611,9 @@ is either labeled (C) or not (B).
       group-size
       ; Assumption: being here means we are after an autojump, and
       ; started highlighting from the 2nd target (no `count`).
-      ; Thus, we can use `current-idx` as the reference, instead of
-      ; some separate counter (but only because of the above).
-      (let [consumed (% (dec current-idx) group-size)
+      ; Thus, we can use `*curr-idx*` as the reference, instead of some
+      ; separate counter (but only because of the above).
+      (let [consumed (% (dec *curr-idx*) group-size)
             remaining (- group-size consumed)]
         ; Switch just before the whole group gets eaten up.
         (if (= remaining 1) (inc group-size)
@@ -623,7 +623,7 @@ is either labeled (C) or not (B).
   (fn get-highlighted-idx-range [targets no-labels?]
     (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
         (values 0 -1)  ; empty range
-        (let [start (inc current-idx)
+        (let [start (inc *curr-idx*)
               end (when no-labels?
                     (-?> (get-number-of-highlighted-targets)
                          (+ (dec start))
@@ -636,7 +636,7 @@ is either labeled (C) or not (B).
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
       spec-keys.repeat_search
-      (do (set aot? false)
+      (do (set *aot?* false)
           (if state.repeat.in1
               (values state.repeat.in1 state.repeat.in2)
               (do (echo "no previous search") nil)))
@@ -662,7 +662,7 @@ is either labeled (C) or not (B).
       ; setting the initial label states if using `spec-keys.repeat_search`.
       (when targets.label-set
         (set-label-states targets {: group-offset}))
-      (set-beacons targets {: aot? : no-labels? : user-given-targets?})
+      (set-beacons targets {:aot? *aot?* : no-labels? : user-given-targets?})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end))
@@ -711,7 +711,7 @@ is either labeled (C) or not (B).
               (loop targets))))))
 
   (fn traversal-loop [targets idx {: no-labels? : traversing?}]
-    (set current-idx idx)
+    (set *curr-idx* idx)
     (when-not traversing?  ; = first invoc.
       (if no-labels?
           (each [_ target (ipairs targets)]
@@ -723,7 +723,7 @@ is either labeled (C) or not (B).
             (for [i (inc last-labeled) (length targets)]
               (tset targets i :label nil)
               (tset targets i :beacon nil)))))
-    (set-beacons targets {: no-labels? : aot? : user-given-targets?})
+    (set-beacons targets {: no-labels? :aot? *aot?* : user-given-targets?})
     (with-highlight-chores
       (local (start end) (get-highlighted-idx-range targets no-labels?))
       (light-up-beacons targets start end))
@@ -766,7 +766,7 @@ is either labeled (C) or not (B).
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
                         ; `repeat_search` key.
-                        aot? (get-first-pattern-input)  ; REDRAW
+                        *aot?* (get-first-pattern-input)  ; REDRAW
                         (get-full-pattern-input)))  ; REDRAW
   (when-not in1
     (exit-early))
@@ -799,13 +799,13 @@ is either labeled (C) or not (B).
             (prepare targets))
         (do
           (when (> (length targets) max-phase-one-targets)
-            (set aot? false))
+            (set *aot?* false))
           (populate-sublists targets)
           (each [_ sublist (pairs targets.sublists)]
              (prepare sublist))
           (doto targets
             (set-initial-label-states)
-            (set-beacons {: aot?})))))
+            (set-beacons {:aot? *aot?*})))))
   (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
   (when-not in2
     (exit-early))
@@ -854,7 +854,7 @@ is either labeled (C) or not (B).
       (exit-with-action-on 1))
 
   (when targets*.autojump?
-    (set current-idx 1)
+    (set *curr-idx* 1)
     (do-action (. targets* 1)))
   ; This sets label states (i.e., modifies targets*) in each cycle.
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
@@ -865,7 +865,7 @@ is either labeled (C) or not (B).
   (when (contains? spec-keys.next_target in-final)
     (if (or op-mode? (not directional?) user-given-action)
         (exit-with-action-on 1)  ; (no autojump)
-        (let [new-idx (inc current-idx)]
+        (let [new-idx (inc *curr-idx*)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                           {:no-labels? (or empty-label-lists?
