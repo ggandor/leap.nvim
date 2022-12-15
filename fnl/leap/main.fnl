@@ -134,11 +134,6 @@ should actually be displayed depends on the `label-state` flag."
                   (> i secondary-end) :inactive))))))
 
 
-(fn inactivate-labels [targets]
-  (each [_ target (ipairs targets)]
-    (tset target :label-state :inactive)))
-
-
 ; Two-step processing
 
 (fn populate-sublists [targets]
@@ -715,10 +710,19 @@ is either labeled (C) or not (B).
                              (tset target :label-state :selected)))
               (loop targets))))))
 
-  (fn traversal-loop [targets idx {: no-labels?}]
+  (fn traversal-loop [targets idx {: no-labels? : traversing?}]
     (set current-idx idx)
-    (when no-labels?
-      (inactivate-labels targets))
+    (when-not traversing?  ; = first invoc.
+      (if no-labels?
+          (each [_ target (ipairs targets)]
+            (tset target :label-state :inactive))
+
+          (not (empty? opts.safe_labels))
+          ; Remove all the subsequent label groups.
+          (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
+            (for [i (inc last-labeled) (length targets)]
+              (tset targets i :label nil)
+              (tset targets i :beacon nil)))))
     (set-beacons targets {: no-labels? : aot? : user-given-targets?})
     (with-highlight-chores
       (local (start end) (get-highlighted-idx-range targets no-labels?))
@@ -738,7 +742,8 @@ is either labeled (C) or not (B).
                      ; ?. -> user-given targets might not have :chars
                      :in2 (?. targets new-idx :chars 2)})
                   (jump-to! (. targets new-idx))
-                  (traversal-loop targets new-idx {: no-labels?}))
+                  (traversal-loop
+                    targets new-idx {: no-labels? :traversing? true}))
           ; We still want the labels (if there are) to function.
         _ (match (get-target-with-active-primary-label targets input)
             [_ target] (jump-to! target)
@@ -840,13 +845,13 @@ is either labeled (C) or not (B).
          (do-action (. targets* ,idx))
          (exit)))
 
-  (when count
-    (if (<= count (length targets*))
-        (exit-with-action-on count)
-        (exit-early)))
+  (if count
+      (if (> count (length targets*))
+          (exit-early)
+          (exit-with-action-on count))
 
-  (when (= (length targets*) 1)
-    (exit-with-action-on 1))
+      (= (length targets*) 1)
+      (exit-with-action-on 1))
 
   (when targets*.autojump?
     (set current-idx 1)
@@ -862,11 +867,6 @@ is either labeled (C) or not (B).
         (exit-with-action-on 1)  ; (no autojump)
         (let [new-idx (inc current-idx)]
           (do-action (. targets* new-idx))
-          ; TODO: doc (or extract)
-          (when (and (empty? opts.labels) (not (empty? opts.safe_labels)))
-            (for [i (+ (length opts.safe_labels) 2) (length targets*)]
-              (tset targets* i :label nil)
-              (tset targets* i :beacon nil)))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                           {:no-labels? (or empty-label-lists?
                                            (not targets*.autojump?))})
