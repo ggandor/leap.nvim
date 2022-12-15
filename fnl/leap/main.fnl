@@ -141,15 +141,15 @@ should actually be displayed depends on the `label-state` flag."
 easy iteration through each subset of targets with a given successor
 char separately.
 
-  at  ar  at  at  ar  ar  an  ar
-{ t1, t2, t3, t4, t5, t6, t7, t8 }
+  ab  ac  ab  ab  ac  ac  ad  ac
+{ T1, T2, T3, T4, T5, T6, T7, T8 }
 -->
 {
-  t1, t2, t3, t4, t5, t6, t7, t8,
+  T1, T2, T3, T4, T5, T6, T7, T8,
   sublists = {
-    ['t'] = { t1, t3, t4 },
-    ['r'] = { t2, t5, t6, t8 },
-    ['n'] = { t7 }
+    ['b'] = { T1, T3, T4 },
+    ['c'] = { T2, T5, T6, T8 },
+    ['d'] = { T7 }
   },
 }
 "
