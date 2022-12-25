@@ -480,6 +480,8 @@ is either labeled (C) or not (B).
   ; For traversal mode.
   (var *curr-idx* 0)
 
+  (var *errmsg* nil)
+
   ; Macros
 
   (macro exit []
@@ -490,8 +492,8 @@ is either labeled (C) or not (B).
   ; Be sure not to call the macro twice accidentally,
   ; `handle-interrupted-change-op!` moves the cursor!
   (macro exit-early []
-    `(do (when change-op?
-           (handle-interrupted-change-op!))
+    `(do (when change-op? (handle-interrupted-change-op!))
+         (when *errmsg* (echo *errmsg*))
          (exit)))
 
   (macro with-highlight-chores [...]
@@ -504,18 +506,16 @@ is either labeled (C) or not (B).
 
   ; Helper functions ///
 
-  (fn echo-not-found [s]
-    (echo (.. "not found: " s)))
-
   (fn get-user-given-targets [targets]
-    (match (if (= (type targets) :function) (targets) targets)
-      targets*
-      (when (> (length targets*) 0)
-        ; Fill wininfo-s when not provided.
-        (when-not (. targets* 1 :wininfo)
-          (each [_ t (ipairs targets*)]
-            (tset t :wininfo curr-win)))
-        targets*)))
+    (local targets* (if (= (type targets) :function) (targets) targets))
+    (if (and targets* (> (length targets*) 0))
+        (do
+          ; Fill wininfo-s when not provided.
+          (when-not (. targets* 1 :wininfo)
+            (each [_ t (ipairs targets*)]
+              (tset t :wininfo curr-win)))
+          targets*)
+        (set *errmsg* "no targets")))
 
   (fn expand-to-equivalence-class [in]               ; <-- "b"
     (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
@@ -561,8 +561,10 @@ is either labeled (C) or not (B).
           pattern (prepare-pattern in1 ?in2)
           kwargs {: backward?
                   : match-last-overlapping?
-                  :target-windows ?target-windows}]
-      (search.get-targets pattern kwargs)))
+                  :target-windows ?target-windows}
+          targets (search.get-targets pattern kwargs)]
+      (or targets
+          (set *errmsg* (.. "not found: " in1 (or ?in2 ""))))))
 
   (fn get-target-with-active-primary-label [sublist input]
     (var res [])
@@ -636,10 +638,10 @@ is either labeled (C) or not (B).
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
       spec-keys.repeat_search
-      (do (set *aot?* false)
-          (if state.repeat.in1
-              (values state.repeat.in1 state.repeat.in2)
-              (do (echo "no previous search") nil)))
+      (if state.repeat.in1
+          (do (set *aot?* false)
+              (values state.repeat.in1 state.repeat.in2))
+          (set *errmsg* "no previous search"))
 
       in1 in1))
 
@@ -775,11 +777,9 @@ is either labeled (C) or not (B).
                      (get-user-given-targets state.dot_repeat.callback)
 
                      user-given-targets?
-                     (or (get-user-given-targets user-given-targets)
-                         (do (echo "no targets") nil))
+                     (get-user-given-targets user-given-targets)
 
-                     (or (get-targets in1 ?in2)
-                         (do (echo-not-found (.. in1 (or ?in2 ""))) nil))))
+                     (get-targets in1 ?in2)))
   (when-not targets
     (exit-early))
 
@@ -828,7 +828,7 @@ is either labeled (C) or not (B).
   ; we've been given custom targets).
   (local targets* (if targets.sublists (. targets.sublists in2) targets))
   (when-not targets*
-    (echo-not-found (.. in1 in2))
+    (set *errmsg* (.. "not found: " in1 in2))
     (exit-early))
 
   (when multi-select?
