@@ -559,7 +559,7 @@ local function leap(kwargs)
     end
     pat2 = (_97_() or _3fin2 or "\\_.")
     local pat
-    if (pat1:match("\\n") and pat2:match("\\n")) then
+    if (pat1:match("\\n") and (not _3fin2 or pat2:match("\\n"))) then
       pat = (pat1 .. pat2 .. "\\|\\^\\n")
     else
       pat = (pat1 .. pat2)

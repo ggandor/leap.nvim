@@ -542,16 +542,19 @@ is either labeled (C) or not (B).
           pat2 (or (-?> ?in2 expand-to-equivalence-class)
                    ?in2
                    "\\_.")  ; match anything, including EOL
-          pat (if (and (pat1:match "\\n") (pat2:match "\\n"))
+          pat (if (and (pat1:match "\\n") (or (not ?in2) (pat2:match "\\n")))
                   ; If \n\n is a possible sequence to appear, add ^\n
                   ; to the pattern, to make our convenience feature -
                   ; targeting empty lines by typing the newline alias
-                  ; twice - work with single-step processing too.
-                  ; (In case of two-step processing, we handle the
-                  ; special case of \n as first input in
-                  ; `search.get-targets`, but when we already have the
-                  ; full pattern - this includes repeating the
-                  ; previous search -, we need this hack here).
+                  ; twice - work.
+                  ; This hack is always necessary for single-step
+                  ; processing, when we already have the full pattern
+                  ; (this includes repeating the previous search), but
+                  ; also for two-step processing, in the special case of
+                  ; targeting the very last line in the file (normally,
+                  ; `search.get-targets` takes care of this situation,
+                  ; but the pattern `\n\_.` does not match `\n$` if it's
+                  ; on the last line).
                   (.. pat1 pat2 "\\|\\^\\n")
                   (.. pat1 pat2))]
       (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
