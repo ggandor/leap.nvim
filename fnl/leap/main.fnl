@@ -673,17 +673,22 @@ is either labeled (C) or not (B).
         (light-up-beacons targets start end))
       (match (get-input)
         input
-        (if (and (or (= input spec-keys.next_group)
-                     (and (= input spec-keys.prev_group) (not first-invoc?)))
-                 ; Autojump, if it is not forced (by empty `labels`),
-                 ; implies that there are no subsequent groups.
-                 (or (not targets.autojump?) (empty? opts.labels)))
-            (let [inc/dec (if (= input spec-keys.next_group) inc dec)
-                  |groups| (ceil (/ (length targets) (length targets.label-set)))
-                  max-offset (dec |groups|)
-                  group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
-              (loop group-offset* false))
-            (values input group-offset))))
+        (if
+          ; Group switch?
+          (and targets.label-set
+               ; Autojump, if it is not forced (by empty `labels`),
+               ; implies that there are no subsequent groups.
+               (or (not targets.autojump?) (empty? opts.labels))
+               (or (= input spec-keys.next_group)
+                   (and (= input spec-keys.prev_group) (not first-invoc?))))
+          (let [inc/dec (if (= input spec-keys.next_group) inc dec)
+                |groups| (ceil (/ (length targets) (length targets.label-set)))
+                max-offset (dec |groups|)
+                group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
+            ; Switch, and ask for input again.
+            (loop group-offset* false))
+          ; Otherwise return with input.
+          (values input group-offset))))
     ;;;
     (loop (or ?group-offset 0)
           (or (= nil first-invoc?) first-invoc?)))

@@ -761,7 +761,7 @@ local function leap(kwargs)
       local _133_ = get_input()
       if (nil ~= _133_) then
         local input = _133_
-        if (((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not first_invoc_3f0)) and (not targets["autojump?"] or empty_3f(opts.labels))) then
+        if (targets["label-set"] and (not targets["autojump?"] or empty_3f(opts.labels)) and ((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not first_invoc_3f0))) then
           local inc_2fdec
           if (input == spec_keys.next_group) then
             inc_2fdec = inc
