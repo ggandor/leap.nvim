@@ -660,8 +660,11 @@ is either labeled (C) or not (B).
                   in2 (values in1 in2))))
 
   (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
+    (local |groups| (if (not targets.label-set) 0
+                        (ceil (/ (length targets)
+                                 (length targets.label-set)))))
     ;;;
-    (fn loop [group-offset first-invoc?]
+    (fn display [group-offset]
       (local no-labels? empty-label-lists?)
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.repeat_search`.
@@ -670,28 +673,24 @@ is either labeled (C) or not (B).
       (set-beacons targets {:aot? *aot?* : no-labels? : user-given-targets?})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
-        (light-up-beacons targets start end))
+        (light-up-beacons targets start end)))
+    ;;;
+    (fn loop [group-offset first-invoc?]
+      (display group-offset)
       (match (get-input)
         input
-        (if
-          ; Group switch?
-          (and targets.label-set
-               ; Autojump, if it is not forced (by empty `labels`),
-               ; implies that there are no subsequent groups.
-               (or (not targets.autojump?) (empty? opts.labels))
-               (or (= input spec-keys.next_group)
-                   (and (= input spec-keys.prev_group) (not first-invoc?))))
-          (let [inc/dec (if (= input spec-keys.next_group) inc dec)
-                |groups| (ceil (/ (length targets) (length targets.label-set)))
-                max-offset (dec |groups|)
-                group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
-            ; Switch, and ask for input again.
-            (loop group-offset* false))
-          ; Otherwise return with input.
-          (values input group-offset))))
+        (if (and (< 1 |groups|)
+                 (or (= input spec-keys.next_group)
+                     (and (= input spec-keys.prev_group) (not first-invoc?))))
+            (let [inc/dec (if (= input spec-keys.next_group) inc dec)
+                  max-offset (dec |groups|)
+                  group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
+              ; Switch, and ask for input again.
+              (loop group-offset* false))
+            ; Otherwise return with input.
+            (values input group-offset))))
     ;;;
-    (loop (or ?group-offset 0)
-          (or (= nil first-invoc?) first-invoc?)))
+    (loop (or ?group-offset 0) (not= first-invoc? false)))
 
   (local multi-select-loop
     (do
