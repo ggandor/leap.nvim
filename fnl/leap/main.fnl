@@ -659,11 +659,12 @@ is either labeled (C) or not (B).
       (in1 nil) (match (get-input-by-keymap prompt)
                   in2 (values in1 in2))))
 
+
   (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
     (local |groups| (if (not targets.label-set) 0
                         (ceil (/ (length targets)
                                  (length targets.label-set)))))
-    ;;;
+    ; ---
     (fn display [group-offset]
       (local no-labels? empty-label-lists?)
       ; Do _not_ skip this on initial invocation - we might have skipped
@@ -674,7 +675,7 @@ is either labeled (C) or not (B).
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
-    ;;;
+    ; ---
     (fn loop [group-offset first-invoc?]
       (display group-offset)
       (match (get-input)
@@ -689,15 +690,16 @@ is either labeled (C) or not (B).
               (loop group-offset* false))
             ; Otherwise return with input.
             (values input group-offset))))
-    ;;;
+    ; ---
     (loop (or ?group-offset 0) (not= first-invoc? false)))
+
 
   (local multi-select-loop
     (do
       (local selection [])
       (var group-offset 0)
       (var first-invoc? true)
-      ;;;
+      ; ---
       (fn loop [targets]
         (match (post-pattern-input-loop targets group-offset first-invoc?)
           spec-keys.multi_accept
@@ -719,49 +721,54 @@ is either labeled (C) or not (B).
                              (tset target :label-state :selected)))
               (loop targets))))))
 
-  (fn traversal-loop [targets idx {: no-labels? : traversing?}]
-    (set *curr-idx* idx)
-    (when-not traversing?  ; = first invoc.
-      (if no-labels?
-          (each [_ target (ipairs targets)]
-            (tset target :label-state :inactive))
 
+  (fn traversal-loop [targets start-idx {: no-labels?}]
+    ; ---
+    (fn on-first-invoc []
+      (if no-labels?
+          (each [_ t (ipairs targets)] (tset t :label-state :inactive))
+
+          ; Remove all the subsequent label groups if needed.
           (not (empty? opts.safe_labels))
-          ; Remove all the subsequent label groups.
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
-              (tset targets i :label nil)
-              (tset targets i :beacon nil)))))
-    (set-beacons targets {: no-labels? :aot? *aot?* : user-given-targets?})
-    (with-highlight-chores
-      (local (start end) (get-highlighted-idx-range targets no-labels?))
-      (light-up-beacons targets start end))
-    (match (get-input)
-      input
-      (match (if (contains? spec-keys.next_target input)
-                 (min (inc idx) (length targets))
-                 (contains? spec-keys.prev_target input)
-                 (max (dec idx) 1))
-        new-idx (do
-                  ; We need to do this, in case we have entered
-                  ; traversal mode after the first input (i.e.,
-                  ; traversing all matches, not just a given sublist)!
-                  (update-repeat-state
-                    {:in1 state.repeat.in1
-                     ; ?. -> user-given targets might not have :chars
-                     :in2 (?. targets new-idx :chars 2)})
-                  (jump-to! (. targets new-idx))
-                  (traversal-loop
-                    targets new-idx {: no-labels? :traversing? true}))
-          ; We still want the labels (if there are) to function.
-        _ (match (get-target-with-active-primary-label targets input)
-            [_ target] (jump-to! target)
-            _ (vim.fn.feedkeys input :i)))))
+              (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
+    ; ---
+    (fn display []
+      (set-beacons targets {: no-labels? :aot? *aot?* : user-given-targets?})
+      (with-highlight-chores
+        (local (start end) (get-highlighted-idx-range targets no-labels?))
+        (light-up-beacons targets start end)))
+    ; ---
+    (fn get-new-idx [idx in]
+      (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
+          (contains? spec-keys.prev_target in) (max (dec idx) 1)))
+    ; ---
+    (fn loop [idx first-invoc?]
+      (when first-invoc? (on-first-invoc))
+      (set *curr-idx* idx)  ; `display` depends on it!
+      (display)
+      (match (get-input)
+        in
+        (match (get-new-idx idx in)
+          new-idx (do (match (?. targets new-idx :chars 2)  ; user-given targets might not have `chars`
+                        ; We need to do this, in case we have entered
+                        ; traversal mode after the first input (i.e.,
+                        ; traversing all matches, not just a given sublist)!
+                        ch2 (set state.repeat.in2 ch2))
+                      (jump-to! (. targets new-idx))
+                      (loop new-idx false))
+            ; We still want the labels (if there are) to function.
+          _ (match (get-target-with-active-primary-label targets in)
+              [_ target] (jump-to! target)
+              _ (vim.fn.feedkeys in :i)))))
+    ; ---
+    (loop start-idx true))
 
   ; //> Helper functions END
 
-  (local do-action (or user-given-action jump-to!))
 
+  (local do-action (or user-given-action jump-to!))
 
   ; After all the stage-setting, here comes the main action you've all been
   ; waiting for:
