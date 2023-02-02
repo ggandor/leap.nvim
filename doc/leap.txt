@@ -39,11 +39,6 @@ USAGE                                                               *leap-usage*
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>` (step back with `<tab>`, if needed).
 
-                                                             *leap-cross-window*
-`gs` searches in all the other windows on the tab page. In this case, the
-matches are sorted by their screen distance from the cursor, advancing in
-concentric circles.
-
                                    *leap-visual-mode* *leap-operator-pending-mode*
 In Visual and Operator-pending mode, there are two different pairs of
 directional motions available, providing the necessary additional comfort and
@@ -334,7 +329,7 @@ default mapping: `S`
 arguments: `{ backward = true, offset = 2 }`
 default mapping: `X` (Visual and Operator-pending mode only)
 
-*<Plug>(leap-cross-window)*
+*<Plug>(leap-from-window)*
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 

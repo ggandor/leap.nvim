@@ -374,9 +374,11 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 
 ### Cross-window motions
 
-`gs` searches in all the other windows on the tab page. In this case, the
-matches are sorted by their screen distance from the cursor, advancing in
-concentric circles.
+In this case, the matches are sorted by their screen distance from the cursor,
+advancing in concentric circles. The one default motion that works this way is
+`gs` (`<Plug>(leap-from-window)`), searching in all other windows on the tab
+page. To create custom motions like this, e.g. bidirectional search in the
+current window, see [Extending Leap](#extending-leap).
 
 ### Visual and Operator-pending mode
 

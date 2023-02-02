@@ -7,7 +7,9 @@
            [[:n :x :o] "S"  "<Plug>(leap-backward-to)" "Leap backward to"]
            [   [:x :o] "x"  "<Plug>(leap-forward-till)" "Leap forward till"]
            [   [:x :o] "X"  "<Plug>(leap-backward-till)" "Leap backward till"]
-           [[:n :x :o] "gs" "<Plug>(leap-cross-window)" "Leap cross window"]])]
+           [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
+           [[:n :x :o] "gs" "<Plug>(leap-cross-window)" "Leap from window"]  ; deprecated
+           ])]
     (each [_ mode (ipairs modes)]
       (when (or force?
                 ; Otherwise only set the keymaps if:
