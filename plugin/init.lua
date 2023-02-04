@@ -38,7 +38,7 @@ local plug_mappings = {
     end
   },
   {
-    {'n', 'x', 'o'}, '<Plug>(leap-cross-window)',
+    {'n', 'x', 'o'}, '<Plug>(leap-from-window)',
     function ()
       require('leap').leap {
         target_windows = require'leap.util'.get_enterable_windows()
@@ -47,6 +47,14 @@ local plug_mappings = {
   },
 
   -- Deprecated mappings.
+  {
+    {'n', 'x', 'o'}, '<Plug>(leap-cross-window)',
+    function ()
+      require('leap').leap {
+        target_windows = require'leap.util'.get_enterable_windows()
+      }
+    end
+  },
   {{'n', 'x', 'o'}, '<Plug>(leap-forward)',    function () require('leap').leap {} end},
   {{'n', 'x', 'o'}, '<Plug>(leap-backward)',   function () require('leap').leap { backward = true } end},
   {{'n', 'x', 'o'}, '<Plug>(leap-forward-x)',  function () require('leap').leap { offset = 1, inclusive_op = true } end},
