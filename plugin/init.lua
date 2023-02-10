@@ -20,13 +20,7 @@ local plug_mappings = {
     end
   },
   {
-    {'n'}, '<Plug>(leap-backward-to)',
-    function ()
-      require('leap').leap { backward = true }
-    end
-  },
-  {
-    {'x', 'o'}, '<Plug>(leap-backward-to)',
+    {'n', 'x', 'o'}, '<Plug>(leap-backward-to)',
     function ()
       require('leap').leap { backward = true, match_last_overlapping = true }
     end
