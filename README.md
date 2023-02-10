@@ -329,23 +329,27 @@ difference in our approach.
 
 ### Dependencies
 
-* For the moment, [repeat.vim](https://github.com/tpope/vim-repeat) is required
-  for dot-repeats (`.`) to work as intended.
+* [repeat.vim](https://github.com/tpope/vim-repeat), for dot-repeats (`.`) to
+  work as intended
 
 ### Installation
 
-Use your preferred plugin manager. No extra steps needed besides defining
-keybindings - to use the default ones, put the following into your config:
+Use your preferred method or plugin manager. No extra steps needed besides
+defining keybindings - to use the default ones, put the following into your
+config:
 
 `require('leap').add_default_mappings()` (init.lua)
 
 `lua require('leap').add_default_mappings()` (init.vim)
 
+Note that the above function will check for conflicts with any custom mappings
+created by you or other plugins, and will _not_ overwrite them, unless
+explicitly told so (called with a `true` argument).
+
 ## Usage
 
-Without further ado, let's cut to the chase, and learn by doing.
-([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
-to the file, if you want to follow along.)
+[Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
+to the example file, if you want to follow along.
 
 The search is invoked with `s` in the forward direction, and `S` in the backward
 direction. Let's target some word containing `ol`. After entering the letter
@@ -388,7 +392,19 @@ label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, green.
 (Substitute "green" and "blue" with the actual colors in the current theme.)
 
-### Cross-window motions
+### Special cases and additional features
+
+#### Resolving highlighting conflicts in phase one
+
+- If a directly reachable match covers a label, the match will get highlighted
+  (telling the user, "Label underneath!"), and the label will only be displayed
+  after the second input, that resolves the ambiguity.
+
+- If a label gets positioned over another label (this might occur before EOL or
+  the window edge, when the labels need to be shifted left), an "empty" label
+  will be displayed until entering the second input.
+
+#### Cross-window motions
 
 In this case, the matches are sorted by their screen distance from the cursor,
 advancing in concentric circles. The one default motion that works this way is
@@ -396,17 +412,15 @@ advancing in concentric circles. The one default motion that works this way is
 page. To create custom motions like this, e.g. bidirectional search in the
 current window, see [Extending Leap](#extending-leap).
 
-### Visual and Operator-pending mode
+#### Visual and Operator-pending mode
 
-In these modes, there are two different pairs of directional motions available,
-providing the necessary additional comfort and precision.
+Visual/Operator-pending `s`/`S` are like their Normal-mode counterparts, except
+that `s` includes _the whole match_ in the selection/operation (which might be
+considered the more intuitive behaviour for these modes).
 
-`s`/`S` are like their Normal-mode counterparts, except that `s` includes _the
-whole match_ in the selection/operation (which might be considered the more
-intuitive behaviour for these modes).
-
-On the other hand, `x`/`X` are like `t`/`T` for `f`/`F` - they exclude the
-matched pair:
+In these modes, there is also an additional pair of directional motions
+available, to provide more comfort and precision. `x`/`X` are to `s`/`S` as
+`t`/`T` are to `f`/`F` - they exclude the matched pair:
 
 ```
 abcd|                    |bcde
@@ -417,17 +431,19 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are inclusive (`:h inclusive`), and the
 `v` modifier (`:h o_v`) works as expected on them.
 
-### Jumping to the end of the line and to empty lines
+#### Jumping to the end of the line and to empty lines
 
 A character at the end of a line can be targeted by pressing `<space>` after it.
 There is no special mechanism behind this: you can set aliases for the newline
 character simply by defining a set in `opts.equivalence_classes` that contains
-it. Empty lines can also be targeted, by pressing the newline alias twice
+it.
+
+Empty lines can also be targeted, by pressing the newline alias twice
 (`<space><space>` by default). This latter is a slightly more magical feature,
 but fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
 
-### Repeat and traversal
+#### Repeat and traversal
 
 Pressing `<enter>` after invoking any of Leap's motions sets the search pattern
 to the previous one (`special_keys.repeat_search`).
@@ -439,7 +455,7 @@ you accidentally overshoot your target, `<tab>` can revert the previous jump(s)
 (`special_keys.prev_target`). Note that if the safe label set is in use, the
 labels will remain available the whole time!
 
-#### Tips
+##### Tips
 
 - When repeating the previous search, you can immediately move on:
   `s<enter><enter>...`
@@ -455,31 +471,15 @@ labels will remain available the whole time!
   direction to follow), but you can still accept the first (presumably only)
   match with `<enter>`, even after one input.
 
-### Resolving highlighting conflicts in phase one
-
-If a directly reachable match covers a label, the match will get highlighted
-(telling the user, "Label underneath!"), and the label will only be displayed
-after the second input, that resolves the ambiguity. If a label gets positioned
-over another label (this might occur before EOL or the window edge, when the
-labels need to be shifted left), an "empty" label will be displayed until
-entering the second input.
-
-### Smart autojump
+#### Smart autojump
 
 Leap automatically jumps to the first match if the remaining matches can be
 covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended, more comfortable
-label set otherwise. For fine-tuning, see `:h leap-config`.
-
-The rationale behind this is that the probability of the user aiming for the
-very first target lessens with the number of targets; at the same time, the
-probability of being able to reach the first target by other means (`www`, `f`,
-etc.) increases. That is, staying in place in exchange for more comfortable
-labels becomes a more and more acceptable trade-off.
-
-Smart autojump gives the best of both worlds between Sneak (jumps
-unconditionally, can only use a seriously limited label set) and Hop (labels
-everything, always requires that one extra keystroke).
+after a jump), but stays in place, and switches to an extended, more
+comfortable label set otherwise (the trade-off becomes more and more acceptable
+as the number of targets increases, since the probability of aiming for the
+very first target becomes less and less). For fine-tuning, see `:h leap-config`
+(`labels` and `safe_labels`).
 
 ## Configuration
 
@@ -510,14 +510,8 @@ special_keys = {
 
 ### Mappings
 
-You can add the default mappings (listed in `:h leap-default-mappings`) by
-calling `require('leap').add_default_mappings()`. Note that the function will
-check for conflicts with any custom mappings created by you or other plugins,
-and will not overwrite them, unless explicitly told so (called with a `true`
-argument).
-
-To define alternative mappings, you can use the `<Plug>` keys listed in `:h
-leap-custom-mappings`.
+See `:h leap-default-mappings`. To define alternative mappings, you can use the
+`<Plug>` keys listed at `:h leap-custom-mappings`.
 
 Note: To create custom motions, see [Extending Leap](#extending-leap) below.
 
