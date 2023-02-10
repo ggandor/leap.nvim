@@ -175,7 +175,11 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 -- Now that you have carefully considered my wise advice above, I'll
 -- tell you the simple trick: just initiate multi-window mode with the
 -- current window as the only target.
-require('leap').leap { target_windows = { vim.fn.win_getid() } }
+
+vim.keymap.set(<modes>, <your-preferred-key>, function ()
+  local current_window = vim.fn.win_getid()
+  require('leap').leap { target_windows = { current_window } }
+end)
 ```
 
 </details>
@@ -187,10 +191,13 @@ require('leap').leap { target_windows = { vim.fn.win_getid() } }
 ```lua
 -- The same caveats as above about bidirectional search apply here.
 
-require('leap').leap { target_windows = vim.tbl_filter(
-  function (win) return vim.api.nvim_win_get_config(win).focusable end,
-  vim.api.nvim_tabpage_list_wins(0)
-)}
+vim.keymap.set('n', <your-preferred-key>, function ()
+  local focusable_windows_on_tabpage = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
+  require('leap').leap { target_windows = focusable_windows_on_tabpage }
+end)
 ```
 </details>
 
@@ -233,6 +240,8 @@ require('leap').opts.safe_labels = {}
 <summary>Greying out the search area</summary>
 
 ```lua
+-- Or just set to grey directly, e.g. { fg = '#777777' },
+-- if Comment is saturated.
 vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 ```
 
@@ -243,15 +252,22 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 <summary>Lightspeed-style highlighting</summary>
 
 ```lua
--- The below settings make Leap's highlighting a bit closer to what you've been
+-- The below settings make Leap's highlighting closer to what you've been
 -- used to in Lightspeed.
 
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' }) -- or some grey
 vim.api.nvim_set_hl(0, 'LeapMatch', {
-  fg = 'white',  -- for light themes, set to 'black' or similar
-  bold = true,
-  nocombine = true,
+  -- For light themes, set to 'black' or similar.
+  fg = 'white', bold = true, nocombine = true,
 })
+-- Of course, specify some nicer shades instead of the default "red" and "blue".
+vim.api.nvim_set_hl(0, 'LeapLabelPrimary', {
+  fg = 'red', bold = true, nocombine = true,
+})
+vim.api.nvim_set_hl(0, 'LeapLabelSecondary', {
+  fg = 'blue', bold = true, nocombine = true,
+})
+-- Try it without this setting first, you might find you don't even miss it.
 require('leap').opts.highlight_unlabeled_phase_one_targets = true
 ```
 
