@@ -448,10 +448,6 @@ is either labeled (C) or not (B).
   (local count (if (not directional?) nil
                    (= vim.v.count 0) (if (and op-mode? empty-label-lists?) 1 nil)
                    vim.v.count))
-  (local force-noautojump? (or op-mode?             ; should be able to select a target
-                               multi-select?        ; likewise
-                               (not directional?)   ; potentially disorienting
-                               user-given-action))  ; no jump, doing sg else
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
@@ -568,6 +564,26 @@ is either labeled (C) or not (B).
           targets (search.get-targets pattern kwargs)]
       (or targets
           (set *errmsg* (.. "not found: " in1 (or ?in2 ""))))))
+
+  (fn prepare-targets [targets]
+    (let [funny-edge-case?
+          ; <-----  backward search
+          ;   ab    target #1
+          ; abl     target #2 (labeled)
+          ;   ^     auto-jump would move the cursor here (covering the label)
+          (and backward?
+               (match targets
+                 [{:pos [l1 c1]} {:pos [l2 c2]}]
+                 (and (= l1 l2) (= c1 (+ c2 2)))))
+          force-noautojump? (or op-mode?             ; should be able to select a target
+                                multi-select?        ; likewise
+                                (not directional?)   ; potentially disorienting
+                                user-given-action    ; no jump, doing sg else
+                                funny-edge-case?)]   ; see above
+      (doto targets
+        (set-autojump force-noautojump?)
+        (attach-label-set)
+        (set-labels multi-select?))))
 
   (fn get-target-with-active-primary-label [sublist input]
     (var res [])
@@ -802,24 +818,19 @@ is either labeled (C) or not (B).
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (do
-    (local prepare #(doto $
-                      (set-autojump force-noautojump?)
-                      (attach-label-set)
-                      (set-labels multi-select?)))
-    (if ?in2
-        (if empty-label-lists?
-            (tset targets :autojump? true)
-            (prepare targets))
-        (do
-          (when (> (length targets) max-phase-one-targets)
-            (set *aot?* false))
-          (populate-sublists targets)
-          (each [_ sublist (pairs targets.sublists)]
-             (prepare sublist))
-          (doto targets
-            (set-initial-label-states)
-            (set-beacons {:aot? *aot?*})))))
+  (if ?in2
+      (if empty-label-lists?
+          (tset targets :autojump? true)
+          (prepare-targets targets))
+      (do
+        (when (> (length targets) max-phase-one-targets)
+          (set *aot?* false))
+        (populate-sublists targets)
+        (each [_ sublist (pairs targets.sublists)]
+           (prepare-targets sublist))
+        (doto targets
+          (set-initial-label-states)
+          (set-beacons {:aot? *aot?*}))))
   (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
   (when-not in2
     (exit-early))
