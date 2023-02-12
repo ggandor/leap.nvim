@@ -404,7 +404,6 @@ local function leap(kwargs)
       opts.current_call.eq_class_of = _75_
     end
   end
-  local curr_winid = vim.fn.win_getid()
   local directional_3f = not target_windows
   local empty_label_lists_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
   if (not directional_3f and empty_label_lists_3f) then
@@ -422,29 +421,16 @@ local function leap(kwargs)
     return
   else
   end
+  local curr_winid = vim.fn.win_getid()
   state.args = kwargs
   state.source_window = curr_winid
-  local id__3ewininfo
-  local function _80_(_241)
-    return (vim.fn.getwininfo(_241))[1]
-  end
-  id__3ewininfo = _80_
-  local curr_win = id__3ewininfo(curr_winid)
-  local _3ftarget_windows
-  do
-    local _81_ = target_windows
-    if (_81_ ~= nil) then
-      _3ftarget_windows = map(id__3ewininfo, _81_)
-    else
-      _3ftarget_windows = _81_
-    end
-  end
+  local _3ftarget_windows = target_windows
   local hl_affected_windows
   do
-    local tbl_17_auto = {curr_win}
+    local tbl_17_auto = {curr_winid}
     local i_18_auto = #tbl_17_auto
-    for _, w in ipairs((_3ftarget_windows or {})) do
-      local val_19_auto = w
+    for _, winid in ipairs((_3ftarget_windows or {})) do
+      local val_19_auto = winid
       if (nil ~= val_19_auto) then
         i_18_auto = (i_18_auto + 1)
         do end (tbl_17_auto)[i_18_auto] = val_19_auto
@@ -476,12 +462,12 @@ local function leap(kwargs)
   local spec_keys
   do
     local function __index(_, k)
-      local _86_ = opts.special_keys[k]
-      if (nil ~= _86_) then
-        local v = _86_
+      local _83_ = opts.special_keys[k]
+      if (nil ~= _83_) then
+        local v = _83_
         if ((k == "next_target") or (k == "prev_target")) then
-          local _87_ = type(v)
-          if (_87_ == "table") then
+          local _84_ = type(v)
+          if (_84_ == "table") then
             local tbl_17_auto = {}
             local i_18_auto = #tbl_17_auto
             for _0, str in ipairs(v) do
@@ -493,7 +479,7 @@ local function leap(kwargs)
               end
             end
             return tbl_17_auto
-          elseif (_87_ == "string") then
+          elseif (_84_ == "string") then
             return {replace_keycodes(v)}
           else
             return nil
@@ -518,9 +504,10 @@ local function leap(kwargs)
       targets_2a = targets
     end
     if (targets_2a and (#targets_2a > 0)) then
+      local wininfo = vim.fn.getwininfo(curr_winid)[1]
       if not (targets_2a)[1].wininfo then
         for _, t in ipairs(targets_2a) do
-          t["wininfo"] = curr_win
+          t.wininfo = wininfo
         end
       else
       end
@@ -549,48 +536,48 @@ local function leap(kwargs)
   local function prepare_pattern(in1, _3fin2)
     local pat1 = (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\"))
     local pat2
-    local function _97_()
-      local _98_ = _3fin2
-      if (nil ~= _98_) then
-        return expand_to_equivalence_class(_98_)
+    local function _94_()
+      local _95_ = _3fin2
+      if (nil ~= _95_) then
+        return expand_to_equivalence_class(_95_)
       else
-        return _98_
+        return _95_
       end
     end
-    pat2 = (_97_() or _3fin2 or "\\_.")
+    pat2 = (_94_() or _3fin2 or "\\_.")
     local pat
     if (pat1:match("\\n") and (not _3fin2 or pat2:match("\\n"))) then
       pat = (pat1 .. pat2 .. "\\|\\^\\n")
     else
       pat = (pat1 .. pat2)
     end
-    local function _101_()
+    local function _98_()
       if opts.case_sensitive then
         return "\\C"
       else
         return "\\c"
       end
     end
-    return ("\\V" .. _101_() .. pat)
+    return ("\\V" .. _98_() .. pat)
   end
   local function get_targets(in1, _3fin2)
     local search = require("leap.search")
     local pattern = prepare_pattern(in1, _3fin2)
     local kwargs0 = {["backward?"] = backward_3f, ["match-last-overlapping?"] = match_last_overlapping_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
-    local function _102_()
+    local function _99_()
       _2aerrmsg_2a = ("not found: " .. in1 .. (_3fin2 or ""))
       return nil
     end
-    return (targets or _102_())
+    return (targets or _99_())
   end
   local function get_target_with_active_primary_label(sublist, input)
     local res = {}
-    for idx, _103_ in ipairs(sublist) do
-      local _each_104_ = _103_
-      local label = _each_104_["label"]
-      local label_state = _each_104_["label-state"]
-      local target = _each_104_
+    for idx, _100_ in ipairs(sublist) do
+      local _each_101_ = _100_
+      local label = _each_101_["label"]
+      local label_state = _each_101_["label-state"]
+      local target = _each_101_
       if (next(res) or (label_state == "inactive")) then break end
       if ((label == input) and (label_state == "active-primary")) then
         res = {idx, target}
@@ -609,13 +596,13 @@ local function leap(kwargs)
   end
   local function set_dot_repeat(in1, in2, target_idx)
     if (dot_repeatable_op_3f and not (dot_repeat_3f or (type(user_given_targets) == "table"))) then
-      local _107_
+      local _104_
       if user_given_targets then
-        _107_ = {callback = user_given_targets}
+        _104_ = {callback = user_given_targets}
       else
-        _107_ = {in1 = in1, in2 = in2}
+        _104_ = {in1 = in1, in2 = in2}
       end
-      state.dot_repeat = vim.tbl_extend("error", _107_, {target_idx = target_idx, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f})
+      state.dot_repeat = vim.tbl_extend("error", _104_, {target_idx = target_idx, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f})
       return set_dot_repeat_2a()
     else
       return nil
@@ -624,18 +611,18 @@ local function leap(kwargs)
   local jump_to_21
   do
     local first_jump_3f = true
-    local function _110_(target)
+    local function _107_(target)
       local jump = require("leap.jump")
       jump["jump-to!"](target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = backward_3f, ["inclusive-op?"] = inclusive_op_3f})
       first_jump_3f = false
       return nil
     end
-    jump_to_21 = _110_
+    jump_to_21 = _107_
   end
   local function get_number_of_highlighted_targets()
-    local _111_ = opts.max_highlighted_traversal_targets
-    if (nil ~= _111_) then
-      local group_size = _111_
+    local _108_ = opts.max_highlighted_traversal_targets
+    if (nil ~= _108_) then
+      local group_size = _108_
       local consumed = (dec(_2acurr_idx_2a) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
@@ -656,16 +643,16 @@ local function leap(kwargs)
       local start = inc(_2acurr_idx_2a)
       local _end
       if no_labels_3f then
-        local _114_ = get_number_of_highlighted_targets()
-        if (nil ~= _114_) then
-          local _115_ = (_114_ + dec(start))
-          if (nil ~= _115_) then
-            _end = min(_115_, #targets)
+        local _111_ = get_number_of_highlighted_targets()
+        if (nil ~= _111_) then
+          local _112_ = (_111_ + dec(start))
+          if (nil ~= _112_) then
+            _end = min(_112_, #targets)
           else
-            _end = _115_
+            _end = _112_
           end
         else
-          _end = _114_
+          _end = _111_
         end
       else
         _end = nil
@@ -686,8 +673,8 @@ local function leap(kwargs)
       hl["highlight-cursor"](hl)
       vim.cmd("redraw")
     end
-    local _121_ = get_input_by_keymap(prompt)
-    if (_121_ == spec_keys.repeat_search) then
+    local _118_ = get_input_by_keymap(prompt)
+    if (_118_ == spec_keys.repeat_search) then
       if state["repeat"].in1 then
         _2aaot_3f_2a = false
         return state["repeat"].in1, state["repeat"].in2
@@ -695,8 +682,8 @@ local function leap(kwargs)
         _2aerrmsg_2a = "no previous search"
         return nil
       end
-    elseif (nil ~= _121_) then
-      local in1 = _121_
+    elseif (nil ~= _118_) then
+      local in1 = _118_
       return in1
     else
       return nil
@@ -719,16 +706,16 @@ local function leap(kwargs)
     return get_input_by_keymap(prompt)
   end
   local function get_full_pattern_input()
-    local _126_, _127_ = get_first_pattern_input()
-    if ((nil ~= _126_) and (nil ~= _127_)) then
-      local in1 = _126_
-      local in2 = _127_
+    local _123_, _124_ = get_first_pattern_input()
+    if ((nil ~= _123_) and (nil ~= _124_)) then
+      local in1 = _123_
+      local in2 = _124_
       return in1, in2
-    elseif ((nil ~= _126_) and (_127_ == nil)) then
-      local in1 = _126_
-      local _128_ = get_input_by_keymap(prompt)
-      if (nil ~= _128_) then
-        local in2 = _128_
+    elseif ((nil ~= _123_) and (_124_ == nil)) then
+      local in1 = _123_
+      local _125_ = get_input_by_keymap(prompt)
+      if (nil ~= _125_) then
+        local in2 = _125_
         return in1, in2
       else
         return nil
@@ -765,9 +752,9 @@ local function leap(kwargs)
     end
     local function loop(group_offset, first_invoc_3f0)
       display(group_offset)
-      local _134_ = get_input()
-      if (nil ~= _134_) then
-        local input = _134_
+      local _131_ = get_input()
+      if (nil ~= _131_) then
+        local input = _131_
         if ((1 < _7cgroups_7c) and ((input == spec_keys.next_group) or ((input == spec_keys.prev_group) and not first_invoc_3f0))) then
           local inc_2fdec
           if (input == spec_keys.next_group) then
@@ -793,32 +780,32 @@ local function leap(kwargs)
     local group_offset = 0
     local first_invoc_3f = true
     local function loop(targets)
-      local _138_, _139_ = post_pattern_input_loop(targets, group_offset, first_invoc_3f)
-      if (_138_ == spec_keys.multi_accept) then
+      local _135_, _136_ = post_pattern_input_loop(targets, group_offset, first_invoc_3f)
+      if (_135_ == spec_keys.multi_accept) then
         if not empty_3f(selection) then
           return selection
         else
           return loop(targets)
         end
-      elseif (_138_ == spec_keys.multi_revert) then
+      elseif (_135_ == spec_keys.multi_revert) then
         do
-          local _141_ = table.remove(selection)
-          if (nil ~= _141_) then
-            _141_["label-state"] = nil
+          local _138_ = table.remove(selection)
+          if (nil ~= _138_) then
+            _138_["label-state"] = nil
           else
           end
         end
         return loop(targets)
-      elseif ((nil ~= _138_) and (nil ~= _139_)) then
-        local _in = _138_
-        local group_offset_2a = _139_
+      elseif ((nil ~= _135_) and (nil ~= _136_)) then
+        local _in = _135_
+        local group_offset_2a = _136_
         group_offset = group_offset_2a
         first_invoc_3f = false
         do
-          local _143_ = get_target_with_active_primary_label(targets, _in)
-          if ((_G.type(_143_) == "table") and true and (nil ~= (_143_)[2])) then
-            local _ = (_143_)[1]
-            local target = (_143_)[2]
+          local _140_ = get_target_with_active_primary_label(targets, _in)
+          if ((_G.type(_140_) == "table") and true and (nil ~= (_140_)[2])) then
+            local _ = (_140_)[1]
+            local target = (_140_)[2]
             if not contains_3f(selection, target) then
               table.insert(selection, target)
               do end (target)["label-state"] = "selected"
@@ -834,9 +821,9 @@ local function leap(kwargs)
     end
     multi_select_loop = loop
   end
-  local function traversal_loop(targets, start_idx, _147_)
-    local _arg_148_ = _147_
-    local no_labels_3f = _arg_148_["no-labels?"]
+  local function traversal_loop(targets, start_idx, _144_)
+    local _arg_145_ = _144_
+    local no_labels_3f = _arg_145_["no-labels?"]
     local function on_first_invoc()
       if no_labels_3f then
         for _, t in ipairs(targets) do
@@ -846,9 +833,9 @@ local function leap(kwargs)
       elseif not empty_3f(opts.safe_labels) then
         local last_labeled = inc(#opts.safe_labels)
         for i = inc(last_labeled), #targets do
-          local _149_ = targets[i]
-          _149_["label"] = nil
-          _149_["beacon"] = nil
+          local _146_ = targets[i]
+          _146_["label"] = nil
+          _146_["beacon"] = nil
         end
         return nil
       else
@@ -885,32 +872,32 @@ local function leap(kwargs)
       end
       _2acurr_idx_2a = idx
       display()
-      local _154_ = get_input()
-      if (nil ~= _154_) then
-        local _in = _154_
-        local _155_ = get_new_idx(idx, _in)
-        if (nil ~= _155_) then
-          local new_idx = _155_
+      local _151_ = get_input()
+      if (nil ~= _151_) then
+        local _in = _151_
+        local _152_ = get_new_idx(idx, _in)
+        if (nil ~= _152_) then
+          local new_idx = _152_
           do
-            local _156_
+            local _153_
             do
-              local t_157_ = targets
-              if (nil ~= t_157_) then
-                t_157_ = (t_157_)[new_idx]
+              local t_154_ = targets
+              if (nil ~= t_154_) then
+                t_154_ = (t_154_)[new_idx]
               else
               end
-              if (nil ~= t_157_) then
-                t_157_ = (t_157_).chars
+              if (nil ~= t_154_) then
+                t_154_ = (t_154_).chars
               else
               end
-              if (nil ~= t_157_) then
-                t_157_ = (t_157_)[2]
+              if (nil ~= t_154_) then
+                t_154_ = (t_154_)[2]
               else
               end
-              _156_ = t_157_
+              _153_ = t_154_
             end
-            if (nil ~= _156_) then
-              local ch2 = _156_
+            if (nil ~= _153_) then
+              local ch2 = _153_
               state["repeat"].in2 = ch2
             else
             end
@@ -918,14 +905,14 @@ local function leap(kwargs)
           jump_to_21(targets[new_idx])
           return loop(new_idx, false)
         elseif true then
-          local _ = _155_
-          local _162_ = get_target_with_active_primary_label(targets, _in)
-          if ((_G.type(_162_) == "table") and true and (nil ~= (_162_)[2])) then
-            local _0 = (_162_)[1]
-            local target = (_162_)[2]
+          local _ = _152_
+          local _159_ = get_target_with_active_primary_label(targets, _in)
+          if ((_G.type(_159_) == "table") and true and (nil ~= (_159_)[2])) then
+            local _0 = (_159_)[1]
+            local target = (_159_)[2]
             return jump_to_21(target)
           elseif true then
-            local _0 = _162_
+            local _0 = _159_
             return vim.fn.feedkeys(_in, "i")
           else
             return nil
@@ -992,15 +979,15 @@ local function leap(kwargs)
   else
   end
   if dot_repeat_3f then
-    local _175_ = targets[state.dot_repeat.target_idx]
-    if (nil ~= _175_) then
-      local target = _175_
+    local _172_ = targets[state.dot_repeat.target_idx]
+    if (nil ~= _172_) then
+      local target = _172_
       do_action(target)
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
     elseif true then
-      local _ = _175_
+      local _ = _172_
       if change_op_3f then
         handle_interrupted_change_op_21()
       else
@@ -1018,13 +1005,13 @@ local function leap(kwargs)
   end
   do
     local prepare
-    local function _180_(_241)
+    local function _177_(_241)
       set_autojump(_241, force_noautojump_3f)
       attach_label_set(_241)
       set_labels(_241, multi_select_3f)
       return _241
     end
-    prepare = _180_
+    prepare = _177_
     if _3fin2 then
       if empty_label_lists_3f then
         targets["autojump?"] = true
@@ -1098,9 +1085,9 @@ local function leap(kwargs)
   end
   if multi_select_3f then
     do
-      local _193_ = multi_select_loop(targets_2a)
-      if (nil ~= _193_) then
-        local targets_2a_2a = _193_
+      local _190_ = multi_select_loop(targets_2a)
+      if (nil ~= _190_) then
+        local targets_2a_2a = _190_
         do
           hl:cleanup(hl_affected_windows)
           if not count then
@@ -1187,9 +1174,9 @@ local function leap(kwargs)
     end
   else
   end
-  local _local_207_ = get_target_with_active_primary_label(targets_2a, in_final)
-  local idx = _local_207_[1]
-  local _ = _local_207_[2]
+  local _local_204_ = get_target_with_active_primary_label(targets_2a, in_final)
+  local idx = _local_204_[1]
+  local _ = _local_204_[2]
   if idx then
     set_dot_repeat(in1, in2, idx)
     do_action((targets_2a)[idx])
@@ -1216,43 +1203,43 @@ local function leap(kwargs)
   end
   return nil
 end
-local _212_
+local _209_
 do
-  local _211_ = opts.default.equivalence_classes
-  if (nil ~= _211_) then
-    _212_ = eq_classes__3emembership_lookup(_211_)
+  local _208_ = opts.default.equivalence_classes
+  if (nil ~= _208_) then
+    _209_ = eq_classes__3emembership_lookup(_208_)
   else
-    _212_ = _211_
+    _209_ = _208_
   end
 end
-opts.default["eq_class_of"] = _212_
+opts.default["eq_class_of"] = _209_
 api.nvim_create_augroup("LeapDefault", {})
 hl["init-highlight"](hl)
-local function _214_()
+local function _211_()
   return hl["init-highlight"](hl)
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _214_, group = "LeapDefault"})
+api.nvim_create_autocmd("ColorScheme", {callback = _211_, group = "LeapDefault"})
 local function set_editor_opts(t)
   state.saved_editor_opts = {}
   local wins = (state.args.target_windows or {state.source_window})
   for opt, val in pairs(t) do
-    local _let_215_ = vim.split(opt, ".", {plain = true})
-    local scope = _let_215_[1]
-    local name = _let_215_[2]
-    local _216_ = scope
-    if (_216_ == "w") then
+    local _let_212_ = vim.split(opt, ".", {plain = true})
+    local scope = _let_212_[1]
+    local name = _let_212_[2]
+    local _213_ = scope
+    if (_213_ == "w") then
       for _, w in ipairs(wins) do
         state.saved_editor_opts[{"w", w, name}] = api.nvim_win_get_option(w, name)
         api.nvim_win_set_option(w, name, val)
       end
-    elseif (_216_ == "b") then
+    elseif (_213_ == "b") then
       for _, w in ipairs(wins) do
         local b = api.nvim_win_get_buf(w)
         do end (state.saved_editor_opts)[{"b", b, name}] = api.nvim_buf_get_option(b, name)
         api.nvim_buf_set_option(b, name, val)
       end
     elseif true then
-      local _ = _216_
+      local _ = _213_
       state.saved_editor_opts[name] = api.nvim_get_option(name)
       api.nvim_set_option(name, val)
     else
@@ -1262,17 +1249,17 @@ local function set_editor_opts(t)
 end
 local function restore_editor_opts()
   for key, val in pairs(state.saved_editor_opts) do
-    local _218_ = key
-    if ((_G.type(_218_) == "table") and ((_218_)[1] == "w") and (nil ~= (_218_)[2]) and (nil ~= (_218_)[3])) then
-      local w = (_218_)[2]
-      local name = (_218_)[3]
+    local _215_ = key
+    if ((_G.type(_215_) == "table") and ((_215_)[1] == "w") and (nil ~= (_215_)[2]) and (nil ~= (_215_)[3])) then
+      local w = (_215_)[2]
+      local name = (_215_)[3]
       api.nvim_win_set_option(w, name, val)
-    elseif ((_G.type(_218_) == "table") and ((_218_)[1] == "b") and (nil ~= (_218_)[2]) and (nil ~= (_218_)[3])) then
-      local b = (_218_)[2]
-      local name = (_218_)[3]
+    elseif ((_G.type(_215_) == "table") and ((_215_)[1] == "b") and (nil ~= (_215_)[2]) and (nil ~= (_215_)[3])) then
+      local b = (_215_)[2]
+      local name = (_215_)[3]
       api.nvim_buf_set_option(b, name, val)
-    elseif (nil ~= _218_) then
-      local name = _218_
+    elseif (nil ~= _215_) then
+      local name = _215_
       api.nvim_set_option(name, val)
     else
     end
@@ -1280,12 +1267,12 @@ local function restore_editor_opts()
   return nil
 end
 local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
-local function _220_()
+local function _217_()
   return set_editor_opts(temporary_editor_opts)
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _220_, group = "LeapDefault"})
-local function _221_()
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _217_, group = "LeapDefault"})
+local function _218_()
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _221_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _218_, group = "LeapDefault"})
 return {state = state, leap = leap}

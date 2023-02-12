@@ -416,7 +416,6 @@ is either labeled (C) or not (B).
        (-?> opts.current_call.equivalence_classes
             eq-classes->membership-lookup))
 
-  (local curr-winid (vim.fn.win_getid))
   (local directional? (not target-windows))
   (local empty-label-lists? (and (empty? opts.labels)
                                  (empty? opts.safe_labels)))
@@ -431,15 +430,15 @@ is either labeled (C) or not (B).
     (echo "error: multiselect mode requires user-provided `action` callback")
     (lua :return))
 
+  (local curr-winid (vim.fn.win_getid))
+
   (set state.args kwargs)
   (set state.source_window curr-winid)
 
-  (local id->wininfo #(. (vim.fn.getwininfo $) 1))
-  (local curr-win (id->wininfo curr-winid))
-  (local ?target-windows (-?>> target-windows (map id->wininfo)))
-  (local hl-affected-windows (icollect [_ w (ipairs (or ?target-windows []))
-                                        &into [curr-win]]  ; cursor is always highlighted
-                               w))
+  (local ?target-windows target-windows)
+  (local hl-affected-windows (icollect [_ winid (ipairs (or ?target-windows []))
+                                        &into [curr-winid]]  ; cursor is always highlighted
+                               winid))
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
   (local mode (. (api.nvim_get_mode) :mode))
@@ -511,9 +510,10 @@ is either labeled (C) or not (B).
     (if (and targets* (> (length targets*) 0))
         (do
           ; Fill wininfo-s when not provided.
+          (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
           (when-not (. targets* 1 :wininfo)
             (each [_ t (ipairs targets*)]
-              (tset t :wininfo curr-win)))
+              (set t.wininfo wininfo)))
           targets*)
         (set *errmsg* "no targets")))
 

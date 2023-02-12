@@ -200,18 +200,16 @@ Dynamic attributes
       (let [targets []
             cursor-positions {}
             source-winid (vim.fn.win_getid)
-            curr-win-only? (match target-windows
-                             [{:winid source-winid} nil] true)]
-        (each [_ wininfo (ipairs target-windows)]
-          (let [winid wininfo.winid]
-            (when (not curr-win-only?)
-              (api.nvim_set_current_win winid))
-            (tset cursor-positions winid (get-cursor-pos))
-            ; Fill up the provided `targets`, instead of returning a new table.
-            (get-targets-in-current-window pattern
-                                           {: targets :whole-window? true
-                                            : match-last-overlapping?
-                                            :skip-curpos? (= winid source-winid)})))
+            curr-win-only? (match target-windows [source-winid nil] true)]
+        (each [_ winid (ipairs target-windows)]
+          (when (not curr-win-only?)
+            (api.nvim_set_current_win winid))
+          (tset cursor-positions winid (get-cursor-pos))
+          ; Fill up the provided `targets`, instead of returning a new table.
+          (get-targets-in-current-window pattern
+                                         {: targets :whole-window? true
+                                          : match-last-overlapping?
+                                          :skip-curpos? (= winid source-winid)}))
         (when (not curr-win-only?)
           (api.nvim_set_current_win source-winid))
         (when (not (empty? targets))

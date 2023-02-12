@@ -24,7 +24,8 @@
   (set self.extmarks [])
   ; Clear backdrop.
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
-    (each [_ wininfo (ipairs affected-windows)]
+    (each [_ winid (ipairs affected-windows)]
+      (local wininfo (. (vim.fn.getwininfo winid) 1))
       (api.nvim_buf_clear_namespace
         wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline))
     ; Safety measure for scrolloff > 0: we always clean up the current view too.
@@ -36,10 +37,11 @@
 (fn M.apply-backdrop [self backward? ?target-windows]
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
     (if ?target-windows
-        (each [_ win (ipairs ?target-windows)]
-          (vim.highlight.range win.bufnr self.ns self.group.backdrop
-                               [(dec win.topline) 0]
-                               [(dec win.botline) -1]
+        (each [_ winid (ipairs ?target-windows)]
+          (local wininfo (. (vim.fn.getwininfo winid) 1))
+          (vim.highlight.range wininfo.bufnr self.ns self.group.backdrop
+                               [(dec wininfo.topline) 0]
+                               [(dec wininfo.botline) -1]
                                {:priority self.priority.backdrop}))
         (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
               [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]

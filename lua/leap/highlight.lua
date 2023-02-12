@@ -14,7 +14,8 @@ M.cleanup = function(self, affected_windows)
   end
   self.extmarks = {}
   if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
-    for _, wininfo in ipairs(affected_windows) do
+    for _, winid in ipairs(affected_windows) do
+      local wininfo = vim.fn.getwininfo(winid)[1]
       api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
     end
     return api.nvim_buf_clear_namespace(0, self.ns, dec(vim.fn.line("w0")), vim.fn.line("w$"))
@@ -25,8 +26,9 @@ end
 M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
     if _3ftarget_windows then
-      for _, win in ipairs(_3ftarget_windows) do
-        vim.highlight.range(win.bufnr, self.ns, self.group.backdrop, {dec(win.topline), 0}, {dec(win.botline), -1}, {priority = self.priority.backdrop})
+      for _, winid in ipairs(_3ftarget_windows) do
+        local wininfo = vim.fn.getwininfo(winid)[1]
+        vim.highlight.range(wininfo.bufnr, self.ns, self.group.backdrop, {dec(wininfo.topline), 0}, {dec(wininfo.botline), -1}, {priority = self.priority.backdrop})
       end
       return nil
     else

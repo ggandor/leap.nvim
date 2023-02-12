@@ -243,14 +243,13 @@ local function get_targets(pattern, _47_)
     local curr_win_only_3f
     do
       local _49_ = target_windows
-      if ((_G.type(_49_) == "table") and ((_G.type((_49_)[1]) == "table") and (((_49_)[1]).winid == source_winid)) and ((_49_)[2] == nil)) then
+      if ((_G.type(_49_) == "table") and ((_49_)[1] == source_winid) and ((_49_)[2] == nil)) then
         curr_win_only_3f = true
       else
         curr_win_only_3f = nil
       end
     end
-    for _, wininfo in ipairs(target_windows) do
-      local winid = wininfo.winid
+    for _, winid in ipairs(target_windows) do
       if not curr_win_only_3f then
         api.nvim_set_current_win(winid)
       else
