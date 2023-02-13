@@ -105,7 +105,7 @@ M["init-highlight"] = function(self, force_3f)
   defaults = {[self.group.match] = {fg = _13_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _18_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _23_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
   for group_name, def_map in pairs(defaults) do
     if not force_3f then
-      def_map["default"] = true
+      def_map.default = true
     else
     end
     api.nvim_set_hl(0, group_name, def_map)

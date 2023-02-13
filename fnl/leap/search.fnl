@@ -229,9 +229,9 @@ Dynamic attributes
             (when by-screen-pos?
               ; Add a screen position field to each target.
               (match (vim.fn.screenpos winid line col)  ; PERF. BOTTLENECK
-                {: row : col} (tset t :screenpos [row col])))
-            (tset t :rank (distance (or t.screenpos t.pos)
-                                    (. cursor-positions winid))))
+                {: row : col} (set t.screenpos [row col])))
+            (set t.rank (distance (or t.screenpos t.pos)
+                                  (. cursor-positions winid))))
           (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))))
 

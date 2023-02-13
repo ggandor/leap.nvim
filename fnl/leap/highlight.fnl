@@ -96,7 +96,7 @@ so we set a temporary highlight on it to see where we are."
                                              :ctermbg "magenta"
                                              :nocombine true}}]
     (each [group-name def-map (pairs defaults)]
-      (when (not force?) (tset def-map :default true))
+      (when (not force?) (set def-map.default true))
       (api.nvim_set_hl 0 group-name def-map))))
 
 

@@ -289,12 +289,12 @@ local function get_targets(pattern, _47_)
           local _62_ = vim.fn.screenpos(winid, line, col)
           if ((_G.type(_62_) == "table") and (nil ~= (_62_).row) and ((_62_).col == col)) then
             local row = (_62_).row
-            t["screenpos"] = {row, col}
+            t.screenpos = {row, col}
           else
           end
         else
         end
-        t["rank"] = distance((t.screenpos or t.pos), cursor_positions[winid])
+        t.rank = distance((t.screenpos or t.pos), cursor_positions[winid])
       end
       local function _65_(_241, _242)
         return ((_241).rank < (_242).rank)

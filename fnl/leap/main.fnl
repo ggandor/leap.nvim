@@ -83,23 +83,23 @@ without having to select a label.
 Note that there is no one-to-one correspondence between this flag and
 the `label-set` field set by `attach-label-set`. No-autojump might be
 forced implicitly, regardless of using safe labels."
-  (tset targets :autojump?
-        (and (not (or force-noautojump? (empty? opts.safe_labels)))
-             (or (empty? opts.labels)
-                 ; Smart mode.
-                 (>= (length opts.safe_labels)
-                     (dec (length targets)))))))  ; skipping the first if autojumping
+  (set targets.autojump? (and (not (or force-noautojump?
+                                       (empty? opts.safe_labels)))
+                              (or (empty? opts.labels)
+                                  ; Smart mode.
+                                  (>= (length opts.safe_labels)
+                                      ; Skipping the first if autojumping.
+                                      (dec (length targets)))))))
 
 
 (fn attach-label-set [targets]
   "Set a field referencing the label set to be used for `targets`.
 NOTE: `set-autojump` should be called BEFORE this function."
   ; (assert (not (and (empty? opts.labels) (empty? opts.safe_labels))))
-  (tset targets :label-set
-        (if (empty? opts.labels) opts.safe_labels
-            (empty? opts.safe_labels) opts.labels
-            targets.autojump? opts.safe_labels
-            opts.labels)))
+  (set targets.label-set (if (empty? opts.labels) opts.safe_labels
+                             (empty? opts.safe_labels) opts.labels
+                             targets.autojump? opts.safe_labels
+                             opts.labels)))
 
 
 (fn set-labels [targets multi-select?]
@@ -113,10 +113,9 @@ should actually be displayed depends on the `label-state` flag."
       ; Skip labeling the first target if autojump is set.
       (local i* (if autojump? (dec i) i))
       (when (> i* 0)
-        (tset target :label
-              (match (% i* (length label-set))
-                0 (. label-set (length label-set))
-                n (. label-set n)))))))
+        (set target.label (match (% i* (length label-set))
+                            0 (. label-set (length label-set))
+                            n (. label-set n)))))))
 
 
 (fn set-label-states [targets {: group-offset}]
@@ -128,10 +127,10 @@ should actually be displayed depends on the `label-state` flag."
         secondary-end (+ primary-end |label-set|)]
     (each [i target (ipairs targets)]
       (when (and target.label (not= target.label-state :selected))
-        (tset target :label-state
-              (if (<= primary-start i primary-end) :active-primary
-                  (<= secondary-start i secondary-end) :active-secondary
-                  (> i secondary-end) :inactive))))))
+        (set target.label-state
+             (if (<= primary-start i primary-end) :active-primary
+                 (<= secondary-start i secondary-end) :active-secondary
+                 (> i secondary-end) :inactive))))))
 
 
 ; Two-step processing
@@ -160,19 +159,18 @@ char separately.
   ; or, if case insensivity is set, the lowercased verison of `ch`.
   ; (And in the above cases, `ch` will not be found, since we also
   ; redirect to the common keys when inserting a new sublist.)
-  (tset targets :sublists
-        (setmetatable {}
-          {:__index (fn [self ch] (rawget self (->representative-char ch)))
-           :__newindex (fn [self ch sublist]
-                         (rawset self (->representative-char ch) sublist))}))
+  (set targets.sublists
+       (setmetatable {}
+         {:__index (fn [self ch] (rawget self (->representative-char ch)))
+          :__newindex (fn [self ch sublist]
+                        (rawset self (->representative-char ch) sublist))}))
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     ; "\n"-s after empty lines don't have a `ch2`. Still, we put these
     ; targets into the sublist for "\n", so that they can be targeted
     ; with <key><key> (as if there would be another "\n" after them).
     (local ch2 (or ch2 "\n"))
-    (when-not (. targets.sublists ch2)
-      (tset targets.sublists ch2 []))
+    (when-not (. targets.sublists ch2) (tset targets.sublists ch2 []))
     (table.insert (. targets.sublists ch2) target)))
 
 
@@ -215,14 +213,14 @@ char separately.
                                  ; positions in some way.
                                  [[(.. " " pad) hl.group.label-secondary]]
                                  :else nil))]
-    (tset target :beacon (when virttext [offset virttext]))))
+    (set target.beacon (when virttext [offset virttext]))))
 
 
 (fn set-beacon-to-match-hl [target]
   (local virttext (->> target.chars
                        (map #(or (. opts.substitute_chars $) $))
                        table.concat))
-  (tset target :beacon [0 [[virttext hl.group.match]]]))
+  (set target.beacon [0 [[virttext hl.group.match]]]))
 
 
 (fn set-beacon-to-empty-label [target]
@@ -730,7 +728,7 @@ is either labeled (C) or not (B).
               (match (get-target-with-active-primary-label targets in)
                 [_ target] (when-not (contains? selection target)
                              (table.insert selection target)
-                             (tset target :label-state :selected)))
+                             (set target.label-state :selected)))
               (loop targets))))))
 
 
@@ -738,10 +736,11 @@ is either labeled (C) or not (B).
     ; ---
     (fn on-first-invoc []
       (if no-labels?
-          (each [_ t (ipairs targets)] (tset t :label-state :inactive))
+          (each [_ t (ipairs targets)]
+            (set t.label-state :inactive))
 
-          ; Remove all the subsequent label groups if needed.
           (not (empty? opts.safe_labels))
+          ; Remove all the subsequent label groups if needed.
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
               (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
@@ -816,7 +815,7 @@ is either labeled (C) or not (B).
 
   (if ?in2
       (if empty-label-lists?
-          (tset targets :autojump? true)
+          (set targets.autojump? true)
           (prepare-targets targets))
       (do
         (when (> (length targets) max-phase-one-targets)
@@ -908,9 +907,8 @@ is either labeled (C) or not (B).
 
 ; The equivalence class table can be potentially huge - let's do this
 ; here, and not each time `leap` is called, at least for the defaults.
-(tset opts.default :eq_class_of
-      (-?> opts.default.equivalence_classes
-           eq-classes->membership-lookup))
+(set opts.default.eq_class_of (-?> opts.default.equivalence_classes
+                                   eq-classes->membership-lookup))
 
 
 (api.nvim_create_augroup "LeapDefault" {})
