@@ -42,10 +42,10 @@
         [line virtcol] [(vim.fn.line ".") (vim.fn.virtcol ".")]
         left-off? (< virtcol left-bound)
         right-off? (> virtcol right-bound)]
-    (match (if (and left-off? backward?)  [(dec line) right-bound]
-               (and left-off? forward?)   [line left-bound]
-               (and right-off? backward?) [line right-bound]
-               (and right-off? forward?)  [(inc line) left-bound])
+    (case (if (and left-off? backward?)  [(dec line) right-bound]
+              (and left-off? forward?)   [line left-bound]
+              (and right-off? backward?) [line right-bound]
+              (and right-off? forward?)  [(inc line) left-bound])
       [line* virtcol*]
       (let [dead-end? (or (and (= line line*) (= virtcol virtcol*))
                           (and backward? (< line* stopline))
@@ -95,8 +95,7 @@
 
          ; Horizontally offscreen?
          (not (or vim.wo.wrap (<= left-bound (vim.fn.virtcol ".") right-bound)))
-         (match (to-next-in-window-pos!
-                  backward? left-bound right-bound stopline)
+         (case (to-next-in-window-pos! backward? left-bound right-bound stopline)
            :moved (do (set match-at-curpos? true) (loop)))
 
          ; In a closed fold?
@@ -146,7 +145,7 @@ Dynamic attributes
     (var prev-match {})  ; to find overlaps
     (each [_ [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
-        (match (get-char-at pos {})
+        (case (get-char-at pos {})
           nil
           ; `get-char-at` works on "inner" lines, it cannot get \n.
           ; We provide it here for empty lines...

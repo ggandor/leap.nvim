@@ -5,7 +5,7 @@
 (setmetatable {}
   {:__index
    (fn [_ k]
-     (match k
+     (case k
        :opts (. (require "leap.opts") :default)
        :leap (. (require "leap.main") :leap)
        :state (. (require "leap.main") :state)

@@ -113,7 +113,7 @@ should actually be displayed depends on the `label-state` flag."
       ; Skip labeling the first target if autojump is set.
       (local i* (if autojump? (dec i) i))
       (when (> i* 0)
-        (set target.label (match (% i* (length label-set))
+        (set target.label (case (% i* (length label-set))
                             0 (. label-set (length label-set))
                             n (. label-set n)))))))
 
@@ -202,7 +202,7 @@ char separately.
         pad (if (or user-given-targets? aot?) "" " ")
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
-        virttext (match target.label-state
+        virttext (case target.label-state
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
@@ -286,7 +286,7 @@ is either labeled (C) or not (B).
               ;   [a][a][L]     --> nil
               ;   [-][a][b]     --> match-hl
               ;          ^
-              (match (. pos-unlabeled-match (->key col-label))
+              (case (. pos-unlabeled-match (->key col-label))
                 other (do (set target.beacon nil)
                           (set-beacon-to-match-hl other)))
               ; ------------------------------
@@ -295,7 +295,7 @@ is either labeled (C) or not (B).
               ;   [a][a][-]|    --> match-hl
               ;       ^
               (when shifted-label?
-                (match (. pos-unlabeled-match (->key col))
+                (case (. pos-unlabeled-match (->key col))
                   other (set-beacon-to-match-hl other)))
               ; ------------------------------
               ; (C)
@@ -306,7 +306,7 @@ is either labeled (C) or not (B).
               ;   [a][a][L]|    --> nil
               ;   [-][a][L]|    --> empty
               ;          ^
-              (match (. pos-label (->key col-label))
+              (case (. pos-label (->key col-label))
                 other (do (set target.beacon nil)
                           (set-beacon-to-empty-label other)))
               ; ------------------------------
@@ -331,7 +331,7 @@ is either labeled (C) or not (B).
                 ;   [-][a][b]     --> match-hl
                 ;   [a][a][L]     --> nil
                 ;          ^
-                (match (. pos-label key)
+                (case (. pos-label key)
                   other (do (set other.beacon nil)
                             (set-beacon-to-match-hl target))))
               ; ------------------------------
@@ -340,7 +340,7 @@ is either labeled (C) or not (B).
               ;   [-][a][L]|
               ;          ^
               (local col-after (+ col-ch2 (string.len (. target :chars 2))))
-              (match (. pos-label (->key col-after))
+              (case (. pos-label (->key col-after))
                 other (set-beacon-to-match-hl target))))))))
 
 
@@ -361,7 +361,7 @@ is either labeled (C) or not (B).
 (fn light-up-beacons [targets ?start ?end]
   (for [i (or ?start 1) (or ?end (length targets))]
     (local target (. targets i))
-    (match target.beacon
+    (case target.beacon
       [offset virttext]
       (let [bufnr target.wininfo.bufnr
             [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
@@ -451,10 +451,10 @@ is either labeled (C) or not (B).
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
   (local spec-keys (do (fn __index [_ k]
-                         (match (. opts.special_keys k)
+                         (case (. opts.special_keys k)
                            v (if (or (= k :next_target) (= k :prev_target))
                                  ; Force those into a table.
-                                 (match (type v)
+                                 (case (type v)
                                    :table (icollect [_ str (ipairs v)]
                                             (replace-keycodes str))
                                    :string [(replace-keycodes v)])
@@ -566,7 +566,7 @@ is either labeled (C) or not (B).
           ; abl     target #2 (labeled)
           ;   ^     auto-jump would move the cursor here (covering the label)
           (and backward?
-               (match targets
+               (case targets
                  [{:pos [l1 c1]} {:pos [l2 c2]}]
                  (and (= l1 l2) (= c1 (+ c2 2)))))
           force-noautojump? (or op-mode?             ; should be able to select a target
@@ -622,7 +622,7 @@ is either labeled (C) or not (B).
   ; is less disorienting if the "snake" does not move continuously, on
   ; every jump.
   (fn get-number-of-highlighted-targets []
-    (match opts.max_highlighted_traversal_targets
+    (case opts.max_highlighted_traversal_targets
       group-size
       ; Assumption: being here means we are after an autojump, and
       ; started highlighting from the 2nd target (no `count`).
@@ -647,10 +647,10 @@ is either labeled (C) or not (B).
 
   (fn get-first-pattern-input []
     (with-highlight-chores (echo ""))  ; clean up the command line
-    (match (get-input-by-keymap prompt)
+    (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      spec-keys.repeat_search
+      (where (= spec-keys.repeat_search))
       (if state.repeat.in1
           (do (set vars.aot? false)
               (values state.repeat.in1 state.repeat.in2))
@@ -664,9 +664,9 @@ is either labeled (C) or not (B).
     (get-input-by-keymap prompt))
 
   (fn get-full-pattern-input []
-    (match (get-first-pattern-input)
+    (case (get-first-pattern-input)
       (in1 in2) (values in1 in2)
-      (in1 nil) (match (get-input-by-keymap prompt)
+      (in1 nil) (case (get-input-by-keymap prompt)
                   in2 (values in1 in2))))
 
 
@@ -688,7 +688,7 @@ is either labeled (C) or not (B).
     ; ---
     (fn loop [group-offset first-invoc?]
       (display group-offset)
-      (match (get-input)
+      (case (get-input)
         input
         (if (and (< 1 |groups|)
                  (or (= input spec-keys.next_group)
@@ -711,13 +711,13 @@ is either labeled (C) or not (B).
       (var first-invoc? true)
       ; ---
       (fn loop [targets]
-        (match (post-pattern-input-loop targets group-offset first-invoc?)
-          spec-keys.multi_accept
+        (case (post-pattern-input-loop targets group-offset first-invoc?)
+          (where (= spec-keys.multi_accept))
           (if (not (empty? selection))
               selection
               (loop targets))
 
-          spec-keys.multi_revert
+          (where (= spec-keys.multi_revert))
           (do (-?> (table.remove selection)
                    (tset :label-state nil))
               (loop targets))
@@ -725,7 +725,7 @@ is either labeled (C) or not (B).
           (in group-offset*)
           (do (set group-offset group-offset*)
               (set first-invoc? false)
-              (match (get-target-with-active-primary-label targets in)
+              (case (get-target-with-active-primary-label targets in)
                 [_ target] (when-not (contains? selection target)
                              (table.insert selection target)
                              (set target.label-state :selected)))
@@ -759,10 +759,10 @@ is either labeled (C) or not (B).
       (when first-invoc? (on-first-invoc))
       (set vars.curr-idx idx)  ; `display` depends on it!
       (display)
-      (match (get-input)
+      (case (get-input)
         in
-        (match (get-new-idx idx in)
-          new-idx (do (match (?. targets new-idx :chars 2)  ; user-given targets might not have `chars`
+        (case (get-new-idx idx in)
+          new-idx (do (case (?. targets new-idx :chars 2)  ; user-given targets might not have `chars`
                         ; We need to do this, in case we have entered
                         ; traversal mode after the first input (i.e.,
                         ; traversing all matches, not just a given sublist)!
@@ -770,7 +770,7 @@ is either labeled (C) or not (B).
                       (jump-to! (. targets new-idx))
                       (loop new-idx false))
             ; We still want the labels (if there are) to function.
-          _ (match (get-target-with-active-primary-label targets in)
+          _ (case (get-target-with-active-primary-label targets in)
               [_ target] (jump-to! target)
               _ (vim.fn.feedkeys in :i)))))
     ; ---
@@ -809,7 +809,7 @@ is either labeled (C) or not (B).
     (exit-early))
 
   (when dot-repeat?
-    (match (. targets state.dot_repeat.target_idx)
+    (case (. targets state.dot_repeat.target_idx)
       target (do (do-action target) (exit))
       _ (exit-early)))
 
@@ -852,7 +852,7 @@ is either labeled (C) or not (B).
     (exit-early))
 
   (when multi-select?
-    (match (multi-select-loop targets*)
+    (case (multi-select-loop targets*)
       targets**
       ; The action callback should expect a list in this case.
       ; It might also get user input, so keep the beacons highlighted.
@@ -930,7 +930,7 @@ is either labeled (C) or not (B).
   (local wins (or state.args.target_windows [state.source_window]))
   (each [opt val (pairs t)]
     (let [[scope name] (vim.split opt "." {:plain true})]
-      (match scope
+      (case scope
         :w (each [_ w (ipairs wins)]
              (->> (api.nvim_win_get_option w name)
                   (tset state.saved_editor_opts [:w w name]))
@@ -947,7 +947,7 @@ is either labeled (C) or not (B).
 
 (fn restore-editor-opts []
   (each [key val (pairs state.saved_editor_opts)]
-    (match key
+    (case key
       [:w w name] (api.nvim_win_set_option w name val)
       [:b b name] (api.nvim_buf_set_option b name val)
       name (api.nvim_set_option name val))))

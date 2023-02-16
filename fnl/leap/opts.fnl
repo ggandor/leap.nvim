@@ -29,6 +29,6 @@
 (-> {: current_call
      : default}
     (setmetatable {:__index (fn [self k]
-                              (match (. self.current_call k)
+                              (case (. self.current_call k)
                                 v v  ; `false` should be returned too
                                 _ (. self.default k)))}))

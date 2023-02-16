@@ -24,7 +24,7 @@
 
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
+  (vim.fn.search "\\_." (case direction :fwd "W" :bwd "bW")))
 
 
 (fn get-char-at [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
@@ -98,16 +98,18 @@ character instead."
             rhs (vim.fn.maparg seq :l)]
         (if (= rhs-candidate "") (accept seq)   ; implies |seq|=1 (no recursion here)
             (= rhs rhs-candidate) (accept rhs)  ; seq is the longest LHS match
-            (match (get-input)
-              <bs> (loop (if (>= |seq| 2) (seq:sub 1 (dec |seq|)) seq))
-              <cr> (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
-                       (= |seq| 1) (accept seq)
-                       (loop seq))
+            (case (get-input)
+              (where (= <bs>)) (loop (if (>= |seq| 2)
+                                         (seq:sub 1 (dec |seq|))
+                                         seq))
+              (where (= <cr>)) (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
+                                   (= |seq| 1) (accept seq)
+                                   (loop seq))
               ch (loop (.. seq ch)))))))
 
   (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
       (do (echo-prompt)
-          (match (loop (get-input))
+          (case (loop (get-input))
             in in
             _ (echo "")))))
 

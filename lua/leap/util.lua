@@ -108,7 +108,7 @@ local function get_input_by_keymap(prompt)
   end
   local function loop(seq)
     local _7cseq_7c = #(seq or "")
-    if (function(_17_,_18_,_19_) return (_17_ <= _18_) and (_18_ <= _19_) end)(1,_7cseq_7c,5) then
+    if (1 <= _7cseq_7c) and (_7cseq_7c <= 5) then
       echo_prompt(seq)
       local rhs_candidate = vim.fn.mapcheck(seq, "l")
       local rhs = vim.fn.maparg(seq, "l")
@@ -117,17 +117,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _20_ = get_input()
-        if (_20_ == _3cbs_3e) then
-          local function _21_()
+        local _17_, _18_ = get_input()
+        if (_17_ == _3cbs_3e) then
+          local function _19_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_21_())
-        elseif (_20_ == _3ccr_3e) then
+          return loop(_19_())
+        elseif (_17_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -135,8 +135,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _20_) then
-          local ch = _20_
+        elseif (nil ~= _17_) then
+          local ch = _17_
           return loop((seq .. ch))
         else
           return nil
@@ -150,12 +150,12 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _26_ = loop(get_input())
-    if (nil ~= _26_) then
-      local _in = _26_
+    local _24_ = loop(get_input())
+    if (nil ~= _24_) then
+      local _in = _24_
       return _in
     elseif true then
-      local _ = _26_
+      local _ = _24_
       return echo("")
     else
       return nil

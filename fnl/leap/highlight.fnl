@@ -70,21 +70,21 @@ so we set a temporary highlight on it to see where we are."
 
 (fn M.init-highlight [self force?]
   (let [bg vim.o.background
-        defaults {self.group.match {:fg (match bg
+        defaults {self.group.match {:fg (case bg
                                           :light "#222222"
                                           _ "#ccff88")
                                     :ctermfg "red"
                                     :underline true
                                     :nocombine true}
                   self.group.label-primary {:fg "black"
-                                            :bg (match bg
+                                            :bg (case bg
                                                   :light "#ff8877"
                                                   _ "#ccff88")
                                             :ctermfg "black"
                                             :ctermbg "red"
                                             :nocombine true}
                   self.group.label-secondary {:fg "black"
-                                              :bg (match bg
+                                              :bg (case bg
                                                     :light "#77aaff"
                                                     _ "#99ccff")
                                               :ctermfg "black"

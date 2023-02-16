@@ -34,7 +34,7 @@
 (fn simulate-inclusive-op! [mode]
   "When applied after an exclusive motion (like setting the cursor via
 the API), make the motion appear to behave as an inclusive one."
-  (match (vim.fn.matchstr mode "^no\\zs.")  ; get forcing modifier
+  (case (vim.fn.matchstr mode "^no\\zs.")  ; get forcing modifier
     ; In the normal case (no modifier), we should push the cursor
     ; forward. (The EOF edge case requires some hackery though.)
     "" (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
