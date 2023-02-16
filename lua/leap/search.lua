@@ -147,7 +147,6 @@ local function get_targets_in_current_window(pattern, _26_)
   local whole_window_3f = _arg_27_["whole-window?"]
   local match_last_overlapping_3f = _arg_27_["match-last-overlapping?"]
   local skip_curpos_3f = _arg_27_["skip-curpos?"]
-  local targets0 = (targets or {})
   local wininfo = vim.fn.getwininfo(vim.fn.win_getid())[1]
   local _let_28_ = get_cursor_pos()
   local curline = _let_28_[1]
@@ -160,7 +159,7 @@ local function get_targets_in_current_window(pattern, _26_)
   local register_target
   local function _30_(target)
     target.wininfo = wininfo
-    return table.insert(targets0, target)
+    return table.insert(targets, target)
   end
   register_target = _30_
   local prev_match = {}
@@ -192,7 +191,7 @@ local function get_targets_in_current_window(pattern, _26_)
         prev_match = {line = line, col = col, ch1 = ch1, ch2 = ch2}
         if (not overlap_3f or match_last_overlapping_3f) then
           if (overlap_3f and match_last_overlapping_3f) then
-            table.remove(targets0)
+            table.remove(targets)
           else
           end
           register_target({pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_3f})
@@ -203,8 +202,8 @@ local function get_targets_in_current_window(pattern, _26_)
     else
     end
   end
-  if not empty_3f(targets0) then
-    return targets0
+  if not empty_3f(targets) then
+    return targets
   else
     return nil
   end
@@ -223,81 +222,87 @@ local function distance(_41_, _43_)
   local dx0 = (dx * editor_grid_aspect_ratio)
   return pow((pow(dx0, 2) + pow(dy, 2)), 0.5)
 end
-local function get_targets(pattern, _46_)
-  local _arg_47_ = _46_
-  local backward_3f = _arg_47_["backward?"]
-  local match_last_overlapping_3f = _arg_47_["match-last-overlapping?"]
-  local target_windows = _arg_47_["target-windows"]
-  if not target_windows then
-    return get_targets_in_current_window(pattern, {["backward?"] = backward_3f, ["match-last-overlapping?"] = match_last_overlapping_3f})
+local function sort_by_distance_from_cursor(targets, cursor_positions)
+  local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
+  if by_screen_pos_3f then
+    for winid, _46_ in pairs(cursor_positions) do
+      local _each_47_ = _46_
+      local line = _each_47_[1]
+      local col = _each_47_[2]
+      local _48_ = vim.fn.screenpos(winid, line, col)
+      if ((_G.type(_48_) == "table") and (nil ~= (_48_).row) and ((_48_).col == col)) then
+        local row = (_48_).row
+        cursor_positions[winid] = {row, col}
+      else
+      end
+    end
   else
-    local targets = {}
-    local cursor_positions = {}
-    local source_winid = vim.fn.win_getid()
-    local curr_win_only_3f
-    do
-      local _48_ = target_windows
-      if ((_G.type(_48_) == "table") and ((_48_)[1] == source_winid) and ((_48_)[2] == nil)) then
-        curr_win_only_3f = true
+  end
+  for _, _51_ in ipairs(targets) do
+    local _each_52_ = _51_
+    local _each_53_ = _each_52_["pos"]
+    local line = _each_53_[1]
+    local col = _each_53_[2]
+    local _each_54_ = _each_52_["wininfo"]
+    local winid = _each_54_["winid"]
+    local target = _each_52_
+    if by_screen_pos_3f then
+      local _55_ = vim.fn.screenpos(winid, line, col)
+      if ((_G.type(_55_) == "table") and (nil ~= (_55_).row) and ((_55_).col == col)) then
+        local row = (_55_).row
+        target.screenpos = {row, col}
       else
-        curr_win_only_3f = nil
       end
-    end
-    for _, winid in ipairs(target_windows) do
-      if not curr_win_only_3f then
-        api.nvim_set_current_win(winid)
-      else
-      end
-      cursor_positions[winid] = get_cursor_pos()
-      get_targets_in_current_window(pattern, {targets = targets, ["whole-window?"] = true, ["match-last-overlapping?"] = match_last_overlapping_3f, ["skip-curpos?"] = (winid == source_winid)})
-    end
-    if not curr_win_only_3f then
-      api.nvim_set_current_win(source_winid)
     else
     end
-    if not empty_3f(targets) then
-      local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
-      if by_screen_pos_3f then
-        for winid, _52_ in pairs(cursor_positions) do
-          local _each_53_ = _52_
-          local line = _each_53_[1]
-          local col = _each_53_[2]
-          local _54_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_54_) == "table") and (nil ~= (_54_).row) and ((_54_).col == col)) then
-            local row = (_54_).row
-            cursor_positions[winid] = {row, col}
-          else
-          end
-        end
-      else
-      end
-      for _, _57_ in ipairs(targets) do
-        local _each_58_ = _57_
-        local _each_59_ = _each_58_["pos"]
-        local line = _each_59_[1]
-        local col = _each_59_[2]
-        local _each_60_ = _each_58_["wininfo"]
-        local winid = _each_60_["winid"]
-        local t = _each_58_
-        if by_screen_pos_3f then
-          local _61_ = vim.fn.screenpos(winid, line, col)
-          if ((_G.type(_61_) == "table") and (nil ~= (_61_).row) and ((_61_).col == col)) then
-            local row = (_61_).row
-            t.screenpos = {row, col}
-          else
-          end
-        else
-        end
-        t.rank = distance((t.screenpos or t.pos), cursor_positions[winid])
-      end
-      local function _64_(_241, _242)
-        return ((_241).rank < (_242).rank)
-      end
-      table.sort(targets, _64_)
-      return targets
+    target.rank = distance((target.screenpos or target.pos), cursor_positions[winid])
+  end
+  local function _58_(_241, _242)
+    return ((_241).rank < (_242).rank)
+  end
+  return table.sort(targets, _58_)
+end
+local function get_targets(pattern, _59_)
+  local _arg_60_ = _59_
+  local backward_3f = _arg_60_["backward?"]
+  local match_last_overlapping_3f = _arg_60_["match-last-overlapping?"]
+  local target_windows = _arg_60_["target-windows"]
+  local whole_window_3f = target_windows
+  local source_winid = vim.fn.win_getid()
+  local target_windows0 = (target_windows or {source_winid})
+  local curr_win_only_3f
+  do
+    local _61_ = target_windows0
+    if ((_G.type(_61_) == "table") and ((_61_)[1] == source_winid) and ((_61_)[2] == nil)) then
+      curr_win_only_3f = true
     else
-      return nil
+      curr_win_only_3f = nil
     end
   end
+  local cursor_positions = {}
+  local targets = {}
+  for _, winid in ipairs(target_windows0) do
+    if not curr_win_only_3f then
+      api.nvim_set_current_win(winid)
+    else
+    end
+    if whole_window_3f then
+      cursor_positions[winid] = get_cursor_pos()
+    else
+    end
+    get_targets_in_current_window(pattern, {targets = targets, ["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f, ["match-last-overlapping?"] = match_last_overlapping_3f, ["skip-curpos?"] = (winid == source_winid)})
+  end
+  if not curr_win_only_3f then
+    api.nvim_set_current_win(source_winid)
+  else
+  end
+  if not empty_3f(targets) then
+    if whole_window_3f then
+      sort_by_distance_from_cursor(targets, cursor_positions)
+    else
+    end
+  else
+  end
+  return targets
 end
 return {["get-horizontal-bounds"] = get_horizontal_bounds, ["get-match-positions"] = get_match_positions, ["get-targets"] = get_targets}

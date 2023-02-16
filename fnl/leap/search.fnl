@@ -134,8 +134,7 @@ Dynamic attributes
                | 'inactive'
 ?beacon      : [col-offset [[char hl-group]]]
 "
-  (let [targets (or targets [])
-        wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
+  (let [wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole match should be visible
@@ -187,48 +186,52 @@ Dynamic attributes
     (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
 
+(fn sort-by-distance-from-cursor [targets cursor-positions]
+  ; TODO: Check vim.wo.wrap for each window, and calculate accordingly.
+  ; TODO: (Performance) vim.fn.screenpos is very costly for a large
+  ;       number of targets...
+  ;       -> Only get them when at least one line is actually wrapped?
+  ;       -> Some FFI magic?
+  (let [by-screen-pos? (and vim.o.wrap (< (length targets) 200))]
+    (when by-screen-pos?
+      ; Update cursor positions to screen positions.
+      (each [winid [line col] (pairs cursor-positions)]
+        (match (vim.fn.screenpos winid line col)
+          {: row : col} (tset cursor-positions winid [row col]))))
+    (each [_ {:pos [line col] :wininfo {: winid} &as target} (ipairs targets)]
+      (when by-screen-pos?
+        ; Add a screen position field to each target.
+        (match (vim.fn.screenpos winid line col)  ; PERF. BOTTLENECK
+          {: row : col} (set target.screenpos [row col])))
+      (set target.rank (distance (or target.screenpos target.pos)
+                                 (. cursor-positions winid))))
+    (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
+
+
 (fn get-targets [pattern
                  {: backward? : match-last-overlapping? : target-windows}]
-  (if (not target-windows)
+  (let [whole-window? target-windows
+        source-winid (vim.fn.win_getid)
+        target-windows (or target-windows [source-winid])
+        curr-win-only? (match target-windows [source-winid nil] true)
+        cursor-positions {}
+        targets []]
+    (each [_ winid (ipairs target-windows)]
+      (when (not curr-win-only?)
+        (api.nvim_set_current_win winid))
+      (when whole-window?
+        (tset cursor-positions winid (get-cursor-pos)))
+      ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern
-                                     {: backward? : match-last-overlapping?})
-      (let [targets []
-            cursor-positions {}
-            source-winid (vim.fn.win_getid)
-            curr-win-only? (match target-windows [source-winid nil] true)]
-        (each [_ winid (ipairs target-windows)]
-          (when (not curr-win-only?)
-            (api.nvim_set_current_win winid))
-          (tset cursor-positions winid (get-cursor-pos))
-          ; Fill up the provided `targets`, instead of returning a new table.
-          (get-targets-in-current-window pattern
-                                         {: targets :whole-window? true
-                                          : match-last-overlapping?
-                                          :skip-curpos? (= winid source-winid)}))
-        (when (not curr-win-only?)
-          (api.nvim_set_current_win source-winid))
-        (when (not (empty? targets))
-          ; Sort targets by their distance from the cursor.
-          ; TODO: Check vim.wo.wrap for each window, and calculate accordingly.
-          ; TODO: (Performance) vim.fn.screenpos is very costly for a large
-          ;       number of targets...
-          ;       -> Only get them when at least one line is actually wrapped?
-          ;       -> Some FFI magic?
-          (local by-screen-pos? (and vim.o.wrap (< (length targets) 200)))
-          (when by-screen-pos?
-            ; Update cursor positions to screen positions.
-            (each [winid [line col] (pairs cursor-positions)]
-              (match (vim.fn.screenpos winid line col)
-                {: row : col} (tset cursor-positions winid [row col]))))
-          (each [_ {:pos [line col] :wininfo {: winid} &as t} (ipairs targets)]
-            (when by-screen-pos?
-              ; Add a screen position field to each target.
-              (match (vim.fn.screenpos winid line col)  ; PERF. BOTTLENECK
-                {: row : col} (set t.screenpos [row col])))
-            (set t.rank (distance (or t.screenpos t.pos)
-                                  (. cursor-positions winid))))
-          (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
-          targets))))
+                                     {: targets : backward? : whole-window?
+                                      : match-last-overlapping?
+                                      :skip-curpos? (= winid source-winid)}))
+    (when (not curr-win-only?)
+      (api.nvim_set_current_win source-winid))
+    (when (not (empty? targets))
+      (when whole-window?
+        (sort-by-distance-from-cursor targets cursor-positions)))
+      targets))
 
 
 {: get-horizontal-bounds
