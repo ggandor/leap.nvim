@@ -196,13 +196,14 @@ Dynamic attributes
     (when by-screen-pos?
       ; Update cursor positions to screen positions.
       (each [winid [line col] (pairs cursor-positions)]
-        (match (vim.fn.screenpos winid line col)
-          {: row : col} (tset cursor-positions winid [row col]))))
+        (local {: row : col} (vim.fn.screenpos winid line col))
+        (tset cursor-positions winid [row col])))
     (each [_ {:pos [line col] :wininfo {: winid} &as target} (ipairs targets)]
       (when by-screen-pos?
         ; Add a screen position field to each target.
-        (match (vim.fn.screenpos winid line col)  ; PERF. BOTTLENECK
-          {: row : col} (set target.screenpos [row col])))
+        ; PERF. BOTTLENECK
+        (local {: row : col} (vim.fn.screenpos winid line col))
+        (set target.screenpos [row col]))
       (set target.rank (distance (or target.screenpos target.pos)
                                  (. cursor-positions winid))))
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
