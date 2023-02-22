@@ -42,8 +42,7 @@ local function to_next_in_window_pos_21(backward_3f, left_bound, right_bound, st
   if ((_G.type(_4_) == "table") and (nil ~= (_4_)[1]) and (nil ~= (_4_)[2])) then
     local line_2a = (_4_)[1]
     local virtcol_2a = (_4_)[2]
-    local dead_end_3f = (((line == line_2a) and (virtcol == virtcol_2a)) or (backward_3f and (line_2a < stopline)) or (forward_3f and (line_2a > stopline)))
-    if not dead_end_3f then
+    if not (((line == line_2a) and (virtcol == virtcol_2a)) or (backward_3f and (line_2a < stopline)) or (forward_3f and (line_2a > stopline))) then
       vim.fn.cursor({line_2a, vim.fn.virtcol2col(0, line_2a, virtcol_2a)})
       return "moved"
     else
@@ -150,43 +149,38 @@ local function get_targets_in_current_window(pattern, _25_)
   local right_bound_2a = _let_28_[2]
   local right_bound = dec(right_bound_2a)
   local right_bound_at = {}
-  local register_target
-  local function _29_(target)
-    target.wininfo = wininfo
-    return table.insert(targets, target)
+  local window_edge_3f
+  local function _29_(line, col)
+    if not right_bound_at[line] then
+      right_bound_at[line] = vim.fn.virtcol2col(0, line, right_bound)
+    else
+    end
+    return (col == right_bound_at[line])
   end
-  register_target = _29_
+  window_edge_3f = _29_
   local match_positions = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
-  for _, _30_ in ipairs(match_positions) do
-    local _each_31_ = _30_
-    local line = _each_31_[1]
-    local col = _each_31_[2]
-    local pos = _each_31_
+  for _, _31_ in ipairs(match_positions) do
+    local _each_32_ = _31_
+    local line = _each_32_[1]
+    local col = _each_32_[2]
+    local pos = _each_32_
     if not (skip_curpos_3f and (line == curline) and (col == curcol)) then
-      local _32_ = get_char_at(pos, {})
-      if (_32_ == nil) then
+      local _33_ = get_char_at(pos, {})
+      if (_33_ == nil) then
         if (col == 1) then
-          register_target({pos = pos, chars = {"\n"}, ["empty-line?"] = true})
+          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {"\n"}, ["empty-line?"] = true})
         else
         end
-      elseif (nil ~= _32_) then
-        local ch1 = _32_
+      elseif (nil ~= _33_) then
+        local ch1 = _33_
         local ch2 = (get_char_at(pos, {["char-offset"] = 1}) or "\n")
-        local right_bound_bcol
-        local function _34_()
-          local rb = vim.fn.virtcol2col(0, line, right_bound)
-          do end (right_bound_at)[line] = rb
-          return rb
-        end
-        right_bound_bcol = (right_bound_at[line] or _34_())
-        local edge_pos_3f = ((ch2 == "\n") or (col == right_bound_bcol))
         local overlap_3f
         local function _35_()
           if backward_3f then
-            return ((prev_match.col - col) == ch1:len())
+            return (col == (prev_match.col - ch1:len()))
           else
-            return ((col - prev_match.col) == (prev_match.ch1):len())
+            return (col == (prev_match.col + (prev_match.ch1):len()))
           end
         end
         overlap_3f = ((line == prev_match.line) and _35_() and (__3erepresentative_char(ch2) == __3erepresentative_char((prev_match.ch2 or ""))))
@@ -196,7 +190,7 @@ local function get_targets_in_current_window(pattern, _25_)
             table.remove(targets)
           else
           end
-          register_target({pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_3f})
+          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = ((ch2 == "\n") or window_edge_3f(line, col))})
         else
         end
       else

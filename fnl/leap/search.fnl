@@ -35,24 +35,20 @@
 
 
 (fn to-next-in-window-pos! [backward? left-bound right-bound stopline]
-  ; virtcol = like `col`, starting from the beginning of the line in the
-  ; buffer, but every char counts as the #of screen columns it occupies
-  ; (or would occupy), instead of the #of bytes.
   (let [forward? (not backward?)
         [line virtcol] [(vim.fn.line ".") (vim.fn.virtcol ".")]
         left-off? (< virtcol left-bound)
         right-off? (> virtcol right-bound)]
-    (case (if (and left-off? backward?)  [(dec line) right-bound]
-              (and left-off? forward?)   [line left-bound]
+    (case (if (and left-off?  backward?) [(dec line) right-bound]
+              (and left-off?  forward?)  [line left-bound]
               (and right-off? backward?) [line right-bound]
               (and right-off? forward?)  [(inc line) left-bound])
       [line* virtcol*]
-      (let [dead-end? (or (and (= line line*) (= virtcol virtcol*))
-                          (and backward? (< line* stopline))
-                          (and forward? (> line* stopline)))]
-        (when (not dead-end?)
-          (vim.fn.cursor [line* (vim.fn.virtcol2col 0 line* virtcol*)])
-          :moved)))))
+      (when (not (or (and (= line line*) (= virtcol virtcol*))
+                     (and backward? (< line* stopline))
+                     (and forward? (> line* stopline))))
+        (vim.fn.cursor [line* (vim.fn.virtcol2col 0 line* virtcol*)])
+        :moved))))
 
 
 (fn get-match-positions [pattern [left-bound right-bound]
@@ -124,48 +120,45 @@ Dynamic attributes
   (let [wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
-        right-bound (dec right-bound*)  ; the whole match should be visible
-        right-bound-at {}  ; { <lnum> = <right-bound-in-byte-cols> }
-        register-target (fn [target]
-                          (set target.wininfo wininfo)
-                          (table.insert targets target))
+        right-bound (dec right-bound*)  ; the whole 2-char match should be visible
+        right-bound-at {}  ; { <lnum> = <right-bound-byte-col> }
+        window-edge? (fn [line col]
+                       (when (not (. right-bound-at line))
+                         (tset right-bound-at line
+                               (vim.fn.virtcol2col 0 line right-bound)))
+                       (= col (. right-bound-at line)))
         match-positions (get-match-positions pattern [left-bound right-bound]
                                              {: backward? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [_ [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
         (case (get-char-at pos {})
-          nil
-          ; `get-char-at` works on "inner" lines, it cannot get \n.
-          ; We provide it here for empty lines...
-          (when (= col 1)
-            (register-target {: pos :chars ["\n"] :empty-line? true}))
-
-          ch1
-          (let [ch2 (or (get-char-at pos {:char-offset +1})
-                        "\n")  ; ...and for pre-\n chars
-                right-bound-bcol (or (. right-bound-at line)
-                                     (let [rb (vim.fn.virtcol2col 0 line right-bound)]
-                                       (tset right-bound-at line rb)
-                                       rb))
-                edge-pos? (or (= ch2 "\n") (= col right-bound-bcol))
-                overlap? (and (= line prev-match.line)
-                              (if backward?
-                                  ; |     |ch1 |ch2
-                                  ; |ch1  |ch2 |
-                                  ; curr  prev       <---
-                                  (= (- prev-match.col col) (ch1:len))
-                                  ; |ch1  |ch2 |
-                                  ; |     |ch1 |ch2
-                                  ; prev  curr       --->
-                                  (= (- col prev-match.col) (prev-match.ch1:len)))
-                              (= (->representative-char ch2)
-                                 (->representative-char (or prev-match.ch2 ""))))]
-            (set prev-match {: line : col : ch1 : ch2})
-            (when (or (not overlap?) match-last-overlapping?)
-              (when (and overlap? match-last-overlapping?)
-                (table.remove targets))  ; replace the previous one
-              (register-target {: pos :chars [ch1 ch2] : edge-pos?}))))))
+          nil (when (= col 1)  ; empty line
+                (table.insert targets {: wininfo : pos :chars ["\n"]
+                                       :empty-line? true}))
+          ch1 (let [ch2 (or (get-char-at pos {:char-offset +1})
+                            "\n")  ; before EOL
+                    overlap?
+                    (and (= line prev-match.line)
+                         ; Taking multibyte chars into account.
+                         (if backward?
+                             ; curr |ch1||ch2|
+                             ; prev      |ch1||ch2|
+                             (= col (- prev-match.col (ch1:len)))
+                             ; curr      |ch1]|ch2|
+                             ; prev |ch1||ch2|
+                             (= col (+ prev-match.col (prev-match.ch1:len))))
+                         ; Taking eq-classes & ignorecase into account.
+                         (= (->representative-char ch2)
+                            (->representative-char (or prev-match.ch2 ""))))]
+                (set prev-match {: line : col : ch1 : ch2})
+                (when (or (not overlap?) match-last-overlapping?)
+                  (when (and overlap? match-last-overlapping?)
+                    (table.remove targets))  ; replace the previous one
+                  (table.insert targets {: wininfo : pos :chars [ch1 ch2]
+                                         :edge-pos?
+                                         (or (= ch2 "\n")
+                                             (window-edge? line col))}))))))
     (when (not (empty? targets))
       targets)))
 
