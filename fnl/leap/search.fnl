@@ -51,19 +51,7 @@
                           (and backward? (< line* stopline))
                           (and forward? (> line* stopline)))]
         (when (not dead-end?)
-          (vim.fn.cursor [line* virtcol*])
-          ; HACK: vim.fn.cursor expects bytecol, but we only have
-          ; `right-bound` as virtcol (at least until `virtcol2col()`
-          ; is not ported); so simply start crawling to the right,
-          ; checking the virtcol... (When targeting the left bound, we
-          ; might undershoot too - the virtcol of a position is always
-          ; <= the bytecol of it -, but in that case it's no problem,
-          ; just some unnecessary work afterwards, as we're still
-          ; outside the on-screen area).
-          (when backward?
-            (while (and (< (vim.fn.virtcol ".") right-bound)
-                        (< (vim.fn.col ".") (dec (vim.fn.col "$"))))
-              (vim.cmd "norm! l")))
+          (vim.fn.cursor [line* (vim.fn.virtcol2col 0 line* virtcol*)])
           :moved)))))
 
 
@@ -137,11 +125,12 @@ Dynamic attributes
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole match should be visible
-        match-positions (get-match-positions pattern [left-bound right-bound]
-                                             {: backward? : whole-window?})
+        right-bound-at {}  ; { <lnum> = <right-bound-in-byte-cols> }
         register-target (fn [target]
                           (set target.wininfo wininfo)
-                          (table.insert targets target))]
+                          (table.insert targets target))
+        match-positions (get-match-positions pattern [left-bound right-bound]
+                                             {: backward? : whole-window?})]
     (var prev-match {})  ; to find overlaps
     (each [_ [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
@@ -155,8 +144,11 @@ Dynamic attributes
           ch1
           (let [ch2 (or (get-char-at pos {:char-offset +1})
                         "\n")  ; ...and for pre-\n chars
-                ; TODO: `right-bound` = virtcol, but `col` = byte col!
-                edge-pos? (or (= ch2 "\n") (= col right-bound))
+                right-bound-bcol (or (. right-bound-at line)
+                                     (let [rb (vim.fn.virtcol2col 0 line right-bound)]
+                                       (tset right-bound-at line rb)
+                                       rb))
+                edge-pos? (or (= ch2 "\n") (= col right-bound-bcol))
                 overlap? (and (= line prev-match.line)
                               (if backward?
                                   ; |     |ch1 |ch2

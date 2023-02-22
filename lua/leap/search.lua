@@ -44,13 +44,7 @@ local function to_next_in_window_pos_21(backward_3f, left_bound, right_bound, st
     local virtcol_2a = (_4_)[2]
     local dead_end_3f = (((line == line_2a) and (virtcol == virtcol_2a)) or (backward_3f and (line_2a < stopline)) or (forward_3f and (line_2a > stopline)))
     if not dead_end_3f then
-      vim.fn.cursor({line_2a, virtcol_2a})
-      if backward_3f then
-        while ((vim.fn.virtcol(".") < right_bound) and (vim.fn.col(".") < dec(vim.fn.col("$")))) do
-          vim.cmd("norm! l")
-        end
-      else
-      end
+      vim.fn.cursor({line_2a, vim.fn.virtcol2col(0, line_2a, virtcol_2a)})
       return "moved"
     else
       return nil
@@ -59,31 +53,31 @@ local function to_next_in_window_pos_21(backward_3f, left_bound, right_bound, st
     return nil
   end
 end
-local function get_match_positions(pattern, _9_, _11_)
-  local _arg_10_ = _9_
-  local left_bound = _arg_10_[1]
-  local right_bound = _arg_10_[2]
-  local _arg_12_ = _11_
-  local backward_3f = _arg_12_["backward?"]
-  local whole_window_3f = _arg_12_["whole-window?"]
+local function get_match_positions(pattern, _8_, _10_)
+  local _arg_9_ = _8_
+  local left_bound = _arg_9_[1]
+  local right_bound = _arg_9_[2]
+  local _arg_11_ = _10_
+  local backward_3f = _arg_11_["backward?"]
+  local whole_window_3f = _arg_11_["whole-window?"]
   local stopline
-  local function _13_()
+  local function _12_()
     if backward_3f then
       return "w0"
     else
       return "w$"
     end
   end
-  stopline = vim.fn.line(_13_())
+  stopline = vim.fn.line(_12_())
   local saved_view = vim.fn.winsaveview()
   local saved_cpo = vim.o.cpo
   local cleanup
-  local function _14_()
+  local function _13_()
     vim.fn.winrestview(saved_view)
     vim.o.cpo = saved_cpo
     return nil
   end
-  cleanup = _14_
+  cleanup = _13_
   do end (vim.opt.cpo):remove("c")
   local match_at_curpos_3f = false
   if whole_window_3f then
@@ -94,31 +88,31 @@ local function get_match_positions(pattern, _9_, _11_)
   local res = {}
   local function loop()
     local flags
-    local function _16_()
+    local function _15_()
       if backward_3f then
         return "b"
       else
         return ""
       end
     end
-    local function _17_()
+    local function _16_()
       if match_at_curpos_3f then
         return "c"
       else
         return ""
       end
     end
-    flags = (_16_() .. _17_())
+    flags = (_15_() .. _16_())
     match_at_curpos_3f = false
-    local _local_18_ = vim.fn.searchpos(pattern, flags, stopline)
-    local line = _local_18_[1]
-    local col = _local_18_[2]
-    local pos = _local_18_
+    local _local_17_ = vim.fn.searchpos(pattern, flags, stopline)
+    local line = _local_17_[1]
+    local col = _local_17_[2]
+    local pos = _local_17_
     if (line == 0) then
       return cleanup()
-    elseif not (vim.wo.wrap or (function(_19_,_20_,_21_) return (_19_ <= _20_) and (_20_ <= _21_) end)(left_bound,vim.fn.virtcol("."),right_bound)) then
-      local _22_ = to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
-      if (_22_ == "moved") then
+    elseif not (vim.wo.wrap or (function(_18_,_19_,_20_) return (_18_ <= _19_) and (_19_ <= _20_) end)(left_bound,vim.fn.virtcol("."),right_bound)) then
+      local _21_ = to_next_in_window_pos_21(backward_3f, left_bound, right_bound, stopline)
+      if (_21_ == "moved") then
         match_at_curpos_3f = true
         return loop()
       else
@@ -140,45 +134,53 @@ local function get_match_positions(pattern, _9_, _11_)
   loop()
   return res
 end
-local function get_targets_in_current_window(pattern, _26_)
-  local _arg_27_ = _26_
-  local targets = _arg_27_["targets"]
-  local backward_3f = _arg_27_["backward?"]
-  local whole_window_3f = _arg_27_["whole-window?"]
-  local match_last_overlapping_3f = _arg_27_["match-last-overlapping?"]
-  local skip_curpos_3f = _arg_27_["skip-curpos?"]
+local function get_targets_in_current_window(pattern, _25_)
+  local _arg_26_ = _25_
+  local targets = _arg_26_["targets"]
+  local backward_3f = _arg_26_["backward?"]
+  local whole_window_3f = _arg_26_["whole-window?"]
+  local match_last_overlapping_3f = _arg_26_["match-last-overlapping?"]
+  local skip_curpos_3f = _arg_26_["skip-curpos?"]
   local wininfo = vim.fn.getwininfo(vim.fn.win_getid())[1]
-  local _let_28_ = get_cursor_pos()
-  local curline = _let_28_[1]
-  local curcol = _let_28_[2]
-  local _let_29_ = get_horizontal_bounds()
-  local left_bound = _let_29_[1]
-  local right_bound_2a = _let_29_[2]
+  local _let_27_ = get_cursor_pos()
+  local curline = _let_27_[1]
+  local curcol = _let_27_[2]
+  local _let_28_ = get_horizontal_bounds()
+  local left_bound = _let_28_[1]
+  local right_bound_2a = _let_28_[2]
   local right_bound = dec(right_bound_2a)
-  local match_positions = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
+  local right_bound_at = {}
   local register_target
-  local function _30_(target)
+  local function _29_(target)
     target.wininfo = wininfo
     return table.insert(targets, target)
   end
-  register_target = _30_
+  register_target = _29_
+  local match_positions = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local prev_match = {}
-  for _, _31_ in ipairs(match_positions) do
-    local _each_32_ = _31_
-    local line = _each_32_[1]
-    local col = _each_32_[2]
-    local pos = _each_32_
+  for _, _30_ in ipairs(match_positions) do
+    local _each_31_ = _30_
+    local line = _each_31_[1]
+    local col = _each_31_[2]
+    local pos = _each_31_
     if not (skip_curpos_3f and (line == curline) and (col == curcol)) then
-      local _33_ = get_char_at(pos, {})
-      if (_33_ == nil) then
+      local _32_ = get_char_at(pos, {})
+      if (_32_ == nil) then
         if (col == 1) then
           register_target({pos = pos, chars = {"\n"}, ["empty-line?"] = true})
         else
         end
-      elseif (nil ~= _33_) then
-        local ch1 = _33_
+      elseif (nil ~= _32_) then
+        local ch1 = _32_
         local ch2 = (get_char_at(pos, {["char-offset"] = 1}) or "\n")
-        local edge_pos_3f = ((ch2 == "\n") or (col == right_bound))
+        local right_bound_bcol
+        local function _34_()
+          local rb = vim.fn.virtcol2col(0, line, right_bound)
+          do end (right_bound_at)[line] = rb
+          return rb
+        end
+        right_bound_bcol = (right_bound_at[line] or _34_())
+        local edge_pos_3f = ((ch2 == "\n") or (col == right_bound_bcol))
         local overlap_3f
         local function _35_()
           if backward_3f then
