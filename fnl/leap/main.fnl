@@ -403,7 +403,7 @@ is either labeled (C) or not (B).
           :multiselect multi-select?}
          kwargs)
   (local {:backward backward?
-          :match_last_overlapping match-last-overlapping?
+          : match-xxx*-at-the-end?
           :inclusive_op inclusive-op?
           : offset}
          (if dot-repeat? state.dot_repeat kwargs))
@@ -554,7 +554,7 @@ is either labeled (C) or not (B).
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
           pattern (prepare-pattern in1 ?in2)
-          kwargs {: backward? : match-last-overlapping?
+          kwargs {: backward? : match-xxx*-at-the-end?
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))

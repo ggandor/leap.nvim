@@ -382,7 +382,7 @@ local function leap(kwargs)
   end
   local _local_61_ = _62_()
   local backward_3f = _local_61_["backward"]
-  local match_last_overlapping_3f = _local_61_["match_last_overlapping"]
+  local match_xxx_2a_at_the_end_3f = _local_61_["match-xxx*-at-the-end?"]
   local inclusive_op_3f = _local_61_["inclusive_op"]
   local offset = _local_61_["offset"]
   opts.current_call = (user_given_opts or {})
@@ -550,7 +550,7 @@ local function leap(kwargs)
   local function get_targets(in1, _3fin2)
     local search = require("leap.search")
     local pattern = prepare_pattern(in1, _3fin2)
-    local kwargs0 = {["backward?"] = backward_3f, ["match-last-overlapping?"] = match_last_overlapping_3f, ["target-windows"] = _3ftarget_windows}
+    local kwargs0 = {["backward?"] = backward_3f, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local function _87_()
       vars.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))

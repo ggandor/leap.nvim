@@ -97,7 +97,7 @@
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
                                    {: targets : backward? : whole-window?
-                                    : match-last-overlapping? : skip-curpos?}]
+                                    : match-xxx*-at-the-end? : skip-curpos?}]
   "Return a table that will store the positions and other metadata of
 all in-window pairs that match `pattern`, in the order of discovery. A
 target element in its final form has the following fields (the latter
@@ -124,7 +124,8 @@ Dynamic attributes
         right-bound-at {}  ; { <lnum> = <right-bound-byte-col> }
         window-edge? (fn [line col]
                        (when (not (. right-bound-at line))
-                         (tset right-bound-at line
+                         (tset right-bound-at
+                               line
                                (vim.fn.virtcol2col 0 line right-bound)))
                        (= col (. right-bound-at line)))
         match-positions (get-match-positions pattern [left-bound right-bound]
@@ -133,28 +134,29 @@ Dynamic attributes
     (each [_ [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
         (case (get-char-at pos {})
-          nil (when (= col 1)  ; empty line
+          nil (when (= col 1)  ; means empty line
                 (table.insert targets {: wininfo : pos :chars ["\n"]
                                        :empty-line? true}))
           ch1 (let [ch2 (or (get-char-at pos {:char-offset +1})
                             "\n")  ; before EOL
-                    overlap?
-                    (and (= line prev-match.line)
-                         ; Taking multibyte chars into account.
-                         (if backward?
-                             ; curr |ch1||ch2|
-                             ; prev      |ch1||ch2|
-                             (= col (- prev-match.col (ch1:len)))
-                             ; curr      |ch1]|ch2|
-                             ; prev |ch1||ch2|
-                             (= col (+ prev-match.col (prev-match.ch1:len))))
-                         ; Taking eq-classes & ignorecase into account.
-                         (= (->representative-char ch2)
-                            (->representative-char (or prev-match.ch2 ""))))]
+                    xxx? (and
+                           ; Same line?
+                           (= line prev-match.line)
+                           ; Overlap? (Multibyte chars considered.)
+                           (if backward?
+                               ; c1 c2
+                               ;    p1 p2
+                               (= col (- prev-match.col (ch1:len)))
+                               ;    c1 c2
+                               ; p1 p2
+                               (= col (+ prev-match.col (prev-match.ch1:len))))
+                            ; Same pair? (Eq-classes & ignorecase considered.)
+                            (= (->representative-char ch2)
+                               (->representative-char (or prev-match.ch2 ""))))]
                 (set prev-match {: line : col : ch1 : ch2})
-                (when (or (not overlap?) match-last-overlapping?)
-                  (when (and overlap? match-last-overlapping?)
-                    (table.remove targets))  ; replace the previous one
+                (when (or (not xxx?) (and xxx? match-xxx*-at-the-end?))
+                  (when (and xxx? match-xxx*-at-the-end?)
+                    (table.remove targets))  ; delete the previous one
                   (table.insert targets {: wininfo : pos :chars [ch1 ch2]
                                          :edge-pos?
                                          (or (= ch2 "\n")
@@ -194,7 +196,7 @@ Dynamic attributes
 
 
 (fn get-targets [pattern
-                 {: backward? : match-last-overlapping? : target-windows}]
+                 {: backward? : match-xxx*-at-the-end? : target-windows}]
   (let [whole-window? target-windows
         source-winid (vim.fn.win_getid)
         target-windows (or target-windows [source-winid])
@@ -209,7 +211,7 @@ Dynamic attributes
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern
                                      {: targets : backward? : whole-window?
-                                      : match-last-overlapping?
+                                      : match-xxx*-at-the-end?
                                       :skip-curpos? (= winid source-winid)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))

@@ -138,7 +138,7 @@ local function get_targets_in_current_window(pattern, _25_)
   local targets = _arg_26_["targets"]
   local backward_3f = _arg_26_["backward?"]
   local whole_window_3f = _arg_26_["whole-window?"]
-  local match_last_overlapping_3f = _arg_26_["match-last-overlapping?"]
+  local match_xxx_2a_at_the_end_3f = _arg_26_["match-xxx*-at-the-end?"]
   local skip_curpos_3f = _arg_26_["skip-curpos?"]
   local wininfo = vim.fn.getwininfo(vim.fn.win_getid())[1]
   local _let_27_ = get_cursor_pos()
@@ -175,7 +175,7 @@ local function get_targets_in_current_window(pattern, _25_)
       elseif (nil ~= _33_) then
         local ch1 = _33_
         local ch2 = (get_char_at(pos, {["char-offset"] = 1}) or "\n")
-        local overlap_3f
+        local xxx_3f
         local function _35_()
           if backward_3f then
             return (col == (prev_match.col - ch1:len()))
@@ -183,10 +183,10 @@ local function get_targets_in_current_window(pattern, _25_)
             return (col == (prev_match.col + (prev_match.ch1):len()))
           end
         end
-        overlap_3f = ((line == prev_match.line) and _35_() and (__3erepresentative_char(ch2) == __3erepresentative_char((prev_match.ch2 or ""))))
+        xxx_3f = ((line == prev_match.line) and _35_() and (__3erepresentative_char(ch2) == __3erepresentative_char((prev_match.ch2 or ""))))
         prev_match = {line = line, col = col, ch1 = ch1, ch2 = ch2}
-        if (not overlap_3f or match_last_overlapping_3f) then
-          if (overlap_3f and match_last_overlapping_3f) then
+        if (not xxx_3f or (xxx_3f and match_xxx_2a_at_the_end_3f)) then
+          if (xxx_3f and match_xxx_2a_at_the_end_3f) then
             table.remove(targets)
           else
           end
@@ -257,7 +257,7 @@ end
 local function get_targets(pattern, _57_)
   local _arg_58_ = _57_
   local backward_3f = _arg_58_["backward?"]
-  local match_last_overlapping_3f = _arg_58_["match-last-overlapping?"]
+  local match_xxx_2a_at_the_end_3f = _arg_58_["match-xxx*-at-the-end?"]
   local target_windows = _arg_58_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = vim.fn.win_getid()
@@ -282,7 +282,7 @@ local function get_targets(pattern, _57_)
       cursor_positions[winid] = get_cursor_pos()
     else
     end
-    get_targets_in_current_window(pattern, {targets = targets, ["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f, ["match-last-overlapping?"] = match_last_overlapping_3f, ["skip-curpos?"] = (winid == source_winid)})
+    get_targets_in_current_window(pattern, {targets = targets, ["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, ["skip-curpos?"] = (winid == source_winid)})
   end
   if not curr_win_only_3f then
     api.nvim_set_current_win(source_winid)

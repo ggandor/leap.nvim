@@ -9,7 +9,7 @@ local plug_mappings = {
     {'x', 'o'}, '<Plug>(leap-forward-to)',
     function ()
       require('leap').leap {
-        offset = 1, inclusive_op = true, match_last_overlapping = true
+        offset = 1, inclusive_op = true, ['match-xxx*-at-the-end?'] = true
       }
     end
   },
@@ -22,7 +22,7 @@ local plug_mappings = {
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward-to)',
     function ()
-      require('leap').leap { backward = true, match_last_overlapping = true }
+      require('leap').leap { backward = true, ['match-xxx*-at-the-end?'] = true }
     end
   },
   {
