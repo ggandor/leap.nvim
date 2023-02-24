@@ -601,6 +601,7 @@ is either labeled (C) or not (B).
                                {: in1 : in2})
                            {: target_idx
                             : offset
+                            : match-xxx*-at-the-end?
                             ; Mind the naming conventions.
                             :backward backward?
                             :inclusive_op inclusive-op?}))
