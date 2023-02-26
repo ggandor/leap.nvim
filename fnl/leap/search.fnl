@@ -34,9 +34,8 @@
     [left-bound right-bound]))  ; screen columns
 
 
-(fn to-next-in-window-pos! [backward? left-bound right-bound stopline]
+(fn next-in-window-pos [line virtcol backward? left-bound right-bound stopline]
   (let [forward? (not backward?)
-        [line virtcol] [(vim.fn.line ".") (vim.fn.virtcol ".")]
         left-off? (< virtcol left-bound)
         right-off? (> virtcol right-bound)]
     (case (if (and left-off?  backward?) [(dec line) right-bound]
@@ -47,8 +46,7 @@
       (when (not (or (and (= line line*) (= virtcol virtcol*))
                      (and backward? (< line* stopline))
                      (and forward? (> line* stopline))))
-        (vim.fn.cursor [line* (vim.fn.virtcol2col 0 line* virtcol*)])
-        :moved))))
+        [line* (vim.fn.virtcol2col 0 line* virtcol*)]))))
 
 
 (fn get-match-positions [pattern [left-bound right-bound]
@@ -67,20 +65,26 @@
       (vim.fn.cursor [(vim.fn.line "w0") left-bound])
       (set match-at-curpos? true))
 
-    (local res [])
+    (var i 0)  ; match count
+    (local at-right-bound? {})  ; set of indices (1-indexed)
+    (local match-positions [])
     ((fn loop []
        (local flags (.. (if backward? "b" "") (if match-at-curpos? "c" "")))
        (set match-at-curpos? false)
        (local [line col &as pos] (vim.fn.searchpos pattern flags stopline))
+       (local virtcol (vim.fn.virtcol "."))
        (if
          ; No match ([0,0])?
          (= line 0)
          (cleanup)
 
          ; Horizontally offscreen?
-         (not (or vim.wo.wrap (<= left-bound (vim.fn.virtcol ".") right-bound)))
-         (case (to-next-in-window-pos! backward? left-bound right-bound stopline)
-           :moved (do (set match-at-curpos? true) (loop)))
+         (not (or vim.wo.wrap (<= left-bound virtcol right-bound)))
+         (case (next-in-window-pos line virtcol backward?
+                                   left-bound right-bound stopline)
+           pos (do (vim.fn.cursor pos)
+                   (set match-at-curpos? true)
+                   (loop)))
 
          ; In a closed fold?
          (not= (vim.fn.foldclosed line) -1)
@@ -91,15 +95,19 @@
              (loop))
 
          ; Valid match!
-         (do (table.insert res pos) (loop)))))
-    res))
+         (do (table.insert match-positions pos)
+             (set i (+ i 1))
+             (when (= virtcol right-bound) (tset at-right-bound? i true))
+             (loop)))))
+
+    (values match-positions at-right-bound?)))
 
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
                                    {: targets : backward? : whole-window?
                                     : match-xxx*-at-the-end? : skip-curpos?}]
-  "Return a table that will store the positions and other metadata of
-all in-window pairs that match `pattern`, in the order of discovery. A
+  "Fill a table that will store the positions and other metadata of all
+in-window pairs that match `pattern`, in the order of discovery. A
 target element in its final form has the following fields (the latter
 ones might be set by subsequent functions):
 
@@ -121,17 +129,11 @@ Dynamic attributes
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole 2-char match should be visible
-        right-bound-at {}  ; { <lnum> = <right-bound-byte-col> }
-        window-edge? (fn [line col]
-                       (when (not (. right-bound-at line))
-                         (tset right-bound-at
-                               line
-                               (vim.fn.virtcol2col 0 line right-bound)))
-                       (= col (. right-bound-at line)))
-        match-positions (get-match-positions pattern [left-bound right-bound]
-                                             {: backward? : whole-window?})]
+        (match-positions at-right-bound?)
+        (get-match-positions pattern [left-bound right-bound]
+                             {: backward? : whole-window?})]
     (var prev-match {})  ; to find overlaps
-    (each [_ [line col &as pos] (ipairs match-positions)]
+    (each [i [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
         (case (get-char-at pos {})
           nil (when (= col 1)  ; means empty line
@@ -158,11 +160,8 @@ Dynamic attributes
                   (when (and xxx? match-xxx*-at-the-end?)
                     (table.remove targets))  ; delete the previous one
                   (table.insert targets {: wininfo : pos :chars [ch1 ch2]
-                                         :edge-pos?
-                                         (or (= ch2 "\n")
-                                             (window-edge? line col))}))))))
-    (when (not (empty? targets))
-      targets)))
+                                         :edge-pos? (or (. at-right-bound? i)
+                                                        (= ch2 "\n"))}))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
