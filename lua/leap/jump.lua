@@ -1,12 +1,24 @@
 local _local_1_ = require("leap.util")
 local dec = _local_1_["dec"]
-local push_cursor_21 = _local_1_["push-cursor!"]
 local api = vim.api
 local function cursor_before_eol_3f()
   return (vim.fn.search("\\_.", "Wn") ~= vim.fn.line("."))
 end
 local function cursor_before_eof_3f()
   return ((vim.fn.line(".") == vim.fn.line("$")) and (vim.fn.virtcol(".") == dec(vim.fn.virtcol("$"))))
+end
+local function push_cursor_21(direction)
+  local function _3_()
+    local _2_ = direction
+    if (_2_ == "fwd") then
+      return "W"
+    elseif (_2_ == "bwd") then
+      return "bW"
+    else
+      return nil
+    end
+  end
+  return vim.fn.search("\\_.", _3_())
 end
 local function add_offset_21(offset)
   if (offset < 0) then
@@ -29,21 +41,21 @@ local function push_beyond_eof_21()
   local saved = vim.o.virtualedit
   vim.o.virtualedit = "onemore"
   vim.cmd("norm! l")
-  local function _5_()
+  local function _8_()
     vim.o.virtualedit = saved
     return nil
   end
-  return api.nvim_create_autocmd({"CursorMoved", "WinLeave", "BufLeave", "InsertEnter", "CmdlineEnter", "CmdwinEnter"}, {callback = _5_, once = true})
+  return api.nvim_create_autocmd({"CursorMoved", "WinLeave", "BufLeave", "InsertEnter", "CmdlineEnter", "CmdwinEnter"}, {callback = _8_, once = true})
 end
 local function simulate_inclusive_op_21(mode)
-  local _6_ = vim.fn.matchstr(mode, "^no\\zs.")
-  if (_6_ == "") then
+  local _9_ = vim.fn.matchstr(mode, "^no\\zs.")
+  if (_9_ == "") then
     if cursor_before_eof_3f() then
       return push_beyond_eof_21()
     else
       return push_cursor_21("fwd")
     end
-  elseif (_6_ == "v") then
+  elseif (_9_ == "v") then
     return push_cursor_21("bwd")
   else
     return nil
@@ -53,14 +65,14 @@ local function force_matchparen_refresh()
   pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
   return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
 end
-local function jump_to_21(pos, _9_)
-  local _arg_10_ = _9_
-  local winid = _arg_10_["winid"]
-  local add_to_jumplist_3f = _arg_10_["add-to-jumplist?"]
-  local mode = _arg_10_["mode"]
-  local offset = _arg_10_["offset"]
-  local backward_3f = _arg_10_["backward?"]
-  local inclusive_op_3f = _arg_10_["inclusive-op?"]
+local function jump_to_21(pos, _12_)
+  local _arg_13_ = _12_
+  local winid = _arg_13_["winid"]
+  local add_to_jumplist_3f = _arg_13_["add-to-jumplist?"]
+  local mode = _arg_13_["mode"]
+  local offset = _arg_13_["offset"]
+  local backward_3f = _arg_13_["backward?"]
+  local inclusive_op_3f = _arg_13_["inclusive-op?"]
   local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")

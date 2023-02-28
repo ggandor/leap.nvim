@@ -1,8 +1,5 @@
-(local {: inc
-        : dec
-        : replace-keycodes
+(local {: inc : dec
         : get-cursor-pos
-        : push-cursor!
         : get-char-at
         : ->representative-char}
        (require "leap.util"))

@@ -1,4 +1,4 @@
-(local {: dec : push-cursor!} (require "leap.util"))
+(local {: dec} (require "leap.util"))
 
 (local api vim.api)
 
@@ -10,6 +10,11 @@
 (fn cursor-before-eof? []
   (and (= (vim.fn.line ".") (vim.fn.line "$"))
        (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
+
+
+(fn push-cursor! [direction]
+  "Push cursor 1 character to the left or right, possibly beyond EOL."
+  (vim.fn.search "\\_." (case direction :fwd "W" :bwd "bW")))
 
 
 (fn add-offset! [offset]
