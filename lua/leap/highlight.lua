@@ -1,8 +1,7 @@
-local _local_1_ = require("leap.util")
+local util = require("leap.util")
+local _local_1_ = util
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
-local get_cursor_pos = _local_1_["get-cursor-pos"]
-local get_char_at = _local_1_["get-char-at"]
 local api = vim.api
 local map = vim.tbl_map
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", ["label-selected"] = "LeapLabelSelected", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
@@ -56,11 +55,11 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   end
 end
 M["highlight-cursor"] = function(self, _3fpos)
-  local _let_11_ = (_3fpos or get_cursor_pos())
+  local _let_11_ = (_3fpos or util["get-cursor-pos"]())
   local line = _let_11_[1]
   local col = _let_11_[2]
   local pos = _let_11_
-  local ch_at_curpos = (get_char_at(pos, {}) or " ")
+  local ch_at_curpos = (util["get-char-at"](pos, {}) or " ")
   local id = api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
   return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
 end
