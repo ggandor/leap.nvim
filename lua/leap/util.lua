@@ -25,25 +25,12 @@ end
 local function get_cursor_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
-local function push_cursor_21(direction)
-  local function _3_()
-    local _2_ = direction
-    if (_2_ == "fwd") then
-      return "W"
-    elseif (_2_ == "bwd") then
-      return "bW"
-    else
-      return nil
-    end
-  end
-  return vim.fn.search("\\_.", _3_())
-end
-local function get_char_at(_5_, _7_)
-  local _arg_6_ = _5_
-  local line = _arg_6_[1]
-  local byte_col = _arg_6_[2]
-  local _arg_8_ = _7_
-  local char_offset = _arg_8_["char-offset"]
+local function get_char_at(_2_, _4_)
+  local _arg_3_ = _2_
+  local line = _arg_3_[1]
+  local byte_col = _arg_3_[2]
+  local _arg_5_ = _4_
+  local char_offset = _arg_5_["char-offset"]
   local line_str = vim.fn.getline(line)
   local char_idx = vim.fn.charidx(line_str, (byte_col - 1))
   local char_nr = vim.fn.strgetchar(line_str, (char_idx + (char_offset or 0)))
@@ -57,10 +44,10 @@ local function get_enterable_windows()
   local wins = api.nvim_tabpage_list_wins(0)
   local curr_win = api.nvim_get_current_win()
   local curr_buf = api.nvim_get_current_buf()
-  local function _10_(_241)
+  local function _7_(_241)
     return ((api.nvim_win_get_config(_241)).focusable and (_241 ~= curr_win))
   end
-  return filter(_10_, wins)
+  return filter(_7_, wins)
 end
 local function get_eq_class_of(ch)
   if opts.case_sensitive then
@@ -71,15 +58,15 @@ local function get_eq_class_of(ch)
 end
 local function __3erepresentative_char(ch)
   local ch_2a
-  local function _12_()
-    local t_13_ = get_eq_class_of(ch)
-    if (nil ~= t_13_) then
-      t_13_ = (t_13_)[1]
+  local function _9_()
+    local t_10_ = get_eq_class_of(ch)
+    if (nil ~= t_10_) then
+      t_10_ = (t_10_)[1]
     else
     end
-    return t_13_
+    return t_10_
   end
-  ch_2a = (_12_() or ch)
+  ch_2a = (_9_() or ch)
   if opts.case_sensitive then
     return ch_2a
   else
@@ -117,17 +104,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _17_, _18_ = get_input()
-        if (_17_ == _3cbs_3e) then
-          local function _19_()
+        local _14_, _15_ = get_input()
+        if (_14_ == _3cbs_3e) then
+          local function _16_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_19_())
-        elseif (_17_ == _3ccr_3e) then
+          return loop(_16_())
+        elseif (_14_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -135,8 +122,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _17_) then
-          local ch = _17_
+        elseif (nil ~= _14_) then
+          local ch = _14_
           return loop((seq .. ch))
         else
           return nil
@@ -150,16 +137,16 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _24_ = loop(get_input())
-    if (nil ~= _24_) then
-      local _in = _24_
+    local _21_ = loop(get_input())
+    if (nil ~= _21_) then
+      local _in = _21_
       return _in
     elseif true then
-      local _ = _24_
+      local _ = _21_
       return echo("")
     else
       return nil
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["push-cursor!"] = push_cursor_21, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

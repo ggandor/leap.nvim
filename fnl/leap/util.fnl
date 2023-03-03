@@ -22,10 +22,6 @@
 (fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
 
-(fn push-cursor! [direction]
-  "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (case direction :fwd "W" :bwd "bW")))
-
 
 (fn get-char-at [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
   "Get character at the given position in a multibyte-aware manner.
@@ -120,7 +116,6 @@ character instead."
  : echo
  : replace-keycodes
  : get-cursor-pos
- : push-cursor!
  : get-char-at
  :get_enterable_windows get-enterable-windows
  : get-eq-class-of

@@ -8,8 +8,6 @@
         : clamp
         : echo
         : replace-keycodes
-        : get-cursor-pos
-        : push-cursor!
         : get-eq-class-of
         : ->representative-char
         : get-input
@@ -20,7 +18,7 @@
 (local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
-(local {: abs : ceil : max : min : pow} math)
+(local {: ceil : max : min} math)
 
 
 ; Fennel utils ///1

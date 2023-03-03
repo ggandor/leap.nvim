@@ -6,8 +6,6 @@ local dec = _local_1_["dec"]
 local clamp = _local_1_["clamp"]
 local echo = _local_1_["echo"]
 local replace_keycodes = _local_1_["replace-keycodes"]
-local get_cursor_pos = _local_1_["get-cursor-pos"]
-local push_cursor_21 = _local_1_["push-cursor!"]
 local get_eq_class_of = _local_1_["get-eq-class-of"]
 local __3erepresentative_char = _local_1_["->representative-char"]
 local get_input = _local_1_["get-input"]
@@ -17,11 +15,9 @@ local contains_3f = vim.tbl_contains
 local empty_3f = vim.tbl_isempty
 local map = vim.tbl_map
 local _local_2_ = math
-local abs = _local_2_["abs"]
 local ceil = _local_2_["ceil"]
 local max = _local_2_["max"]
 local min = _local_2_["min"]
-local pow = _local_2_["pow"]
 local function exec_user_autocmds(pattern)
   return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
 end
