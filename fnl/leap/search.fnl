@@ -32,25 +32,15 @@
     [left-bound right-bound]))  ; screen columns
 
 
-(fn next-in-window-pos [line virtcol backward? left-bound right-bound stopline]
-  (let [forward? (not backward?)
-        left-off? (< virtcol left-bound)
-        right-off? (> virtcol right-bound)]
-    (case (if (and left-off?  backward?) [(dec line) right-bound]
-              (and left-off?  forward?)  [line left-bound]
-              (and right-off? backward?) [line right-bound]
-              (and right-off? forward?)  [(inc line) left-bound])
-      [line* virtcol*]
-      (when (not (or (and (= line line*) (= virtcol virtcol*))
-                     (and backward? (< line* stopline))
-                     (and forward? (> line* stopline))))
-        [line* (vim.fn.virtcol2col 0 line* virtcol*)]))))
-
-
 (fn get-match-positions [pattern [left-bound right-bound]
                          {: backward? : whole-window?}]
   "Return all visible positions of `pattern` in the current window."
-  (let [stopline (vim.fn.line (if backward? "w0" "w$"))
+  (let [horizontal-bounds (or (and (not vim.wo.wrap)
+                                   (.. "\\%>" (- left-bound 1) "v"
+                                       "\\%<" (+ right-bound 1) "v"))
+                              "")
+        pattern (.. horizontal-bounds pattern)
+        stopline (vim.fn.line (if backward? "w0" "w$"))
         saved-view (vim.fn.winsaveview)
         saved-cpo vim.o.cpo
         cleanup #(do (vim.fn.winrestview saved-view)
@@ -60,7 +50,7 @@
 
     (var match-at-curpos? false)
     (when whole-window?
-      (vim.fn.cursor [(vim.fn.line "w0") left-bound])
+      (vim.fn.cursor [(vim.fn.line "w0") 1])
       (set match-at-curpos? true))
 
     (var i 0)  ; match count
@@ -70,33 +60,21 @@
        (local flags (.. (if backward? "b" "") (if match-at-curpos? "c" "")))
        (set match-at-curpos? false)
        (local [line col &as pos] (vim.fn.searchpos pattern flags stopline))
-       (local virtcol (vim.fn.virtcol "."))
-       (if
-         ; No match ([0,0])?
-         (= line 0)
-         (cleanup)
+       (if (= line 0)   ; No match ([0,0])?
+           (cleanup)
 
-         ; Horizontally offscreen?
-         (not (or vim.wo.wrap (<= left-bound virtcol right-bound)))
-         (case (next-in-window-pos line virtcol backward?
-                                   left-bound right-bound stopline)
-           pos (do (vim.fn.cursor pos)
-                   (set match-at-curpos? true)
-                   (loop)))
+           (not= (vim.fn.foldclosed line) -1)  ; In a closed fold?
+           (do (if backward?
+                   (vim.fn.cursor (vim.fn.foldclosed line) 1)
+                   (do (vim.fn.cursor (vim.fn.foldclosedend line) 0)
+                       (vim.fn.cursor 0 (vim.fn.col "$"))))
+               (loop))
 
-         ; In a closed fold?
-         (not= (vim.fn.foldclosed line) -1)
-         (do (if backward?
-                 (vim.fn.cursor (vim.fn.foldclosed line) 1)
-                 (do (vim.fn.cursor (vim.fn.foldclosedend line) 0)
-                     (vim.fn.cursor 0 (vim.fn.col "$"))))
-             (loop))
-
-         ; Valid match!
-         (do (table.insert match-positions pos)
-             (set i (+ i 1))
-             (when (= virtcol right-bound) (tset at-right-bound? i true))
-             (loop)))))
+           (do (table.insert match-positions pos)
+               (set i (+ i 1))
+               (when (= (vim.fn.virtcol ".") right-bound)
+                 (tset at-right-bound? i true))
+               (loop)))))
 
     (values match-positions at-right-bound?)))
 
