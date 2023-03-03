@@ -11,10 +11,12 @@
 
 
 (fn get-horizontal-bounds []
-  "
+  "Return the first an last visible virtual column of the editable
+window area.
+
  [--------------------]  window-width
- (--------]              offset-in-win
  [--]                    textoff (e.g. foldcolumn)
+ (--------]              offset-in-win
      (----]              offset-in-editable-win
 +----------------------+
 |XXXX                  |
@@ -22,14 +24,14 @@
 |XXXX                  |
 +----------------------+
 "
-  (let [textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
+  (let [window-width (api.nvim_win_get_width 0)
+        textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
         offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
-        ; I.e., screen column of the first visible column in the editable area.
+        ; Screen column of the first visible column in the editable area.
         left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
-        window-width (api.nvim_win_get_width 0)
         right-bound (+ left-bound (dec (- window-width textoff)))]
-    [left-bound right-bound]))  ; screen columns
+    [left-bound right-bound]))
 
 
 (fn get-match-positions [pattern [left-bound right-bound]

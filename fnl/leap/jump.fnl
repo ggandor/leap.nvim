@@ -10,9 +10,9 @@
        (= (vim.fn.virtcol ".") (- (vim.fn.virtcol "$") 1))))
 
 
-(fn push-cursor! [direction]
+(fn push-cursor! [dir]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (case direction :fwd "W" :bwd "bW")))
+  (vim.fn.search "\\_." (case dir :fwd "W" :bwd "bW")))
 
 
 (fn add-offset! [offset]
@@ -25,13 +25,12 @@
 (fn push-beyond-eof! []
   (local saved vim.o.virtualedit)
   (set vim.o.virtualedit :onemore)
-  ; Note: No need to undo this afterwards, the cursor will be
-  ; moved to the end of the operated area anyway.
+  ; Note: No need to undo this afterwards, the cursor will be moved to
+  ; the end of the operated area anyway.
   (vim.cmd "norm! l")
   (api.nvim_create_autocmd
     [:CursorMoved :WinLeave :BufLeave :InsertEnter :CmdlineEnter :CmdwinEnter]
-    {:callback #(set vim.o.virtualedit saved)
-     :once true}))
+    {:callback #(set vim.o.virtualedit saved) :once true}))
 
 
 (fn simulate-inclusive-op! [mode]

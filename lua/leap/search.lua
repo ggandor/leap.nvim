@@ -10,11 +10,11 @@ local _local_2_ = math
 local abs = _local_2_["abs"]
 local pow = _local_2_["pow"]
 local function get_horizontal_bounds()
+  local window_width = api.nvim_win_get_width(0)
   local textoff = vim.fn.getwininfo(vim.fn.win_getid())[1].textoff
   local offset_in_win = dec(vim.fn.wincol())
   local offset_in_editable_win = (offset_in_win - textoff)
   local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
-  local window_width = api.nvim_win_get_width(0)
   local right_bound = (left_bound + dec((window_width - textoff)))
   return {left_bound, right_bound}
 end

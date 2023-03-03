@@ -5,9 +5,9 @@ end
 local function cursor_before_eof_3f()
   return ((vim.fn.line(".") == vim.fn.line("$")) and (vim.fn.virtcol(".") == (vim.fn.virtcol("$") - 1)))
 end
-local function push_cursor_21(direction)
+local function push_cursor_21(dir)
   local function _2_()
-    local _1_ = direction
+    local _1_ = dir
     if (_1_ == "fwd") then
       return "W"
     elseif (_1_ == "bwd") then
