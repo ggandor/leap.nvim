@@ -592,17 +592,15 @@ is either labeled (C) or not (B).
   (fn set-dot-repeat [in1 in2 target_idx]
     (when (and dot-repeatable-op?
                (not (or dot-repeat? (= (type user-given-targets) :table))))
-      (set state.dot_repeat
-           (vim.tbl_extend :error
-                           (if user-given-targets
-                               {:callback user-given-targets}
-                               {: in1 : in2})
-                           {: target_idx
-                            : offset
-                            : match-xxx*-at-the-end?
-                            ; Mind the naming conventions.
-                            :backward backward?
-                            :inclusive_op inclusive-op?}))
+      (set state.dot_repeat {:in1 (and (not user-given-targets) in1)
+                             :in2 (and (not user-given-targets) in2)
+                             :callback user-given-targets
+                             : target_idx
+                             : offset
+                             : match-xxx*-at-the-end?
+                             ; Mind the naming conventions.
+                             :backward backward?
+                             :inclusive_op inclusive-op?})
       (set-dot-repeat*)))
 
   (local jump-to!
