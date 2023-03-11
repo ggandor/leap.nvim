@@ -8,7 +8,7 @@ CONTENTS                                               *leap.nvim* *leap-content
   Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
   Configuration ·················································· |leap-config|
-  Default mappings ······································|leap-default-mappings|
+  Default mappings ····································· |leap-default-mappings|
   Custom mappings ······································· |leap-custom-mappings|
   Highlighting ················································ |leap-highlight|
   Events ························································· |leap-events|
@@ -247,7 +247,7 @@ told so (called with a `true` argument).
 Trigger keys~
 
 Normal mode
-                         
+
                                                         *leap_s*
 s{char1}{char2}         Jump forward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is placed on
