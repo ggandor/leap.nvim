@@ -82,16 +82,16 @@ context-switching required by the latter.
 That is, **you do not want to think about**
 
 - **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations using relative line numbers and/or repeats)
+  (↔ vanilla Vim motion combinations using relative line numbers and/or
+  repeats)
 - **the command**: we need one fundamental targeting method that can bring you
   anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
   derivatives)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and you
   should be able to type the sequence in one go, without having to make
   semi-conscious decisions on the fly (the ever-present dilemma when using
-  `/`/`?`: "Shall I try one more input character, or it's time to start a
-  `<C-g>` streak?"), or having to instantly react to events (labels appearing on
-  the screen).
+  `/`/`?`: "Shall I try one more input character, or start a `<C-g>` streak?"),
+  or having to react to events (labels appearing on the screen).
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -102,12 +102,11 @@ It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
 
-The one-step shift between perception and action cuts the Gordian knot: on the
-one hand, the input sequence can be extended dynamically, to scale to any number
-of targets, by adding new groups you can switch to; however, thanks to
-ahead-of-time labeling, it still behaves as if it would be an already known
-pattern, that you just have to type out. Leaping is like incremental search on
-some kind of autopilot, where you know it in advance when to finish.
+The **one-step shift between perception and action** cuts the Gordian knot:
+while the input sequence can be scaled to any number of targets (by adding new
+groups you can switch to), ahead-of-time labeling eliminates the surprise
+factor: leaping is like doing incremental search with knowing in advance when
+to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
 play this trick - is also long enough to sufficiently narrow down the matches in
@@ -116,12 +115,11 @@ characters altogether to reach a given target.
 
 ### Auxiliary principles
 
-- Optimize for the common case (not the pathological): a good example of this is
-  the Sneak-like "one-character labels in multiple groups"-approach (instead of
-  using multi-character labels, EasyMotion-style), which can become awkward for,
-  say, 200 targets, but usually more comfortable, eliminates all kinds of edge
-  cases and implementation problems, and allows for features like
-  [multiselect](#extending-leap).
+- Optimize for the common case, not the pathological: a good example of this is
+  the Sneak-like "one-character labels in multiple groups"-approach, which can
+  become awkward for, say, 200 targets, but is usually more comfortable,
+  eliminates all kinds of edge cases and implementation problems, and allows
+  for features like [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on Vim's native interface, and aim for synergy as much as possible. The
@@ -132,10 +130,9 @@ characters altogether to reach a given target.
   to continuously improve in this respect.
 
 - [Mechanisms instead of
-  policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext)
-  (or "be opinionated, but not stubborn"): aim for a small, maintainable core,
-  with reasonable defaults; at the same time, keep the plugin flexible and
-  future-proof via [extension points](#extending-leap).
+  policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
+  Complement the small and opinionated core by [extension
+  points](#extending-leap), keeping the plugin flexible and future-proof.
 
 ## Background
 
