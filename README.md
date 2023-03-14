@@ -11,7 +11,7 @@ the visible area in Vim-like modal editors.
 ### How to use it (TL;DR)
 
 Leap allows you to jump to any positions in the visible editor area by entering
-a 2-character search pattern, and then potentially a "label" character to pick
+a 2-character search pattern, and then potentially a label character to pick
 your target from multiple matches, similar to
 [Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
 "clairvoyant" ability: you get a **live preview** of the target labels - by
@@ -276,7 +276,7 @@ require('leap').opts.highlight_unlabeled_phase_one_targets = true
 
 All of them have aliases or obvious equivalents:
 
-- `s` = `cl`
+- `s` = `cl` (or `xi`)
 - `S` = `cc`
 - `v_s` = `v_c`
 - `v_S` = `Vc`, unless already in linewise mode (then = `v_c`)
