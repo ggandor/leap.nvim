@@ -361,18 +361,19 @@ is either labeled (C) or not (B).
     (local target (. targets i))
     (case target.beacon
       [offset virttext]
-      (let [bufnr target.wininfo.bufnr
-            [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
-            id (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
-                                         {:virt_text virttext
-                                          :virt_text_pos "overlay"
-                                          :hl_mode "combine"
-                                          :priority hl.priority.label})]
-        ; Register each newly set extmark in a table, so that we can
-        ; delete them one by one, without needing any further contextual
-        ; information. This is relevant if we process user-given targets
-        ; and have no knowledge about the boundaries of the search area.
-        (table.insert hl.extmarks [bufnr id])))))
+      (if (api.nvim_buf_is_valid target.wininfo.bufnr)
+        (let [bufnr target.wininfo.bufnr
+              [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
+              id (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
+                                           {:virt_text virttext
+                                            :virt_text_pos "overlay"
+                                            :hl_mode "combine"
+                                            :priority hl.priority.label})]
+          ; Register each newly set extmark in a table, so that we can
+          ; delete them one by one, without needing any further contextual
+          ; information. This is relevant if we process user-given targets
+          ; and have no knowledge about the boundaries of the search area.
+          (table.insert hl.extmarks [bufnr id]))))))
 
 
 ; Main ///1
@@ -945,8 +946,8 @@ is either labeled (C) or not (B).
 (fn restore-editor-opts []
   (each [key val (pairs state.saved_editor_opts)]
     (case key
-      [:w w name] (api.nvim_win_set_option w name val)
-      [:b b name] (api.nvim_buf_set_option b name val)
+      [:w w name] (if (api.nvim_win_is_valid w) (api.nvim_win_set_option w name val))
+      [:b b name] (if (api.nvim_buf_is_valid b) (api.nvim_buf_set_option b name val))
       name (api.nvim_set_option name val))))
 
 

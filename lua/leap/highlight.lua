@@ -10,7 +10,10 @@ M.cleanup = function(self, affected_windows)
     local _each_3_ = _2_
     local bufnr = _each_3_[1]
     local id = _each_3_[2]
-    api.nvim_buf_del_extmark(bufnr, self.ns, id)
+    if api.nvim_buf_is_valid(bufnr) then
+      api.nvim_buf_del_extmark(bufnr, self.ns, id)
+    else
+    end
   end
   self.extmarks = {}
   if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then

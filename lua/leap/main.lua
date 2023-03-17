@@ -349,12 +349,15 @@ local function light_up_beacons(targets, _3fstart, _3fend)
     if ((_G.type(_57_) == "table") and (nil ~= (_57_)[1]) and (nil ~= (_57_)[2])) then
       local offset = (_57_)[1]
       local virttext = (_57_)[2]
-      local bufnr = target.wininfo.bufnr
-      local _let_58_ = map(dec, target.pos)
-      local lnum = _let_58_[1]
-      local col = _let_58_[2]
-      local id = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, (col + offset), {virt_text = virttext, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.label})
-      table.insert(hl.extmarks, {bufnr, id})
+      if api.nvim_buf_is_valid(target.wininfo.bufnr) then
+        local bufnr = target.wininfo.bufnr
+        local _let_58_ = map(dec, target.pos)
+        local lnum = _let_58_[1]
+        local col = _let_58_[2]
+        local id = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, (col + offset), {virt_text = virttext, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.label})
+        table.insert(hl.extmarks, {bufnr, id})
+      else
+      end
     else
     end
   end
@@ -1239,11 +1242,17 @@ local function restore_editor_opts()
     if ((_G.type(_203_) == "table") and ((_203_)[1] == "w") and (nil ~= (_203_)[2]) and (nil ~= (_203_)[3])) then
       local w = (_203_)[2]
       local name = (_203_)[3]
-      api.nvim_win_set_option(w, name, val)
+      if api.nvim_win_is_valid(w) then
+        api.nvim_win_set_option(w, name, val)
+      else
+      end
     elseif ((_G.type(_203_) == "table") and ((_203_)[1] == "b") and (nil ~= (_203_)[2]) and (nil ~= (_203_)[3])) then
       local b = (_203_)[2]
       local name = (_203_)[3]
-      api.nvim_buf_set_option(b, name, val)
+      if api.nvim_buf_is_valid(b) then
+        api.nvim_buf_set_option(b, name, val)
+      else
+      end
     elseif (nil ~= _203_) then
       local name = _203_
       api.nvim_set_option(name, val)
