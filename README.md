@@ -624,7 +624,7 @@ end
 
 -- Usage:
 local function leap_to_line()
-  winid = vim.api.nvim_get_current_win()
+  local winid = vim.api.nvim_get_current_win()
   require('leap').leap {
     target_windows = { winid },
     targets = get_line_starts(winid),
@@ -642,7 +642,7 @@ either a target, or a list of targets (in multiselect mode).
 
 ```lua
 function leap_to_window()
-  target_windows = require('leap.util').get_enterable_windows()
+  local target_windows = require('leap.util').get_enterable_windows()
   local targets = {}
   for _, win in ipairs(target_windows) do
     local wininfo = vim.fn.getwininfo(win)[1]
