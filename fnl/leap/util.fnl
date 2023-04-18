@@ -38,8 +38,10 @@ character instead."
   (let [wins (api.nvim_tabpage_list_wins 0)
         curr-win (api.nvim_get_current_win)
         curr-buf (api.nvim_get_current_buf)]
-    (filter #(and (. (api.nvim_win_get_config $) :focusable)
-                  (not= $ curr-win))
+    (filter #(let [config (api.nvim_win_get_config $)]
+               (and config.focusable
+                    (= config.relative "")  ; exclude auto-closing hover popups (e.g. LSP)
+                    (not= $ curr-win)))
             wins)))
 
 

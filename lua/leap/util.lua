@@ -45,7 +45,8 @@ local function get_enterable_windows()
   local curr_win = api.nvim_get_current_win()
   local curr_buf = api.nvim_get_current_buf()
   local function _7_(_241)
-    return ((api.nvim_win_get_config(_241)).focusable and (_241 ~= curr_win))
+    local config = api.nvim_win_get_config(_241)
+    return (config.focusable and (config.relative == "") and (_241 ~= curr_win))
   end
   return filter(_7_, wins)
 end
