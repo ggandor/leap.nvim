@@ -246,8 +246,9 @@ local function get_targets(pattern, _45_)
       sort_by_distance_from_cursor(targets, cursor_positions)
     else
     end
+    return targets
   else
+    return nil
   end
-  return targets
 end
 return {["get-horizontal-bounds"] = get_horizontal_bounds, ["get-match-positions"] = get_match_positions, ["get-targets"] = get_targets}

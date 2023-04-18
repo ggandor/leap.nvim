@@ -194,8 +194,8 @@ Dynamic attributes
       (api.nvim_set_current_win source-winid))
     (when (not (empty? targets))
       (when whole-window?
-        (sort-by-distance-from-cursor targets cursor-positions)))
-      targets))
+        (sort-by-distance-from-cursor targets cursor-positions))
+      targets)))
 
 
 {: get-horizontal-bounds
