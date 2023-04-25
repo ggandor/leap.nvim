@@ -1245,13 +1245,21 @@ local function restore_editor_opts()
   end
   return nil
 end
-local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
+local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.guicursor"] = "a:Cursor/lCursor", ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
 local function _202_()
+  if not package.loaded("noice") then
+    vim.cmd.hi("Cursor", "blend=100")
+  else
+  end
   return set_editor_opts(temporary_editor_opts)
 end
 api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _202_, group = "LeapDefault"})
-local function _203_()
+local function _204_()
+  if not package.loaded("noice") then
+    vim.cmd.hi("Cursor", "blend=0")
+  else
+  end
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _203_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _204_, group = "LeapDefault"})
 return {state = state, leap = leap}
