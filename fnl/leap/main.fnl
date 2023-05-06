@@ -952,6 +952,7 @@ is either labeled (C) or not (B).
 
 
 (local temporary-editor-opts {:w.conceallevel 0
+                              :g.guicursor "a:Cursor/lCursor" ; See Note [Cursor highlight]
                               :g.scrolloff 0
                               :w.scrolloff 0
                               :g.sidescrolloff 0
@@ -959,12 +960,51 @@ is either labeled (C) or not (B).
                               :b.modeline false})  ; lightspeed#81
 
 (api.nvim_create_autocmd "User" {:pattern "LeapEnter"
-                                 :callback #(set-editor-opts temporary-editor-opts)
+                                 :callback #(do
+                                              ; See Note [Cursor highlight]
+                                              (when (not (package.loaded "noice"))
+                                                (vim.cmd.hi "Cursor" "blend=100"))
+                                              (set-editor-opts temporary-editor-opts))
                                  :group "LeapDefault"})
 
 (api.nvim_create_autocmd "User" {:pattern "LeapLeave"
-                                 :callback #(restore-editor-opts)
+                                 :callback #(do
+                                              ; See Note [Cursor highlight]
+                                              (when (not (package.loaded "noice"))
+                                                (vim.cmd.hi "Cursor" "blend=0"))
+                                              (restore-editor-opts))
                                  :group "LeapDefault"})
+
+; Note [Cursor highlight]
+;
+; To work around https://github.com/neovim/neovim/issues/20793, we hide the cursor (by setting blend=100) on LeapEnter
+; and restore it on LeapLeave.
+;
+; Unfortunately it's not easy to programmatically get the highlight for restoring later:
+;
+;   1. vim.api.nvim_get_hl_by_name("Cursor", false) seems to drop information.
+;
+;      Here is a closed issue about it, but the bug persists:
+;        https://github.com/neovim/neovim/issues/18024
+;
+;      For example, right now I'm seeing this:
+;
+;        :lua = vim.api.nvim_get_hl_by_name("Error", false)
+;        { foreground = 167 }
+;
+;        :hi Error
+;        Error          xxx ctermfg=167 guifg=#ea6962
+;
+;   2. Parsing the output of ":hi Cursor" seems doable, but annoying.
+;
+;        :lua = vim.fn.execute("hi Cursor")
+;        "\nCursor         xxx cterm=reverse gui=reverse"
+;
+; So, the solution implemented here is to simply append blend=100 to the Cursor highlight group, then set blend=0
+; afterwards. This will essentially overwrite any previous blend setting for the Cursor, which is hopefully okay.
+;
+; ... and finally, because `noice` does something similar, and is very popular, we let *it* do the same cursor dance
+; instead of us, if it's loaded. See https://github.com/ggandor/leap.nvim/pull/143
 
 
 ; Module ///1
