@@ -1232,11 +1232,17 @@ local function restore_editor_opts()
     if ((_G.type(_200_) == "table") and ((_200_)[1] == "w") and (nil ~= (_200_)[2]) and (nil ~= (_200_)[3])) then
       local w = (_200_)[2]
       local name = (_200_)[3]
-      api.nvim_win_set_option(w, name, val)
+      if api.nvim_win_is_valid(w) then
+        api.nvim_win_set_option(w, name, val)
+      else
+      end
     elseif ((_G.type(_200_) == "table") and ((_200_)[1] == "b") and (nil ~= (_200_)[2]) and (nil ~= (_200_)[3])) then
       local b = (_200_)[2]
       local name = (_200_)[3]
-      api.nvim_buf_set_option(b, name, val)
+      if api.nvim_buf_is_valid(b) then
+        api.nvim_buf_set_option(b, name, val)
+      else
+      end
     elseif (nil ~= _200_) then
       local name = _200_
       api.nvim_set_option(name, val)
@@ -1246,12 +1252,12 @@ local function restore_editor_opts()
   return nil
 end
 local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
-local function _202_()
+local function _204_()
   return set_editor_opts(temporary_editor_opts)
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _202_, group = "LeapDefault"})
-local function _203_()
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _204_, group = "LeapDefault"})
+local function _205_()
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _203_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _205_, group = "LeapDefault"})
 return {state = state, leap = leap}

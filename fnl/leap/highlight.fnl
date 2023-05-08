@@ -20,7 +20,7 @@
 (fn M.cleanup [self affected-windows]
   ; Clear beacons & cursor.
   (each [_ [bufnr id] (ipairs self.extmarks)]
-    (api.nvim_buf_del_extmark bufnr self.ns id))
+    (when (api.nvim_buf_is_valid bufnr) (api.nvim_buf_del_extmark bufnr self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
