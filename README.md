@@ -711,6 +711,74 @@ require('leap').leap {
 ```
 </details>
 
+Leap can also be used by external plugins, for example
+in `telescope.nvim` to allow for quick selection between
+search results. The below config maps (normal-mode) `s` within a Telescope picker
+to use Leap to select an entry and perform the default action (i.e. `<CR>`)
+on it, and (normal-mode) `S` to only select the entry (so you can perform a different action ot it):
+
+<details>
+<summary>Example: select a Telescope entry</summary>
+
+```lua
+local telescope = require "telescope"
+local actions = require "telescope.actions"
+local action_state = require "telescope.actions.state"
+
+local function get_telescope_targets(prompt_bufnr)
+  local pick = action_state.get_current_picker(prompt_bufnr)
+  local scroller = require "telescope.pickers.scroller"
+
+  local wininfo = vim.fn.getwininfo(pick.results_win)
+
+  -- restrict targets to visible range of entries
+  local first = math.max(scroller.top(pick.sorting_strategy, pick.max_results, pick.manager:num_results()), wininfo[1].topline - 1)
+  local last = wininfo[1].botline - 1
+
+  local targets = {}
+  for row=last,first,-1 do
+    local target = {
+      wininfo = wininfo[1],
+      pos = {row + 1, 1},
+      row = row,
+      pick = pick
+    }
+    table.insert(targets, target)
+  end
+  return targets
+end
+
+telescope.setup {
+  defaults = {
+    -- ....
+      mappings = {
+        n = {
+          -- set the current selected entry using Leap
+          ["S"] = function (prompt_bufnr)
+            require('leap').leap {
+              targets = get_telescope_targets(prompt_bufnr),
+              action = function (target)
+                target.pick:set_selection(target.row)
+              end
+            }
+          end,
+          -- perform the default action (i.e. <CR>) on the entry selected using Leap
+          ["s"] = function (prompt_bufnr)
+            require('leap').leap {
+              targets = get_telescope_targets(prompt_bufnr),
+              action = function (target)
+                target.pick:set_selection(target.row)
+                actions.select_default(prompt_bufnr)
+              end
+            }
+          end
+        }
+      }
+  },
+}
+```
+</details>
+
 ### Accessing the arguments passed to `leap`
 
 The arguments of the current call are always available at runtime, in the
