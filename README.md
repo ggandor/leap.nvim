@@ -715,7 +715,7 @@ Leap can also be used by external plugins, for example
 in `telescope.nvim` to allow for quick selection between
 search results. The below config maps (normal-mode) `s` within a Telescope picker
 to use Leap to select an entry and perform the default action (i.e. `<CR>`)
-on it, and (normal-mode) `S` to only select the entry (so you can perform a different action ot it):
+on it, and (normal-mode) `S` to only select the entry (so you can perform a different action ot it).
 
 <details>
 <summary>Example: select a Telescope entry</summary>
@@ -778,6 +778,8 @@ telescope.setup {
 }
 ```
 </details>
+
+(see also [telescope-hop.nvim](https://github.com/nvim-telescope/telescope-hop.nvim)).
 
 ### Accessing the arguments passed to `leap`
 
