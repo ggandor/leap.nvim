@@ -464,7 +464,6 @@ is either labeled (C) or not (B).
           ; Show beacons (labels & match highlights) ahead of time,
           ; right after the first input?
          {:aot? (not (or (= max-phase-one-targets 0)
-                         count
                          empty-label-lists?
                          multi-select?
                          user-given-targets?))
@@ -656,7 +655,12 @@ is either labeled (C) or not (B).
       in1 in1))
 
   (fn get-second-pattern-input [targets]
-    (when (<= (length targets) max-phase-one-targets)
+    (when (and (<= (length targets) max-phase-one-targets)
+               ; Note: `count` does _not_ automatically disable
+               ; two-phase processing, as we might want to give
+               ; char<enter> partial input (but it implies not needing
+               ; to show beacons).
+               (not count))
       (with-highlight-chores (light-up-beacons targets)))
     (get-input-by-keymap prompt))
 
@@ -828,15 +832,18 @@ is either labeled (C) or not (B).
   (when-not in2
     (exit-early))
 
-  ; Jump eagerly to the very first match (without giving the full pattern)?
+  ; Jump eagerly to the count-th match (without giving the full pattern)?
   (when (= in2 spec-keys.next_phase_one_target)
-    (local first (. targets 1))
-    (local in2* (. first :chars 2))
+    (local n (or count 1))
+    (local target (. targets n))
+    (when-not target
+      (exit-early))
+    (local in2* (. target :chars 2))
     (update-repeat-state {: in1 :in2 in2*})
-    (do-action first)
+    (do-action target)
     (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
-        (set-dot-repeat in1 in2* 1)
-        (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
+        (set-dot-repeat in1 in2* n)
+        (traversal-loop targets n {:no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
   ; Do this now - repeat can succeed, even if we fail this time.
