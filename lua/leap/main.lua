@@ -1047,10 +1047,11 @@ local function leap(kwargs)
     local in2_2a = target.chars[2]
     update_repeat_state({in1 = in1, in2 = in2_2a})
     do_action(target)
-    if ((#targets == 1) or op_mode_3f or not directional_3f or user_given_action) then
-      set_dot_repeat(in1, in2_2a, n)
-    else
+    local can_traverse_3f = (not op_mode_3f and not user_given_action and directional_3f and (#targets > 1))
+    if can_traverse_3f then
       traversal_loop(targets, n, {["no-labels?"] = true})
+    else
+      set_dot_repeat(in1, in2_2a, n)
     end
     hl:cleanup(hl_affected_windows)
     exec_user_autocmds("LeapLeave")

@@ -841,9 +841,11 @@ is either labeled (C) or not (B).
     (local in2* (. target :chars 2))
     (update-repeat-state {: in1 :in2 in2*})
     (do-action target)
-    (if (or (= (length targets) 1) op-mode? (not directional?) user-given-action)
-        (set-dot-repeat in1 in2* n)
-        (traversal-loop targets n {:no-labels? true}))  ; REDRAW (LOOP)
+    (local can-traverse? (and (not op-mode?) (not user-given-action)
+                              directional? (> (length targets) 1)))
+    (if can-traverse?
+        (traversal-loop targets n {:no-labels? true})  ; REDRAW (LOOP)
+        (set-dot-repeat in1 in2* n))
     (exit))
 
   ; Do this now - repeat can succeed, even if we fail this time.
