@@ -1047,9 +1047,9 @@ local function leap(kwargs)
     local in2_2a = target.chars[2]
     update_repeat_state({in1 = in1, in2 = in2_2a})
     do_action(target)
-    local can_traverse_3f = (not op_mode_3f and not user_given_action and directional_3f and (#targets > 1))
+    local can_traverse_3f = (not count and not op_mode_3f and not user_given_action and directional_3f and (#targets > 1))
     if can_traverse_3f then
-      traversal_loop(targets, n, {["no-labels?"] = true})
+      traversal_loop(targets, 1, {["no-labels?"] = true})
     else
       set_dot_repeat(in1, in2_2a, n)
     end

@@ -841,10 +841,10 @@ is either labeled (C) or not (B).
     (local in2* (. target :chars 2))
     (update-repeat-state {: in1 :in2 in2*})
     (do-action target)
-    (local can-traverse? (and (not op-mode?) (not user-given-action)
+    (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
                               directional? (> (length targets) 1)))
     (if can-traverse?
-        (traversal-loop targets n {:no-labels? true})  ; REDRAW (LOOP)
+        (traversal-loop targets 1 {:no-labels? true})  ; REDRAW (LOOP)
         (set-dot-repeat in1 in2* n))
     (exit))
 
