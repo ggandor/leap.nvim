@@ -1155,16 +1155,17 @@ local function leap(kwargs)
   else
   end
   if contains_3f(spec_keys.next_target, in_final) then
-    if (op_mode_3f or not directional_3f or user_given_action) then
-      set_dot_repeat(in1, in2, 1)
-      do_action((targets_2a)[1])
+    local can_traverse_3f = (not op_mode_3f and not user_given_action and directional_3f)
+    if can_traverse_3f then
+      local new_idx = inc(vars["curr-idx"])
+      do_action((targets_2a)[new_idx])
+      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or not targets_2a["autojump?"])})
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
     else
-      local new_idx = inc(vars["curr-idx"])
-      do_action((targets_2a)[new_idx])
-      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or not targets_2a["autojump?"])})
+      set_dot_repeat(in1, in2, 1)
+      do_action((targets_2a)[1])
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return

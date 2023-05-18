@@ -890,14 +890,16 @@ is either labeled (C) or not (B).
 
   ; Jump to the first match on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
-    (if (or op-mode? (not directional?) user-given-action)
-        (exit-with-action-on 1)  ; (no autojump)
+    (local can-traverse? (and (not op-mode?) (not user-given-action)
+                              directional?))
+    (if can-traverse?
         (let [new-idx (inc vars.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                           {:no-labels? (or empty-label-lists?
                                            (not targets*.autojump?))})
-          (exit))))
+          (exit))
+        (exit-with-action-on 1)))  ; (implied no autojump)
 
   (local [idx _] (get-target-with-active-primary-label targets* in-final))
   (if idx (exit-with-action-on idx)
