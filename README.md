@@ -81,12 +81,12 @@ context-switching required by the latter.
 
 That is, **you do not want to think about**
 
-- **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations using relative line numbers and/or
-  repeats)
 - **the command**: we need one fundamental targeting method that can bring you
   anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
   derivatives)
+- **the context**: it should be enough to look at the target, and nothing else
+  (↔ vanilla Vim motion combinations using relative line numbers and/or
+  repeats)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and you
   should be able to type the sequence in one go, without having to make
   semi-conscious decisions on the fly (the ever-present dilemma when using
@@ -117,9 +117,9 @@ characters altogether to reach a given target.
 
 - Optimize for the common case, not the pathological: a good example of this is
   the Sneak-like "one-character labels in multiple groups"-approach, which can
-  become awkward for, say, 200 targets, but is usually more comfortable,
-  eliminates all kinds of edge cases and implementation problems, and allows
-  for features like [multiselect](#extending-leap).
+  become awkward for, say, 200 targets, but eliminates all kinds of edge cases
+  and implementation problems, and allows for features like
+  [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on Vim's native interface, and aim for synergy as much as possible. The
@@ -391,23 +391,17 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 
 ### Special cases and additional features
 
-#### Resolving highlighting conflicts in phase one
+#### Jumping to the end of the line and to empty lines
 
-- If a directly reachable match covers a label, the match will get highlighted
-  (telling the user, "Label underneath!"), and the label will only be displayed
-  after the second input, that resolves the ambiguity.
+A character at the end of a line can be targeted by pressing `<space>` after it.
+There is no special mechanism behind this: you can set aliases for the newline
+character simply by defining a set in `opts.equivalence_classes` that contains
+it.
 
-- If a label gets positioned over another label (this might occur before EOL or
-  the window edge, when the labels need to be shifted left), an "empty" label
-  will be displayed until entering the second input.
-
-#### Cross-window motions
-
-In this case, the matches are sorted by their screen distance from the cursor,
-advancing in concentric circles. The one default motion that works this way is
-`gs` (`<Plug>(leap-from-window)`), searching in all other windows on the tab
-page. To create custom motions like this, e.g. bidirectional search in the
-current window, see [Extending Leap](#extending-leap).
+Empty lines can also be targeted, by pressing the newline alias twice
+(`<space><space>` by default). This latter is a slightly more magical feature,
+but fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
 
 #### Visual and Operator-pending mode
 
@@ -428,17 +422,23 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are inclusive (`:h inclusive`), and the
 `v` modifier (`:h o_v`) works as expected on them.
 
-#### Jumping to the end of the line and to empty lines
+#### Cross-window motions
 
-A character at the end of a line can be targeted by pressing `<space>` after it.
-There is no special mechanism behind this: you can set aliases for the newline
-character simply by defining a set in `opts.equivalence_classes` that contains
-it.
+In this case, the matches are sorted by their screen distance from the cursor,
+advancing in concentric circles. The one default motion that works this way is
+`gs` (`<Plug>(leap-from-window)`), searching in all other windows on the tab
+page. To create custom motions like this, e.g. bidirectional search in the
+current window, see [Extending Leap](#extending-leap).
 
-Empty lines can also be targeted, by pressing the newline alias twice
-(`<space><space>` by default). This latter is a slightly more magical feature,
-but fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
+#### Smart autojump
+
+Leap automatically jumps to the first match if the remaining matches can be
+covered by a limited set of "safe" target labels (keys you would not use right
+after a jump), but stays in place, and switches to an extended, more
+comfortable label set otherwise (the trade-off becomes more and more acceptable
+as the number of targets increases, since the probability of aiming for the
+very first target becomes less and less). For fine-tuning, see `:h leap-config`
+(`labels` and `safe_labels`).
 
 #### Repeat and traversal
 
@@ -447,7 +447,7 @@ to the previous one (`special_keys.repeat_search`).
 
 After entering at least one input character, `<enter>` initiates "traversal"
 mode, moving on to the next match on each keypress
-(`special_keys.next_phase_one_target` or `special_keys.next_target`). In case
+(`special_keys.next_phase_one_target` and `special_keys.next_target`). In case
 you accidentally overshoot your target, `<tab>` can revert the previous jump(s)
 (`special_keys.prev_target`). Note that if the safe label set is in use, the
 labels will remain available the whole time!
@@ -468,15 +468,15 @@ labels will remain available the whole time!
   direction to follow), but you can still accept the first (presumably only)
   match with `<enter>`, even after one input.
 
-#### Smart autojump
+#### Resolving highlighting conflicts in phase one
 
-Leap automatically jumps to the first match if the remaining matches can be
-covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended, more
-comfortable label set otherwise (the trade-off becomes more and more acceptable
-as the number of targets increases, since the probability of aiming for the
-very first target becomes less and less). For fine-tuning, see `:h leap-config`
-(`labels` and `safe_labels`).
+- If a directly reachable match covers a label, the match will get highlighted
+  (telling the user, "Label underneath!"), and the label will only be displayed
+  after the second input, that resolves the ambiguity.
+
+- If a label gets positioned over another label (this might occur before EOL or
+  the window edge, when the labels need to be shifted left), an "empty" label
+  will be displayed until entering the second input.
 
 ## Configuration
 
