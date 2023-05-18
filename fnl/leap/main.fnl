@@ -460,15 +460,15 @@ is either labeled (C) or not (B).
                        (setmetatable {} {: __index})))
 
   ; Ephemeral state (current call).
-  (local vars  
-          ; Show beacons (labels & match highlights) ahead of time,
-          ; right after the first input?
-         {:aot? (not (or (= max-phase-one-targets 0)
-                         empty-label-lists?
-                         multi-select?
-                         user-given-targets?))
-          :curr-idx 0  ; for traversal mode
-          :errmsg nil})
+  (local vars {:aot?
+               ; Show beacons (labels & match highlights) ahead of time,
+               ; right after the first input?
+               (not (or (= max-phase-one-targets 0)
+                        empty-label-lists?
+                        multi-select?
+                        user-given-targets?))
+               :curr-idx 0  ; for traversal mode
+               :errmsg nil})
 
   ; Macros
 
@@ -872,17 +872,15 @@ is either labeled (C) or not (B).
          (do-action (. targets* ,idx))
          (exit)))
 
-  (if count
-      (if (> count (length targets*))
-          (exit-early)
-          (exit-with-action-on count))
-
-      (= (length targets*) 1)
-      (exit-with-action-on 1))
+  (if count (if (> count (length targets*))
+                (exit-early)
+                (exit-with-action-on count))
+      (= (length targets*) 1) (exit-with-action-on 1))
 
   (when targets*.autojump?
     (set vars.curr-idx 1)
     (do-action (. targets* 1)))
+
   ; This sets label states (i.e., modifies targets*) in each cycle.
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
   (when-not in-final
@@ -903,7 +901,8 @@ is either labeled (C) or not (B).
 
   (local [idx _] (get-target-with-active-primary-label targets* in-final))
   (if idx (exit-with-action-on idx)
-      targets*.autojump? (do (vim.fn.feedkeys in-final :i) (exit))
+      targets*.autojump? (do (vim.fn.feedkeys in-final :i)
+                             (exit))
       (exit-early))
 
   ; Do return something here, otherwise Fennel automatically inserts
