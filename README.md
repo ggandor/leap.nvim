@@ -2,21 +2,21 @@
 
 # leap.nvim
 
-Leap is a general-purpose motion plugin for [Neovim](https://neovim.io/), with
-the ultimate goal of establishing a new standard interface for moving around in
-the visible area in Vim-like modal editors.
+Leap is a general-purpose motion plugin for Neovim, building and improving
+primarily on [vim-sneak](https://github.com/justinmk/vim-sneak), with the
+ultimate goal of establishing a new standard interface for moving around in the
+visible area in Vim-like modal editors.
 
 ![showcase](../media/showcase.gif?raw=true)
 
 ### How to use it (TL;DR)
 
-Leap allows you to jump to any positions in the visible editor area by entering
-a 2-character search pattern, and then potentially a label character to pick
-your target from multiple matches, similar to
-[Sneak](https://github.com/justinmk/vim-sneak). The novel idea in Leap is its
-"clairvoyant" ability: you get a **live preview** of the target labels - by
-mapping possible futures, Leap can show you which key(s) you will need to press
-_before_ you actually need to do that.
+Leap's default motions allow you to jump to any positions in the visible editor
+area by entering a 2-character search pattern, and then potentially a label
+character to pick your target from multiple matches, in a manner similar to
+Sneak. The novel idea in Leap is its "clairvoyant" ability: you get a **live
+preview** of the target labels - by mapping possible futures, Leap can show you
+which key(s) you will need to press _before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -46,7 +46,7 @@ At the same time, it **reduces mental effort to almost zero**:
   target the whole time.
 
 - You _don't have to make decisions on the fly_: the sequence you should enter
-  is determined from the very beginning.
+  is determined from the very beginning - just type out what you see.
 
 - You _don't have to pause in the middle_: if typing at a moderate speed, at
   each step you already know what the immediate next keypress should be, and
