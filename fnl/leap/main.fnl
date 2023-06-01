@@ -230,6 +230,7 @@ char separately.
 conflicts can occur:
 
 (A) An unlabeled match covers a label.
+
     Fix: Force highlighting of the unlabeled match, to make the user
     aware ('Label underneath!').
 
@@ -243,8 +244,9 @@ conflicts can occur:
 
     Fix: Force highlighting of the unlabeled match, to avoid confusion.
 
-(C) Two labels on top of each other. (Possible if one of the
-    labels is shifted, like above.)
+(C) Two labels on top of each other. (Possible if one of the labels is
+    shifted, like above.)
+
     Fix: Display an 'empty' label at the position.
 
 Note: The three cases are mutually exclusive. Case A implies the label
@@ -255,9 +257,9 @@ is either labeled (C) or not (B).
   ; Tables to help us check potential conflicts (we'll be filling them
   ; as we go).
   ; { "<bufnr> <winid> <lnum> <col>" = <target> }
-  (let [pos-unlabeled-match {}
-        pos-labeled-match {}
-        pos-label {}]
+  (let [unlabeled-match-positions {}
+        labeled-match-positions {}
+        label-positions {}]
     ; Note: A1-A2, B1-B2, C1-C2 are all necessary, as we do only one
     ; traversal run, and we don't assume anything about the direction
     ; and the ordering; we always resolve the conflict at the second
@@ -266,79 +268,77 @@ is either labeled (C) or not (B).
     (each [_ target (ipairs targets)]
       (when-not target.empty-line?
         (local {: bufnr : winid} target.wininfo)
-        (local [lnum col] target.pos)
-        (local col-ch2 (+ col (string.len (. target.chars 1))))
-        (macro ->key [col*]
-          `(.. bufnr " " winid " " lnum " " ,col*))
-        ; Beacon can be nil (if label-state is inactive).
+        (local [lnum col-ch1] target.pos)
+        (local col-ch2 (+ col-ch1 (string.len (. target.chars 1))))
+        (macro ->key [col*] `(.. bufnr " " winid " " lnum " " ,col*))
+        ; `beacon` can be nil (if label-state is inactive).
         (if (and target.label target.beacon)
             (let [label-offset (. target.beacon 1)
-                  col-label (+ col label-offset)
+                  col-label (+ col-ch1 label-offset)
                   shifted-label? (= col-label col-ch2)]
-              ; ------------------------------
+
               ; (A1)
-              ;   [a][b][L][-]  --> nil       | current
-              ;   [-][-][a][c]  --> match-hl  | other
-              ;          ^                    | column to check
+              ;   [a][b][L][-]  --> nil beacon            | current
+              ;   [-][-][a][c]  --> add match highlight   | other
+              ;          ^                                | column to check
               ; or
-              ;   [a][a][L]     --> nil
-              ;   [-][a][b]     --> match-hl
+              ;   [a][a][L]     --> nil beacon
+              ;   [-][a][b]     --> add match highlight
               ;          ^
-              (case (. pos-unlabeled-match (->key col-label))
+              (case (. unlabeled-match-positions (->key col-label))
                 other (do (set target.beacon nil)
                           (set-beacon-to-match-hl other)))
-              ; ------------------------------
+
               ; (B1)
               ;   [-][a][L]|
-              ;   [a][a][-]|    --> match-hl
+              ;   [a][a][-]|    --> add match highlight
               ;       ^
               (when shifted-label?
-                (case (. pos-unlabeled-match (->key col))
+                (case (. unlabeled-match-positions (->key col-ch1))
                   other (set-beacon-to-match-hl other)))
-              ; ------------------------------
+
               ; (C)
-              ;   [-][a][L]|    --> nil
-              ;   [a][a][L]|    --> empty
+              ;   [-][a][L]|    --> nil beacon
+              ;   [a][a][L]|    --> set empty label
               ;          ^
               ; or
-              ;   [a][a][L]|    --> nil
-              ;   [-][a][L]|    --> empty
+              ;   [a][a][L]|    --> nil beacon
+              ;   [-][a][L]|    --> set empty label
               ;          ^
-              (case (. pos-label (->key col-label))
+              (case (. label-positions (->key col-label))
                 other (do (set target.beacon nil)
                           (set-beacon-to-empty-label other)))
-              ; ------------------------------
+
               ; NOTE: We should register the label position _after_
               ; checking case C, as we don't want to literally chase our
               ; own tail, i.e., our own label.
-              (tset pos-label (->key col-label) target)
-              (tset pos-labeled-match (->key col) target)
+              (tset label-positions (->key col-label) target)
+              (tset labeled-match-positions (->key col-ch1) target)
               (when-not shifted-label?
-                (tset pos-labeled-match (->key col-ch2) target)))
+                (tset labeled-match-positions (->key col-ch2) target)))
 
             (not target.label)
             (do
-              (each [_ key (ipairs [(->key col) (->key col-ch2)])]
-                (tset pos-unlabeled-match key target)
-                ; ------------------------------
-                ; (A2)
-                ;   [-][-][a][b]  --> match-hl
-                ;   [a][c][L][-]  --> nil
-                ;          ^
-                ; and
-                ;   [-][a][b]     --> match-hl
-                ;   [a][a][L]     --> nil
-                ;          ^
-                (case (. pos-label key)
+              ; (A2)
+              ;   [-][-][a][b]  --> add match highlight
+              ;   [a][c][L][-]  --> nil beacon
+              ;          ^
+              ; or
+              ;   [-][a][b]     --> add match highlight
+              ;   [a][a][L]     --> nil beacon
+              ;          ^
+              (each [_ key (ipairs [(->key col-ch1) (->key col-ch2)])]
+                (tset unlabeled-match-positions key target)
+                (case (. label-positions key)
                   other (do (set other.beacon nil)
                             (set-beacon-to-match-hl target))))
-              ; ------------------------------
+
               ; (B2)
-              ;   [a][a][-]|      --> match-hl
+              ;   [a][a][-]|      --> add match highlight
               ;   [-][a][L]|
               ;          ^
               (local col-after (+ col-ch2 (string.len (. target :chars 2))))
-              (case (. pos-label (->key col-after))
+              (case (. label-positions (->key col-after))
                 other (set-beacon-to-match-hl target))))))))
 
 

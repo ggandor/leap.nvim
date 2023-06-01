@@ -242,9 +242,9 @@ local function set_beacon_to_empty_label(target)
   return nil
 end
 local function resolve_conflicts(targets)
-  local pos_unlabeled_match = {}
-  local pos_labeled_match = {}
-  local pos_label = {}
+  local unlabeled_match_positions = {}
+  local labeled_match_positions = {}
+  local label_positions = {}
   for _, target in ipairs(targets) do
     if not target["empty-line?"] then
       local _local_36_ = target.wininfo
@@ -252,14 +252,14 @@ local function resolve_conflicts(targets)
       local winid = _local_36_["winid"]
       local _local_37_ = target.pos
       local lnum = _local_37_[1]
-      local col = _local_37_[2]
-      local col_ch2 = (col + string.len(target.chars[1]))
+      local col_ch1 = _local_37_[2]
+      local col_ch2 = (col_ch1 + string.len(target.chars[1]))
       if (target.label and target.beacon) then
         local label_offset = target.beacon[1]
-        local col_label = (col + label_offset)
+        local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _38_ = pos_unlabeled_match[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)]
+          local _38_ = unlabeled_match_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)]
           if (nil ~= _38_) then
             local other = _38_
             target.beacon = nil
@@ -268,7 +268,7 @@ local function resolve_conflicts(targets)
           end
         end
         if shifted_label_3f then
-          local _40_ = pos_unlabeled_match[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col)]
+          local _40_ = unlabeled_match_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch1)]
           if (nil ~= _40_) then
             local other = _40_
             set_beacon_to_match_hl(other)
@@ -277,7 +277,7 @@ local function resolve_conflicts(targets)
         else
         end
         do
-          local _43_ = pos_label[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)]
+          local _43_ = label_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)]
           if (nil ~= _43_) then
             local other = _43_
             target.beacon = nil
@@ -285,16 +285,16 @@ local function resolve_conflicts(targets)
           else
           end
         end
-        pos_label[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)] = target
-        pos_labeled_match[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col)] = target
+        label_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_label)] = target
+        labeled_match_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch1)] = target
         if not shifted_label_3f then
-          pos_labeled_match[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch2)] = target
+          labeled_match_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch2)] = target
         else
         end
       elseif not target.label then
-        for _0, key in ipairs({(bufnr .. " " .. winid .. " " .. lnum .. " " .. col), (bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch2)}) do
-          pos_unlabeled_match[key] = target
-          local _46_ = pos_label[key]
+        for _0, key in ipairs({(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch1), (bufnr .. " " .. winid .. " " .. lnum .. " " .. col_ch2)}) do
+          unlabeled_match_positions[key] = target
+          local _46_ = label_positions[key]
           if (nil ~= _46_) then
             local other = _46_
             other.beacon = nil
@@ -303,7 +303,7 @@ local function resolve_conflicts(targets)
           end
         end
         local col_after = (col_ch2 + string.len(target.chars[2]))
-        local _48_ = pos_label[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_after)]
+        local _48_ = label_positions[(bufnr .. " " .. winid .. " " .. lnum .. " " .. col_after)]
         if (nil ~= _48_) then
           local other = _48_
           set_beacon_to_match_hl(target)
