@@ -343,6 +343,12 @@ Note that the above function will check for conflicts with any custom mappings
 created by you or other plugins, and will _not_ overwrite them, unless
 explicitly told so (called with a `true` argument).
 
+### Lazy loading
+
+...is all the rage now, but doing it manually or via some plugin manager is
+completely redundant (that is, _not_ necessary), as Leap lazy-loads itself on
+the first actual invocation of the `leap` function.
+
 ## Usage
 
 [Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
