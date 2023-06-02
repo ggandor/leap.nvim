@@ -141,13 +141,14 @@ local function set_label_states(targets, _13_)
   return nil
 end
 local function populate_sublists(targets)
-  local function _18_(self, ch)
-    return rawget(self, __3erepresentative_char(ch))
-  end
-  local function _19_(self, ch, sublist)
+  targets.sublists = {}
+  local function _18_(self, ch, sublist)
     return rawset(self, __3erepresentative_char(ch), sublist)
   end
-  targets.sublists = setmetatable({}, {__index = _18_, __newindex = _19_})
+  local function _19_(self, ch)
+    return rawget(self, __3erepresentative_char(ch))
+  end
+  setmetatable(targets.sublists, {__newindex = _18_, __index = _19_})
   for _, _20_ in ipairs(targets) do
     local _each_21_ = _20_
     local _each_22_ = _each_21_["chars"]
@@ -247,12 +248,12 @@ local function resolve_conflicts(targets)
   local label_positions = {}
   for _, target in ipairs(targets) do
     if not target["empty-line?"] then
-      local _local_36_ = target.wininfo
-      local bufnr = _local_36_["bufnr"]
-      local winid = _local_36_["winid"]
-      local _local_37_ = target.pos
-      local lnum = _local_37_[1]
-      local col_ch1 = _local_37_[2]
+      local _let_36_ = target.wininfo
+      local bufnr = _let_36_["bufnr"]
+      local winid = _let_36_["winid"]
+      local _let_37_ = target.pos
+      local lnum = _let_37_[1]
+      local col_ch1 = _let_37_[2]
       local col_ch2 = (col_ch1 + string.len(target.chars[1]))
       if (target.label and target.beacon) then
         local label_offset = target.beacon[1]

@@ -150,6 +150,7 @@ char separately.
   },
 }
 "
+  (set targets.sublists {})
   ; Setting a metatable to handle case insensitivity and equivalence
   ; classes (in both cases: multiple keys -> one value).
   ; If `ch` is not found, try to get a sublist belonging to some common
@@ -157,11 +158,11 @@ char separately.
   ; or, if case insensivity is set, the lowercased verison of `ch`.
   ; (And in the above cases, `ch` will not be found, since we also
   ; redirect to the common keys when inserting a new sublist.)
-  (set targets.sublists
-       (setmetatable {}
-         {:__index (fn [self ch] (rawget self (->representative-char ch)))
-          :__newindex (fn [self ch sublist]
-                        (rawset self (->representative-char ch) sublist))}))
+  (setmetatable targets.sublists
+    {:__newindex (fn [self ch sublist]
+                   (rawset self (->representative-char ch) sublist))
+     :__index    (fn [self ch]
+                   (rawget self (->representative-char ch)))})
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     ; "\n"-s after empty lines don't have a `ch2`. Still, we put these
@@ -254,92 +255,93 @@ is not shifted (if there is a match after us, we cannot be at the edge).
 And if we have a target with a shifted label, then the conflicting other
 is either labeled (C) or not (B).
 "
-  ; Tables to help us check potential conflicts (we'll be filling them
-  ; as we go).
-  ; { "<bufnr> <winid> <lnum> <col>" = <target> }
+        ; Tables to help us check potential conflicts (we'll be filling
+        ; them as we go):
+        ; { "<bufnr> <winid> <lnum> <col>" = <target> }
   (let [unlabeled-match-positions {}
         labeled-match-positions {}
         label-positions {}]
-    ; Note: A1-A2, B1-B2, C1-C2 are all necessary, as we do only one
-    ; traversal run, and we don't assume anything about the direction
-    ; and the ordering; we always resolve the conflict at the second
-    ; target - at that point, the first one has already been registered
-    ; as a potential source of conflict.
     (each [_ target (ipairs targets)]
       (when-not target.empty-line?
-        (local {: bufnr : winid} target.wininfo)
-        (local [lnum col-ch1] target.pos)
-        (local col-ch2 (+ col-ch1 (string.len (. target.chars 1))))
-        (macro ->key [col*] `(.. bufnr " " winid " " lnum " " ,col*))
-        ; `beacon` can be nil (if label-state is inactive).
-        (if (and target.label target.beacon)
-            (let [label-offset (. target.beacon 1)
-                  col-label (+ col-ch1 label-offset)
-                  shifted-label? (= col-label col-ch2)]
+        (let [{: bufnr : winid} target.wininfo
+              [lnum col-ch1] target.pos
+              col-ch2 (+ col-ch1 (string.len (. target.chars 1)))]
+          (macro ->key [col] `(.. bufnr " " winid " " lnum " " ,col))
 
-              ; (A1)
-              ;   [a][b][L][-]  --> nil beacon            | current
-              ;   [-][-][a][c]  --> add match highlight   | other
-              ;          ^                                | column to check
-              ; or
-              ;   [a][a][L]     --> nil beacon
-              ;   [-][a][b]     --> add match highlight
-              ;          ^
-              (case (. unlabeled-match-positions (->key col-label))
-                other (do (set target.beacon nil)
-                          (set-beacon-to-match-hl other)))
+          ; Note: A1-A2, B1-B2, C1-C2 are all necessary, as we do only
+          ; one traversal run, and we don't assume anything about the
+          ; direction and the ordering; we always resolve the conflict
+          ; at the second target - at that point, the first one has
+          ; already been registered as a potential source of conflict.
 
-              ; (B1)
-              ;   [-][a][L]|
-              ;   [a][a][-]|    --> add match highlight
-              ;       ^
-              (when shifted-label?
-                (case (. unlabeled-match-positions (->key col-ch1))
-                  other (set-beacon-to-match-hl other)))
+          (if (and target.label target.beacon) ; beacon=nil if label is inactive
+              (let [label-offset (. target.beacon 1)
+                    col-label (+ col-ch1 label-offset)
+                    shifted-label? (= col-label col-ch2)]
 
-              ; (C)
-              ;   [-][a][L]|    --> nil beacon
-              ;   [a][a][L]|    --> set empty label
-              ;          ^
-              ; or
-              ;   [a][a][L]|    --> nil beacon
-              ;   [-][a][L]|    --> set empty label
-              ;          ^
-              (case (. label-positions (->key col-label))
-                other (do (set target.beacon nil)
-                          (set-beacon-to-empty-label other)))
+                ; (A1)
+                ;   [a][b][L][-]  --> nil beacon            | current
+                ;   [-][-][a][c]  --> add match highlight   | other
+                ;          ^                                | column to check
+                ; or
+                ;   [a][a][L]     --> nil beacon
+                ;   [-][a][b]     --> add match highlight
+                ;          ^
+                (case (. unlabeled-match-positions (->key col-label))
+                  other (do (set target.beacon nil)
+                            (set-beacon-to-match-hl other)))
 
-              ; NOTE: We should register the label position _after_
-              ; checking case C, as we don't want to literally chase our
-              ; own tail, i.e., our own label.
-              (tset label-positions (->key col-label) target)
-              (tset labeled-match-positions (->key col-ch1) target)
-              (when-not shifted-label?
-                (tset labeled-match-positions (->key col-ch2) target)))
+                ; (B1)
+                ;   [-][a][L]|
+                ;   [a][a][-]|    --> add match highlight
+                ;       ^
+                (when shifted-label?
+                  (case (. unlabeled-match-positions (->key col-ch1))
+                    other (set-beacon-to-match-hl other)))
 
-            (not target.label)
-            (do
-              ; (A2)
-              ;   [-][-][a][b]  --> add match highlight
-              ;   [a][c][L][-]  --> nil beacon
-              ;          ^
-              ; or
-              ;   [-][a][b]     --> add match highlight
-              ;   [a][a][L]     --> nil beacon
-              ;          ^
-              (each [_ key (ipairs [(->key col-ch1) (->key col-ch2)])]
-                (tset unlabeled-match-positions key target)
-                (case (. label-positions key)
-                  other (do (set other.beacon nil)
-                            (set-beacon-to-match-hl target))))
+                ; (C)
+                ;   [-][a][L]|    --> nil beacon
+                ;   [a][a][L]|    --> set empty label
+                ;          ^
+                ; or
+                ;   [a][a][L]|    --> nil beacon
+                ;   [-][a][L]|    --> set empty label
+                ;          ^
+                (case (. label-positions (->key col-label))
+                  other (do (set target.beacon nil)
+                            (set-beacon-to-empty-label other)))
 
-              ; (B2)
-              ;   [a][a][-]|      --> add match highlight
-              ;   [-][a][L]|
-              ;          ^
-              (local col-after (+ col-ch2 (string.len (. target :chars 2))))
-              (case (. label-positions (->key col-after))
-                other (set-beacon-to-match-hl target))))))))
+                ; NOTE: We should register the label position _after_
+                ; checking case C, as we don't want to literally chase our
+                ; own tail, i.e., our own label.
+                (tset label-positions (->key col-label) target)
+                (tset labeled-match-positions (->key col-ch1) target)
+                (when-not shifted-label?
+                  (tset labeled-match-positions (->key col-ch2) target)))
+
+              (not target.label)
+              (do
+                ; (A2)
+                ;   [-][-][a][b]  --> add match highlight
+                ;   [a][c][L][-]  --> nil beacon
+                ;          ^
+                ; or
+                ;   [-][a][b]     --> add match highlight
+                ;   [a][a][L]     --> nil beacon
+                ;          ^
+                (each [_ key (ipairs [(->key col-ch1) (->key col-ch2)])]
+                  (tset unlabeled-match-positions key target)
+                  (case (. label-positions key)
+                    other (do (set other.beacon nil)
+                              (set-beacon-to-match-hl target))))
+
+                ; (B2)
+                ;   [a][a][-]|      --> add match highlight
+                ;   [-][a][L]|
+                ;          ^
+                (local col-after (+ col-ch2 (string.len (. target :chars 2))))
+                (case (. label-positions (->key col-after))
+                  other (set-beacon-to-match-hl target)))))))))
 
 
 (fn set-beacons [targets {: no-labels? : user-given-targets? : aot?}]
