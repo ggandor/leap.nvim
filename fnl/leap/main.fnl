@@ -357,9 +357,17 @@ is either labeled (C) or not (B).
           (when aot?
             (resolve-conflicts targets)))))
 
+(fn with-highlight-chores [opts task]
+  (do (local opts (or opts {}))
+      (hl:cleanup opts.hl-affected-windows)
+      (hl:apply-backdrop (or opts.backdrop-ranges []))
+      (task)
+      (hl:highlight-cursor)
+      (vim.cmd :redraw)))
 
-(fn light-up-beacons [targets ?start ?end]
-  (for [i (or ?start 1) (or ?end (length targets))]
+(fn light-up-beacons [targets opts]
+  (local opts (or opts {}))
+  (for [i (or opts.start 1) (or opts.end (length targets))]
     (local target (. targets i))
     (case target.beacon
       [offset virttext]
@@ -486,13 +494,29 @@ is either labeled (C) or not (B).
          (when vars.errmsg (echo vars.errmsg))
          (exit)))
 
-  (macro with-highlight-chores [...]
-    `(do (hl:cleanup hl-affected-windows)
-         (when-not count
-           (hl:apply-backdrop backward? ?target-windows))
-         (do ,...)
-         (hl:highlight-cursor)
-         (vim.cmd :redraw)))
+  (local backdrop-ranges [])
+  (when (and (pcall api.nvim_get_hl_by_name hl.group.backdrop false) (not count))
+    (if ?target-windows
+      (each [_ winid (ipairs ?target-windows)]
+        (local wininfo (. (vim.fn.getwininfo winid) 1))
+        (local range {:bufnr wininfo.bufnr
+                      :startrow (dec wininfo.topline)
+                      :startcol 0
+                      :endrow (dec wininfo.botline)
+                      :endcol -1})
+        (table.insert backdrop-ranges range))
+      (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
+            [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
+            [startrow startcol endrow endcol] (if backward?
+                               [win-top 0 curline curcol]
+                               [curline (inc curcol) win-bot -1])]
+        (local wininfo (. (vim.fn.getwininfo 0) 1))
+        (local range {:bufnr wininfo.bufnr
+                      :startrow startrow
+                      :startcol startcol
+                      :endrow endrow
+                      :endcol endcol})
+        (table.insert backdrop-ranges range))))
 
   ; Helper functions ///
 
@@ -644,7 +668,7 @@ is either labeled (C) or not (B).
           (values start end))))
 
   (fn get-first-pattern-input []
-    (with-highlight-chores (echo ""))  ; clean up the command line
+    (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (echo "")))  ; clean up the command line
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
@@ -663,7 +687,7 @@ is either labeled (C) or not (B).
                ; char<enter> partial input (but it implies not needing
                ; to show beacons).
                (not count))
-      (with-highlight-chores (light-up-beacons targets)))
+       (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets))))
     (get-input-by-keymap prompt))
 
   (fn get-full-pattern-input []
@@ -685,9 +709,8 @@ is either labeled (C) or not (B).
       (when targets.label-set
         (set-label-states targets {: group-offset}))
       (set-beacons targets {:aot? vars.aot? : no-labels? : user-given-targets?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
-        (light-up-beacons targets start end)))
+      (local (start end) (get-highlighted-idx-range targets no-labels?))
+      (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn loop [group-offset first-invoc?]
       (display group-offset)
@@ -751,9 +774,8 @@ is either labeled (C) or not (B).
     ; ---
     (fn display []
       (set-beacons targets {: no-labels? :aot? vars.aot? : user-given-targets?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
-        (light-up-beacons targets start end)))
+      (local (start end) (get-highlighted-idx-range targets no-labels?))
+      (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
@@ -865,7 +887,7 @@ is either labeled (C) or not (B).
       targets**
       ; The action callback should expect a list in this case.
       ; It might also get user input, so keep the beacons highlighted.
-      (do (with-highlight-chores (light-up-beacons targets**))
+      (do (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets**)))
           (do-action targets**)))
     (exit))
 
