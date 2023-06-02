@@ -24,7 +24,8 @@ which key(s) you will need to press _before_ you actually need to do that.
 - After typing the first character, you see "labels" appearing next to some of
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
-  No need to be bothered by remaining labels, just continue editing.
+  No need to be bothered by remaining labels - those are guaranteed "safe"
+  letters -, just continue editing.
 - Else: select a label. In case of multiple groups, first switch to the desired
   one, using `<space>` (step back with `<tab>`, if needed).
 
@@ -116,10 +117,10 @@ characters altogether to reach a given target.
 ### Auxiliary principles
 
 - Optimize for the common case, not the pathological: a good example of this is
-  the Sneak-like "one-character labels in multiple groups"-approach, which can
-  become awkward for, say, 200 targets, but eliminates all kinds of edge cases
-  and implementation problems, and allows for features like
-  [multiselect](#extending-leap).
+  the Sneak-like "use strictly one-character labels, and switch between
+  groups"-approach, which can become awkward for, say, 200 targets, but
+  eliminates all kinds of edge cases and implementation problems, and allows
+  for features like [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on Vim's native interface, and aim for synergy as much as possible. The
@@ -433,18 +434,21 @@ Note that each of the forward motions are inclusive (`:h inclusive`), and the
 In this case, the matches are sorted by their screen distance from the cursor,
 advancing in concentric circles. The one default motion that works this way is
 `gs` (`<Plug>(leap-from-window)`), searching in all other windows on the tab
-page. To create custom motions like this, e.g. bidirectional search in the
-current window, see [Extending Leap](#extending-leap).
+page.
+
+To create custom motions like this, e.g. bidirectional search in the current
+window, see [Extending Leap](#extending-leap).
 
 #### Smart autojump
 
 Leap automatically jumps to the first match if the remaining matches can be
 covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended, more
-comfortable label set otherwise (the trade-off becomes more and more acceptable
-as the number of targets increases, since the probability of aiming for the
-very first target becomes less and less). For fine-tuning, see `:h leap-config`
-(`labels` and `safe_labels`).
+after a jump), but stays in place, and switches to an extended label set
+otherwise. (The trade-off becomes more and more acceptable as the number of
+targets increases, since the probability of aiming for the very first target
+becomes less and less.)
+
+For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
 
 #### Repeat and traversal
 
