@@ -357,13 +357,36 @@ is either labeled (C) or not (B).
           (when aot?
             (resolve-conflicts targets)))))
 
-(fn with-highlight-chores [opts task]
-  (do (local opts (or opts {}))
-      (hl:cleanup opts.hl-affected-windows)
-      (hl:apply-backdrop (or opts.backdrop-ranges []))
+; State that is persisted between the API invocations of a single usage.
+(local target-state {:backdrop-ranges nil
+                     :hl-affected-windows nil
+                     })
+
+
+(fn with-highlight-chores [task]
+  (do (local hl-affected-windows (or target-state.hl-affected-windows []))
+      (local backdrop-ranges (or target-state.backdrop-ranges []))
+      (hl:cleanup (or hl-affected-windows []))
+      (hl:apply-backdrop (or backdrop-ranges []))
       (task)
       (hl:highlight-cursor)
       (vim.cmd :redraw)))
+
+(fn pre-exit []
+  (set target-state.hl-affected-windows nil)
+  (set target-state.backdrop-ranges nil))
+
+(macro exit []
+  `(do (hl:cleanup target-state.hl-affected-windows)
+       (pre-exit)
+       (exec-user-autocmds :LeapLeave)
+       (lua :return)))
+
+(fn prebeacon [opts]
+  (set target-state.backdrop-ranges opts.backdrop-ranges) 
+  (set target-state.hl-affected-windows opts.hl-affected-windows) 
+  (with-highlight-chores (fn []))
+)
 
 (fn light-up-beacons [targets opts]
   (local opts (or opts {}))
@@ -399,12 +422,6 @@ is either labeled (C) or not (B).
                            :inclusive_op nil
                            :offset nil}
               :saved_editor_opts {}})
-
-; State that is persisted between the API invocations of a single usage
-(local target-state {:backdrop-ranges nil
-                     :hl-affected-windows nil
-                     })
-
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
@@ -486,11 +503,6 @@ is either labeled (C) or not (B).
                :errmsg nil})
 
   ; Macros
-
-  (macro exit []
-    `(do (hl:cleanup hl-affected-windows)
-         (exec-user-autocmds :LeapLeave)
-         (lua :return)))
 
   ; Be sure not to call the macro twice accidentally,
   ; `handle-interrupted-change-op!` moves the cursor!
@@ -673,7 +685,7 @@ is either labeled (C) or not (B).
           (values start end))))
 
   (fn get-first-pattern-input []
-    (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (echo "")))  ; clean up the command line
+    (with-highlight-chores (fn [] (echo "")))  ; clean up the command line
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
@@ -692,7 +704,7 @@ is either labeled (C) or not (B).
                ; char<enter> partial input (but it implies not needing
                ; to show beacons).
                (not count))
-       (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets))))
+       (with-highlight-chores (fn [] (light-up-beacons targets))))
     (get-input-by-keymap prompt))
 
   (fn get-full-pattern-input []
@@ -715,7 +727,7 @@ is either labeled (C) or not (B).
         (set-label-states targets {: group-offset}))
       (set-beacons targets {:aot? vars.aot? : no-labels? : user-given-targets?})
       (local (start end) (get-highlighted-idx-range targets no-labels?))
-      (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets {: start : end}))))
+      (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn loop [group-offset first-invoc?]
       (display group-offset)
@@ -780,7 +792,7 @@ is either labeled (C) or not (B).
     (fn display []
       (set-beacons targets {: no-labels? :aot? vars.aot? : user-given-targets?})
       (local (start end) (get-highlighted-idx-range targets no-labels?))
-      (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets {: start : end}))))
+      (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
@@ -816,6 +828,8 @@ is either labeled (C) or not (B).
   ; waiting for:
 
   (exec-user-autocmds :LeapEnter)
+
+  (prebeacon {: backdrop-ranges : hl-affected-windows})
 
   (local (in1 ?in2) (if dot-repeat? (if state.dot_repeat.callback
                                         (values true true)
@@ -892,7 +906,7 @@ is either labeled (C) or not (B).
       targets**
       ; The action callback should expect a list in this case.
       ; It might also get user input, so keep the beacons highlighted.
-      (do (with-highlight-chores {: backdrop-ranges : hl-affected-windows} (fn [] (light-up-beacons targets**)))
+      (do (with-highlight-chores (fn [] (light-up-beacons targets**)))
           (do-action targets**)))
     (exit))
 
