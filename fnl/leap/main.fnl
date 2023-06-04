@@ -387,7 +387,7 @@ is either labeled (C) or not (B).
 
 ; Main ///1
 
-; State that is persisted between invocations.
+; State that is persisted between usages.
 (local state {:args nil  ; arguments passed to the current call
               :source_window nil
               :repeat {:in1 nil
@@ -399,6 +399,11 @@ is either labeled (C) or not (B).
                            :inclusive_op nil
                            :offset nil}
               :saved_editor_opts {}})
+
+; State that is persisted between the API invocations of a single usage
+(local target-state {:backdrop-ranges nil
+                     :hl-affected-windows nil
+                     })
 
 
 (fn leap [kwargs]
