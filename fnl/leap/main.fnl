@@ -357,9 +357,40 @@ is either labeled (C) or not (B).
           (when aot?
             (resolve-conflicts targets)))))
 
+; State that is persisted between the API invocations of a single usage.
+(local target-state {:backdrop-ranges nil
+                     :hl-affected-windows nil
+                     })
 
-(fn light-up-beacons [targets ?start ?end]
-  (for [i (or ?start 1) (or ?end (length targets))]
+
+(fn with-highlight-chores [task]
+  (do (local hl-affected-windows (or target-state.hl-affected-windows []))
+      (local backdrop-ranges (or target-state.backdrop-ranges []))
+      (hl:cleanup (or hl-affected-windows []))
+      (hl:apply-backdrop (or backdrop-ranges []))
+      (task)
+      (hl:highlight-cursor)
+      (vim.cmd :redraw)))
+
+(fn pre-exit []
+  (set target-state.hl-affected-windows nil)
+  (set target-state.backdrop-ranges nil))
+
+(macro exit []
+  `(do (hl:cleanup target-state.hl-affected-windows)
+       (pre-exit)
+       (exec-user-autocmds :LeapLeave)
+       (lua :return)))
+
+(fn prebeacon [opts]
+  (set target-state.backdrop-ranges opts.backdrop-ranges) 
+  (set target-state.hl-affected-windows opts.hl-affected-windows) 
+  (with-highlight-chores (fn []))
+)
+
+(fn light-up-beacons [targets opts]
+  (local opts (or opts {}))
+  (for [i (or opts.start 1) (or opts.end (length targets))]
     (local target (. targets i))
     (case target.beacon
       [offset virttext]
@@ -379,7 +410,7 @@ is either labeled (C) or not (B).
 
 ; Main ///1
 
-; State that is persisted between invocations.
+; State that is persisted between usages.
 (local state {:args nil  ; arguments passed to the current call
               :source_window nil
               :repeat {:in1 nil
@@ -391,7 +422,6 @@ is either labeled (C) or not (B).
                            :inclusive_op nil
                            :offset nil}
               :saved_editor_opts {}})
-
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
@@ -474,11 +504,6 @@ is either labeled (C) or not (B).
 
   ; Macros
 
-  (macro exit []
-    `(do (hl:cleanup hl-affected-windows)
-         (exec-user-autocmds :LeapLeave)
-         (lua :return)))
-
   ; Be sure not to call the macro twice accidentally,
   ; `handle-interrupted-change-op!` moves the cursor!
   (macro exit-early []
@@ -486,13 +511,29 @@ is either labeled (C) or not (B).
          (when vars.errmsg (echo vars.errmsg))
          (exit)))
 
-  (macro with-highlight-chores [...]
-    `(do (hl:cleanup hl-affected-windows)
-         (when-not count
-           (hl:apply-backdrop backward? ?target-windows))
-         (do ,...)
-         (hl:highlight-cursor)
-         (vim.cmd :redraw)))
+  (local backdrop-ranges [])
+  (when (and (pcall api.nvim_get_hl_by_name hl.group.backdrop false) (not count))
+    (if ?target-windows
+      (each [_ winid (ipairs ?target-windows)]
+        (local wininfo (. (vim.fn.getwininfo winid) 1))
+        (local range {:bufnr wininfo.bufnr
+                      :startrow (dec wininfo.topline)
+                      :startcol 0
+                      :endrow (dec wininfo.botline)
+                      :endcol -1})
+        (table.insert backdrop-ranges range))
+      (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
+            [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
+            [startrow startcol endrow endcol] (if backward?
+                               [win-top 0 curline curcol]
+                               [curline (inc curcol) win-bot -1])]
+        (local wininfo (. (vim.fn.getwininfo 0) 1))
+        (local range {:bufnr wininfo.bufnr
+                      :startrow startrow
+                      :startcol startcol
+                      :endrow endrow
+                      :endcol endcol})
+        (table.insert backdrop-ranges range))))
 
   ; Helper functions ///
 
@@ -644,7 +685,7 @@ is either labeled (C) or not (B).
           (values start end))))
 
   (fn get-first-pattern-input []
-    (with-highlight-chores (echo ""))  ; clean up the command line
+    (with-highlight-chores (fn [] (echo "")))  ; clean up the command line
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
@@ -663,7 +704,7 @@ is either labeled (C) or not (B).
                ; char<enter> partial input (but it implies not needing
                ; to show beacons).
                (not count))
-      (with-highlight-chores (light-up-beacons targets)))
+       (with-highlight-chores (fn [] (light-up-beacons targets))))
     (get-input-by-keymap prompt))
 
   (fn get-full-pattern-input []
@@ -685,9 +726,8 @@ is either labeled (C) or not (B).
       (when targets.label-set
         (set-label-states targets {: group-offset}))
       (set-beacons targets {:aot? vars.aot? : no-labels? : user-given-targets?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
-        (light-up-beacons targets start end)))
+      (local (start end) (get-highlighted-idx-range targets no-labels?))
+      (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn loop [group-offset first-invoc?]
       (display group-offset)
@@ -751,9 +791,8 @@ is either labeled (C) or not (B).
     ; ---
     (fn display []
       (set-beacons targets {: no-labels? :aot? vars.aot? : user-given-targets?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
-        (light-up-beacons targets start end)))
+      (local (start end) (get-highlighted-idx-range targets no-labels?))
+      (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
@@ -789,6 +828,8 @@ is either labeled (C) or not (B).
   ; waiting for:
 
   (exec-user-autocmds :LeapEnter)
+
+  (prebeacon {: backdrop-ranges : hl-affected-windows})
 
   (local (in1 ?in2) (if dot-repeat? (if state.dot_repeat.callback
                                         (values true true)
@@ -865,7 +906,7 @@ is either labeled (C) or not (B).
       targets**
       ; The action callback should expect a list in this case.
       ; It might also get user input, so keep the beacons highlighted.
-      (do (with-highlight-chores (light-up-beacons targets**))
+      (do (with-highlight-chores (fn [] (light-up-beacons targets**)))
           (do-action targets**)))
     (exit))
 

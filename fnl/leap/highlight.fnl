@@ -34,23 +34,13 @@
                                   (vim.fn.line "w$"))))
 
 
-(fn M.apply-backdrop [self backward? ?target-windows]
+(fn M.apply-backdrop [self ranges]
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
-    (if ?target-windows
-        (each [_ winid (ipairs ?target-windows)]
-          (local wininfo (. (vim.fn.getwininfo winid) 1))
-          (vim.highlight.range wininfo.bufnr self.ns self.group.backdrop
-                               [(dec wininfo.topline) 0]
-                               [(dec wininfo.botline) -1]
-                               {:priority self.priority.backdrop}))
-        (let [[curline curcol] (map dec [(vim.fn.line ".") (vim.fn.col ".")])
-              [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-              [start finish] (if backward?
-                                 [[win-top 0] [curline curcol]]
-                                 [[curline (inc curcol)] [win-bot -1]])]
-          ; Expects 0,0-indexed args; `finish` is exclusive.
-          (vim.highlight.range 0 self.ns self.group.backdrop start finish
-                               {:priority self.priority.backdrop})))))
+    (each [_ range (ipairs ranges)]
+      (vim.highlight.range range.bufnr self.ns self.group.backdrop
+                           [range.startrow range.startcol]
+                           [range.endrow range.endcol]
+                           {:priority self.priority.backdrop}))))
 
 
 (fn M.highlight-cursor [self ?pos]
