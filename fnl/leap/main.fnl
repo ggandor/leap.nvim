@@ -196,20 +196,25 @@ char separately.
         (+ (ch1:len) (ch2:len)))))
 
 
-(fn set-beacon-for-labeled [target {: user-given-targets? : aot?}]
-  (let [offset (if aot? (get-label-offset target) 0)  ; user-given-targets implies (not aot)
-        pad (if (or user-given-targets? aot?) "" " ")
+(fn set-beacon-for-labeled [target {: user-given-targets? : phase}]
+  (let [offset (if phase (get-label-offset target) 0)  ; note: user-given-targets
+                                                       ; implies (not phase)
+        pad (if (or phase user-given-targets?) "" " ")
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
         virttext (case target.label-state
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (if (and aot? (not opts.highlight_unlabeled_phase_one_targets))
+                   :inactive (if (and phase
+                                      (not opts.highlight_unlabeled_phase_one_targets))
                                  ; In this case, "no highlight" should
                                  ; unambiguously signal "no further keystrokes
-                                 ; needed", so it is mandatory to show all labeled
-                                 ; positions in some way.
+                                 ; needed", so it is mandatory to show all
+                                 ; labeled positions in some way.
+                                 ; (Note: We're keeping this on even after
+                                 ; phase one - sudden visual changes should be
+                                 ; avoided as much as possible.)
                                  [[(.. " " pad) hl.group.label-secondary]]
                                  :else nil))]
     (set target.beacon (when virttext [offset virttext]))))
@@ -344,18 +349,19 @@ is either labeled (C) or not (B).
                   other (set-beacon-to-match-hl target)))))))))
 
 
-(fn set-beacons [targets {: no-labels? : user-given-targets? : aot?}]
+(fn set-beacons [targets {: no-labels? : user-given-targets? : phase}]
   (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
-      (do (each [_ target (ipairs targets)]
-            (if target.label
-                (set-beacon-for-labeled target {: user-given-targets? : aot?})
+      (do
+        (each [_ target (ipairs targets)]
+          (if target.label
+              (set-beacon-for-labeled target {: user-given-targets? : phase})
 
-                (and aot? opts.highlight_unlabeled_phase_one_targets)
-                (set-beacon-to-match-hl target)))
-          (when aot?
-            (resolve-conflicts targets)))))
+              (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
+              (set-beacon-to-match-hl target)))
+        (when (= phase 1)
+          (resolve-conflicts targets)))))
 
 
 (fn light-up-beacons [targets ?start ?end]
@@ -462,13 +468,15 @@ is either labeled (C) or not (B).
                        (setmetatable {} {: __index})))
 
   ; Ephemeral state (current call).
-  (local vars {:aot?
+  (local vars {:phase
                ; Show beacons (labels & match highlights) ahead of time,
                ; right after the first input?
-               (not (or (= max-phase-one-targets 0)
-                        empty-label-lists?
-                        multi-select?
-                        user-given-targets?))
+               (if (not (or (= max-phase-one-targets 0)
+                            empty-label-lists?
+                            multi-select?
+                            user-given-targets?))
+                   1
+                   nil)
                :curr-idx 0  ; for traversal mode
                :errmsg nil})
 
@@ -650,7 +658,7 @@ is either labeled (C) or not (B).
       ; if the need arises.
       (where (= spec-keys.repeat_search))
       (if state.repeat.in1
-          (do (set vars.aot? false)
+          (do (set vars.phase nil)
               (values state.repeat.in1 state.repeat.in2))
           (set vars.errmsg "no previous search"))
 
@@ -684,7 +692,7 @@ is either labeled (C) or not (B).
       ; setting the initial label states if using `spec-keys.repeat_search`.
       (when targets.label-set
         (set-label-states targets {: group-offset}))
-      (set-beacons targets {:aot? vars.aot? : no-labels? : user-given-targets?})
+      (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
@@ -750,7 +758,7 @@ is either labeled (C) or not (B).
               (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
     ; ---
     (fn display []
-      (set-beacons targets {: no-labels? :aot? vars.aot? : user-given-targets?})
+      (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
@@ -797,7 +805,7 @@ is either labeled (C) or not (B).
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
                         ; `repeat_search` key.
-                        vars.aot? (get-first-pattern-input)  ; REDRAW
+                        (= vars.phase 1) (get-first-pattern-input)  ; REDRAW
                         (get-full-pattern-input)))  ; REDRAW
   (when-not in1
     (exit-early))
@@ -823,16 +831,18 @@ is either labeled (C) or not (B).
           (prepare-targets targets))
       (do
         (when (> (length targets) max-phase-one-targets)
-          (set vars.aot? false))
+          (set vars.phase nil))
         (populate-sublists targets)
         (each [_ sublist (pairs targets.sublists)]
            (prepare-targets sublist))
         (doto targets
           (set-initial-label-states)
-          (set-beacons {:aot? vars.aot?}))))
+          (set-beacons {:phase vars.phase}))))
   (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
   (when-not in2
     (exit-early))
+
+  (when vars.phase (set vars.phase 2))
 
   ; Jump eagerly to the count-th match (without giving the full pattern)?
   (when (= in2 spec-keys.next_phase_one_target)
