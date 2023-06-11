@@ -78,7 +78,7 @@ local function attach_label_set(targets)
   return nil
 end
 local function set_labels(targets, multi_select_3f)
-  if ((#targets > 1) or multi_select_3f) then
+  if (opts.always_label or (#targets > 1) or multi_select_3f) then
     local _local_7_ = targets
     local autojump_3f = _local_7_["autojump?"]
     local label_set = _local_7_["label-set"]
@@ -1126,7 +1126,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (#targets_2a == 1) then
+  elseif (not opts.always_label and #targets_2a == 1) then
     set_dot_repeat(in1, in2, 1)
     do_action((targets_2a)[1])
     hl:cleanup(hl_affected_windows)
