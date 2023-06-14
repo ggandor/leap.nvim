@@ -478,15 +478,11 @@ labels will remain available the whole time!
   direction to follow), but you can still accept the first (presumably only)
   match with `<enter>`, even after one input.
 
-#### Resolving highlighting conflicts in phase one
+#### Resolving conflicts in phase one
 
-- If a directly reachable match covers a label, the match will get highlighted
-  (telling the user, "Label underneath!"), and the label will only be displayed
-  after the second input, that resolves the ambiguity.
-
-- If a label gets positioned over another label (this might occur before EOL or
-  the window edge, when the labels need to be shifted left), an "empty" label
-  will be displayed until entering the second input.
+If a label gets positioned over another label (this might occur before
+EOL or the window edge, when the labels need to be shifted left), an
+"empty" label will be displayed until entering the second input.
 
 ## Configuration
 
