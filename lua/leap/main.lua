@@ -592,12 +592,14 @@ local function leap(kwargs)
     local funny_edge_case_3f
     local function _93_()
       local _94_ = targets
-      if ((_G.type(_94_) == "table") and ((_G.type((_94_)[1]) == "table") and ((_G.type(((_94_)[1]).pos) == "table") and (nil ~= (((_94_)[1]).pos)[1]) and (nil ~= (((_94_)[1]).pos)[2]))) and ((_G.type((_94_)[2]) == "table") and ((_G.type(((_94_)[2]).pos) == "table") and (nil ~= (((_94_)[2]).pos)[1]) and (nil ~= (((_94_)[2]).pos)[2])))) then
+      if ((_G.type(_94_) == "table") and ((_G.type((_94_)[1]) == "table") and ((_G.type(((_94_)[1]).pos) == "table") and (nil ~= (((_94_)[1]).pos)[1]) and (nil ~= (((_94_)[1]).pos)[2]))) and ((_G.type((_94_)[2]) == "table") and ((_G.type(((_94_)[2]).pos) == "table") and (nil ~= (((_94_)[2]).pos)[1]) and (nil ~= (((_94_)[2]).pos)[2])) and ((_G.type(((_94_)[2]).chars) == "table") and (nil ~= (((_94_)[2]).chars)[1]) and (nil ~= (((_94_)[2]).chars)[2])))) then
         local l1 = (((_94_)[1]).pos)[1]
         local c1 = (((_94_)[1]).pos)[2]
         local l2 = (((_94_)[2]).pos)[1]
         local c2 = (((_94_)[2]).pos)[2]
-        return ((l1 == l2) and (c1 == (c2 + 2)))
+        local ch1 = (((_94_)[2]).chars)[1]
+        local ch2 = (((_94_)[2]).chars)[2]
+        return ((l1 == l2) and (c1 == (c2 + ch1:len() + ch2:len())))
       else
         return nil
       end

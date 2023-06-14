@@ -603,20 +603,25 @@ implies changing the labels, C should be checked separately afterwards.
       (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
   (fn prepare-targets [targets]
-    (let [funny-edge-case?
+    (let [; Note: As opposed to the checks in `resolve-conflicts`, we
+          ; can do this right now, before preparing the list (that is,
+          ; no need for duplicate work), since this situation may arise
+          ; in phase two, when only the chosen sublist remained.
           ; <-----  backward search
           ;   ab    target #1
-          ; abl     target #2 (labeled)
+          ; abL     target #2 (labeled)
           ;   ^     auto-jump would move the cursor here (covering the label)
-          (and backward?
-               (case targets
-                 [{:pos [l1 c1]} {:pos [l2 c2]}]
-                 (and (= l1 l2) (= c1 (+ c2 2)))))
-          force-noautojump? (or op-mode?             ; should be able to select a target
-                                multi-select?        ; likewise
-                                (not directional?)   ; potentially disorienting
-                                user-given-action    ; no jump, doing sg else
-                                funny-edge-case?)]   ; see above
+          funny-edge-case? (and backward?
+                                (case targets
+                                  [{:pos [l1 c1]}
+                                   {:pos [l2 c2] :chars [ch1 ch2]}]
+                                  (and (= l1 l2)
+                                       (= c1 (+ c2 (ch1:len) (ch2:len))))))
+          force-noautojump? (or op-mode?           ; should be able to select a target
+                               multi-select?       ; likewise
+                               (not directional?)  ; potentially disorienting
+                               user-given-action   ; no jump, doing sg else
+                               funny-edge-case?)]  ; see above
       (doto targets
         (set-autojump force-noautojump?)
         (attach-label-set)
