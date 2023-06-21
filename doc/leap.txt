@@ -133,8 +133,8 @@ Available options~
                                *leap.opts.highlight_unlabeled_phase_one_targets*
 `highlight_unlabeled_phase_one_targets = false`
 
-    Whether to highlight all unlabeled matches in phase one. (Matches covering
-    labels will get highlighted anyway.)
+    Whether to highlight unlabeled (i.e., directly reachable) matches after
+    the first input character.
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
