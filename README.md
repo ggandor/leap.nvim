@@ -478,11 +478,21 @@ labels will remain available the whole time!
   direction to follow), but you can still accept the first (presumably only)
   match with `<enter>`, even after one input.
 
-#### Resolving conflicts in phase one
+#### Concealed labels
 
-If a label gets positioned over another label (this might occur before
-EOL or the window edge, when the labels need to be shifted left), an
-"empty" label will be displayed until entering the second input.
+A special character might replace the label if either:
+
+* Two labels would occupy the same position (this is possible in phase one,
+  when the target is right before EOL or the window edge, and the label needs
+  to be shifted left).
+
+* Two-phase processing is enabled, and unlabeled phase one targets have no
+  highlighting (the default). In this case targets beyond the secondary group
+  need to have some kind of label next to them, to signal that they are not
+  directly reachable.
+
+Leap automatically uses either space (if both primary and secondary labels have
+a background in the current color scheme) or a middle dot (U+00B7).
 
 ## Configuration
 

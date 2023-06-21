@@ -214,7 +214,7 @@ local function set_beacon_for_labeled(target, _29_)
       virttext = {{text, hl.group["label-secondary"]}}
     elseif (_33_ == "inactive") then
       if (phase and not opts.highlight_unlabeled_phase_one_targets) then
-        virttext = {{(" " .. pad), hl.group["label-secondary"]}}
+        virttext = {{(opts.concealed_label .. pad), hl.group["label-secondary"]}}
       elseif "else" then
         virttext = nil
       else
@@ -241,7 +241,7 @@ local function set_beacon_to_match_hl(target)
   return nil
 end
 local function set_beacon_to_empty_label(target)
-  target["beacon"][2][1][1] = " "
+  target["beacon"][2][1][1] = opts.concealed_label
   return nil
 end
 local function resolve_conflicts(targets)
@@ -1325,12 +1325,21 @@ local function restore_editor_opts()
   return nil
 end
 local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
-local function _217_()
-  return set_editor_opts(temporary_editor_opts)
+local function set_concealed_label()
+  if ((api.nvim_get_hl(0, {name = "LeapLabelPrimary"})).bg and (api.nvim_get_hl(0, {name = "LeapLabelSecondary"})).bg) then
+    opts.concealed_label = " "
+  else
+    opts.concealed_label = "\194\183"
+  end
+  return nil
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _217_, group = "LeapDefault"})
 local function _218_()
+  set_editor_opts(temporary_editor_opts)
+  return set_concealed_label()
+end
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _218_, group = "LeapDefault"})
+local function _219_()
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _218_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _219_, group = "LeapDefault"})
 return {state = state, leap = leap}

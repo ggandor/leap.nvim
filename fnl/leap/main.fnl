@@ -215,7 +215,7 @@ char separately.
                                  ; (Note: We're keeping this on even after
                                  ; phase one - sudden visual changes should be
                                  ; avoided as much as possible.)
-                                 [[(.. " " pad) hl.group.label-secondary]]
+                                 [[(.. opts.concealed_label pad) hl.group.label-secondary]]
                                  :else nil))]
     (set target.beacon (when virttext [offset virttext]))))
 
@@ -228,7 +228,7 @@ char separately.
 
 
 (fn set-beacon-to-empty-label [target]
-  (tset target :beacon 2 1 1 " "))
+  (tset target :beacon 2 1 1 opts.concealed_label))
 
 
 (fn resolve-conflicts [targets]
@@ -1033,8 +1033,19 @@ implies changing the labels, C should be checked separately afterwards.
                               :w.sidescrolloff 0
                               :b.modeline false})  ; lightspeed#81
 
+
+(fn set-concealed-label []
+  (set opts.concealed_label  ; undocumented, might be exposed in the future
+       (if (and (. (api.nvim_get_hl 0 {:name "LeapLabelPrimary"}) :bg)
+                (. (api.nvim_get_hl 0 {:name "LeapLabelSecondary"}) :bg))
+           " "
+           "\u{00b7}")))  ; middle dot (·)
+
+
 (api.nvim_create_autocmd "User" {:pattern "LeapEnter"
-                                 :callback #(set-editor-opts temporary-editor-opts)
+                                 :callback (fn []
+                                             (set-editor-opts temporary-editor-opts)
+                                             (set-concealed-label))
                                  :group "LeapDefault"})
 
 (api.nvim_create_autocmd "User" {:pattern "LeapLeave"
