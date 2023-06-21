@@ -1,9 +1,9 @@
-*leap.txt*
+*leap.txt*	Neovim's answer to the mouse
+*leap.nvim*
 For Neovim version 0.7.0
-Last change: 2022 November 18
 
 ==============================================================================
-CONTENTS                                               *leap.nvim* *leap-contents*
+CONTENTS                                                           *leap-contents*
 
   Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
@@ -25,6 +25,9 @@ similar to Justin M. Keyes' Sneak plugin. The novel idea in Leap is its
 mapping possible futures, Leap can show you which key(s) you will need to
 press before you actually need to do that, resulting in a much more
 frictionless experience.
+
+Key mappings should be defined explicitly. To start using the plugin with the
+default ones, call `require('leap').add_default_mappings()`.
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -60,7 +63,7 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are |inclusive|, and |o_v| works as
 expected on them.
 
-                                                            *leap-match-newline*
+                          *leap-targeting-end-of-line* *leap-targeting-empty-line*
 A character at the end of a line can be targeted by pressing `<space>` after it.
 There is no special mechanism behind this: you can set aliases for the
 newline character simply by defining a set in |leap.opts.equivalence_classes|
@@ -199,20 +202,20 @@ Available options~
       "J", "K", "L", "H", "O", "D", "W", "E", "M", "B",
       "U", "Y", "V", "R", "G", "T", "C", "X", "?", "Z" }
 <
-    Target labels to be used when there are more matches than the number of
-    safe labels plus one.
+    Target labels to be used when there are more matches than labels in
+    |leap.opts.safe_labels| plus one.
 
     Setting the list to `{}` forces autojump to always be on (except for
     Operator-pending mode, where it makes no sense). In this case, do not
     forget to set `special_keys.next_group` to something "safe" too.
 
-    Heuristics behind the defaults:
-    - At least the first few labels should be the same on the two lists, since
-      those become muscle memory, and might be used automatically, a bit like
-      [count] values.
-    - Since the commands invoking the motions are mapped to left-hand keys by
-      default, we tend to prioritize right-hand keys to get a better balance
-      for the whole sequence on average.
+Heuristics behind the default label lists:
+- Since the commands invoking the motions are mapped to left-hand keys by
+  default, we tend to prioritize right-hand keys to get a better balance for
+  the whole sequence on average.
+- At least the first few labels should be the same on the two lists, since
+  those become muscle memory, and might be used automatically, a bit like
+  [count] values.
 
                                                         *leap.opts.special_keys*
 `special_keys` >
@@ -345,32 +348,36 @@ can be set via |leap.opts.special_keys|.
 HIGHLIGHTING                                                    *leap-highlight*
 
 Leap uses the following highlight groups that you can configure to your own
-liking (using |nvim_set_hl()|):
+liking (using |:hi| or |nvim_set_hl()|):
 
-    *LeapMatch*
-        Matches that can be reached directly, without having to use a label.
-        (By default, this is only used for traversal mode, or when a match
-        covers a label, indicating the conflict.)
+                                                                  *hl-LeapMatch*
+LeapMatch
+    Matches that can be reached directly, without having to use a label. (By
+    default, this group is only used for |leap-traversal|.)
 
-    *LeapLabelPrimary*
-        The character needed to be pressed to jump to the match position,
-        after the whole search pattern has been given. It appears once the
-        first input has been entered, right next to the pair.
+                                                           *hl-LeapLabelPrimary*
+LeapLabelPrimary
+    The character needed to be pressed to jump to the match position, after
+    the whole search pattern has been given. It appears once the first input
+    has been entered, right next to the pair.
 
-    *LeapLabelSecondary*
-        If the number of matches exceeds the available target labels, the next
-        group of labeled targets are shown with a different color. Those can
-        be reached by pressing `<space>` (`special_keys.next_group`)
-        before the label character.
+                                                         *hl-LeapLabelSecondary*
+LeapLabelSecondary
+    If the number of matches exceeds the available target labels, the next
+    group of labels are shown with a different color. Those targets can be
+    reached by pressing `<space>` (`special_keys.next_group`) before the label
+    character.
 
-    *LeapLabelSelected*
-        Labels that are selected for the action in |leap-multiselect| mode.
+                                                          *hl-LeapLabelSelected*
+LeapLabelSelected
+    Labels that are selected for the action in |leap-multiselect| mode.
 
-    *LeapBackdrop*
-        In some cases it might be useful or even necessary to apply certain
-        settings on the rest of the area, like disabling all `gui` attributes,
-        or adding a uniform grey foreground color, to make Leap matches and
-        labels more distinguishable. This group is not set by default.
+                                                               *hl-LeapBackdrop*
+LeapBackdrop
+    In some cases it might be useful or even necessary to apply certain
+    settings on the rest of the area, like disabling all `gui` attributes, or
+    adding a uniform grey foreground color, to make Leap matches and labels
+    more distinguishable. This group is not set by default.
 
 Example: `vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = 'grey' })`
 
@@ -426,7 +433,6 @@ leap({opts})                                                       *leap.leap()*
                • opts: A table just like |leap.opts|, to override any default
                  setting for the specific call.
                  E.g.: `require('leap').leap { opts = { labels = {} } }`
-
                • offset: Where to land with the cursor compared to the target
                  position (-1, 0, 1, 2).
                • inclusive_op: A flag indicating whether an operation should
@@ -441,7 +447,6 @@ leap({opts})                                                       *leap.leap()*
                  will be evaluated after |LeapEnter| (that is, after setting
                  temporary editor options, etc.), so that you can even prompt
                  the user for input while already "in" Leap.
-
                  The elements of the list are tables of arbitrary structure,
                  with the only mandatory field being `pos` - a (1,1)-indexed
                  tuple; this is the position of the label, and also the jump
