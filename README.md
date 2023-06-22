@@ -429,6 +429,13 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are inclusive (`:h inclusive`), and the
 `v` modifier (`:h o_v`) works as expected on them.
 
+#### Targeting consecutive repeating characters 
+
+An `aaa...` sequence will be matched at one position only (by default, at the
+beginning). In Visual and Operator-pending mode, however, `s` and `X` will
+match at the _end_ instead (so that the sequence behaves as a chunk, and either
+the whole or none of it will be selected).
+
 #### Cross-window motions
 
 In this case, the matches are sorted by their screen distance from the cursor,
