@@ -513,6 +513,7 @@ implies changing the labels, C should be checked separately afterwards.
                             user-given-targets?))
                    1
                    nil)
+               :partial-pattern? false
                :curr-idx 0  ; for traversal mode
                :errmsg nil})
 
@@ -700,6 +701,8 @@ implies changing the labels, C should be checked separately afterwards.
       (where (= spec-keys.repeat_search))
       (if state.repeat.in1
           (do (set vars.phase nil)
+              (when-not state.repeat.in2
+                (set vars.partial-pattern? true))
               (values state.repeat.in1 state.repeat.in2))
           (set vars.errmsg "no previous search"))
 
@@ -728,7 +731,7 @@ implies changing the labels, C should be checked separately afterwards.
                                  (length targets.label-set)))))
     ; ---
     (fn display [group-offset]
-      (local no-labels? empty-label-lists?)
+      (local no-labels? (or empty-label-lists? vars.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.repeat_search`.
       (when targets.label-set
@@ -815,12 +818,7 @@ implies changing the labels, C should be checked separately afterwards.
       (case (get-input)
         in
         (case (get-new-idx idx in)
-          new-idx (do (case (?. targets new-idx :chars 2)  ; user-given targets might not have `chars`
-                        ; We need to do this, in case we have entered
-                        ; traversal mode after the first input (i.e.,
-                        ; traversing all matches, not just a given sublist)!
-                        ch2 (set state.repeat.in2 ch2))
-                      (jump-to! (. targets new-idx))
+          new-idx (do (jump-to! (. targets new-idx))
                       (loop new-idx false))
             ; We still want the labels (if there are) to function.
           _ (case (get-target-with-active-primary-label targets in)
@@ -866,8 +864,8 @@ implies changing the labels, C should be checked separately afterwards.
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (if ?in2
-      (if empty-label-lists?
+  (if (or ?in2 vars.partial-pattern?)
+      (if (or empty-label-lists? vars.partial-pattern?)
           (set targets.autojump? true)
           (prepare-targets targets))
       (do
@@ -882,36 +880,40 @@ implies changing the labels, C should be checked separately afterwards.
         (when (= vars.phase 1)
           (resolve-conflicts targets))))
 
-  (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
-  (when-not in2
+  (local ?in2 (or ?in2
+                  (and (not vars.partial-pattern?)
+                       (get-second-pattern-input targets))))  ; REDRAW
+  (when-not (or vars.partial-pattern? ?in2)
     (exit-early))
 
   (when vars.phase (set vars.phase 2))
 
   ; Jump eagerly to the count-th match (without giving the full pattern)?
-  (when (= in2 spec-keys.next_phase_one_target)
+  (when (= ?in2 spec-keys.next_phase_one_target)
     (local n (or count 1))
     (local target (. targets n))
     (when-not target
       (exit-early))
-    (local in2* (. target :chars 2))
-    (update-repeat-state {: in1 :in2 in2*})
+    (update-repeat-state {: in1})
     (do-action target)
     (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
                               directional? (> (length targets) 1)))
     (if can-traverse?
         (traversal-loop targets 1 {:no-labels? true})  ; REDRAW (LOOP)
-        (set-dot-repeat in1 in2* n))
+        (set-dot-repeat in1 nil n))
     (exit))
 
   ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state {: in1 : in2})
+  (update-repeat-state {: in1 :in2 ?in2})
 
-  ; Get the sublist for in2, and work with that from here on (except if
+  ; Get the sublist for ?in2, and work with that from here on (except if
   ; we've been given custom targets).
-  (local targets* (if targets.sublists (. targets.sublists in2) targets))
+  (local targets* (if targets.sublists (. targets.sublists ?in2) targets))
   (when-not targets*
-    (set vars.errmsg (.. "not found: " in1 in2))
+    ; (Note: at this point, ?in2 might only be nil if partial-pattern?
+    ; is true; that case implies there are no sublists, and there _are_
+    ; targets.)
+    (set vars.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
 
   (when multi-select?
@@ -924,21 +926,22 @@ implies changing the labels, C should be checked separately afterwards.
     (exit))
 
   (macro exit-with-action-on [idx]
-    `(do (set-dot-repeat in1 in2 ,idx)
+    `(do (set-dot-repeat in1 ?in2 ,idx)
          (do-action (. targets* ,idx))
          (exit)))
 
-  (when count
-    (if (> count (length targets*))
-        (exit-early)
-        (exit-with-action-on count)))
+  (if count
+      (if (> count (length targets*))
+          (exit-early)
+          (exit-with-action-on count))
 
-  ; A sole, unlabeled target.
-  (when (and (not count)  ; (!)
-             (= (length targets*) 1)
-             ; It _can_ have a label (see `resolve-conflicts`).
-             (not (. targets* 1 :label)))
-    (exit-with-action-on 1))
+      (or (and vars.partial-pattern?
+               (or op-mode? (not directional?)))
+          ; A sole, unlabeled target.
+          (and (= (length targets*) 1)
+               ; It _can_ have a label (see `resolve-conflicts`).
+               (not (. targets* 1 :label))))
+      (exit-with-action-on 1))
 
   (when targets*.autojump?
     (set vars.curr-idx 1)
@@ -960,6 +963,7 @@ implies changing the labels, C should be checked separately afterwards.
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                           {:no-labels? (or empty-label-lists?
+                                           vars.partial-pattern?
                                            (not targets*.autojump?))})
           (exit))
         (exit-with-action-on 1)))  ; (implied no autojump)
