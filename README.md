@@ -53,6 +53,17 @@ At the same time, it **reduces mental effort to almost zero**:
   each step you already know what the immediate next keypress should be, and
   your mind can process the rest in the background.
 
+### Supplemental features
+
+Type
+
+- `s<enter>` to repeat the last search.
+- `s{char}<space>` to jump to the last character on a line.
+- `s<space><space>` to jump to an empty line.
+- `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
+- `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
+  matches.
+
 ### Down the kangaroo hole
 
 This was just a teaser - mind that Leap is extremely flexible, and offers much
