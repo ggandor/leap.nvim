@@ -707,22 +707,24 @@ local function leap(kwargs)
       hl["highlight-cursor"](hl)
       vim.cmd("redraw")
     end
-    local _112_, _113_ = get_input_by_keymap(prompt)
-    if (_112_ == spec_keys.repeat_search) then
-      if state["repeat"].in1 then
-        vars.phase = nil
-        if not state["repeat"].in2 then
-          vars["partial-pattern?"] = true
-        else
-        end
-        return state["repeat"].in1, state["repeat"].in2
-      else
-        vars.errmsg = "no previous search"
-        return nil
-      end
-    elseif (nil ~= _112_) then
+    local _112_ = get_input_by_keymap(prompt)
+    if (nil ~= _112_) then
       local in1 = _112_
-      return in1
+      if contains_3f(spec_keys.next_target, in1) then
+        if state["repeat"].in1 then
+          vars.phase = nil
+          if not state["repeat"].in2 then
+            vars["partial-pattern?"] = true
+          else
+          end
+          return state["repeat"].in1, state["repeat"].in2
+        else
+          vars.errmsg = "no previous search"
+          return nil
+        end
+      else
+        return in1
+      end
     else
       return nil
     end
@@ -1061,7 +1063,7 @@ local function leap(kwargs)
     vars.phase = 2
   else
   end
-  if (_3fin20 == spec_keys.next_phase_one_target) then
+  if contains_3f(spec_keys.next_target, _3fin20) then
     local n = (count or 1)
     local target = targets[n]
     if not target then

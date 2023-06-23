@@ -698,15 +698,15 @@ implies changing the labels, C should be checked separately afterwards.
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      (where (= spec-keys.repeat_search))
-      (if state.repeat.in1
-          (do (set vars.phase nil)
-              (when-not state.repeat.in2
-                (set vars.partial-pattern? true))
-              (values state.repeat.in1 state.repeat.in2))
-          (set vars.errmsg "no previous search"))
-
-      in1 in1))
+      in1
+      (if (contains? spec-keys.next_target in1)
+          (if state.repeat.in1
+              (do (set vars.phase nil)
+                  (when-not state.repeat.in2
+                    (set vars.partial-pattern? true))
+                  (values state.repeat.in1 state.repeat.in2))
+              (set vars.errmsg "no previous search"))
+          in1)))
 
   (fn get-second-pattern-input [targets]
     (when (and (<= (length targets) max-phase-one-targets)
@@ -733,7 +733,7 @@ implies changing the labels, C should be checked separately afterwards.
     (fn display [group-offset]
       (local no-labels? (or empty-label-lists? vars.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
-      ; setting the initial label states if using `spec-keys.repeat_search`.
+      ; setting the initial label states if using `spec-keys.next_target`.
       (when targets.label-set
         (set-label-states targets {: group-offset}))
       (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
@@ -843,7 +843,7 @@ implies changing the labels, C should be checked separately afterwards.
                                                 state.dot_repeat.in2))
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
-                        ; `repeat_search` key.
+                        ; `next_target` key.
                         (= vars.phase 1) (get-first-pattern-input)  ; REDRAW
                         (get-full-pattern-input)))  ; REDRAW
   (when-not in1
@@ -889,7 +889,7 @@ implies changing the labels, C should be checked separately afterwards.
   (when vars.phase (set vars.phase 2))
 
   ; Jump eagerly to the count-th match (without giving the full pattern)?
-  (when (= ?in2 spec-keys.next_phase_one_target)
+  (when (contains? spec-keys.next_target ?in2)
     (local n (or count 1))
     (local target (. targets n))
     (when-not target

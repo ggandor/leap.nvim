@@ -12,10 +12,8 @@
                              "S" "F" "N"
                              "J" "K" "L" "H" "O" "D" "W" "E" "M" "B"
                              "U" "Y" "V" "R" "G" "T" "C" "X" "?" "Z"]
-                    :special_keys {:repeat_search "<enter>"
-                                   :next_phase_one_target "<enter>"
-                                   :next_target ["<enter>" ";"]
-                                   :prev_target ["<tab>" ","]
+                    :special_keys {:next_target "<enter>"
+                                   :prev_target "<tab>"
                                    :next_group "<space>"
                                    :prev_group "<tab>"
                                    :multi_accept "<enter>"

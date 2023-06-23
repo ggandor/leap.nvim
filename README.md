@@ -457,6 +457,29 @@ page.
 To create custom motions like this, e.g. bidirectional search in the current
 window, see [Extending Leap](#extending-leap).
 
+#### Repeat and traversal
+
+`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
+initiates "traversal" mode, moving on to the next match on each subsequent
+keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
+it uses the previous search pattern. In case you accidentally overshoot your
+target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
+Note that if the safe label set is in use, the labels will remain available the
+whole time!
+
+In case of cross-window search, you cannot traverse (since there's no direction
+to follow), but the search can be repeated, and you can also accept the first
+(presumably only) match with `<enter>`, even after one input.
+
+##### Tips
+
+- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
+  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
+  lines.
+
+- Accepting the first match after one input character is a useful shortcut in
+  operator-pending mode (e.g. `ds{char}<enter>`).
+
 #### Smart autojump
 
 Leap automatically jumps to the first match if the remaining matches can be
@@ -467,34 +490,6 @@ targets increases, since the probability of aiming for the very first target
 becomes less and less.)
 
 For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
-
-#### Repeat and traversal
-
-Pressing `<enter>` after invoking any of Leap's motions sets the search pattern
-to the previous one (`special_keys.repeat_search`).
-
-After entering at least one input character, `<enter>` initiates "traversal"
-mode, moving on to the next match on each keypress
-(`special_keys.next_phase_one_target` and `special_keys.next_target`). In case
-you accidentally overshoot your target, `<tab>` can revert the previous jump(s)
-(`special_keys.prev_target`). Note that if the safe label set is in use, the
-labels will remain available the whole time!
-
-##### Tips
-
-- When repeating the previous search, you can immediately move on:
-  `s<enter><enter>...`
-
-- Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `ds{char}<enter>`).
-
-- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
-  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
-  lines.
-
-- For cross-window search, traversal mode is not supported (since there's no
-  direction to follow), but you can still accept the first (presumably only)
-  match with `<enter>`, even after one input.
 
 #### Concealed labels
 
@@ -528,10 +523,8 @@ substitute_chars = {}
 safe_labels = { 's', 'f', 'n', 'u', 't', . . . }
 labels = { 's', 'f', 'n', 'j', 'k', . . . }
 special_keys = {
-  repeat_search = '<enter>',
-  next_phase_one_target = '<enter>',
-  next_target = {'<enter>', ';'},
-  prev_target = {'<tab>', ','},
+  next_target = '<enter>',
+  prev_target = '<tab>',
   next_group = '<space>',
   prev_group = '<tab>',
   multi_accept = '<enter>',
