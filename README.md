@@ -168,6 +168,17 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 ## FAQ
 
 <details>
+<summary>Workaround for the duplicate cursor bug</summary>
+
+Check
+[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534),
+but also [#143](https://github.com/ggandor/leap.nvim/pull/143) if you
+experience any problems after it.
+
+</details>
+
+
+<details>
 <summary>Bidirectional search</summary>
 
 ```lua
