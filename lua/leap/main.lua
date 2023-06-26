@@ -1305,7 +1305,7 @@ local function restore_editor_opts()
 end
 local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
 local function set_concealed_label()
-  if ((vim.fn.has("nvim-0.9") == 0) and (api.nvim_get_hl(0, {name = "LeapLabelPrimary"})).bg and (api.nvim_get_hl(0, {name = "LeapLabelSecondary"})).bg) then
+  if ((vim.fn.has("nvim-0.9") == 1) and (api.nvim_get_hl(0, {name = "LeapLabelPrimary"})).bg and (api.nvim_get_hl(0, {name = "LeapLabelSecondary"})).bg) then
     opts.concealed_label = " "
   else
     opts.concealed_label = "\194\183"

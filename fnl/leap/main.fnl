@@ -1040,7 +1040,7 @@ implies changing the labels, C should be checked separately afterwards.
 
 (fn set-concealed-label []
   (set opts.concealed_label  ; undocumented, might be exposed in the future
-       (if (and (= (vim.fn.has "nvim-0.9") 0)
+       (if (and (= (vim.fn.has "nvim-0.9") 1)
                 (. (api.nvim_get_hl 0 {:name "LeapLabelPrimary"}) :bg)
                 (. (api.nvim_get_hl 0 {:name "LeapLabelSecondary"}) :bg))
            " "
