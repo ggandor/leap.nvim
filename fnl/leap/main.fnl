@@ -105,7 +105,7 @@ NOTE: `set-autojump` should be called BEFORE this function."
 repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
-  (when (or (> (length targets) 1) force?)
+  (when (or (> (length targets) 1) (empty? opts.safe_labels) force?)
     (local {: autojump? : label-set} targets)
     (each [i target (ipairs targets)]
       ; Skip labeling the first target if autojump is set.

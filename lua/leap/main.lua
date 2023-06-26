@@ -80,7 +80,7 @@ end
 local function set_labels(targets, _7_)
   local _arg_8_ = _7_
   local force_3f = _arg_8_["force?"]
-  if ((#targets > 1) or force_3f) then
+  if ((#targets > 1) or empty_3f(opts.safe_labels) or force_3f) then
     local _local_9_ = targets
     local autojump_3f = _local_9_["autojump?"]
     local label_set = _local_9_["label-set"]
