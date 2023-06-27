@@ -5,7 +5,8 @@
 Leap is a general-purpose motion plugin for Neovim, building and improving
 primarily on [vim-sneak](https://github.com/justinmk/vim-sneak), with the
 ultimate goal of establishing a new standard interface for moving around in the
-visible area in Vim-like modal editors.
+visible area in Vim-like modal editors. It aims to be consistent, reliable,
+needs zero configuration, and tries to get out of your way as much as possible.
 
 ![showcase](../media/showcase.gif?raw=true)
 
@@ -57,10 +58,10 @@ At the same time, it **reduces mental effort to almost zero**:
 
 Type
 
-- `s<enter>` to repeat the last search.
-- `s{char}<space>` to jump to the last character on a line.
+- `s{char}<space>` to jump to the end of a line.
 - `s<space><space>` to jump to an empty line.
 - `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
+- `s<enter>` to repeat the last search.
 - `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
   matches.
 
