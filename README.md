@@ -638,6 +638,8 @@ Tree-sitter nodes, etc.
 local function get_line_starts(winid)
   local wininfo =  vim.fn.getwininfo(winid)[1]
   local cur_line = vim.fn.line('.')
+  -- Skip lines close to the cursor.
+  local skip_range = 2
 
   -- Get targets.
   local targets = {}
@@ -648,7 +650,9 @@ local function get_line_starts(winid)
     if fold_end ~= -1 then
       lnum = fold_end + 1
     else
-      if lnum ~= cur_line then table.insert(targets, { pos = { lnum, 1 } }) end
+      if (lnum < cur_line - skip_range) or (lnum > cur_line + skip_range) then
+        table.insert(targets, { pos = { lnum, 1 } })
+      end
       lnum = lnum + 1
     end
   end
