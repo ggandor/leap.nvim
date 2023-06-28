@@ -193,9 +193,9 @@ experience any problems after it.
 -- An additional disadvantage is that operations cannot be dot-repeated
 -- if the search is non-directional.
 
--- Now that you have carefully considered my wise advice above, I'll
--- tell you the simple trick: just initiate multi-window mode with the
--- current window as the only target.
+-- With that out of the way, I'll tell you the simple trick: just
+-- initiate multi-window mode with the current window as the only
+-- target.
 
 vim.keymap.set(<modes>, <your-preferred-key>, function ()
   local current_window = vim.fn.win_getid()
@@ -224,25 +224,26 @@ end)
 
 
 <details>
-<summary>Enhanced f/t motions</summary>
-
-Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
-
-</details>
-
-
-<details>
-<summary>Linewise motions</summary>
-
-See [Extending Leap](#extending-leap) for an example snippet (30-40 lines).
-
-</details>
-
-
-<details>
 <summary>Other supernatural powers besides clairvoyance?</summary>
 
 You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.nvim).
+
+</details>
+
+
+<details>
+<summary>Jumping to lines</summary>
+
+It's easy to add to your config, see [Extending Leap](#extending-leap)
+for the example snippet (30-40 lines).
+
+</details>
+
+
+<details>
+<summary>Enhanced f/t motions</summary>
+
+Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
 
 </details>
 
@@ -635,11 +636,11 @@ Tree-sitter nodes, etc.
 <summary>Example: linewise motions</summary>
 
 ```lua
-local function get_line_starts(winid)
+local function get_line_starts(winid, skip_range)
   local wininfo =  vim.fn.getwininfo(winid)[1]
   local cur_line = vim.fn.line('.')
   -- Skip lines close to the cursor.
-  local skip_range = 2
+  local skip_range = skip_range or 2
 
   -- Get targets.
   local targets = {}
@@ -656,6 +657,7 @@ local function get_line_starts(winid)
       lnum = lnum + 1
     end
   end
+
   -- Sort them by vertical screen distance from cursor.
   local cur_screen_row = vim.fn.screenpos(winid, cur_line, 1)['row']
   local function screen_rows_from_cur(t)
@@ -671,14 +673,28 @@ local function get_line_starts(winid)
   end
 end
 
--- Usage:
-local function leap_to_line()
+-- You can pass an argument to specify a range to be skipped
+-- before/after the cursor (default is +/-2).
+function leap_linewise(skip_range)
   local winid = vim.api.nvim_get_current_win()
   require('leap').leap {
     target_windows = { winid },
-    targets = get_line_starts(winid),
+    targets = get_line_starts(winid, skip_range),
   }
 end
+
+-- For maximum comfort, make sure to set the mappings in a way that
+-- forces linewise selection:
+vim.keymap.set('x', '\\', function ()
+  -- To prevent exiting from V if already in it (pressing v/V/<C-v>
+  -- again exits the corresponding Visual mode) we get the current
+  -- mode, exit from that, and then force linewise.
+  -- (Alternatively, we could check the mode and then conditionally
+  -- branch in the expression mapping, only adding V if necessary.)
+  local exit_visual = string.sub(vim.fn.mode(1), 1, 1)
+  return exit_visual .. "V<cmd>lua leap_linewise()<cr>"
+end, { expr = true })
+vim.keymap.set('o', '\\', "V<cmd>lua leap_linewise()<cr>")
 ```
 </details>
 
