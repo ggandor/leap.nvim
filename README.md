@@ -686,13 +686,9 @@ end
 -- For maximum comfort, make sure to set the mappings in a way that
 -- forces linewise selection:
 vim.keymap.set('x', '\\', function ()
-  -- To prevent exiting from V if already in it (pressing v/V/<C-v>
-  -- again exits the corresponding Visual mode) we get the current
-  -- mode, exit from that, and then force linewise.
-  -- (Alternatively, we could check the mode and then conditionally
-  -- branch in the expression mapping, only adding V if necessary.)
-  local exit_visual = string.sub(vim.fn.mode(1), 1, 1)
-  return exit_visual .. "V<cmd>lua leap_linewise()<cr>"
+  -- Do not exit from V if already in it (pressing v/V/<C-v>
+  -- again exits the corresponding Visual mode).
+  return (vim.fn.mode(1) == "V" and "" or "V") .. "<cmd>lua leap_linewise()<cr>"
 end, { expr = true })
 vim.keymap.set('o', '\\', "V<cmd>lua leap_linewise()<cr>")
 ```
