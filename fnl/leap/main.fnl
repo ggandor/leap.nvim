@@ -196,22 +196,17 @@ char separately.
         (+ (ch1:len) (ch2:len)))))
 
 
-(fn set-beacon-for-labeled [target {: user-given-targets? : aot?}]
-  (let [offset (if aot? (get-label-offset target) 0)  ; user-given-targets implies (not aot)
-        pad (if (or user-given-targets? aot?) "" " ")
+(fn set-beacon-for-labeled [target]
+  (let [offset (or target.beacon-offset 0)
+        pad (or target.pad "")
         label (or (. opts.substitute_chars target.label) target.label)
-        text (.. label pad)
+        text (or target.text (.. label pad))
         virttext (case target.label-state
                    :selected [[text hl.group.label-selected]]
                    :active-primary [[text hl.group.label-primary]]
                    :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (if (and aot? (not opts.highlight_unlabeled_phase_one_targets))
-                                 ; In this case, "no highlight" should
-                                 ; unambiguously signal "no further keystrokes
-                                 ; needed", so it is mandatory to show all labeled
-                                 ; positions in some way.
-                                 [[(.. " " pad) hl.group.label-secondary]]
-                                 :else nil))]
+                   ; only show text on inactive targets if explicitly set
+                   :inactive (if target.text [[target.text hl.group.label-secondary]] :else nil))]
     (set target.beacon (when virttext [offset virttext]))))
 
 
@@ -344,13 +339,13 @@ is either labeled (C) or not (B).
                   other (set-beacon-to-match-hl target)))))))))
 
 
-(fn set-beacons [targets {: no-labels? : user-given-targets? : aot?}]
+(fn set-beacons [targets {: no-labels? : aot?}]
   (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (do (each [_ target (ipairs targets)]
             (if target.label
-                (set-beacon-for-labeled target {: user-given-targets? : aot?})
+                (set-beacon-for-labeled target)
 
                 (and aot? opts.highlight_unlabeled_phase_one_targets)
                 (set-beacon-to-match-hl target)))
@@ -725,7 +720,7 @@ is either labeled (C) or not (B).
       ; setting the initial label states if using `spec-keys.repeat_search`.
       (when targets.label-set
         (set-label-states targets {: group-offset}))
-      (set-beacons targets {:aot? vars.aot? : no-labels? : user-given-targets?})
+      (set-beacons targets {:aot? vars.aot? : no-labels?})
       (local (start end) (get-highlighted-idx-range targets no-labels?))
       (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
@@ -790,7 +785,7 @@ is either labeled (C) or not (B).
               (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
     ; ---
     (fn display []
-      (set-beacons targets {: no-labels? :aot? vars.aot? : user-given-targets?})
+      (set-beacons targets {: no-labels? :aot? vars.aot?})
       (local (start end) (get-highlighted-idx-range targets no-labels?))
       (with-highlight-chores (fn [] (light-up-beacons targets {: start : end}))))
     ; ---
@@ -864,13 +859,27 @@ is either labeled (C) or not (B).
           (prepare-targets targets))
       (do
         (when (> (length targets) max-phase-one-targets)
-          (set vars.aot? false))
+          (do
+            (set vars.aot? false)
+            (each [_ target (ipairs targets)]
+              (set target.beacon-offset 0))))
         (populate-sublists targets)
         (each [_ sublist (pairs targets.sublists)]
            (prepare-targets sublist))
-        (doto targets
-          (set-initial-label-states)
-          (set-beacons {:aot? vars.aot?}))))
+        (set-initial-label-states targets)
+        (each [_ target (ipairs targets)]
+          (if vars.aot?
+            (do
+              (set target.beacon-offset (get-label-offset target))
+              (when (and (not opts.highlight_unlabeled_phase_one_targets) (= target.label-state :inactive))
+                ; In this case, "no highlight" should
+                ; unambiguously signal "no further keystrokes
+                ; needed", so it is mandatory to show all labeled
+                ; positions in some way.
+                (set target.text " ")
+            ))
+            (when (not user-given-targets?) (set target.pad " "))))
+        (set-beacons targets {:aot? vars.aot?})))
   (local in2 (or ?in2 (get-second-pattern-input targets)))  ; REDRAW
   (when-not in2
     (exit-early))
