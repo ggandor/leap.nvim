@@ -10,6 +10,8 @@ local function _1_(_, k)
     return (require("leap.user")).setup
   elseif (_2_ == "add_default_mappings") then
     return (require("leap.user")).add_default_mappings
+  elseif (_2_ == "add_repeat_mappings") then
+    return (require("leap.user")).add_repeat_mappings
   elseif (_2_ == "init_highlight") then
     local function _3_(...)
       return (function(tgt, m, ...) return tgt[m](tgt, ...) end)(require("leap.highlight"), "init-highlight", ...)

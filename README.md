@@ -65,6 +65,13 @@ Type
 - `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
   matches.
 
+You can also
+
+- map e.g. `;` and `,` to repeat motions without explicitly invoking Leap,
+  similar to the native `f`/`t` repeat (see [Configuration](#configuration)).
+- search bidirectionally in the window, if you are okay with the trade-offs
+  (see [FAQ](#faq)).
+
 ### Down the kangaroo hole
 
 This was just a teaser - mind that Leap is extremely flexible, and offers much
@@ -555,6 +562,20 @@ special_keys = {
 
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
 `<Plug>` keys listed at `:h leap-custom-mappings`.
+
+There is also a convenience function that helps you set repeat keys (it is
+not trivial, you would need to define autocommands for that):
+
+```lua
+require('leap').add_repeat_mappings(';', ',', {
+  -- False by default. If set to true, the keys will work like the
+  -- native semicolon/comma, i.e., forward/backward is understood in
+  -- relation to the last motion.
+  relative_directions = true,
+  -- By default, all modes are included.
+  modes = {'n', 'x', 'o'},
+})
+```
 
 Note: To create custom motions, see [Extending Leap](#extending-leap) below.
 

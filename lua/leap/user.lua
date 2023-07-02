@@ -14,12 +14,84 @@ local function add_default_mappings(force_3f)
   end
   return nil
 end
+local function add_repeat_mappings(forward_key, backward_key, kwargs)
+  local kwargs0 = (kwargs or {})
+  local modes = (kwargs0.modes or {"n", "x", "o"})
+  local relative_directions_3f = kwargs0.relative_directions
+  if relative_directions_3f then
+    local function _4_()
+      local state = (require("leap.main")).state
+      if not state.args["repeat"] then
+        state.backward_invoc = state.args.backward
+        return nil
+      else
+        return nil
+      end
+    end
+    vim.api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _4_})
+  else
+  end
+  local function do_repeat(backward_3f)
+    local state = (require("leap.main")).state
+    local sk = (require("leap")).opts.special_keys
+    local leap = (require("leap")).leap
+    local id
+    local function _7_()
+      state.saved_next_target = sk.next_target
+      state.saved_prev_target = sk.prev_target
+      if backward_3f then
+        sk.next_target = backward_key
+      else
+        sk.next_target = forward_key
+      end
+      if backward_3f then
+        sk.prev_target = forward_key
+      else
+        sk.prev_target = backward_key
+      end
+      state.added_temp_keys = true
+      return nil
+    end
+    id = vim.api.nvim_create_autocmd("User", {pattern = "LeapPatternPost", once = true, callback = _7_})
+    local function _10_()
+      pcall(vim.api.nvim_del_autocmd, id)
+      if state.added_temp_keys then
+        sk.next_target = state.saved_next_target
+        sk.prev_target = state.saved_prev_target
+        state.added_temp_keys = false
+        return nil
+      else
+        return nil
+      end
+    end
+    vim.api.nvim_create_autocmd("User", {pattern = "LeapLeave", once = true, callback = _10_})
+    local _12_
+    if relative_directions_3f then
+      if backward_3f then
+        _12_ = not state.backward_invoc
+      else
+        _12_ = state.backward_invoc
+      end
+    else
+      _12_ = backward_3f
+    end
+    return leap({["repeat"] = true, backward = _12_})
+  end
+  local function _15_()
+    return do_repeat()
+  end
+  vim.keymap.set(modes, forward_key, _15_, {silent = true, desc = "Repeat Leap motion"})
+  local function _16_()
+    return do_repeat(true)
+  end
+  return vim.keymap.set(modes, backward_key, _16_, {silent = true, desc = "Repeat Leap motion backward"})
+end
 local function set_default_keymaps(force_3f)
-  for _, _4_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
-    local _each_5_ = _4_
-    local mode = _each_5_[1]
-    local lhs = _each_5_[2]
-    local rhs = _each_5_[3]
+  for _, _17_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
+    local _each_18_ = _17_
+    local mode = _each_18_[1]
+    local lhs = _each_18_[2]
+    local rhs = _each_18_[3]
     if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
       vim.keymap.set(mode, lhs, rhs, {silent = true})
     else
@@ -33,4 +105,4 @@ local function setup(user_opts)
   end
   return nil
 end
-return {add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
+return {add_default_mappings = add_default_mappings, add_repeat_mappings = add_repeat_mappings, set_default_keymaps = set_default_keymaps, setup = setup}

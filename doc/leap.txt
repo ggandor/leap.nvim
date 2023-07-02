@@ -302,22 +302,24 @@ Special keys~
 CUSTOM MAPPINGS                                           *leap-custom-mappings*
 
 <Plug> keys are aliases for right hand sides of mappings - in our case, calls
-to |leap.leap()|. If you are not familiar with the concept, see |<Plug>| and
-|using-<Plug>|.
+to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 
-Available <Plug> keys (with their corresponding argument tables):
+`vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward-to)')`
+
+Available <Plug> keys (with the corresponding option tables that are passed to
+`leap()`):
 
 *<Plug>(leap-forward-to)*
 arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
 default mapping: `s`
 
-*<Plug>(leap-forward-till)*
-arguments: `{ offset = -1, inclusive_op = true }`
-default mapping: `x` (Visual and Operator-pending mode only)
-
 *<Plug>(leap-backward-to)*
 arguments: `{ backward = true }`
 default mapping: `S`
+
+*<Plug>(leap-forward-till)*
+arguments: `{ offset = -1, inclusive_op = true }`
+default mapping: `x` (Visual and Operator-pending mode only)
 
 *<Plug>(leap-backward-till)*
 arguments: `{ backward = true, offset = 2 }`
@@ -327,13 +329,23 @@ default mapping: `X` (Visual and Operator-pending mode only)
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 
-Example: `vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward-to)')`
+There is also a convenience function that helps you set repeat keys (it is not
+trivial, you would need to define autocommands for that):
+>
+    require('leap').add_repeat_mappings(';', ',', {
+      -- False by default. If set to true, the keys will work like the
+      -- native semicolon/comma, i.e., forward/backward is understood in
+      -- relation to the last motion.
+      relative_directions = true,
+      -- By default, all modes are included.
+      modes = {'n', 'x', 'o'},
+    })
+<
+The keys for jumping to the next/previous target, and for switching between
+groups of matches can be set via |leap.opts.special_keys|.
 
-For creating custom motions with behaviours different from the above, see
-|leap.leap()|.
-
-The keys for repeating the search, and for switching between groups of matches
-can be set via |leap.opts.special_keys|.
+Note: For creating custom motions with behaviours different from the above,
+see |leap.leap()|.
 
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*

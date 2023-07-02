@@ -425,7 +425,10 @@ implies changing the labels, C should be checked separately afterwards.
 (local state {:args nil  ; arguments passed to the current call
               :source_window nil
               :repeat {:in1 nil
-                       :in2 nil}
+                       :in2 nil
+                       :backward nil
+                       :inclusive_op nil
+                       :offset nil}
               :dot_repeat {:in1 nil
                            :in2 nil
                            :target_idx nil
@@ -437,18 +440,23 @@ implies changing the labels, C should be checked separately afterwards.
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (local {:dot_repeat dot-repeat?
+  (local {:repeat repeat?
+          :dot_repeat dot-repeat?
           :target_windows target-windows
           :opts user-given-opts
           :targets user-given-targets
           :action user-given-action
           :multiselect multi-select?}
          kwargs)
-  (local {:backward backward?
-          : match-xxx*-at-the-end?
-          :inclusive_op inclusive-op?
-          : offset}
-         (if dot-repeat? state.dot_repeat kwargs))
+  (local {:backward backward?}
+         (if dot-repeat? state.dot_repeat
+             kwargs))
+  (local {:inclusive_op inclusive-op?
+          : offset
+          : match-xxx*-at-the-end?}
+         (if dot-repeat? state.dot_repeat
+             repeat? state.repeat
+             kwargs))
 
   ; Do this before accessing `opts`.
   (set opts.current_call (or user-given-opts {}))
@@ -507,7 +515,8 @@ implies changing the labels, C should be checked separately afterwards.
   (local vars {:phase
                ; Show beacons (labels & match highlights) ahead of time,
                ; right after the first input?
-               (if (not (or (= max-phase-one-targets 0)
+               (if (not (or repeat?
+                            (= max-phase-one-targets 0)
                             empty-label-lists?
                             multi-select?
                             user-given-targets?))
@@ -693,6 +702,12 @@ implies changing the labels, C should be checked separately afterwards.
                          (min (length targets))))]
           (values start end))))
 
+  (fn get-repeat-input []
+    (if state.repeat.in1
+        (do (when-not state.repeat.in2 (set vars.partial-pattern? true))
+            (values state.repeat.in1 state.repeat.in2))
+        (set vars.errmsg "no previous search")))
+
   (fn get-first-pattern-input []
     (with-highlight-chores (echo ""))  ; clean up the command line
     (case (get-input-by-keymap prompt)
@@ -817,13 +832,17 @@ implies changing the labels, C should be checked separately afterwards.
       (display)
       (case (get-input)
         in
-        (case (get-new-idx idx in)
-          new-idx (do (jump-to! (. targets new-idx))
-                      (loop new-idx false))
-            ; We still want the labels (if there are) to function.
-          _ (case (get-target-with-active-primary-label targets in)
-              [_ target] (jump-to! target)
-              _ (vim.fn.feedkeys in :i)))))
+        (if (and (= idx 1) (contains? spec-keys.prev_target in))
+            ; Handy if repeat keys are set.
+            (vim.fn.feedkeys in :i)
+            (case (get-new-idx idx in)
+              new-idx (do
+                        (jump-to! (. targets new-idx))
+                        (loop new-idx false))
+                ; We still want the labels (if there are) to function.
+              _ (case (get-target-with-active-primary-label targets in)
+                  [_ target] (jump-to! target)
+                  _ (vim.fn.feedkeys in :i))))))
     ; ---
     (loop start-idx true))
 
@@ -837,7 +856,8 @@ implies changing the labels, C should be checked separately afterwards.
 
   (exec-user-autocmds :LeapEnter)
 
-  (local (in1 ?in2) (if dot-repeat? (if state.dot_repeat.callback
+  (local (in1 ?in2) (if repeat? (get-repeat-input)
+                        dot-repeat? (if state.dot_repeat.callback
                                         (values true true)
                                         (values state.dot_repeat.in1
                                                 state.dot_repeat.in2))
@@ -894,7 +914,9 @@ implies changing the labels, C should be checked separately afterwards.
     (local target (. targets n))
     (when-not target
       (exit-early))
-    (update-repeat-state {: in1})
+    (update-repeat-state {: in1
+                          :backward backward? :inclusive_op inclusive-op?
+                          : offset : match-xxx*-at-the-end?})
     (do-action target)
     (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
                               directional? (> (length targets) 1)))
@@ -903,8 +925,11 @@ implies changing the labels, C should be checked separately afterwards.
         (set-dot-repeat in1 nil n))
     (exit))
 
+  (exec-user-autocmds :LeapPatternPost)
   ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state {: in1 :in2 ?in2})
+  (update-repeat-state {: in1 :in2 ?in2
+                        :backward backward? :inclusive_op inclusive-op?
+                        : offset : match-xxx*-at-the-end?})
 
   ; Get the sublist for ?in2, and work with that from here on (except if
   ; we've been given custom targets).
@@ -935,7 +960,7 @@ implies changing the labels, C should be checked separately afterwards.
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and vars.partial-pattern?
+      (or (and (or repeat? vars.partial-pattern?)
                (or op-mode? (not directional?)))
           ; A sole, unlabeled target.
           (and (= (length targets*) 1)
