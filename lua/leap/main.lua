@@ -395,7 +395,7 @@ local function light_up_beacons(targets, _3fstart, _3fend)
   end
   return nil
 end
-local state = {args = nil, source_window = nil, ["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, saved_editor_opts = {}}
+local state = {args = nil, source_window = nil, ["repeat"] = {in1 = nil, in2 = nil, inclusive_op = nil, offset = nil, backward = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, saved_editor_opts = {}}
 local function leap(kwargs)
   local _local_66_ = kwargs
   local repeat_3f = _local_66_["repeat"]

@@ -426,9 +426,11 @@ implies changing the labels, C should be checked separately afterwards.
               :source_window nil
               :repeat {:in1 nil
                        :in2 nil
-                       :backward nil
                        :inclusive_op nil
-                       :offset nil}
+                       :offset nil
+                       ; For when wanting to repeat in relative direction
+                       ; (for "outside" use only).
+                       :backward nil}
               :dot_repeat {:in1 nil
                            :in2 nil
                            :target_idx nil

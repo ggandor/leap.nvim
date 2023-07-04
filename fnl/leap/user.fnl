@@ -25,14 +25,6 @@
   (local modes (or kwargs.modes [:n :x :o]))
   (local relative-directions? kwargs.relative_directions)
 
-  (when relative-directions?
-    (vim.api.nvim_create_autocmd "User"
-     {:pattern "LeapEnter"
-      :callback (fn []
-                  (local state (. (require "leap.main") :state))
-                  (when (not state.args.repeat)
-                    (set state.backward_invoc state.args.backward)))}))
-
   (fn do-repeat [backward?]
     (let [state (. (require "leap.main") :state)
           sk (. (require "leap") :opts :special_keys)
@@ -60,8 +52,8 @@
                        (set state.added_temp_keys false)))})
       (leap {:repeat true
              :backward (if relative-directions?
-                           (if backward? (not state.backward_invoc)
-                               state.backward_invoc)
+                           (if backward? (not state.repeat.backward)
+                               state.repeat.backward)
                            backward?)})))
 
   ; TODO: if `relative-directions?`, change `desc` accordingly?
