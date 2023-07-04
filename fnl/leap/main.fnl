@@ -646,7 +646,7 @@ implies changing the labels, C should be checked separately afterwards.
     res)
 
   (fn update-repeat-state [state*]
-    (when-not user-given-targets?
+    (when-not (or repeat? user-given-targets?)
       (set state.repeat state*)))
 
   (fn set-dot-repeat [in1 in2 target_idx]

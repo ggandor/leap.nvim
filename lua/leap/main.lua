@@ -638,7 +638,7 @@ local function leap(kwargs)
     return res
   end
   local function update_repeat_state(state_2a)
-    if not user_given_targets_3f then
+    if not (repeat_3f or user_given_targets_3f) then
       state["repeat"] = state_2a
       return nil
     else
