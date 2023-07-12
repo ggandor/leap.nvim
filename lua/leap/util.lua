@@ -25,29 +25,14 @@ end
 local function get_cursor_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
-local function get_char_at(_2_, _4_)
-  local _arg_3_ = _2_
-  local line = _arg_3_[1]
-  local byte_col = _arg_3_[2]
-  local _arg_5_ = _4_
-  local char_offset = _arg_5_["char-offset"]
-  local line_str = vim.fn.getline(line)
-  local char_idx = vim.fn.charidx(line_str, (byte_col - 1))
-  local char_nr = vim.fn.strgetchar(line_str, (char_idx + (char_offset or 0)))
-  if (char_nr ~= -1) then
-    return vim.fn.nr2char(char_nr)
-  else
-    return nil
-  end
-end
 local function get_enterable_windows()
   local wins = api.nvim_tabpage_list_wins(0)
   local curr_win = api.nvim_get_current_win()
-  local function _7_(_241)
+  local function _2_(_241)
     local config = api.nvim_win_get_config(_241)
     return (config.focusable and (config.relative == "") and (_241 ~= curr_win))
   end
-  return filter(_7_, wins)
+  return filter(_2_, wins)
 end
 local function get_eq_class_of(ch)
   if opts.case_sensitive then
@@ -58,15 +43,15 @@ local function get_eq_class_of(ch)
 end
 local function __3erepresentative_char(ch)
   local ch_2a
-  local function _9_()
-    local t_10_ = get_eq_class_of(ch)
-    if (nil ~= t_10_) then
-      t_10_ = (t_10_)[1]
+  local function _4_()
+    local t_5_ = get_eq_class_of(ch)
+    if (nil ~= t_5_) then
+      t_5_ = (t_5_)[1]
     else
     end
-    return t_10_
+    return t_5_
   end
-  ch_2a = (_9_() or ch)
+  ch_2a = (_4_() or ch)
   if opts.case_sensitive then
     return ch_2a
   else
@@ -104,17 +89,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _14_, _15_ = get_input()
-        if (_14_ == _3cbs_3e) then
-          local function _16_()
+        local _9_, _10_ = get_input()
+        if (_9_ == _3cbs_3e) then
+          local function _11_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_16_())
-        elseif (_14_ == _3ccr_3e) then
+          return loop(_11_())
+        elseif (_9_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -122,8 +107,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _14_) then
-          local ch = _14_
+        elseif (nil ~= _9_) then
+          local ch = _9_
           return loop((seq .. ch))
         else
           return nil
@@ -137,16 +122,16 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _21_ = loop(get_input())
-    if (nil ~= _21_) then
-      local _in = _21_
+    local _16_ = loop(get_input())
+    if (nil ~= _16_) then
+      local _in = _16_
       return _in
     elseif true then
-      local _ = _21_
+      local _ = _16_
       return echo("")
     else
       return nil
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, ["get-char-at"] = get_char_at, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

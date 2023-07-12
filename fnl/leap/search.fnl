@@ -1,7 +1,6 @@
 (local {: inc
         : dec
         : get-cursor-pos
-        : get-char-at
         : ->representative-char}
        (require "leap.util"))
 
@@ -110,15 +109,20 @@ Dynamic attributes
         (match-positions at-right-bound?)
         (get-match-positions pattern [left-bound right-bound]
                              {: backward? : whole-window?})]
+    (var line-str nil)
     (var prev-match {})  ; to find overlaps
     (each [i [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
-        (case (get-char-at pos {})
-          nil (when (= col 1)  ; means empty line
-                (table.insert targets {: wininfo : pos :chars ["\n"]
-                                       :empty-line? true}))
-          ch1 (let [ch2 (or (get-char-at pos {:char-offset +1})
-                            "\n")  ; before EOL
+        (when (not= line prev-match.line)
+          (set line-str (vim.fn.getline line)))
+        (local start (vim.fn.charidx line-str (- col 1)))
+        (case (vim.fn.strcharpart line-str start 1 1)
+          "" (when (= col 1)  ; on an empty line
+               (table.insert targets {: wininfo : pos :chars ["\n"]
+                                      :empty-line? true}))
+          ch1 (let [ch2 (case (vim.fn.strcharpart line-str (+ start 1) 1 1)
+                          "" "\n"  ; before EOL
+                          ch ch)
                     xxx? (and
                            ; Same line?
                            (= line prev-match.line)

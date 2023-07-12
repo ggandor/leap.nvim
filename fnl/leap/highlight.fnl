@@ -1,6 +1,5 @@
-(local util (require "leap.util"))
+(local {: inc : dec : get-cursor-pos} (require "leap.util"))
 
-(local {: inc : dec} util)
 (local api vim.api)
 (local map vim.tbl_map)
 
@@ -56,10 +55,12 @@
 (fn M.highlight-cursor [self ?pos]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."
-  (let [[line col &as pos] (or ?pos (util.get-cursor-pos))
-        ; nil means the cursor is on an empty line.
-        ch-at-curpos (or (util.get-char-at pos {}) " ")  ; get-char-at needs 1,1-idx
-        ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
+  (let [[line col &as pos] (or ?pos (get-cursor-pos))
+        line-str (vim.fn.getline line)
+        start (vim.fn.charidx line-str (- col 1))
+        ch-at-curpos (case (vim.fn.strcharpart line-str start 1 1)
+                       "" " "  ; on an emtpy line
+                       ch ch)
         id (api.nvim_buf_set_extmark 0 self.ns (dec line) (dec col)
                                      {:virt_text [[ch-at-curpos :Cursor]]
                                       :virt_text_pos "overlay"

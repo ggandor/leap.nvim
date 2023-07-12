@@ -1,7 +1,7 @@
-local util = require("leap.util")
-local _local_1_ = util
+local _local_1_ = require("leap.util")
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
+local get_cursor_pos = _local_1_["get-cursor-pos"]
 local api = vim.api
 local map = vim.tbl_map
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", ["label-selected"] = "LeapLabelSelected", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
@@ -55,54 +55,67 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   end
 end
 M["highlight-cursor"] = function(self, _3fpos)
-  local _let_11_ = (_3fpos or util["get-cursor-pos"]())
+  local _let_11_ = (_3fpos or get_cursor_pos())
   local line = _let_11_[1]
   local col = _let_11_[2]
   local pos = _let_11_
-  local ch_at_curpos = (util["get-char-at"](pos, {}) or " ")
+  local line_str = vim.fn.getline(line)
+  local start = vim.fn.charidx(line_str, (col - 1))
+  local ch_at_curpos
+  do
+    local _12_ = vim.fn.strcharpart(line_str, start, 1, 1)
+    if (_12_ == "") then
+      ch_at_curpos = " "
+    elseif (nil ~= _12_) then
+      local ch = _12_
+      ch_at_curpos = ch
+    else
+      ch_at_curpos = nil
+    end
+  end
   local id = api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
   return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
 end
 M["init-highlight"] = function(self, force_3f)
   local bg = vim.o.background
   local defaults
-  local _13_
+  local _15_
   do
-    local _12_ = bg
-    if (_12_ == "light") then
-      _13_ = "#222222"
+    local _14_ = bg
+    if (_14_ == "light") then
+      _15_ = "#222222"
     elseif true then
-      local _ = _12_
-      _13_ = "#ccff88"
+      local _ = _14_
+      _15_ = "#ccff88"
     else
-      _13_ = nil
+      _15_ = nil
     end
   end
-  local _18_
+  local _20_
   do
-    local _17_ = bg
-    if (_17_ == "light") then
-      _18_ = "#ff8877"
+    local _19_ = bg
+    if (_19_ == "light") then
+      _20_ = "#ff8877"
     elseif true then
-      local _ = _17_
-      _18_ = "#ccff88"
+      local _ = _19_
+      _20_ = "#ccff88"
     else
-      _18_ = nil
+      _20_ = nil
     end
   end
-  local _23_
+  local _25_
   do
-    local _22_ = bg
-    if (_22_ == "light") then
-      _23_ = "#77aaff"
+    local _24_ = bg
+    if (_24_ == "light") then
+      _25_ = "#77aaff"
     elseif true then
-      local _ = _22_
-      _23_ = "#99ccff"
+      local _ = _24_
+      _25_ = "#99ccff"
     else
-      _23_ = nil
+      _25_ = nil
     end
   end
-  defaults = {[self.group.match] = {fg = _13_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _18_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _23_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
+  defaults = {[self.group.match] = {fg = _15_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _20_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _25_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
   for group_name, def_map in pairs(defaults) do
     if not force_3f then
       def_map.default = true
