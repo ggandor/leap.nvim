@@ -345,6 +345,14 @@ vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
 
 
 <details>
+<summary>Working with non-English text</summary>
+
+Check out `opts.equivalence_classes`. For example, you can group accented
+vowels together: `{ 'aá', 'eé', 'ií', ... }`.
+</details>
+
+
+<details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>
 
 To paraphrase Steve Jobs, I wish it were, but it is a coincidence. "Leap" is
@@ -360,7 +368,7 @@ difference in our approach.
 
 ### Requirements
 
-* Neovim >= 0.7.0
+* Neovim >= 0.7.0 stable, or latest nightly
 
 ### Dependencies
 
@@ -384,8 +392,8 @@ explicitly told so (called with a `true` argument).
 ### Lazy loading
 
 ...is all the rage now, but doing it manually or via some plugin manager is
-completely redundant (that is, _not_ necessary), as Leap lazy-loads itself on
-the first actual invocation of the `leap` function.
+completely redundant, as Leap takes care of it itself. Nothing unnecessary is
+loaded until you actually trigger a motion.
 
 ## Usage
 
