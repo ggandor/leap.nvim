@@ -2,6 +2,7 @@ local _local_1_ = require("leap.util")
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
+local strcharpart = _local_1_["strcharpart"]
 local api = vim.api
 local map = vim.tbl_map
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {["label-primary"] = "LeapLabelPrimary", ["label-secondary"] = "LeapLabelSecondary", ["label-selected"] = "LeapLabelSelected", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
@@ -63,7 +64,7 @@ M["highlight-cursor"] = function(self, _3fpos)
   local start = vim.fn.charidx(line_str, (col - 1))
   local ch_at_curpos
   do
-    local _12_ = vim.fn.strcharpart(line_str, start, 1, 1)
+    local _12_ = strcharpart(line_str, start, 1)
     if (_12_ == "") then
       ch_at_curpos = " "
     elseif (nil ~= _12_) then

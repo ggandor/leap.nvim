@@ -3,6 +3,7 @@ local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local __3erepresentative_char = _local_1_["->representative-char"]
+local strcharpart = _local_1_["strcharpart"]
 local api = vim.api
 local empty_3f = vim.tbl_isempty
 local _local_2_ = math
@@ -128,7 +129,7 @@ local function get_targets_in_current_window(pattern, _16_)
       else
       end
       local start = vim.fn.charidx(line_str, (col - 1))
-      local _23_ = vim.fn.strcharpart(line_str, start, 1, 1)
+      local _23_ = strcharpart(line_str, start, 1)
       if (_23_ == "") then
         if (col == 1) then
           table.insert(targets, {wininfo = wininfo, pos = pos, chars = {"\n"}, ["empty-line?"] = true})
@@ -138,7 +139,7 @@ local function get_targets_in_current_window(pattern, _16_)
         local ch1 = _23_
         local ch2
         do
-          local _25_ = vim.fn.strcharpart(line_str, (start + 1), 1, 1)
+          local _25_ = strcharpart(line_str, (start + 1), 1)
           if (_25_ == "") then
             ch2 = "\n"
           elseif (nil ~= _25_) then

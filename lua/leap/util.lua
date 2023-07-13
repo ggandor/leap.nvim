@@ -58,6 +58,13 @@ local function __3erepresentative_char(ch)
     return vim.fn.tolower(ch_2a)
   end
 end
+local function strcharpart(src, start, len)
+  if (vim.fn.has("nvim-0.10") == 1) then
+    return vim.fn.strcharpart(src, start, len, 1)
+  else
+    return vim.fn.strcharpart(src, start, len)
+  end
+end
 local _3cbs_3e = replace_keycodes("<bs>")
 local _3ccr_3e = replace_keycodes("<cr>")
 local _3cesc_3e = replace_keycodes("<esc>")
@@ -89,17 +96,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _9_, _10_ = get_input()
-        if (_9_ == _3cbs_3e) then
-          local function _11_()
+        local _10_, _11_ = get_input()
+        if (_10_ == _3cbs_3e) then
+          local function _12_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_11_())
-        elseif (_9_ == _3ccr_3e) then
+          return loop(_12_())
+        elseif (_10_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -107,8 +114,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _9_) then
-          local ch = _9_
+        elseif (nil ~= _10_) then
+          local ch = _10_
           return loop((seq .. ch))
         else
           return nil
@@ -122,16 +129,16 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _16_ = loop(get_input())
-    if (nil ~= _16_) then
-      local _in = _16_
+    local _17_ = loop(get_input())
+    if (nil ~= _17_) then
+      local _in = _17_
       return _in
     elseif true then
-      local _ = _16_
+      local _ = _17_
       return echo("")
     else
       return nil
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, strcharpart = strcharpart, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

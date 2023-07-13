@@ -1,7 +1,8 @@
 (local {: inc
         : dec
         : get-cursor-pos
-        : ->representative-char}
+        : ->representative-char
+        : strcharpart}
        (require "leap.util"))
 
 (local api vim.api)
@@ -116,11 +117,11 @@ Dynamic attributes
         (when (not= line prev-match.line)
           (set line-str (vim.fn.getline line)))
         (local start (vim.fn.charidx line-str (- col 1)))
-        (case (vim.fn.strcharpart line-str start 1 1)
+        (case (strcharpart line-str start 1)
           "" (when (= col 1)  ; on an empty line
                (table.insert targets {: wininfo : pos :chars ["\n"]
                                       :empty-line? true}))
-          ch1 (let [ch2 (case (vim.fn.strcharpart line-str (+ start 1) 1 1)
+          ch1 (let [ch2 (case (strcharpart line-str (+ start 1) 1)
                           "" "\n"  ; before EOL
                           ch ch)
                     xxx? (and

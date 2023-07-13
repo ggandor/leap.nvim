@@ -50,6 +50,12 @@
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
+(fn strcharpart [src start len]
+  (if (= (vim.fn.has "nvim-0.10") 1)
+      (vim.fn.strcharpart src start len 1)
+      (vim.fn.strcharpart src start len)))
+
+
 ; Input
 
 (local <bs> (replace-keycodes "<bs>"))
@@ -110,5 +116,6 @@
  :get_enterable_windows get-enterable-windows
  : get-eq-class-of
  : ->representative-char
+ : strcharpart
  : get-input
  : get-input-by-keymap}
