@@ -189,11 +189,11 @@ Available options~
                                                               *leap.opts.labels*
 `labels` >
     { "s", "f", "n",
-      "j", "k", "l", "h", "o", "d", "w", "e", "m", "b",
-      "u", "y", "v", "r", "g", "t", "c", "x", "/", "z",
+      "j", "k", "l", "h", "o", "d", "w", "e", "i", "m", "b", "u",
+      "y", "v", "r", "g", "t", "a", "q", "p", "c", "x", "z", "/",
       "S", "F", "N",
-      "J", "K", "L", "H", "O", "D", "W", "E", "M", "B",
-      "U", "Y", "V", "R", "G", "T", "C", "X", "?", "Z" }
+      "J", "K", "L", "H", "O", "D", "W", "E", "I", "M", "B", "U",
+      "Y", "V", "R", "G", "T", "A", "Q", "P", "C", "X", "Z", "?" }
 <
     Target labels to be used when there are more matches than labels in
     |leap.opts.safe_labels| plus one.
