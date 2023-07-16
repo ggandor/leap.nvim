@@ -75,24 +75,26 @@ interrupted change operation."
 
 ; Processing targets ///1
 
-(fn set-autojump [targets force-noautojump?]
-  "Set a flag indicating whether we should autojump to the first target,
+; default-specific helper method
+(fn should-autojump [targets force-noautojump?]
+  "Return whether we should autojump to the first target,
 without having to select a label.
 Note that there is no one-to-one correspondence between this flag and
 the `label-set` field set by `attach-label-set`. No-autojump might be
 forced implicitly, regardless of using safe labels."
-  (set targets.autojump? (and (not (or force-noautojump?
-                                       (empty? opts.safe_labels)))
-                              (or (empty? opts.labels)
-                                  ; Smart mode.
-                                  (>= (length opts.safe_labels)
-                                      ; Skipping the first if autojumping.
-                                      (dec (length targets)))))))
+  (and (not (or force-noautojump?
+                (empty? opts.safe_labels)))
+       (or (empty? opts.labels)
+           ; Smart mode.
+           (>= (length opts.safe_labels)
+               ; Skipping the first if autojumping.
+               (dec (length targets))))))
 
 
+; default-specific helper method
 (fn attach-label-set [targets]
   "Set a field referencing the label set to be used for `targets`.
-NOTE: `set-autojump` should be called BEFORE this function."
+NOTE: `targets.autojump?` should be set BEFORE calling this function."
   ; (assert (not (and (empty? opts.labels) (empty? opts.safe_labels))))
   (set targets.label-set (if (empty? opts.labels) opts.safe_labels
                              (empty? opts.safe_labels) opts.labels
@@ -100,26 +102,26 @@ NOTE: `set-autojump` should be called BEFORE this function."
                              opts.labels)))
 
 
+; generic API helper method
 (fn set-labels [targets multi-select?]
   "Assign label characters to each target, using the given label set
 repeated indefinitely.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
   (when (or (> (length targets) 1) multi-select?)  ; else we jump unconditionally
-    (local {: autojump? : label-set} targets)
+    (local {: label-set} targets)
     (each [i target (ipairs targets)]
-      ; Skip labeling the first target if autojump is set.
-      (local i* (if autojump? (dec i) i))
-      (when (> i* 0)
-        (set target.label (case (% i* (length label-set))
+      (when (not target.no-label)
+        (set target.label (case (% i (length label-set))
                             0 (. label-set (length label-set))
                             n (. label-set n)))))))
 
 
+; generic API helper method
 (fn set-label-states [targets {: group-offset}]
   (let [|label-set| (length targets.label-set)
         offset (* group-offset |label-set|)
-        primary-start (+ offset (if targets.autojump? 2 1))
+        primary-start (+ offset 1)
         primary-end (+ primary-start (dec |label-set|))
         secondary-start (inc primary-end)
         secondary-end (+ primary-end |label-set|)]
@@ -594,7 +596,7 @@ is either labeled (C) or not (B).
           targets (search.get-targets pattern kwargs)]
       (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
-  (fn prepare-targets [targets]
+  (fn should-autojump? [targets]
     (let [funny-edge-case?
           ; <-----  backward search
           ;   ab    target #1
@@ -609,10 +611,15 @@ is either labeled (C) or not (B).
                                 (not directional?)   ; potentially disorienting
                                 user-given-action    ; no jump, doing sg else
                                 funny-edge-case?)]   ; see above
-      (doto targets
-        (set-autojump force-noautojump?)
-        (attach-label-set)
-        (set-labels multi-select?))))
+        (should-autojump force-noautojump? targets)))
+
+  (fn prepare-targets [targets]
+    (set targets.autojump? (should-autojump? targets))
+    (attach-label-set targets)
+    (local first-target (. targets 1))
+    ; Skip labeling the first target if autojump is set.
+    (when targets.autojump? (set first-target.no-label true))
+    (set-labels multi-select? targets))
 
   (fn get-target-with-active-primary-label [sublist input]
     (var res [])
@@ -854,11 +861,13 @@ is either labeled (C) or not (B).
       _ (exit-early)))
 
   (if ?in2
+      ; no sublists, so we operate directly on targets
       (if empty-label-lists?
           (set targets.autojump? true)
           (prepare-targets targets))
+      ; we must prepare the targets for each sublist individually
       (do
-        (when (> (length targets) max-phase-one-targets)
+        (when (> (length targets) max-phase-one-targets) ; TODO what's going on here again?
           (do
             (set vars.aot? false)
             (each [_ target (ipairs targets)]
