@@ -401,22 +401,24 @@ implies changing the labels, C should be checked separately afterwards.
 
 
 (fn light-up-beacons [targets ?start ?end]
-  (for [i (or ?start 1) (or ?end (length targets))]
-    (local target (. targets i))
-    (case target.beacon
-      [offset virttext]
-      (let [bufnr target.wininfo.bufnr
-            [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
-            id (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
-                                         {:virt_text virttext
-                                          :virt_text_pos "overlay"
-                                          :hl_mode "combine"
-                                          :priority hl.priority.label})]
-        ; Register each newly set extmark in a table, so that we can
-        ; delete them one by one, without needing any further contextual
-        ; information. This is relevant if we process user-given targets
-        ; and have no knowledge about the boundaries of the search area.
-        (table.insert hl.extmarks [bufnr id])))))
+  (when (or (not opts.on_beacons)
+            (opts.on_beacons targets ?start ?end))
+    (for [i (or ?start 1) (or ?end (length targets))]
+      (local target (. targets i))
+      (case target.beacon
+        [offset virttext]
+        (let [bufnr target.wininfo.bufnr
+              [lnum col] (map dec target.pos)  ; 1/1 -> 0/0 indexing
+              id (api.nvim_buf_set_extmark bufnr hl.ns lnum (+ col offset)
+                                           {:virt_text virttext
+                                            :virt_text_pos "overlay"
+                                            :hl_mode "combine"
+                                            :priority hl.priority.label})]
+          ; Register each newly set extmark in a table, so that we can
+          ; delete them one by one, without needing any further contextual
+          ; information. This is relevant if we process user-given targets
+          ; and have no knowledge about the boundaries of the search area.
+          (table.insert hl.extmarks [bufnr id]))))))
 
 
 ; Main ///1
