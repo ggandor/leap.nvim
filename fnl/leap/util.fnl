@@ -50,10 +50,12 @@
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
-(fn strcharpart [src start len]
-  (if (= (vim.fn.has "nvim-0.10") 1)
-      (vim.fn.strcharpart src start len 1)
-      (vim.fn.strcharpart src start len)))
+; Note: on 0.10+ we could replace this with vim.fn.strcharpart (with
+; `skipcc`).
+(fn get-char-from [str idx]  ; zero-based (<- vim.fn.charidx())
+  (local nr (vim.fn.strgetchar str idx))
+  (if (= nr -1) ""
+      (vim.fn.nr2char nr)))
 
 
 ; Input
@@ -116,6 +118,6 @@
  :get_enterable_windows get-enterable-windows
  : get-eq-class-of
  : ->representative-char
- : strcharpart
+ : get-char-from
  : get-input
  : get-input-by-keymap}

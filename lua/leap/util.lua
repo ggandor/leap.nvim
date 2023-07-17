@@ -58,11 +58,12 @@ local function __3erepresentative_char(ch)
     return vim.fn.tolower(ch_2a)
   end
 end
-local function strcharpart(src, start, len)
-  if (vim.fn.has("nvim-0.10") == 1) then
-    return vim.fn.strcharpart(src, start, len, 1)
+local function get_char_from(str, idx)
+  local nr = vim.fn.strgetchar(str, idx)
+  if (nr == -1) then
+    return ""
   else
-    return vim.fn.strcharpart(src, start, len)
+    return vim.fn.nr2char(nr)
   end
 end
 local _3cbs_3e = replace_keycodes("<bs>")
@@ -141,4 +142,4 @@ local function get_input_by_keymap(prompt)
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, strcharpart = strcharpart, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-char-from"] = get_char_from, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
