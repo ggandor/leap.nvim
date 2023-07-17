@@ -59,7 +59,8 @@ local function __3erepresentative_char(ch)
   end
 end
 local function strcharpart(src, start, len)
-  if (vim.fn.has("nvim-0.10") == 1) then
+  local pre_release_3f = vim.version().prerelease
+  if (not pre_release_3f and (vim.fn.has("nvim-0.10") == 1)) then
     return vim.fn.strcharpart(src, start, len, 1)
   else
     return vim.fn.strcharpart(src, start, len)

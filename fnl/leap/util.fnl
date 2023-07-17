@@ -51,7 +51,8 @@
 
 
 (fn strcharpart [src start len]
-  (if (= (vim.fn.has "nvim-0.10") 1)
+  (local pre-release? (. (vim.version) :prerelease))
+  (if (and (not pre-release?) (= (vim.fn.has "nvim-0.10") 1))
       (vim.fn.strcharpart src start len 1)
       (vim.fn.strcharpart src start len)))
 
