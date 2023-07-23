@@ -50,12 +50,14 @@
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
-; Note: on 0.10+ we could replace this with vim.fn.strcharpart (with
-; `skipcc`).
 (fn get-char-from [str idx]  ; zero-based (<- vim.fn.charidx())
-  (local nr (vim.fn.strgetchar str idx))
-  (if (= nr -1) ""
-      (vim.fn.nr2char nr)))
+  (if (= (vim.fn.has "nvim-0.10") 1)
+      ; `skipcc` parameter (essential) is only available from 0.10.
+      (vim.fn.strcharpart str idx 1 1)
+      ; `strgetchar` has a bug with composite unicode chars (#108).
+      (let [nr (vim.fn.strgetchar str idx)]
+        (if (= nr -1) ""
+            (vim.fn.nr2char nr)))))
 
 
 ; Input
