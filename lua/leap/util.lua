@@ -59,15 +59,11 @@ local function __3erepresentative_char(ch)
   end
 end
 local function get_char_from(str, idx)
-  if (vim.fn.has("nvim-0.10") == 1) then
-    return vim.fn.strcharpart(str, idx, 1, 1)
+  local ok_3f, res = pcall(vim.fn.strcharpart, str, idx, 1, 1)
+  if ok_3f then
+    return res
   else
-    local nr = vim.fn.strgetchar(str, idx)
-    if (nr == -1) then
-      return ""
-    else
-      return vim.fn.nr2char(nr)
-    end
+    return vim.fn.strcharpart(str, idx, 1)
   end
 end
 local _3cbs_3e = replace_keycodes("<bs>")
@@ -101,17 +97,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _11_, _12_ = get_input()
-        if (_11_ == _3cbs_3e) then
-          local function _13_()
+        local _10_, _11_ = get_input()
+        if (_10_ == _3cbs_3e) then
+          local function _12_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_13_())
-        elseif (_11_ == _3ccr_3e) then
+          return loop(_12_())
+        elseif (_10_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -119,8 +115,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _11_) then
-          local ch = _11_
+        elseif (nil ~= _10_) then
+          local ch = _10_
           return loop((seq .. ch))
         else
           return nil
@@ -134,12 +130,12 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _18_ = loop(get_input())
-    if (nil ~= _18_) then
-      local _in = _18_
+    local _17_ = loop(get_input())
+    if (nil ~= _17_) then
+      local _in = _17_
       return _in
     elseif true then
-      local _ = _18_
+      local _ = _17_
       return echo("")
     else
       return nil

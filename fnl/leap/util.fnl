@@ -50,14 +50,24 @@
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
+; Issue A: failing to calculate the start index properly when composite
+;          characters precede the match
+; Issue B: failing to extract a composite character from the match
+;          (n̂ becomes n)
+
+;                               charidx w/countcc     charidx
+; -----------------------------------------------------------
+; strgetchar                           B                AB
+; strcharpart (stable)                 B                AB
+; strcharpart w/skipcc (0.10+)         A                OK
+
+; It is not worth the fuss (i.e., branching when calling `charidx`) to
+; make this half-broken on stable.
+
 (fn get-char-from [str idx]  ; zero-based (<- vim.fn.charidx())
-  (if (= (vim.fn.has "nvim-0.10") 1)
-      ; `skipcc` parameter (essential) is only available from 0.10.
-      (vim.fn.strcharpart str idx 1 1)
-      ; `strgetchar` has a bug with composite unicode chars (#108).
-      (let [nr (vim.fn.strgetchar str idx)]
-        (if (= nr -1) ""
-            (vim.fn.nr2char nr)))))
+  ; `skipcc` is only available from 0.10.<something>.
+  (local (ok? res) (pcall vim.fn.strcharpart str idx 1 1))
+  (if ok? res (vim.fn.strcharpart str idx 1)))
 
 
 ; Input
