@@ -278,6 +278,25 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 
 
 <details>
+<summary>Disable secondary labels</summary>
+
+You can hide the letters, and show emtpy boxes by tweaking the
+`LeapLabelSecondary` highlight group (that way you keep a visual indication
+that the target is labeled):
+
+```lua
+vim.api.nvim_create_autocmd('ColorScheme', {
+  callback = function ()
+    local bg = vim.api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg
+    vim.api.nvim_set_hl(0, "LeapLabelSecondary",{ fg = bg, bg = bg, })
+  end
+})
+```
+
+</details>
+
+
+<details>
 <summary>Lightspeed-style highlighting</summary>
 
 ```lua
