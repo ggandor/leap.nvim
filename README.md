@@ -123,10 +123,10 @@ some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
 the design space.
 
 The **one-step shift between perception and action** cuts the Gordian knot:
-while the input sequence can be scaled to any number of targets (by adding new
-groups you can switch to), ahead-of-time labeling eliminates the surprise
-factor: leaping is like doing incremental search with knowing in advance when
-to finish.
+while the input sequence can be extended to cover any number of targets (by
+adding new groups you can switch to), ahead-of-time labeling eliminates the
+surprise factor: leaping is like doing incremental search with knowing in
+advance when to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
 play this trick - is also long enough to sufficiently narrow down the matches in
@@ -355,12 +355,12 @@ vowels together: `{ 'aá', 'eé', 'ií', ... }`.
 <details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>
 
-To paraphrase Steve Jobs, I wish it were, but it is a coincidence. "Leap" is
-just another synonym for "jump", that happens to rhyme with Sneak. That said, in
-some respects you can indeed think of leap.nvim as a spiritual successor to
-Raskin's work, and thus the name as a little tribute to the great pioneer of
-interface design, even though embracing the modal paradigm is a fundamental
-difference in our approach.
+To paraphrase Steve Jobs about their logo and Turing's poison apple, I wish it
+were, but it is a coincidence. "Leap" is just another synonym for "jump", that
+happens to rhyme with Sneak. That said, in some respects you can indeed think
+of leap.nvim as a spiritual successor to Raskin's work, and thus the name as a
+little tribute to the great pioneer of interface design, even though embracing
+the modal paradigm is a fundamental difference in our approach.
 
 </details>
 
@@ -443,6 +443,17 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 
 ### Special cases and additional features
 
+#### Smart autojump
+
+Leap automatically jumps to the first match if the remaining matches can be
+covered by a limited set of "safe" target labels (keys you would not use right
+after a jump), but stays in place, and switches to an extended label set
+otherwise. (The trade-off becomes more and more acceptable as the number of
+targets increases, since the probability of aiming for the very first target
+becomes less and less.)
+
+For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
+
 #### Jumping to the end of the line and to empty lines
 
 A character at the end of a line can be targeted by pressing `<space>` after it.
@@ -513,17 +524,6 @@ to follow), but the search can be repeated, and you can also accept the first
 
 - Accepting the first match after one input character is a useful shortcut in
   operator-pending mode (e.g. `ds{char}<enter>`).
-
-#### Smart autojump
-
-Leap automatically jumps to the first match if the remaining matches can be
-covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended label set
-otherwise. (The trade-off becomes more and more acceptable as the number of
-targets increases, since the probability of aiming for the very first target
-becomes less and less.)
-
-For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
 
 #### Concealed labels
 
