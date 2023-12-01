@@ -80,7 +80,6 @@ plugins, extend it with custom targeting methods, and even do arbitrary actions
 with the selected target(s) - read on to dig deeper.
 
 - [Design considerations in detail](#design-considerations-in-detail)
-- [Status](#status)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
@@ -152,12 +151,6 @@ characters altogether to reach a given target.
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
   Complement the small and opinionated core by [extension
   points](#extending-leap), keeping the plugin flexible and future-proof.
-
-## Status
-
-The plugin is not fully stable yet, but don't let that stop you - the usage
-basics are extremely unlikely to change. To follow breaking changes, subscribe
-to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ## FAQ
 
@@ -370,6 +363,12 @@ the modal paradigm is a fundamental difference in our approach.
 </details>
 
 ## Getting started
+
+### Status
+
+The plugin is not 100% stable yet, but don't let that stop you - the usage
+basics are extremely unlikely to change. To follow breaking changes, subscribe
+to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Requirements
 
