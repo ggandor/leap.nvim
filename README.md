@@ -85,7 +85,6 @@ with the selected target(s) - read on to dig deeper.
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Extending Leap](#extending-leap)
-- [Plugins using Leap](#plugins-using-leap)
 
 ## Design considerations in detail
 
@@ -860,7 +859,7 @@ vim.api.nvim_create_autocmd('User', {
 })
 ```
 
-## Plugins using Leap
+### Plugins using Leap
 
 - [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim) (remote
   operations on text objects)
