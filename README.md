@@ -80,7 +80,6 @@ plugins, extend it with custom targeting methods, and even do arbitrary actions
 with the selected target(s) - read on to dig deeper.
 
 - [Design considerations in detail](#design-considerations-in-detail)
-- [Background](#background)
 - [Status](#status)
 - [FAQ](#faq)
 - [Getting started](#getting-started)
@@ -153,19 +152,6 @@ characters altogether to reach a given target.
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
   Complement the small and opinionated core by [extension
   points](#extending-leap), keeping the plugin flexible and future-proof.
-
-## Background
-
-Leap is a reboot of [Lightspeed](https://github.com/ggandor/lightspeed.nvim); a
-streamlined but in many respects enhanced version of its ancestor. Compared to
-Lightspeed, Leap:
-
-- gets rid of some gimmicks with a low benefit/cost ratio (like Lightspeed's
-  "shortcut" labels), but works the same way in the common case; all the really
-  important features are there
-- has a smaller and simpler visual footprint; it feels like using Sneak
-- is more flexible and extensible; it can be used as an engine for selecting
-  arbitrary targets, and performing arbitrary actions on them
 
 ## Status
 
