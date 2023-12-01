@@ -462,7 +462,8 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 
 ### Special cases and additional features
 
-#### Smart autojump
+<details>
+<summary>Smart autojump</summary>
 
 Leap automatically jumps to the first match if the remaining matches can be
 covered by a limited set of "safe" target labels (keys you would not use right
@@ -473,7 +474,10 @@ becomes less and less.)
 
 For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
 
-#### Jumping to the end of the line and to empty lines
+</details>
+
+<details>
+<summary>Jumping to the end of the line and to empty lines</summary>
 
 A character at the end of a line can be targeted by pressing `<space>` after it.
 There is no special mechanism behind this: you can set aliases for the newline
@@ -485,7 +489,10 @@ Empty lines can also be targeted, by pressing the newline alias twice
 but fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
 
-#### Visual and Operator-pending mode
+</details>
+
+<details>
+<summary>Visual and Operator-pending mode</summary>
 
 Visual/Operator-pending `s`/`S` are like their Normal-mode counterparts, except
 that `s` includes _the whole match_ in the selection/operation (which might be
@@ -504,14 +511,20 @@ ab██e  ←  Xab    xde  →  ███de
 Note that each of the forward motions are inclusive (`:h inclusive`), and the
 `v` modifier (`:h o_v`) works as expected on them.
 
-#### Targeting consecutive repeating characters 
+</details>
+
+<details>
+<summary>Targeting consecutive repeating characters </summary>
 
 An `aaa...` sequence will be matched at one position only (by default, at the
 beginning). In Visual and Operator-pending mode, however, `s` and `X` will
 match at the _end_ instead (so that the sequence behaves as a chunk, and either
 the whole or none of it will be selected).
 
-#### Cross-window motions
+</details>
+
+<details>
+<summary>Cross-window motions</summary>
 
 In this case, the matches are sorted by their screen distance from the cursor,
 advancing in concentric circles. The one default motion that works this way is
@@ -521,7 +534,10 @@ page.
 To create custom motions like this, e.g. bidirectional search in the current
 window, see [Extending Leap](#extending-leap).
 
-#### Repeat and traversal
+</details>
+
+<details>
+<summary>Repeat and traversal</summary>
 
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
 initiates "traversal" mode, moving on to the next match on each subsequent
@@ -544,7 +560,10 @@ to follow), but the search can be repeated, and you can also accept the first
 - Accepting the first match after one input character is a useful shortcut in
   operator-pending mode (e.g. `ds{char}<enter>`).
 
-#### Concealed labels
+</details>
+
+<details>
+<summary>Concealed labels</summary>
 
 A special character might replace the label if either:
 
@@ -559,6 +578,8 @@ A special character might replace the label if either:
 
 Leap automatically uses either space (if both primary and secondary labels have
 a background in the current color scheme) or a middle dot (U+00B7).
+
+</details>
 
 ## Configuration
 
