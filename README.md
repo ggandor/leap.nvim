@@ -5,8 +5,9 @@
 Leap is a general-purpose motion plugin for Neovim, building and improving
 primarily on [vim-sneak](https://github.com/justinmk/vim-sneak), with the
 ultimate goal of establishing a new standard interface for moving around in the
-visible area in Vim-like modal editors. It aims to be consistent, reliable,
-needs zero configuration, and tries to get out of your way as much as possible.
+visible area in keyboard-centric modal editors. It allows you to reach any
+target in a very fast, uniform way, and minimizes the required focus level
+while executing a jump.
 
 ![showcase](../media/showcase.gif?raw=true)
 
@@ -106,9 +107,9 @@ That is, **you do not want to think about**
   repeats)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and you
   should be able to type the sequence in one go, without having to make
-  semi-conscious decisions on the fly (the ever-present dilemma when using
-  `/`/`?`: "Shall I try one more input character, or start a `<C-g>` streak?"),
-  or having to react to events (labels appearing on the screen).
+  semi-conscious decisions on the fly (to continue or not to continue the
+  search pattern), and/or having to react to events, i.e., a label appearing
+  over the target (↔ "`/` on steroids" approach - Flash, Pounce)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -116,8 +117,8 @@ All the while using **as few keystrokes as possible**, and getting distracted by
 ### How do we measure up?
 
 It is obviously impossible to achieve all of the above at the same time, without
-some trade-offs at least; but Leap comes pretty close, occupying a sweet spot in
-the design space.
+some trade-offs at least; but Leap comes pretty close, occupying a sweet spot
+in the design space.
 
 The **one-step shift between perception and action** cuts the Gordian knot:
 while the input sequence can be extended to cover any number of targets (by
@@ -126,9 +127,11 @@ surprise factor: leaping is like doing incremental search with knowing in
 advance when to finish.
 
 Fortunately, a 2-character search pattern - the shortest one with which we can
-play this trick - is also long enough to sufficiently narrow down the matches in
-the vast majority of cases. It is very rare that you should type more than 3
-characters altogether to reach a given target.
+play this trick - is also long enough to sufficiently narrow down the matches
+in the vast majority of cases. On top of this, the **smart autojump** feature
+simultaneously reduces the need for typing a label character or for group
+switching, in exchange for a tiny bit of non-determinism (which is not really
+an issue here, since you will know the outcome ahead of time).
 
 ### Auxiliary principles
 
@@ -376,7 +379,7 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 ### Dependencies
 
 * [repeat.vim](https://github.com/tpope/vim-repeat), for dot-repeats (`.`) to
-  work as intended
+  work
 
 ### Installation
 
@@ -388,9 +391,10 @@ config:
 
 `lua require('leap').add_default_mappings()` (init.vim)
 
-Note that the above function will check for conflicts with any custom mappings
-created by you or other plugins, and will _not_ overwrite them, unless
-explicitly told so (called with a `true` argument).
+This will override `s`, `S`, `gs` in all modes, plus `x` and `X` in Visual and
+Operator-pending mode. Note that the above function will check for conflicts
+with any custom mappings created by you or other plugins, and will _not_
+overwrite them, unless explicitly told so (called with a `true` argument).
 
 ### Lazy loading
 
@@ -444,6 +448,16 @@ label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, green.
 (Substitute "green" and "blue" with the actual colors in the current theme.)
 
+### Visual and Operator-pending mode
+
+Visual/Operator-pending `s`/`S` are like their Normal-mode counterparts, except
+that `s` includes _the whole match_ in the selection/operation (which might be
+considered the more intuitive behaviour for these modes).
+
+In these modes, there is also an additional pair of directional motions
+available, to provide more comfort and precision. `x`/`X` are to `s`/`S` as
+`t`/`T` are to `f`/`F` - they exclude the matched pair.
+
 ### Special cases and additional features
 
 <details>
@@ -461,66 +475,6 @@ For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
 </details>
 
 <details>
-<summary>Jumping to the end of the line and to empty lines</summary>
-
-A character at the end of a line can be targeted by pressing `<space>` after it.
-There is no special mechanism behind this: you can set aliases for the newline
-character simply by defining a set in `opts.equivalence_classes` that contains
-it.
-
-Empty lines can also be targeted, by pressing the newline alias twice
-(`<space><space>` by default). This latter is a slightly more magical feature,
-but fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
-
-</details>
-
-<details>
-<summary>Visual and Operator-pending mode</summary>
-
-Visual/Operator-pending `s`/`S` are like their Normal-mode counterparts, except
-that `s` includes _the whole match_ in the selection/operation (which might be
-considered the more intuitive behaviour for these modes).
-
-In these modes, there is also an additional pair of directional motions
-available, to provide more comfort and precision. `x`/`X` are to `s`/`S` as
-`t`/`T` are to `f`/`F` - they exclude the matched pair:
-
-```
-abcd|                    |bcde
-████e  ←  Sab    sde  →  █████
-ab██e  ←  Xab    xde  →  ███de
-```
-
-Note that each of the forward motions are inclusive (`:h inclusive`), and the
-`v` modifier (`:h o_v`) works as expected on them.
-
-</details>
-
-<details>
-<summary>Targeting consecutive repeating characters </summary>
-
-An `aaa...` sequence will be matched at one position only (by default, at the
-beginning). In Visual and Operator-pending mode, however, `s` and `X` will
-match at the _end_ instead (so that the sequence behaves as a chunk, and either
-the whole or none of it will be selected).
-
-</details>
-
-<details>
-<summary>Cross-window motions</summary>
-
-In this case, the matches are sorted by their screen distance from the cursor,
-advancing in concentric circles. The one default motion that works this way is
-`gs` (`<Plug>(leap-from-window)`), searching in all other windows on the tab
-page.
-
-To create custom motions like this, e.g. bidirectional search in the current
-window, see [Extending Leap](#extending-leap).
-
-</details>
-
-<details>
 <summary>Repeat and traversal</summary>
 
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
@@ -531,11 +485,11 @@ target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
 Note that if the safe label set is in use, the labels will remain available the
 whole time!
 
-In case of cross-window search, you cannot traverse (since there's no direction
-to follow), but the search can be repeated, and you can also accept the first
-(presumably only) match with `<enter>`, even after one input.
+In case of cross-window search (`gs`), you cannot traverse (since there's no
+direction to follow), but the search can be repeated, and you can also accept
+the first (presumably only) match with `<enter>`, even after one input.
 
-##### Tips
+#### Tips
 
 - Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
   `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
@@ -543,6 +497,30 @@ to follow), but the search can be repeated, and you can also accept the first
 
 - Accepting the first match after one input character is a useful shortcut in
   operator-pending mode (e.g. `ds{char}<enter>`).
+
+</details>
+
+<details>
+<summary>Jumping to the end of the line and to empty lines</summary>
+
+A character at the end of a line can be targeted by pressing `<space>` after it.
+There is no special mechanism behind this: `<space>` is simply an alias for the
+newline character, defined in `opts.equivalence_classes` by default.
+
+Empty lines can also be targeted, by pressing the newline alias twice
+(`<space><space>`). This latter is a slightly more magical feature, but
+fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
+
+</details>
+
+<details>
+<summary>Targeting consecutive repeating characters </summary>
+
+An `aaa...` sequence will be matched at one position only (by default, at the
+beginning). In Visual and Operator-pending mode, however, `s` and `X` will
+match at the _end_ instead (so that the sequence behaves as a chunk, and either
+the whole or none of it will be selected).
 
 </details>
 
