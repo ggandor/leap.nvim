@@ -5,9 +5,9 @@
 Leap is a general-purpose motion plugin for Neovim, building and improving
 primarily on [vim-sneak](https://github.com/justinmk/vim-sneak), with the
 ultimate goal of establishing a new standard interface for moving around in the
-visible area in keyboard-centric modal editors. It allows you to reach any
-target in a very fast, uniform way, and minimizes the required focus level
-while executing a jump.
+visible area in Vim-like modal editors. It allows you to reach any target in a
+very fast, uniform way, and minimizes the required focus level while executing
+a jump.
 
 ![showcase](../media/showcase.gif?raw=true)
 
@@ -16,9 +16,10 @@ while executing a jump.
 Leap's default motions allow you to jump to any positions in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
-Sneak. The novel idea in Leap is its "clairvoyant" ability: you get a **live
-preview** of the target labels - by mapping possible futures, Leap can show you
-which key(s) you will need to press _before_ you actually need to do that.
+Sneak. The main novel idea in Leap is its "clairvoyant" ability: you get a
+**live preview** of the target labels - by mapping possible futures, Leap can
+show you which key(s) you will need to press _before_ you actually need to do
+that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -28,8 +29,8 @@ which key(s) you will need to press _before_ you actually need to do that.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
   No need to be bothered by remaining labels - those are guaranteed "safe"
   letters -, just continue editing.
-- Else: select a label. In case of multiple groups, first switch to the desired
-  one, using `<space>` (step back with `<tab>`, if needed).
+- Else: type the label character. In case of multiple groups, first switch to
+  the desired one, using `<space>` (step back with `<tab>`, if needed).
 
 ### Why is this method cool?
 
@@ -450,13 +451,11 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 
 ### Visual and Operator-pending mode
 
-Visual/Operator-pending `s`/`S` are like their Normal-mode counterparts, except
-that `s` includes _the whole match_ in the selection/operation (which might be
-considered the more intuitive behaviour for these modes).
-
-In these modes, there is also an additional pair of directional motions
-available, to provide more comfort and precision. `x`/`X` are to `s`/`S` as
-`t`/`T` are to `f`/`F` - they exclude the matched pair.
+In these modes, there is an additional pair of default mappings available, to
+provide more comfort and precision: `x`/`X` are to `s`/`S` as `t`/`T` are to
+`f`/`F` - they exclude the matched pair. Also note that `s` includes the whole
+match in a selection/operation (which might be considered the more intuitive
+behaviour).
 
 ### Special cases and additional features
 
@@ -496,7 +495,7 @@ the first (presumably only) match with `<enter>`, even after one input.
   lines.
 
 - Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `ds{char}<enter>`).
+  operator-pending mode (e.g. `dx{char}<enter>`).
 
 </details>
 

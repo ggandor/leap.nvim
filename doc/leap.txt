@@ -20,8 +20,8 @@ INTRODUCTION                                                 *leap-introduction*
 Leap is a motion plugin that allows you to jump to any positions in the
 visible editor area by entering a 2-character search pattern, and then
 potentially a "label" character to pick your target from multiple matches,
-similar to Justin M. Keyes' Sneak plugin. The novel idea in Leap is its
-"clairvoyant" ability: you get a live preview of the target labels - by
+similar to Justin M. Keyes' Sneak plugin for Vim. The main novel idea in Leap
+is its "clairvoyant" ability: you get a live preview of the target labels - by
 mapping possible futures, Leap can show you which key(s) you will need to
 press before you actually need to do that, resulting in a much more
 frictionless experience.
@@ -39,38 +39,24 @@ USAGE                                                               *leap-usage*
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
   No need to be bothered by remaining labels, just continue editing.
-- Else: select a label. In case of multiple groups, first switch to the desired
-  one, using `<space>` (step back with `<tab>`, if needed).
+- Else: type the label character. In case of multiple groups, first switch to
+  the desired one, using `<space>` (step back with `<tab>`, if needed).
 
-                                   *leap-visual-mode* *leap-operator-pending-mode*
-In Visual and Operator-pending mode, there are two different pairs of
-directional motions available, providing the necessary additional comfort and
-precision.
+In Visual and Operator-pending mode, there is an additional pair of default
+mappings available, to provide more comfort and precision: `x` / `X` are to
+`s` / `S` as `t` / `T` are to `f` / `F` - they exclude the matched pair. Also
+note that `s` includes the whole match in a selection/operation (which might
+be considered the more intuitive behaviour).
 
-`s`/`S` are like their Normal-mode counterparts, except that `s` includes the
-whole match in the selection/operation (which might be considered the more
-intuitive behaviour for these modes).
+A character at the end of a line can be targeted by pressing `<space>` after
+it. There is no special mechanism behind this: `<space>` is simply an alias
+for the newline character, defined in |leap.opts.equivalence_classes| by
+default.
 
-On the other hand, `x`/`X` are like `t`/`T` for `f`/`F` - they exclude the
-matched pair:
-
-```
-abcd|                    |bcde
-████e  ←  Sab    sde  →  █████
-ab██e  ←  Xab    xde  →  ███de
-```
-
-Note that each of the forward motions are |inclusive|, and |o_v| works as
-expected on them.
-
-                          *leap-targeting-end-of-line* *leap-targeting-empty-line*
-A character at the end of a line can be targeted by pressing `<space>` after it.
-There is no special mechanism behind this: you can set aliases for the
-newline character simply by defining a set in |leap.opts.equivalence_classes|
-that contains it. Empty lines can also be targeted, by pressing the newline
-alias twice (`<space><space>` by default). This latter is a slightly more
-magical feature, but fulfills the principle that any visible position you can
-move to with the cursor should be reachable by Leap too.
+Empty lines can also be targeted, by pressing the newline alias twice
+(`<space><space>`). This latter is a slightly more magical feature, but
+fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
 
                                                     *leap-repeat* *leap-traversal*
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
@@ -80,9 +66,10 @@ keypress. If you press it right after invoking a Leap motion (e.g.
 overshoot your target, `<tab>` (`special_keys.prev_target`) can revert the
 jump(s).
 
-Note: In case of cross-window search, you cannot traverse (since there's no
-direction to follow), but the search can be repeated, and you can also accept
-the first (presumably only) match with `<enter>`, even after one input.
+Note: In case of cross-window search (`gs`), you cannot traverse (since
+there's no direction to follow), but the search can be repeated, and you can
+also accept the first (presumably only) match with `<enter>`, even after one
+input.
 
 Note: If |leap.opts.safe_labels| is in use, the labels will remain available
 during the whole time.
@@ -94,7 +81,7 @@ Tips:
   lines.
 
 - Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `ds{char}<enter>`).
+  operator-pending mode (e.g. `dx{char}<enter>`).
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
