@@ -187,8 +187,10 @@ default mapping: `X` (Visual and Operator-pending mode only)
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 
-There is also a convenience function that helps you set repeat keys (it is not
-trivial, you would need to define autocommands for that):
+There is also a convenience function that helps you set repeat keys that work
+like `;` / `,` for `f` / `t`, that is, repeat the last motion without
+explicitly invoking Leap (after that, they enter |leap-traversal| mode, and
+behave as `next_target` / `prev_target`):
 >
     require('leap').add_repeat_mappings(';', ',', {
       -- False by default. If set to true, the keys will work like the
@@ -238,7 +240,7 @@ Available options~
 `max_highlighted_traversal_targets = 10`
 
     Number of targets to be highlighted after the cursor in |leap-traversal|
-    mode (when there are no labels at all).
+    mode, if there are no labels used.
 
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
@@ -248,17 +250,11 @@ Available options~
                                                  *leap.opts.equivalence_classes*
 `equivalence_classes = { ' \t\r\n' }`
 
-    A character will match any other in its equivalence class. The sets can
-    either be defined as strings or tables.
+    A character in search patterns will match any other in its equivalence
+    class. The sets can either be defined as strings or tables.
 
-    Example: >
-    {
-      '\r\n',
-      ')]}>',
-      '([{<',
-      { '"', "'", '`' },
-    }
-<
+    Example: `{ ' \t\r\n', ')]}', '([{', '\'"' }`
+
     Note: Make sure to have a set containing `\n` if you want to be able to
     target characters at the end of the line.
 

@@ -69,17 +69,19 @@ Type
 
 You can also
 
-- map e.g. `;` and `,` to repeat motions without explicitly invoking Leap,
-  similar to the native `f`/`t` repeat (see [Configuration](#configuration)).
-- search bidirectionally in the window, if you are okay with the trade-offs
-  (see [FAQ](#faq)).
+- search bidirectionally in the window, or bind only one key to Leap, and
+  search in all windows, if you are okay with the trade-offs (see [FAQ](#faq)).
+- map keys (presumably the same ones as `next_target`/`prev_target`) to repeat
+  motions without explicitly invoking Leap, similar to how the native `;`/`,`
+  works for `f`/`t` (see [Configuration](#configuration)).
 
 ### Down the kangaroo hole
 
-This was just a teaser - mind that Leap is extremely flexible, and offers much
-more beyond the defaults: you can configure it to resemble other similar
-plugins, extend it with custom targeting methods, and even do arbitrary actions
-with the selected target(s) - read on to dig deeper.
+This was just a teaser - mind that while Leap has deeply thought-through,
+opinionated defaults, its small(ish) but comprehensive API makes it flexible:
+you can configure it to resemble other similar plugins, extend it with custom
+targeting methods, and even do arbitrary actions with the selected target(s) -
+read on to dig deeper.
 
 - [Design considerations in detail](#design-considerations-in-detail)
 - [FAQ](#faq)
@@ -138,17 +140,16 @@ an issue here, since you will know the outcome ahead of time).
 
 - Optimize for the common case, not the pathological: a good example of this is
   the Sneak-like "use strictly one-character labels, and switch between
-  groups"-approach, which can become awkward for, say, 200 targets, but
+  groups"-approach, which can become awkward beyond, say, 200 targets, but
   eliminates all kinds of edge cases and implementation problems, and allows
   for features like [multiselect](#extending-leap).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on Vim's native interface, and aim for synergy as much as possible. The
-  plugin supports macros, operators, dot-repeat (`.`), inclusive/exclusive
-  toggle (`v`), multibyte text and
+  plugin supports macros, dot-repeat (`.`), inclusive/exclusive toggle (`v`),
   [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-  (language mappings), autocommands via `User` events, among others, and intends
-  to continuously improve in this respect.
+  (language mappings), autocommands via `User` events, among others, and
+  intends to continuously improve in this respect.
 
 - [Mechanisms instead of
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
@@ -572,8 +573,10 @@ special_keys = {
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
 `<Plug>` keys listed at `:h leap-custom-mappings`.
 
-There is also a convenience function that helps you set repeat keys (it is
-not trivial, you would need to define autocommands for that):
+There is also a convenience function that helps you set repeat keys that work
+like `;`/`,` for `f`/`t`, that is, repeat the last motion without explicitly
+invoking Leap (after that, they enter traversal mode, and behave as
+`next_target`/`prev_target`):
 
 ```lua
 require('leap').add_repeat_mappings(';', ',', {
