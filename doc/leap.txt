@@ -273,35 +273,29 @@ Available options~
     Example: `{ ['\r'] = '¬' }`
 
                                                          *leap.opts.safe_labels*
-`safe_labels` >
-    { "s", "f", "n", "u", "t", "/",
-      "S", "F", "N", "L", "H", "M", "U", "G", "T", "?", "Z" }
-<
+`safe_labels = 'sfnut/SFNLHMUGTZ?'`
+
     When the number of matches does not exceed the number of these "safe"
     labels plus one, the plugin jumps to the first match automatically after
     entering the pattern. Obviously, for this purpose you should choose keys
     that are unlikely to be used right after a jump!
 
-    Setting the list to `{}` effectively disables the autojump feature.
+    The list can either be defined as a string or a table. Setting it to `{}`
+    or `''` effectively disables the autojump feature.
 
     Note: Operator-pending mode ignores this, since we need to be able to
     select the actual target before executing the operation.
 
                                                               *leap.opts.labels*
-`labels` >
-    { "s", "f", "n",
-      "j", "k", "l", "h", "o", "d", "w", "e", "i", "m", "b", "u",
-      "y", "v", "r", "g", "t", "a", "q", "p", "c", "x", "z", "/",
-      "S", "F", "N",
-      "J", "K", "L", "H", "O", "D", "W", "E", "I", "M", "B", "U",
-      "Y", "V", "R", "G", "T", "A", "Q", "P", "C", "X", "Z", "?" }
-<
+`labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'`
+
     Target labels to be used when there are more matches than labels in
     |leap.opts.safe_labels| plus one.
 
-    Setting the list to `{}` forces autojump to always be on (except for
-    Operator-pending mode, where it makes no sense). In this case, do not
-    forget to set `special_keys.next_group` to something "safe" too.
+    The list can either be defined as a string or a table. Setting it to `{}`
+    or `''` forces autojump to always be on (except for Operator-pending mode,
+    where it makes no sense). In this case, do not forget to set
+    `special_keys.next_group` to something "safe" too.
 
 Heuristics behind the default label lists:
 - Since the commands invoking the motions are mapped to left-hand keys by

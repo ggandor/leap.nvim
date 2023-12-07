@@ -464,9 +464,15 @@ implies changing the labels, C should be checked separately afterwards.
 
   ; Do this before accessing `opts`.
   (set opts.current_call (or user-given-opts {}))
+
   (set opts.current_call.eq_class_of
        (-?> opts.current_call.equivalence_classes
             eq-classes->membership-lookup))
+  ; Force the label lists into tables.
+  (each [_ t (ipairs [:default :current_call])]
+    (each [_ k (ipairs [:labels :safe_labels])]
+      (when (= (type (. opts t k)) :string)
+        (tset opts t k (vim.fn.split (. opts t k) "\\zs")))))
 
   (local directional? (not target-windows))
   (local empty-label-lists? (and (empty? opts.labels)
