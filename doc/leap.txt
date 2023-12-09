@@ -3,7 +3,7 @@
 For Neovim version 0.7.0
 
 ==============================================================================
-CONTENTS                                                           *leap-contents*
+CONTENTS                                                         *leap-contents*
 
   Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
@@ -21,10 +21,9 @@ Leap is a motion plugin that allows you to jump to any positions in the
 visible editor area by entering a 2-character search pattern, and then
 potentially a "label" character to pick your target from multiple matches,
 similar to Justin M. Keyes' Sneak plugin for Vim. The main novel idea in Leap
-is its "clairvoyant" ability: you get a live preview of the target labels - by
-mapping possible futures, Leap can show you which key(s) you will need to
-press before you actually need to do that, resulting in a much more
-frictionless experience.
+is that you get a live preview of the target labels - by mapping possible
+futures, Leap can show you which key(s) you will need to press before you
+actually need to do that, resulting in a much more frictionless experience.
 
 Key mappings should be defined explicitly. To start using the plugin with the
 default ones, call `require('leap').add_default_mappings()`.
@@ -58,6 +57,13 @@ Empty lines can also be targeted, by pressing the newline alias twice
 fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
 
+                                                           *leap-smart-autojump*
+Leap only jumps to the first match if the remaining matches can be covered by
+a limited set of "safe" target labels (keys you would not use right after a
+jump), but stays in place, and switches to an extended label set otherwise.
+For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
+|leap.opts.safe_labels|.
+
                                                     *leap-repeat* *leap-traversal*
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
 initiates "traversal" mode, moving on to the next match on each subsequent
@@ -66,6 +72,10 @@ keypress. If you press it right after invoking a Leap motion (e.g.
 overshoot your target, `<tab>` (`special_keys.prev_target`) can revert the
 jump(s).
 
+Traversal mode can be used as a substitute for `fFtT` motions.
+`s{char}<enter><enter>` is the same as `f{char};`, or `dx{char}<enter>` as
+`dt{char}`, but they work over multiple lines.
+
 Note: In case of cross-window search (`gs`), you cannot traverse (since
 there's no direction to follow), but the search can be repeated, and you can
 also accept the first (presumably only) match with `<enter>`, even after one
@@ -73,15 +83,6 @@ input.
 
 Note: If |leap.opts.safe_labels| is in use, the labels will remain available
 during the whole time.
-
-Tips:
-
-- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
-  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
-  lines.
-
-- Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `dx{char}<enter>`).
 
                                                                *leap-dot-repeat*
 You can repeat change and delete operations with the `.` character, if

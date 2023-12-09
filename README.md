@@ -16,10 +16,9 @@ a jump.
 Leap's default motions allow you to jump to any positions in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
-Sneak. The main novel idea in Leap is its "clairvoyant" ability: you get a
-**live preview** of the target labels - by mapping possible futures, Leap can
-show you which key(s) you will need to press _before_ you actually need to do
-that.
+Sneak. The main novel idea in Leap is that you get a **live preview** of the
+target labels - by mapping possible futures, Leap can show you which key(s) you
+will need to press _before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -108,11 +107,12 @@ That is, **you do not want to think about**
 - **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations using relative line numbers and/or
   repeats)
-- **the steps**: the motion should be atomic (↔ Vim motion combos), and you
-  should be able to type the sequence in one go, without having to make
-  semi-conscious decisions on the fly (to continue or not to continue the
-  search pattern), and/or having to react to events, i.e., a label appearing
-  over the target (↔ "`/` on steroids" approach - Flash, Pounce)
+- **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
+  you should be able to type the sequence in one go, always knowing the next
+  step in advance, without having to react to events immediately (↔ any kind of
+  "just-in-time" labeling method; note that the "`/` on steroids" approach by
+  Pounce and Flash, where the pattern length is not fixed, makes this goal
+  inherently unachievable)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -123,26 +123,25 @@ It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but Leap comes pretty close, occupying a sweet spot
 in the design space.
 
-The **one-step shift between perception and action** cuts the Gordian knot:
-while the input sequence can be extended to cover any number of targets (by
-adding new groups you can switch to), ahead-of-time labeling eliminates the
-surprise factor: leaping is like doing incremental search with knowing in
-advance when to finish.
+The **one-step shift between perception and action** is the big idea that cuts
+the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
+can eliminate the surprise factor from the search-based method. Fortunately, a
+2-character pattern - the shortest one with which we can play this trick - is
+also long enough to sufficiently narrow down the matches in the vast majority
+of cases.
 
-Fortunately, a 2-character search pattern - the shortest one with which we can
-play this trick - is also long enough to sufficiently narrow down the matches
-in the vast majority of cases. On top of this, the **smart autojump** feature
-simultaneously reduces the need for typing a label character or for group
-switching, in exchange for a tiny bit of non-determinism (which is not really
-an issue here, since you will know the outcome ahead of time).
+This also makes **smart autojump** - switching between a "safe" and an "unsafe"
+label set, depending on the number of targets - more viable: the
+non-determinism it introduces is not really an issue here, since the outcome is
+known ahead of time.
 
 ### Auxiliary principles
 
 - Optimize for the common case, not the pathological: a good example of this is
   the Sneak-like "use strictly one-character labels, and switch between
   groups"-approach, which can become awkward beyond, say, 200 targets, but
-  eliminates all kinds of edge cases and implementation problems, and allows
-  for features like [multiselect](#extending-leap).
+  eliminates a whole bunch of edge cases and UI problems (besides that, it
+  allows for an ergonomic [multiselect](#extending-leap) feature).
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   build on Vim's native interface, and aim for synergy as much as possible. The
@@ -409,33 +408,41 @@ loaded until you actually trigger a motion.
 [Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
 to the example file, if you want to follow along.
 
-The search is invoked with `s` in the forward direction, and `S` in the backward
-direction. Let's target some word containing `ol`. After entering the letter
-`o`, the plugin processes all character pairs starting with it, and from here
-on, you have all the visual information you need to reach your specific target.
+### Phase one
+
+The search is invoked with `s` in the forward direction, `S` in the backward
+direction, and `gs` in the other windows. Let's target some word containing
+`ol`. After entering the letter `o`, the plugin processes all character pairs
+starting with it, and from here on, you have all the visual information you
+need to reach your specific target. (The highlighting of unlabeled matches -
+green underlined on the screenshots - is opt-in, turned on for clarity here.)
 
 ![quick example 1](../media/quick_example_1.png?raw=true)
 
-To reach an unlabeled match, just finish the pattern, i.e., type the second
-character. For the rest, you also need to type the label character that is
-displayed right next to the match. (Note: the highlighting of unlabeled matches
-\- green underlined on the screenshots - is opt-in, turned on for clarity here.)
+### Phase two
 
-To continue with the example, type `l`.
-
-If you aimed for the first match (in `oldwin->w_frame`), you are good to go,
-just continue your work! The labels for the subsequent matches of `ol` remain
-visible until the next keypress, but they are carefully chosen "safe" letters,
-guaranteed to not interfere with your following editing command.
+Let's finish the pattern, i.e., type `l`. Leap now jumps to the first match
+(the unlabeled one) automatically - if you aimed for that, you are good to go,
+just continue your work! (The labels for the subsequent matches of `ol` will
+remain visible until the next keypress, but they are carefully chosen "safe"
+letters, guaranteed to not interfere with your following editing command.)
+Otherwise, type the label character next to your target match, and move on to
+that.
 
 ![quick example 2](../media/quick_example_2.png?raw=true)
 
-If you aimed for some other match, then type the label, for example `u`, and
-move on to that.
+Note that Leap only jumps to the first match if the remaining matches can be
+covered by a limited set of safe target labels (keys you would not use right
+after a jump), but stays in place, and switches to an extended label set
+otherwise. For fine-tuning or disabling this behaviour, see `:h leap-config`
+(`labels` and `safe_labels`).
+
+### Multiple target groups
 
 To show the last important feature, let's go back to the start position, and
-target the struct member on the line `available = oldwin->w_frame->fr_height;`
-near the bottom, using the pattern `fr`, by first pressing `s`, and then `f`:
+start a new jump - we will target the struct member on the line `available =
+oldwin->w_frame->fr_height;` near the bottom, using the pattern `fr`, by first
+pressing `s`, and then `f`:
 
 ![quick example 3](../media/quick_example_3.png?raw=true)
 
@@ -450,53 +457,16 @@ label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, green.
 (Substitute "green" and "blue" with the actual colors in the current theme.)
 
-### Visual and Operator-pending mode
+### Special cases and additional features
+
+<details>
+<summary>Visual and Operator-pending mode</summary>
 
 In these modes, there is an additional pair of default mappings available, to
 provide more comfort and precision: `x`/`X` are to `s`/`S` as `t`/`T` are to
 `f`/`F` - they exclude the matched pair. Also note that `s` includes the whole
 match in a selection/operation (which might be considered the more intuitive
 behaviour).
-
-### Special cases and additional features
-
-<details>
-<summary>Smart autojump</summary>
-
-Leap automatically jumps to the first match if the remaining matches can be
-covered by a limited set of "safe" target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended label set
-otherwise. (The trade-off becomes more and more acceptable as the number of
-targets increases, since the probability of aiming for the very first target
-becomes less and less.)
-
-For fine-tuning, see `:h leap-config` (`labels` and `safe_labels`).
-
-</details>
-
-<details>
-<summary>Repeat and traversal</summary>
-
-`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
-initiates "traversal" mode, moving on to the next match on each subsequent
-keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
-it uses the previous search pattern. In case you accidentally overshoot your
-target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
-Note that if the safe label set is in use, the labels will remain available the
-whole time!
-
-In case of cross-window search (`gs`), you cannot traverse (since there's no
-direction to follow), but the search can be repeated, and you can also accept
-the first (presumably only) match with `<enter>`, even after one input.
-
-#### Tips
-
-- Traversal mode can be used as a substitute for normal-mode `f`/`t` motions.
-  `s{char}<enter><enter>` is the same as `f{char};`, but works over multiple
-  lines.
-
-- Accepting the first match after one input character is a useful shortcut in
-  operator-pending mode (e.g. `dx{char}<enter>`).
 
 </details>
 
@@ -511,6 +481,27 @@ Empty lines can also be targeted, by pressing the newline alias twice
 (`<space><space>`). This latter is a slightly more magical feature, but
 fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
+
+</details>
+
+<details>
+<summary>Repeat and traversal</summary>
+
+`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
+initiates "traversal" mode, moving on to the next match on each subsequent
+keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
+it uses the previous search pattern. In case you accidentally overshoot your
+target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
+Note that if the safe label set is in use, the labels will remain available the
+whole time!
+
+Traversal mode can be used as a substitute for `fFtT` motions.
+`s{char}<enter><enter>` is the same as `f{char};`, or `dx{char}<enter>` as
+`dt{char}`, but they work over multiple lines.
+
+In case of cross-window search (`gs`), you cannot traverse (since there's no
+direction to follow), but the search can be repeated, and you can also accept
+the first (presumably only) match with `<enter>`, even after one input.
 
 </details>
 
