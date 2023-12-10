@@ -165,10 +165,6 @@ char separately.
                    (rawget self (->representative-char ch)))})
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
-    ; "\n"-s after empty lines don't have a `ch2`. Still, we put these
-    ; targets into the sublist for "\n", so that they can be targeted
-    ; with <key><key> (as if there would be another "\n" after them).
-    (local ch2 (or ch2 "\n"))
     (when-not (. targets.sublists ch2) (tset targets.sublists ch2 []))
     (table.insert (. targets.sublists ch2) target)))
 
@@ -191,8 +187,8 @@ char separately.
 ; Handling multibyte characters.
 (fn get-label-offset [target]
   (let [{:chars [ch1 ch2]} target]
-    (if target.empty-line? 0
-        target.edge-pos? (ch1:len)
+    (if (= ch1 "\n") 0  ; on EOL
+        (or target.edge-pos? (= ch2 "\n")) (ch1:len)  ; window edge (right) or before EOL
         (+ (ch1:len) (ch2:len)))))
 
 
@@ -291,7 +287,8 @@ implies changing the labels, C should be checked separately afterwards.
 
   ; Case A, B (labeled-unlabeled conflict)
   (each [_ target (ipairs targets)]
-    (when-not target.empty-line?
+    (when-not (and (= (. target.chars 1) "\n")
+                   (= (. target.pos 2) 0))  ; empty line
       (let [{: bufnr : winid} target.wininfo
             [lnum col-ch1] target.pos
             col-ch2 (+ col-ch1 (string.len (. target.chars 1)))]
@@ -358,7 +355,8 @@ implies changing the labels, C should be checked separately afterwards.
   (set labeled-match-positions {})
   (set label-positions {})
   (each [_ target (ipairs targets)]
-    (when-not target.empty-line?
+    (when-not (and (= (. target.chars 1) "\n")
+                   (= (. target.pos 2) 0))  ; empty line
       (let [{: bufnr : winid} target.wininfo
             [lnum col-ch1] target.pos
             col-ch2 (+ col-ch1 (string.len (. target.chars 1)))]
@@ -599,9 +597,10 @@ implies changing the labels, C should be checked separately afterwards.
                    "\\_.")  ; match anything, including EOL
           potential-\n\n? (and (pat1:match "\\n")
                                (or (not ?in2) (pat2:match "\\n")))
-          ; If \n\n is a possible sequence to appear, add |^\n to the
-          ; pattern, to make our convenience feature - targeting empty
-          ; lines by typing the newline alias twice - work.
+          ; If \n\n is a possible sequence to appear, add \n to the
+          ; pattern, to make our convenience feature - targeting EOL
+          ; positions, including empty lines, by typing the newline
+          ; alias twice - work.
           ; This hack is always necessary for single-step processing,
           ; when we already have the full pattern (this includes
           ; repeating the previous search), but also for two-step
@@ -609,8 +608,9 @@ implies changing the labels, C should be checked separately afterwards.
           ; line in the file (normally, `search.get-targets` takes care
           ; of this situation, but the pattern `\n\_.` does not match
           ; `\n$` if it's on the last line).
+          ; (See also `get-targets-in-current-window` in `search.fnl`.)
           pat (if potential-\n\n?
-                  (.. pat1 pat2 "\\|\\^\\n")
+                  (.. pat1 pat2 "\\|\\n")
                   (.. pat1 pat2))]
       (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
 

@@ -118,11 +118,15 @@ Dynamic attributes
           (set line-str (vim.fn.getline line)))
         (local start (vim.fn.charidx line-str (- col 1)))
         (case (get-char-from line-str start)
-          "" (when (= col 1)  ; on an empty line
-               (table.insert targets {: wininfo : pos :chars ["\n"]
-                                      :empty-line? true}))
+          ; On EOL
+          ; In this case, we're adding another, virtual \n after the real one,
+          ; so that these can be targeted by pressing a newline alias twice.
+          ; (See also `prepare-pattern` in `main.fnl`.)
+          "" (table.insert targets {: wininfo : pos
+                                    :chars ["\n" "\n"]})
           ch1 (let [ch2 (case (get-char-from line-str (+ start 1))
-                          "" "\n"  ; before EOL
+                          ; Before EOL
+                          "" "\n"
                           ch ch)
                     xxx? (and
                            ; Same line?
@@ -142,9 +146,9 @@ Dynamic attributes
                 (when (or (not xxx?) (and xxx? match-xxx*-at-the-end?))
                   (when (and xxx? match-xxx*-at-the-end?)
                     (table.remove targets))  ; delete the previous one
-                  (table.insert targets {: wininfo : pos :chars [ch1 ch2]
-                                         :edge-pos? (or (. at-right-bound? i)
-                                                        (= ch2 "\n"))}))))))))
+                  (table.insert targets {: wininfo : pos
+                                         :chars [ch1 ch2]
+                                         :edge-pos? (. at-right-bound? i)}))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]

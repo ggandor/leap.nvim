@@ -52,10 +52,10 @@ it. There is no special mechanism behind this: `<space>` is simply an alias
 for the newline character, defined in |leap.opts.equivalence_classes| by
 default.
 
-Empty lines can also be targeted, by pressing the newline alias twice
-(`<space><space>`). This latter is a slightly more magical feature, but
-fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
+Empty lines or EOL positions can also be targeted, by pressing the newline
+alias twice (`<space><space>`). This latter is a slightly more magical
+feature, but fulfills the principle that any visible position you can move to
+with the cursor should be reachable by Leap too.
 
                                                            *leap-smart-autojump*
 Leap only jumps to the first match if the remaining matches can be covered by

@@ -157,12 +157,11 @@ local function populate_sublists(targets)
     local _0 = _each_24_[1]
     local ch2 = _each_24_[2]
     local target = _each_23_
-    local ch20 = (ch2 or "\n")
-    if not targets.sublists[ch20] then
-      targets.sublists[ch20] = {}
+    if not targets.sublists[ch2] then
+      targets.sublists[ch2] = {}
     else
     end
-    table.insert(targets.sublists[ch20], target)
+    table.insert(targets.sublists[ch2], target)
   end
   return nil
 end
@@ -177,9 +176,9 @@ local function get_label_offset(target)
   local _let_27_ = _let_26_["chars"]
   local ch1 = _let_27_[1]
   local ch2 = _let_27_[2]
-  if target["empty-line?"] then
+  if (ch1 == "\n") then
     return 0
-  elseif target["edge-pos?"] then
+  elseif (target["edge-pos?"] or (ch2 == "\n")) then
     return ch1:len()
   else
     return (ch1:len() + ch2:len())
@@ -261,7 +260,7 @@ local function resolve_conflicts(targets)
   local labeled_match_positions = {}
   local label_positions = {}
   for _, target in ipairs(targets) do
-    if not target["empty-line?"] then
+    if not ((target.chars[1] == "\n") and (target.pos[2] == 0)) then
       local _let_38_ = target.wininfo
       local bufnr = _let_38_["bufnr"]
       local winid = _let_38_["winid"]
@@ -321,7 +320,7 @@ local function resolve_conflicts(targets)
   labeled_match_positions = {}
   label_positions = {}
   for _, target in ipairs(targets) do
-    if not target["empty-line?"] then
+    if not ((target.chars[1] == "\n") and (target.pos[2] == 0)) then
       local _let_52_ = target.wininfo
       local bufnr = _let_52_["bufnr"]
       local winid = _let_52_["winid"]
@@ -581,7 +580,7 @@ local function leap(kwargs)
     local potential__5cn_5cn_3f = (pat1:match("\\n") and (not _3fin2 or pat2:match("\\n")))
     local pat
     if potential__5cn_5cn_3f then
-      pat = (pat1 .. pat2 .. "\\|\\^\\n")
+      pat = (pat1 .. pat2 .. "\\|\\n")
     else
       pat = (pat1 .. pat2)
     end

@@ -59,8 +59,9 @@ At the same time, it **reduces mental effort to almost zero**:
 
 Type
 
-- `s{char}<space>` to jump to the end of a line.
-- `s<space><space>` to jump to an empty line.
+- `s{char}<space>` to jump to a character before the end of the line.
+- `s<space><space>` to jump to an empty line (or any EOL if in Visual mode or
+  `virtualedit=onemore`)
 - `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
 - `s<enter>` to repeat the last search.
 - `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
@@ -477,9 +478,9 @@ A character at the end of a line can be targeted by pressing `<space>` after it.
 There is no special mechanism behind this: `<space>` is simply an alias for the
 newline character, defined in `opts.equivalence_classes` by default.
 
-Empty lines can also be targeted, by pressing the newline alias twice
-(`<space><space>`). This latter is a slightly more magical feature, but
-fulfills the principle that any visible position you can move to with the
+Empty lines or EOL positions can also be targeted, by pressing the newline
+alias twice (`<space><space>`). This latter is a slightly more magical feature,
+but fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
 
 </details>
