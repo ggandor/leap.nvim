@@ -558,17 +558,82 @@ implies changing the labels, C should be checked separately afterwards.
 
   ; Helper functions ///
 
-  (fn get-user-given-targets [targets]
-    (local targets* (if (= (type targets) :function) (targets) targets))
-    (if (and targets* (> (length targets*) 0))
-        (do
-          ; Fill wininfo-s when not provided.
-          (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
-          (when-not (. targets* 1 :wininfo)
-            (each [_ t (ipairs targets*)]
-              (set t.wininfo wininfo)))
-          targets*)
-        (set vars.errmsg "no targets")))
+  ; Misc. helpers
+
+  ; When traversing without labels, keep highlighting the same one group
+  ; of targets, and do not shift until reaching the end of the group - it
+  ; is less disorienting if the "snake" does not move continuously, on
+  ; every jump.
+  (fn get-number-of-highlighted-targets []
+    (case opts.max_highlighted_traversal_targets
+      group-size
+      ; Assumption: being here means we are after an autojump, and
+      ; started highlighting from the 2nd target (no `count`).
+      ; Thus, we can use `vars.curr-idx` as the reference, instead of
+      ; some separate counter (but only because of the above).
+      (let [consumed (% (dec vars.curr-idx) group-size)
+            remaining (- group-size consumed)]
+        ; Switch just before the whole group gets eaten up.
+        (if (= remaining 1) (inc group-size)
+            (= remaining 0) group-size
+            remaining))))
+
+  (fn get-highlighted-idx-range [targets no-labels?]
+    (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
+        (values 0 -1)  ; empty range
+        (let [start (inc vars.curr-idx)
+              end (when no-labels?
+                    (-?> (get-number-of-highlighted-targets)
+                         (+ (dec start))
+                         (min (length targets))))]
+          (values start end))))
+
+  (fn get-target-with-active-primary-label [sublist input]
+    (var res [])
+    (each [idx {: label : label-state &as target} (ipairs sublist)
+           &until (or (next res) (= label-state :inactive))]
+      (when (and (= label input) (= label-state :active-primary))
+        (set res [idx target])))
+    res)
+
+  ; Getting targets
+
+  (fn get-repeat-input []
+    (if state.repeat.in1
+        (do (when-not state.repeat.in2 (set vars.partial-pattern? true))
+            (values state.repeat.in1 state.repeat.in2))
+        (set vars.errmsg "no previous search")))
+
+  (fn get-first-pattern-input []
+    (with-highlight-chores (echo ""))  ; clean up the command line
+    (case (get-input-by-keymap prompt)
+      ; Here we can handle any other modifier key as "zeroth" input,
+      ; if the need arises.
+      in1
+      (if (contains? spec-keys.next_target in1)
+          (if state.repeat.in1
+              (do (set vars.phase nil)
+                  (when-not state.repeat.in2
+                    (set vars.partial-pattern? true))
+                  (values state.repeat.in1 state.repeat.in2))
+              (set vars.errmsg "no previous search"))
+          in1)))
+
+  (fn get-second-pattern-input [targets]
+    (when (and (<= (length targets) max-phase-one-targets)
+               ; Note: `count` does _not_ automatically disable
+               ; two-phase processing, as we might want to give
+               ; char<enter> partial input (but it implies not needing
+               ; to show beacons).
+               (not count))
+      (with-highlight-chores (light-up-beacons targets)))
+    (get-input-by-keymap prompt))
+
+  (fn get-full-pattern-input []
+    (case (get-first-pattern-input)
+      (in1 in2) (values in1 in2)
+      (in1 nil) (case (get-input-by-keymap prompt)
+                  in2 (values in1 in2))))
 
   (fn expand-to-equivalence-class [in]               ; <-- "b"
     (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
@@ -622,6 +687,18 @@ implies changing the labels, C should be checked separately afterwards.
           targets (search.get-targets pattern kwargs)]
       (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
+  (fn get-user-given-targets [targets]
+    (local targets* (if (= (type targets) :function) (targets) targets))
+    (if (and targets* (> (length targets*) 0))
+        (do
+          ; Fill wininfo-s when not provided.
+          (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
+          (when-not (. targets* 1 :wininfo)
+            (each [_ t (ipairs targets*)]
+              (set t.wininfo wininfo)))
+          targets*)
+        (set vars.errmsg "no targets")))
+
   (fn prepare-targets [targets]
     (let [; Note: As opposed to the checks in `resolve-conflicts`, we
           ; can do this right now, before preparing the list (that is,
@@ -647,13 +724,7 @@ implies changing the labels, C should be checked separately afterwards.
         (attach-label-set)
         (set-labels {:force? multi-select?}))))
 
-  (fn get-target-with-active-primary-label [sublist input]
-    (var res [])
-    (each [idx {: label : label-state &as target} (ipairs sublist)
-           &until (or (next res) (= label-state :inactive))]
-      (when (and (= label input) (= label-state :active-primary))
-        (set res [idx target])))
-    res)
+  ; Repeat
 
   (fn update-repeat-state [state*]
     (when-not (or repeat? user-given-targets?)
@@ -673,6 +744,8 @@ implies changing the labels, C should be checked separately afterwards.
                              :inclusive_op inclusive-op?})
       (set-dot-repeat*)))
 
+  ; Jump
+
   (local jump-to!
     (do
       (var first-jump? true)  ; better be managed by the function itself
@@ -684,77 +757,13 @@ implies changing the labels, C should be checked separately afterwards.
                         : mode : offset : backward? : inclusive-op?})
         (set first-jump? false))))
 
-  ; When traversing without labels, keep highlighting the same one group
-  ; of targets, and do not shift until reaching the end of the group - it
-  ; is less disorienting if the "snake" does not move continuously, on
-  ; every jump.
-  (fn get-number-of-highlighted-targets []
-    (case opts.max_highlighted_traversal_targets
-      group-size
-      ; Assumption: being here means we are after an autojump, and
-      ; started highlighting from the 2nd target (no `count`).
-      ; Thus, we can use `vars.curr-idx` as the reference, instead of
-      ; some separate counter (but only because of the above).
-      (let [consumed (% (dec vars.curr-idx) group-size)
-            remaining (- group-size consumed)]
-        ; Switch just before the whole group gets eaten up.
-        (if (= remaining 1) (inc group-size)
-            (= remaining 0) group-size
-            remaining))))
-
-  (fn get-highlighted-idx-range [targets no-labels?]
-    (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
-        (values 0 -1)  ; empty range
-        (let [start (inc vars.curr-idx)
-              end (when no-labels?
-                    (-?> (get-number-of-highlighted-targets)
-                         (+ (dec start))
-                         (min (length targets))))]
-          (values start end))))
-
-  (fn get-repeat-input []
-    (if state.repeat.in1
-        (do (when-not state.repeat.in2 (set vars.partial-pattern? true))
-            (values state.repeat.in1 state.repeat.in2))
-        (set vars.errmsg "no previous search")))
-
-  (fn get-first-pattern-input []
-    (with-highlight-chores (echo ""))  ; clean up the command line
-    (case (get-input-by-keymap prompt)
-      ; Here we can handle any other modifier key as "zeroth" input,
-      ; if the need arises.
-      in1
-      (if (contains? spec-keys.next_target in1)
-          (if state.repeat.in1
-              (do (set vars.phase nil)
-                  (when-not state.repeat.in2
-                    (set vars.partial-pattern? true))
-                  (values state.repeat.in1 state.repeat.in2))
-              (set vars.errmsg "no previous search"))
-          in1)))
-
-  (fn get-second-pattern-input [targets]
-    (when (and (<= (length targets) max-phase-one-targets)
-               ; Note: `count` does _not_ automatically disable
-               ; two-phase processing, as we might want to give
-               ; char<enter> partial input (but it implies not needing
-               ; to show beacons).
-               (not count))
-      (with-highlight-chores (light-up-beacons targets)))
-    (get-input-by-keymap prompt))
-
-  (fn get-full-pattern-input []
-    (case (get-first-pattern-input)
-      (in1 in2) (values in1 in2)
-      (in1 nil) (case (get-input-by-keymap prompt)
-                  in2 (values in1 in2))))
-
+  ; Target-selection loops
 
   (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
     (local |groups| (if (not targets.label-set) 0
                         (ceil (/ (length targets)
                                  (length targets.label-set)))))
-    ; ---
+
     (fn display [group-offset]
       (local no-labels? (or empty-label-lists? vars.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
@@ -765,7 +774,7 @@ implies changing the labels, C should be checked separately afterwards.
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
-    ; ---
+
     (fn loop [group-offset first-invoc?]
       (display group-offset)
       (case (get-input)
@@ -781,8 +790,9 @@ implies changing the labels, C should be checked separately afterwards.
                 (loop group-offset* false))
               ; Otherwise return with input.
               (values input group-offset)))))
-    ; ---
-    (loop (or ?group-offset 0) (not= first-invoc? false)))
+
+    (loop (or ?group-offset 0)
+          (not= first-invoc? false)))
 
 
   (local multi-select-loop
@@ -790,7 +800,7 @@ implies changing the labels, C should be checked separately afterwards.
       (local selection [])
       (var group-offset 0)
       (var first-invoc? true)
-      ; ---
+
       (fn loop [targets]
         (case (post-pattern-input-loop targets group-offset first-invoc?)
           (where (= spec-keys.multi_accept))
@@ -814,7 +824,7 @@ implies changing the labels, C should be checked separately afterwards.
 
 
   (fn traversal-loop [targets start-idx {: no-labels?}]
-    ; ---
+
     (fn on-first-invoc []
       (if no-labels?
           (each [_ t (ipairs targets)]
@@ -825,17 +835,17 @@ implies changing the labels, C should be checked separately afterwards.
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
               (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
-    ; ---
+
     (fn display []
       (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
-    ; ---
+
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
           (contains? spec-keys.prev_target in) (max (dec idx) 1)))
-    ; ---
+
     (fn loop [idx first-invoc?]
       (when first-invoc? (on-first-invoc))
       (set vars.curr-idx idx)  ; `display` depends on it!
@@ -853,7 +863,7 @@ implies changing the labels, C should be checked separately afterwards.
               _ (case (get-target-with-active-primary-label targets in)
                   [_ target] (jump-to! target)
                   _ (vim.fn.feedkeys in :i))))))
-    ; ---
+
     (loop start-idx true))
 
   ; //> Helper functions END

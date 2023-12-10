@@ -537,141 +537,10 @@ local function leap(kwargs)
     _86_ = nil
   end
   vars = {phase = _86_, ["curr-idx"] = 0, errmsg = nil, ["partial-pattern?"] = false}
-  local function get_user_given_targets(targets)
-    local targets_2a
-    if (type(targets) == "function") then
-      targets_2a = targets()
-    else
-      targets_2a = targets
-    end
-    if (targets_2a and (#targets_2a > 0)) then
-      local wininfo = vim.fn.getwininfo(curr_winid)[1]
-      if not targets_2a[1].wininfo then
-        for _, t in ipairs(targets_2a) do
-          t.wininfo = wininfo
-        end
-      else
-      end
-      return targets_2a
-    else
-      vars.errmsg = "no targets"
-      return nil
-    end
-  end
-  local function expand_to_equivalence_class(_in)
-    local chars = get_eq_class_of(_in)
-    if chars then
-      for i, ch in ipairs(chars) do
-        if (ch == "\n") then
-          chars[i] = "\\n"
-        elseif (ch == "\\") then
-          chars[i] = "\\\\"
-        else
-        end
-      end
-      return ("\\(" .. table.concat(chars, "\\|") .. "\\)")
-    else
-      return nil
-    end
-  end
-  local function prepare_pattern(in1, _3fin2)
-    local pat1 = (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\"))
-    local pat2 = ((_3fin2 and expand_to_equivalence_class(_3fin2)) or _3fin2 or "\\_.")
-    local potential__5cn_5cn_3f = (pat1:match("\\n") and (not _3fin2 or pat2:match("\\n")))
-    local pat
-    if potential__5cn_5cn_3f then
-      pat = (pat1 .. pat2 .. "\\|\\n")
-    else
-      pat = (pat1 .. pat2)
-    end
-    local function _94_()
-      if opts.case_sensitive then
-        return "\\C"
-      else
-        return "\\c"
-      end
-    end
-    return ("\\V" .. _94_() .. pat)
-  end
-  local function get_targets(in1, _3fin2)
-    local search = require("leap.search")
-    local pattern = prepare_pattern(in1, _3fin2)
-    local kwargs0 = {["backward?"] = backward_3f, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, ["target-windows"] = _3ftarget_windows}
-    local targets = search["get-targets"](pattern, kwargs0)
-    local function _95_(...)
-      vars.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
-      return nil
-    end
-    return (targets or _95_())
-  end
-  local function prepare_targets(targets)
-    local funny_edge_case_3f
-    local function _96_(...)
-      if ((_G.type(targets) == "table") and ((_G.type(targets[1]) == "table") and ((_G.type(targets[1].pos) == "table") and (nil ~= targets[1].pos[1]) and (nil ~= targets[1].pos[2]))) and ((_G.type(targets[2]) == "table") and ((_G.type(targets[2].pos) == "table") and (nil ~= targets[2].pos[1]) and (nil ~= targets[2].pos[2])) and ((_G.type(targets[2].chars) == "table") and (nil ~= targets[2].chars[1]) and (nil ~= targets[2].chars[2])))) then
-        local l1 = targets[1].pos[1]
-        local c1 = targets[1].pos[2]
-        local l2 = targets[2].pos[1]
-        local c2 = targets[2].pos[2]
-        local ch1 = targets[2].chars[1]
-        local ch2 = targets[2].chars[2]
-        return ((l1 == l2) and (c1 == (c2 + ch1:len() + ch2:len())))
-      else
-        return nil
-      end
-    end
-    funny_edge_case_3f = (backward_3f and _96_())
-    local force_noautojump_3f = (op_mode_3f or multi_select_3f or not directional_3f or user_given_action or funny_edge_case_3f)
-    set_autojump(targets, force_noautojump_3f)
-    attach_label_set(targets)
-    set_labels(targets, {["force?"] = multi_select_3f})
-    return targets
-  end
-  local function get_target_with_active_primary_label(sublist, input)
-    local res = {}
-    for idx, _98_ in ipairs(sublist) do
-      local _each_99_ = _98_
-      local label = _each_99_["label"]
-      local label_state = _each_99_["label-state"]
-      local target = _each_99_
-      if (next(res) or (label_state == "inactive")) then break end
-      if ((label == input) and (label_state == "active-primary")) then
-        res = {idx, target}
-      else
-      end
-    end
-    return res
-  end
-  local function update_repeat_state(state_2a)
-    if not (repeat_3f or user_given_targets_3f) then
-      state["repeat"] = state_2a
-      return nil
-    else
-      return nil
-    end
-  end
-  local function set_dot_repeat(in1, in2, target_idx)
-    if (dot_repeatable_op_3f and not (dot_repeat_3f or (type(user_given_targets) == "table"))) then
-      state.dot_repeat = {in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), callback = user_given_targets, target_idx = target_idx, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
-      return set_dot_repeat_2a()
-    else
-      return nil
-    end
-  end
-  local jump_to_21
-  do
-    local first_jump_3f = true
-    local function _103_(target)
-      local jump = require("leap.jump")
-      jump["jump-to!"](target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = backward_3f, ["inclusive-op?"] = inclusive_op_3f})
-      first_jump_3f = false
-      return nil
-    end
-    jump_to_21 = _103_
-  end
   local function get_number_of_highlighted_targets()
-    local _104_ = opts.max_highlighted_traversal_targets
-    if (nil ~= _104_) then
-      local group_size = _104_
+    local _88_ = opts.max_highlighted_traversal_targets
+    if (nil ~= _88_) then
+      local group_size = _88_
       local consumed = (dec(vars["curr-idx"]) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
@@ -692,22 +561,37 @@ local function leap(kwargs)
       local start = inc(vars["curr-idx"])
       local _end
       if no_labels_3f then
-        local _107_ = get_number_of_highlighted_targets()
-        if (nil ~= _107_) then
-          local _108_ = (_107_ + dec(start))
-          if (nil ~= _108_) then
-            _end = min(_108_, #targets)
+        local _91_ = get_number_of_highlighted_targets()
+        if (nil ~= _91_) then
+          local _92_ = (_91_ + dec(start))
+          if (nil ~= _92_) then
+            _end = min(_92_, #targets)
           else
-            _end = _108_
+            _end = _92_
           end
         else
-          _end = _107_
+          _end = _91_
         end
       else
         _end = nil
       end
       return start, _end
     end
+  end
+  local function get_target_with_active_primary_label(sublist, input)
+    local res = {}
+    for idx, _97_ in ipairs(sublist) do
+      local _each_98_ = _97_
+      local label = _each_98_["label"]
+      local label_state = _each_98_["label-state"]
+      local target = _each_98_
+      if (next(res) or (label_state == "inactive")) then break end
+      if ((label == input) and (label_state == "active-primary")) then
+        res = {idx, target}
+      else
+      end
+    end
+    return res
   end
   local function get_repeat_input()
     if state["repeat"].in1 then
@@ -734,9 +618,9 @@ local function leap(kwargs)
       hl["highlight-cursor"](hl)
       vim.cmd("redraw")
     end
-    local _116_ = get_input_by_keymap(prompt)
-    if (nil ~= _116_) then
-      local in1 = _116_
+    local _103_ = get_input_by_keymap(prompt)
+    if (nil ~= _103_) then
+      local in1 = _103_
       if contains_3f(spec_keys.next_target, in1) then
         if state["repeat"].in1 then
           vars.phase = nil
@@ -773,16 +657,16 @@ local function leap(kwargs)
     return get_input_by_keymap(prompt)
   end
   local function get_full_pattern_input()
-    local _123_, _124_ = get_first_pattern_input()
-    if ((nil ~= _123_) and (nil ~= _124_)) then
-      local in1 = _123_
-      local in2 = _124_
+    local _110_, _111_ = get_first_pattern_input()
+    if ((nil ~= _110_) and (nil ~= _111_)) then
+      local in1 = _110_
+      local in2 = _111_
       return in1, in2
-    elseif ((nil ~= _123_) and (_124_ == nil)) then
-      local in1 = _123_
-      local _125_ = get_input_by_keymap(prompt)
-      if (nil ~= _125_) then
-        local in2 = _125_
+    elseif ((nil ~= _110_) and (_111_ == nil)) then
+      local in1 = _110_
+      local _112_ = get_input_by_keymap(prompt)
+      if (nil ~= _112_) then
+        local in2 = _112_
         return in1, in2
       else
         return nil
@@ -790,6 +674,122 @@ local function leap(kwargs)
     else
       return nil
     end
+  end
+  local function expand_to_equivalence_class(_in)
+    local chars = get_eq_class_of(_in)
+    if chars then
+      for i, ch in ipairs(chars) do
+        if (ch == "\n") then
+          chars[i] = "\\n"
+        elseif (ch == "\\") then
+          chars[i] = "\\\\"
+        else
+        end
+      end
+      return ("\\(" .. table.concat(chars, "\\|") .. "\\)")
+    else
+      return nil
+    end
+  end
+  local function prepare_pattern(in1, _3fin2)
+    local pat1 = (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\"))
+    local pat2 = ((_3fin2 and expand_to_equivalence_class(_3fin2)) or _3fin2 or "\\_.")
+    local potential__5cn_5cn_3f = (pat1:match("\\n") and (not _3fin2 or pat2:match("\\n")))
+    local pat
+    if potential__5cn_5cn_3f then
+      pat = (pat1 .. pat2 .. "\\|\\n")
+    else
+      pat = (pat1 .. pat2)
+    end
+    local function _118_()
+      if opts.case_sensitive then
+        return "\\C"
+      else
+        return "\\c"
+      end
+    end
+    return ("\\V" .. _118_() .. pat)
+  end
+  local function get_targets(in1, _3fin2)
+    local search = require("leap.search")
+    local pattern = prepare_pattern(in1, _3fin2)
+    local kwargs0 = {["backward?"] = backward_3f, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, ["target-windows"] = _3ftarget_windows}
+    local targets = search["get-targets"](pattern, kwargs0)
+    local function _119_(...)
+      vars.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
+      return nil
+    end
+    return (targets or _119_())
+  end
+  local function get_user_given_targets(targets)
+    local targets_2a
+    if (type(targets) == "function") then
+      targets_2a = targets()
+    else
+      targets_2a = targets
+    end
+    if (targets_2a and (#targets_2a > 0)) then
+      local wininfo = vim.fn.getwininfo(curr_winid)[1]
+      if not targets_2a[1].wininfo then
+        for _, t in ipairs(targets_2a) do
+          t.wininfo = wininfo
+        end
+      else
+      end
+      return targets_2a
+    else
+      vars.errmsg = "no targets"
+      return nil
+    end
+  end
+  local function prepare_targets(targets)
+    local funny_edge_case_3f
+    local function _123_(...)
+      if ((_G.type(targets) == "table") and ((_G.type(targets[1]) == "table") and ((_G.type(targets[1].pos) == "table") and (nil ~= targets[1].pos[1]) and (nil ~= targets[1].pos[2]))) and ((_G.type(targets[2]) == "table") and ((_G.type(targets[2].pos) == "table") and (nil ~= targets[2].pos[1]) and (nil ~= targets[2].pos[2])) and ((_G.type(targets[2].chars) == "table") and (nil ~= targets[2].chars[1]) and (nil ~= targets[2].chars[2])))) then
+        local l1 = targets[1].pos[1]
+        local c1 = targets[1].pos[2]
+        local l2 = targets[2].pos[1]
+        local c2 = targets[2].pos[2]
+        local ch1 = targets[2].chars[1]
+        local ch2 = targets[2].chars[2]
+        return ((l1 == l2) and (c1 == (c2 + ch1:len() + ch2:len())))
+      else
+        return nil
+      end
+    end
+    funny_edge_case_3f = (backward_3f and _123_())
+    local force_noautojump_3f = (op_mode_3f or multi_select_3f or not directional_3f or user_given_action or funny_edge_case_3f)
+    set_autojump(targets, force_noautojump_3f)
+    attach_label_set(targets)
+    set_labels(targets, {["force?"] = multi_select_3f})
+    return targets
+  end
+  local function update_repeat_state(state_2a)
+    if not (repeat_3f or user_given_targets_3f) then
+      state["repeat"] = state_2a
+      return nil
+    else
+      return nil
+    end
+  end
+  local function set_dot_repeat(in1, in2, target_idx)
+    if (dot_repeatable_op_3f and not (dot_repeat_3f or (type(user_given_targets) == "table"))) then
+      state.dot_repeat = {in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), callback = user_given_targets, target_idx = target_idx, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
+      return set_dot_repeat_2a()
+    else
+      return nil
+    end
+  end
+  local jump_to_21
+  do
+    local first_jump_3f = true
+    local function _127_(target)
+      local jump = require("leap.jump")
+      jump["jump-to!"](target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = backward_3f, ["inclusive-op?"] = inclusive_op_3f})
+      first_jump_3f = false
+      return nil
+    end
+    jump_to_21 = _127_
   end
   local function post_pattern_input_loop(targets, _3fgroup_offset, first_invoc_3f)
     local _7cgroups_7c
