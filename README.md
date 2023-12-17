@@ -159,12 +159,31 @@ known ahead of time.
 ## FAQ
 
 <details>
-<summary>Workaround for the duplicate cursor bug</summary>
+<summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
-Check
-[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534),
-but also [#143](https://github.com/ggandor/leap.nvim/pull/143) if you
-experience any problems after it.
+Until https://github.com/neovim/neovim/issues/20793 is fixed:
+
+```lua
+-- Hide the (real) cursor when leaping, and restore it afterwards.
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=100')
+      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=0')
+      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+```
+
+Caveat: If you experience any problems after using the above snippet, check
+[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
+and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
@@ -397,6 +416,35 @@ This will override `s`, `S`, `gs` in all modes, plus `x` and `X` in Visual and
 Operator-pending mode. Note that the above function will check for conflicts
 with any custom mappings created by you or other plugins, and will _not_
 overwrite them, unless explicitly told so (called with a `true` argument).
+
+<details>
+<summary>Workaround for the duplicate cursor bug when autojumping</summary>
+
+Until https://github.com/neovim/neovim/issues/20793 is fixed:
+
+```lua
+-- Hide the (real) cursor when leaping, and restore it afterwards.
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=100')
+      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=0')
+      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+```
+
+Caveat: If you experience any problems after using the above snippet, check
+[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
+and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
+
+</details>
 
 ### Lazy loading
 
