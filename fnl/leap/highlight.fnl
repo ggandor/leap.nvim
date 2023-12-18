@@ -91,7 +91,7 @@ so we set a temporary highlight on it to see where we are."
                   self.group.label-secondary {:fg "black"
                                               :bg (case bg
                                                     :light "#77aaff"
-                                                    _ "#99ccff")
+                                                    _ "#ddaadd")
                                               :ctermfg "black"
                                               :ctermbg "blue"
                                               :nocombine true}

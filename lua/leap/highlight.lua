@@ -80,43 +80,28 @@ end
 M["init-highlight"] = function(self, force_3f)
   local bg = vim.o.background
   local defaults
-  local _15_
-  do
-    local _14_ = bg
-    if (_14_ == "light") then
-      _15_ = "#222222"
-    elseif true then
-      local _ = _14_
-      _15_ = "#ccff88"
-    else
-      _15_ = nil
-    end
+  local _14_
+  if (bg == "light") then
+    _14_ = "#222222"
+  else
+    local _ = bg
+    _14_ = "#ccff88"
   end
-  local _20_
-  do
-    local _19_ = bg
-    if (_19_ == "light") then
-      _20_ = "#ff8877"
-    elseif true then
-      local _ = _19_
-      _20_ = "#ccff88"
-    else
-      _20_ = nil
-    end
+  local _18_
+  if (bg == "light") then
+    _18_ = "#ff8877"
+  else
+    local _ = bg
+    _18_ = "#ccff88"
   end
-  local _25_
-  do
-    local _24_ = bg
-    if (_24_ == "light") then
-      _25_ = "#77aaff"
-    elseif true then
-      local _ = _24_
-      _25_ = "#99ccff"
-    else
-      _25_ = nil
-    end
+  local _22_
+  if (bg == "light") then
+    _22_ = "#77aaff"
+  else
+    local _ = bg
+    _22_ = "#ddaadd"
   end
-  defaults = {[self.group.match] = {fg = _15_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _20_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _25_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
+  defaults = {[self.group.match] = {fg = _14_, ctermfg = "red", underline = true, nocombine = true}, [self.group["label-primary"]] = {fg = "black", bg = _18_, ctermfg = "black", ctermbg = "red", nocombine = true}, [self.group["label-secondary"]] = {fg = "black", bg = _22_, ctermfg = "black", ctermbg = "blue", nocombine = true}, [self.group["label-selected"]] = {fg = "black", bg = "magenta", ctermfg = "black", ctermbg = "magenta", nocombine = true}}
   for group_name, def_map in pairs(defaults) do
     if not force_3f then
       def_map.default = true
