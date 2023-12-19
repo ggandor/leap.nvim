@@ -35,6 +35,7 @@ local function handle_interrupted_change_op_21()
 end
 local function set_dot_repeat_2a()
   local op = vim.v.operator
+  local force = string.sub(vim.fn.mode(true), 3)
   local cmd = replace_keycodes("<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
   local change
   if (op == "c") then
@@ -42,7 +43,7 @@ local function set_dot_repeat_2a()
   else
     change = nil
   end
-  local seq = (op .. cmd .. (change or ""))
+  local seq = (op .. force .. cmd .. (change or ""))
   pcall(vim.fn["repeat#setreg"], seq, vim.v.register)
   return pcall(vim.fn["repeat#set"], seq, -1)
 end
@@ -1109,12 +1110,15 @@ local function leap(kwargs)
     else
     end
     update_repeat_state({in1 = in1, backward = backward_3f, inclusive_op = inclusive_op_3f, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f})
-    do_action(target)
     local can_traverse_3f = (not count and not op_mode_3f and not user_given_action and directional_3f and (#targets > 1))
+    if not can_traverse_3f then
+      set_dot_repeat(in1, nil, n)
+    else
+    end
+    do_action(target)
     if can_traverse_3f then
       traversal_loop(targets, 1, {["no-labels?"] = true})
     else
-      set_dot_repeat(in1, nil, n)
     end
     hl:cleanup(hl_affected_windows)
     exec_user_autocmds("LeapLeave")
@@ -1146,9 +1150,9 @@ local function leap(kwargs)
   end
   if multi_select_3f then
     do
-      local _189_ = multi_select_loop(targets_2a)
-      if (nil ~= _189_) then
-        local targets_2a_2a = _189_
+      local _190_ = multi_select_loop(targets_2a)
+      if (nil ~= _190_) then
+        local targets_2a_2a = _190_
         do
           hl:cleanup(hl_affected_windows)
           if not count then
@@ -1242,9 +1246,9 @@ local function leap(kwargs)
     end
   else
   end
-  local _local_204_ = get_target_with_active_primary_label(targets_2a, in_final)
-  local idx = _local_204_[1]
-  local _ = _local_204_[2]
+  local _local_205_ = get_target_with_active_primary_label(targets_2a, in_final)
+  local idx = _local_205_[1]
+  local _ = _local_205_[2]
   if idx then
     set_dot_repeat(in1, _3fin20, idx)
     do_action(targets_2a[idx])
@@ -1272,26 +1276,26 @@ local function leap(kwargs)
   return nil
 end
 do
-  local _208_ = opts.default.equivalence_classes
-  if (nil ~= _208_) then
-    opts.default.eq_class_of = eq_classes__3emembership_lookup(_208_)
+  local _209_ = opts.default.equivalence_classes
+  if (nil ~= _209_) then
+    opts.default.eq_class_of = eq_classes__3emembership_lookup(_209_)
   else
-    opts.default.eq_class_of = _208_
+    opts.default.eq_class_of = _209_
   end
 end
 api.nvim_create_augroup("LeapDefault", {})
 hl["init-highlight"](hl)
-local function _210_()
+local function _211_()
   return hl["init-highlight"](hl)
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _210_, group = "LeapDefault"})
+api.nvim_create_autocmd("ColorScheme", {callback = _211_, group = "LeapDefault"})
 local function set_editor_opts(t)
   state.saved_editor_opts = {}
   local wins = (state.args.target_windows or {state.source_window})
   for opt, val in pairs(t) do
-    local _let_211_ = vim.split(opt, ".", {plain = true})
-    local scope = _let_211_[1]
-    local name = _let_211_[2]
+    local _let_212_ = vim.split(opt, ".", {plain = true})
+    local scope = _let_212_[1]
+    local name = _let_212_[2]
     if (scope == "w") then
       for _, w in ipairs(wins) do
         state.saved_editor_opts[{"w", w, name}] = api.nvim_win_get_option(w, name)
@@ -1338,13 +1342,13 @@ local function set_concealed_label()
   end
   return nil
 end
-local function _215_()
+local function _216_()
   set_editor_opts(temporary_editor_opts)
   return set_concealed_label()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _215_, group = "LeapDefault"})
-local function _216_()
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _216_, group = "LeapDefault"})
+local function _217_()
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _216_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _217_, group = "LeapDefault"})
 return {state = state, leap = leap}

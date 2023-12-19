@@ -48,12 +48,13 @@ interrupted change operation."
   ; Note: dot-repeatable (i.e. non-yank) operation is assumed, we're not
   ; checking it here.
   (let [op vim.v.operator
+        force (string.sub (vim.fn.mode true) 3)
         cmd (replace-keycodes
               "<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
         ; We cannot getreg('.') at this point, since the change has not
         ; happened yet - therefore the below hack (thx Sneak).
         change (when (= op :c) (replace-keycodes "<c-r>.<esc>"))
-        seq (.. op cmd (or change ""))]
+        seq (.. op force cmd (or change ""))]
     ; Using pcall, since vim-repeat might not be installed.
     ; Use the same register for the repeated operation.
     (pcall vim.fn.repeat#setreg seq vim.v.register)
@@ -937,12 +938,14 @@ implies changing the labels, C should be checked separately afterwards.
     (update-repeat-state {: in1
                           :backward backward? :inclusive_op inclusive-op?
                           : offset : match-xxx*-at-the-end?})
-    (do-action target)
     (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
                               directional? (> (length targets) 1)))
-    (if can-traverse?
-        (traversal-loop targets 1 {:no-labels? true})  ; REDRAW (LOOP)
-        (set-dot-repeat in1 nil n))
+    ; Do this before `do-action`, because it might erase forced motion.
+    ; (The `:normal` command in `jump.jump-to!` can change the state of
+    ; `mode()`. See vim/vim#9332.)
+    (when-not can-traverse? (set-dot-repeat in1 nil n))
+    (do-action target)
+    (when can-traverse? (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
   (exec-user-autocmds :LeapPatternPost)
