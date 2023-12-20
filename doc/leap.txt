@@ -26,7 +26,7 @@ futures, Leap can show you which key(s) you will need to press before you
 actually need to do that, resulting in a much more frictionless experience.
 
 Key mappings should be defined explicitly. To start using the plugin with the
-default ones, call `require('leap').add_default_mappings()`.
+default ones, call `require('leap').create_default_mappings()`.
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -40,12 +40,6 @@ USAGE                                                               *leap-usage*
   No need to be bothered by remaining labels, just continue editing.
 - Else: type the label character. In case of multiple groups, first switch to
   the desired one, using `<space>` (step back with `<tab>`, if needed).
-
-In Visual and Operator-pending mode, there is an additional pair of default
-mappings available, to provide more comfort and precision: `x` / `X` are to
-`s` / `S` as `t` / `T` are to `f` / `F` - they exclude the matched pair. Also
-note that `s` includes the whole match in a selection/operation (which might
-be considered the more intuitive behaviour).
 
 A character at the end of a line can be targeted by pressing `<space>` after
 it. There is no special mechanism behind this: `<space>` is simply an alias
@@ -73,7 +67,7 @@ overshoot your target, `<tab>` (`special_keys.prev_target`) can revert the
 jump(s).
 
 Traversal mode can be used as a substitute for `fFtT` motions.
-`s{char}<enter><enter>` is the same as `f{char};`, or `dx{char}<enter>` as
+`s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
 `dt{char}`, but they work over multiple lines.
 
 Note: In case of cross-window search (`gs`), you cannot traverse (since
@@ -91,56 +85,33 @@ repeat.vim (https://github.com/tpope/vim-repeat) is installed.
 ==============================================================================
 DEFAULT MAPPINGS                                         *leap-default-mappings*
 
-The defaults can be set by calling `require('leap').add_default_mappings()`.
+The defaults can be set by calling
+`require('leap').create_default_mappings()`.
 
 Note that the function will check for conflicts with any custom mappings
-created by you or other plugins, and will not overwrite them, unless explicitly
-told so (called with a `true` argument).
+created by you or other plugins, and will not overwrite them, unless
+explicitly told so (i.e., called with a `true` argument).
 
 Trigger keys~
-
-Normal mode
 
                                                         *leap_s*
 s{char1}{char2}         Jump forward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is placed on
-                        {char1}.
+                        {char1} |exclusive|.
+                        To operate till the end of the line, use |o_v|, and
+                        include the newline characer (aliased to `<space>` by
+                        default in |leap.opts.equivalence_classes|) in the
+                        input pattern: `{op}vs{char}{newline}`.
 
                                                         *leap_S*
 S{char1}{char2}         Jump backward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is placed on
-                        {char1}.
+                        {char1} |exclusive|.
 
-Visual and Operator-pending mode
-                                                        *leap_v_s* *leap_o_s*
-s{char1}{char2}         Jump forward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor is
-                        placed on {char2} |inclusive|.
-
-                                                        *leap_v_S* *leap_o_S*
-S{char1}{char2}         Jump backward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor
-                        is placed on {char1}.
-
-                                                        *leap_v_x* *leap_o_x*
-x{char1}{char2}         Jump forward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor is
-                        placed on the character preceding {char1}
-                        |inclusive|.
-                        Mnemonic: "exclusive (s)".
-
-                                                        *leap_v_X* *leap_o_X*
-X{char1}{char2}         Jump backward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor
-                        is placed on the character following {char2}.
-                        Mnemonic: "eXclusive (S)".
-
-All modes
                                                         *leap_gs*
 gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
                         placed on {char1} |exclusive|.
-                        Mnemonic: "global s".
 
 Special keys~
 
@@ -163,30 +134,48 @@ CUSTOM MAPPINGS                                           *leap-custom-mappings*
 <Plug> keys are aliases for right hand sides of mappings - in our case, calls
 to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 
-`vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward-to)')`
+`vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap-forward-to)')`
 
-Available <Plug> keys (with the corresponding option tables that are passed to
-`leap()`):
-
-*<Plug>(leap-forward-to)*
-arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
+*<Plug>(leap-forward)*
+arguments: `{}`
 default mapping: `s`
 
-*<Plug>(leap-backward-to)*
+*<Plug>(leap-backward)*
 arguments: `{ backward = true }`
 default mapping: `S`
-
-*<Plug>(leap-forward-till)*
-arguments: `{ offset = -1, inclusive_op = true }`
-default mapping: `x` (Visual and Operator-pending mode only)
-
-*<Plug>(leap-backward-till)*
-arguments: `{ backward = true, offset = 2 }`
-default mapping: `X` (Visual and Operator-pending mode only)
 
 *<Plug>(leap-from-window)*
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
+
+Alternative set for in-window motions ("fFtT"-style):
+
+*<Plug>(leap-forward-to)*
+arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
+suggested mapping: `s`
+
+*<Plug>(leap-backward-to)*
+arguments: `{ backward = true }`
+suggested mapping: `S`
+
+*<Plug>(leap-forward-till)*
+arguments: `{ offset = -1, inclusive_op = true }`
+suggested mapping: `x` (for Visual and Operator-pending mode only)
+
+*<Plug>(leap-backward-till)*
+arguments: `{ backward = true, offset = 2 }`
+suggested mapping: `X` (for Visual and Operator-pending mode only)
+
+    abcd|                         |bcde
+    |bcde  ←  Sab         sde  →  abc|e     
+    ████e  ←  Sab  (v/o)  sde  →  █████
+    ab██e  ←  Xab  (v/o)  xde  →  ███de
+
+To create custom motions with behaviours different from the predefined ones,
+see |leap.leap()|.
+
+The keys for jumping to the next/previous target, and for switching between
+groups of matches can be set via |leap.opts.special_keys|.
 
 There is also a convenience function that helps you set repeat keys that work
 like `;` / `,` for `f` / `t`, that is, repeat the last motion without
@@ -202,12 +191,6 @@ behave as `next_target` / `prev_target`):
       modes = {'n', 'x', 'o'},
     })
 <
-The keys for jumping to the next/previous target, and for switching between
-groups of matches can be set via |leap.opts.special_keys|.
-
-Note: For creating custom motions with behaviours different from the above,
-see |leap.leap()|.
-
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 

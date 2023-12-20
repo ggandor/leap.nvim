@@ -73,7 +73,7 @@ You can also
   search in all windows, if you are okay with the trade-offs (see [FAQ](#faq)).
 - map keys (presumably the same ones as `next_target`/`prev_target`) to repeat
   motions without explicitly invoking Leap, similar to how the native `;`/`,`
-  works for `f`/`t` (see [Configuration](#configuration)).
+  works for `f`/`t` (see `:h leap-custom-mappings`).
 
 ### Down the kangaroo hole
 
@@ -184,6 +184,27 @@ vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
 Caveat: If you experience any problems after using the above snippet, check
 [#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
 and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
+
+</details>
+
+
+<details>
+<summary>Why remap `s`/`S`?</summary>
+
+Common operations should use the fewest keystrokes, so it makes sense to take
+those keys over by Leap, especially given that both have short synonyms:
+
+Normal mode
+
+- `s` = `cl` (or `xi`)
+- `S` = `cc`
+
+Visual mode
+
+- `s` = `c`
+- `S` = `Vc`, or `c` if already in linewise mode
+
+If you are not convinced, just head to `:h leap-custom-mappings`.
 
 </details>
 
@@ -331,41 +352,6 @@ require('leap').opts.highlight_unlabeled_phase_one_targets = true
 
 
 <details>
-<summary>How to live without `s`/`S`/`x`/`X`?</summary>
-
-All of them have aliases or obvious equivalents:
-
-- `s` = `cl` (or `xi`)
-- `S` = `cc`
-- `v_s` = `v_c`
-- `v_S` = `Vc`, unless already in linewise mode (then = `v_c`)
-- `v_x` = `v_d`
-- `v_X` -> `vnoremap D X`, and use `$D` for vanilla `v_b_D` behaviour
-
-</details>
-
-
-<details>
-<summary>I am too used to using `x` instead of `d` in Visual mode</summary>
-
-```lua
--- Getting used to `d` shouldn't take long - after all, it is more comfortable
--- than `x`. Also Visual `x`/`d` are the counterparts of Operator-pending `d`
--- (not Normal `x`), so `d` is a much more obvious default choice among the two
--- redundant alternatives.
--- If you still desperately want your old `x` back, then just delete these
--- mappings set by Leap:
-vim.keymap.del({'x', 'o'}, 'x')
-vim.keymap.del({'x', 'o'}, 'X')
--- To set alternative keys for "exclusive" selection:
-vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-forward-till)')
-vim.keymap.set({'x', 'o'}, <some-other-key>, '<Plug>(leap-backward-till)')
-```
-
-</details>
-
-
-<details>
 <summary>Working with non-English text</summary>
 
 Check out `opts.equivalence_classes`. For example, you can group accented
@@ -408,14 +394,14 @@ Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
 config:
 
-`require('leap').add_default_mappings()` (init.lua)
+`require('leap').create_default_mappings()` (init.lua)
 
-`lua require('leap').add_default_mappings()` (init.vim)
+`lua require('leap').create_default_mappings()` (init.vim)
 
-This will override `s`, `S`, `gs` in all modes, plus `x` and `X` in Visual and
-Operator-pending mode. Note that the above function will check for conflicts
-with any custom mappings created by you or other plugins, and will _not_
-overwrite them, unless explicitly told so (called with a `true` argument).
+This will override `s`, `S`, and `gs` in all modes. Note that the above
+function will check for conflicts with any custom mappings created by you or
+other plugins, and will _not_ overwrite them, unless explicitly told so (i.e.,
+called with a `true` argument).
 
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
@@ -506,18 +492,25 @@ label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, green.
 (Substitute "green" and "blue" with the actual colors in the current theme.)
 
-### Special cases and additional features
+### Repeat and traversal
 
-<details>
-<summary>Visual and Operator-pending mode</summary>
+`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
+initiates "traversal" mode, moving on to the next match on each subsequent
+keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
+it uses the previous search pattern. In case you accidentally overshoot your
+target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
+Note that if the safe label set is in use, the labels will remain available the
+whole time!
 
-In these modes, there is an additional pair of default mappings available, to
-provide more comfort and precision: `x`/`X` are to `s`/`S` as `t`/`T` are to
-`f`/`F` - they exclude the matched pair. Also note that `s` includes the whole
-match in a selection/operation (which might be considered the more intuitive
-behaviour).
+Traversal mode can be used as a substitute for `fFtT` motions.
+`s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
+`dt{char}`, but they work over multiple lines.
 
-</details>
+In case of cross-window search (`gs`), you cannot traverse (since there's no
+direction to follow), but the search can be repeated, and you can also accept
+the first (presumably only) match with `<enter>`, even after one input.
+
+### Special cases
 
 <details>
 <summary>Jumping to the end of the line and to empty lines</summary>
@@ -530,27 +523,6 @@ Empty lines or EOL positions can also be targeted, by pressing the newline
 alias twice (`<space><space>`). This latter is a slightly more magical feature,
 but fulfills the principle that any visible position you can move to with the
 cursor should be reachable by Leap too.
-
-</details>
-
-<details>
-<summary>Repeat and traversal</summary>
-
-`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
-initiates "traversal" mode, moving on to the next match on each subsequent
-keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
-it uses the previous search pattern. In case you accidentally overshoot your
-target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
-Note that if the safe label set is in use, the labels will remain available the
-whole time!
-
-Traversal mode can be used as a substitute for `fFtT` motions.
-`s{char}<enter><enter>` is the same as `f{char};`, or `dx{char}<enter>` as
-`dt{char}`, but they work over multiple lines.
-
-In case of cross-window search (`gs`), you cannot traverse (since there's no
-direction to follow), but the search can be repeated, and you can also accept
-the first (presumably only) match with `<enter>`, even after one input.
 
 </details>
 
@@ -613,23 +585,11 @@ special_keys = {
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
 `<Plug>` keys listed at `:h leap-custom-mappings`.
 
-There is also a convenience function that helps you set repeat keys that work
-like `;`/`,` for `f`/`t`, that is, repeat the last motion without explicitly
-invoking Leap (after that, they enter traversal mode, and behave as
-`next_target`/`prev_target`):
+To set repeat keys that work like `;`/`,` for `f`/`t`, that is, repeat the last
+motion without explicitly invoking Leap, see also `:h leap-custom-mappings`.
 
-```lua
-require('leap').add_repeat_mappings(';', ',', {
-  -- False by default. If set to true, the keys will work like the
-  -- native semicolon/comma, i.e., forward/backward is understood in
-  -- relation to the last motion.
-  relative_directions = true,
-  -- By default, all modes are included.
-  modes = {'n', 'x', 'o'},
-})
-```
-
-Note: To create custom motions, see [Extending Leap](#extending-leap) below.
+To create custom motions with behaviours different from the predefined ones,
+see `:h leap.leap()`.
 
 ### Highlight groups
 

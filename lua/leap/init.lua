@@ -1,24 +1,25 @@
 local function _1_(_, k)
-  local _2_ = k
-  if (_2_ == "opts") then
-    return (require("leap.opts")).default
-  elseif (_2_ == "leap") then
-    return (require("leap.main")).leap
-  elseif (_2_ == "state") then
-    return (require("leap.main")).state
-  elseif (_2_ == "setup") then
-    return (require("leap.user")).setup
-  elseif (_2_ == "add_default_mappings") then
-    return (require("leap.user")).add_default_mappings
-  elseif (_2_ == "add_repeat_mappings") then
-    return (require("leap.user")).add_repeat_mappings
-  elseif (_2_ == "init_highlight") then
-    local function _3_(...)
+  if (k == "opts") then
+    return require("leap.opts").default
+  elseif (k == "leap") then
+    return require("leap.main").leap
+  elseif (k == "state") then
+    return require("leap.main").state
+  elseif (k == "setup") then
+    return require("leap.user").setup
+  elseif (k == "create_default_mappings") then
+    return require("leap.user").create_default_mappings
+  elseif (k == "add_repeat_mappings") then
+    return require("leap.user").add_repeat_mappings
+  elseif (k == "init_highlight") then
+    local function _2_(...)
       return (function(tgt, m, ...) return tgt[m](tgt, ...) end)(require("leap.highlight"), "init-highlight", ...)
     end
-    return _3_
-  elseif (_2_ == "set_default_keymaps") then
-    return (require("leap.user")).set_default_keymaps
+    return _2_
+  elseif (k == "add_default_mappings") then
+    return require("leap.user").add_default_mappings
+  elseif (k == "set_default_keymaps") then
+    return require("leap.user").set_default_keymaps
   else
     return nil
   end

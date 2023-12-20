@@ -1,23 +1,30 @@
 local plug_mappings = {
   {
-    {'n'}, '<Plug>(leap-forward-to)',
+    {'n', 'x', 'o'}, '<Plug>(leap-forward)',
+    function () require('leap').leap {} end
+  },
+  {
+    {'n', 'x', 'o'}, '<Plug>(leap-backward)',
     function ()
-      require('leap').leap {}
+      -- NOTE: `match-xxx*-at-the-end?` is understood in _relative_ direction
+      -- (i.e., for backward search, it means the beginning).
+      require('leap').leap { backward = true, ['match-xxx*-at-the-end?'] = true }
     end
   },
   {
+    {'n'}, '<Plug>(leap-forward-to)',
+    function () require('leap').leap {} end
+  },
+  {
     {'x', 'o'}, '<Plug>(leap-forward-to)',
-    function ()
-      require('leap').leap {
+    function () require('leap').leap {
         offset = 1, inclusive_op = true, ['match-xxx*-at-the-end?'] = true
       }
     end
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-forward-till)',
-    function ()
-      require('leap').leap { offset = -1, inclusive_op = true }
-    end
+    function () require('leap').leap { offset = -1, inclusive_op = true } end
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward-to)',
@@ -27,14 +34,11 @@ local plug_mappings = {
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward-till)',
-    function ()
-      require('leap').leap { backward = true, offset = 2 }
-    end
+    function () require('leap').leap { backward = true, offset = 2 } end
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-from-window)',
-    function ()
-      require('leap').leap {
+    function () require('leap').leap {
         target_windows = require'leap.util'.get_enterable_windows()
       }
     end
@@ -43,14 +47,8 @@ local plug_mappings = {
   -- Deprecated mappings.
   {
     {'n', 'x', 'o'}, '<Plug>(leap-cross-window)',
-    function ()
-      require('leap').leap {
-        target_windows = require'leap.util'.get_enterable_windows()
-      }
-    end
+    function () require('leap').leap { target_windows = require'leap.util'.get_enterable_windows() } end
   },
-  {{'n', 'x', 'o'}, '<Plug>(leap-forward)',    function () require('leap').leap {} end},
-  {{'n', 'x', 'o'}, '<Plug>(leap-backward)',   function () require('leap').leap { backward = true } end},
   {{'n', 'x', 'o'}, '<Plug>(leap-forward-x)',  function () require('leap').leap { offset = 1, inclusive_op = true } end},
   {{'n', 'x', 'o'}, '<Plug>(leap-backward-x)', function () require('leap').leap { backward = true, offset = 2 } end},
 }

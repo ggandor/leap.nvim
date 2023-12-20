@@ -1,5 +1,5 @@
-local function add_default_mappings(force_3f)
-  for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
+local function create_default_mappings(force_3f)
+  for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local _each_2_ = _1_
     local modes = _each_2_[1]
     local lhs = _each_2_[2]
@@ -19,9 +19,9 @@ local function add_repeat_mappings(forward_key, backward_key, kwargs)
   local modes = (kwargs0.modes or {"n", "x", "o"})
   local relative_directions_3f = kwargs0.relative_directions
   local function do_repeat(backward_3f)
-    local state = (require("leap.main")).state
-    local sk = (require("leap")).opts.special_keys
-    local leap = (require("leap")).leap
+    local state = require("leap.main").state
+    local sk = require("leap").opts.special_keys
+    local leap = require("leap").leap
     local id
     local function _4_()
       state.saved_next_target = sk.next_target
@@ -73,12 +73,28 @@ local function add_repeat_mappings(forward_key, backward_key, kwargs)
   end
   return vim.keymap.set(modes, backward_key, _13_, {silent = true, desc = "Repeat Leap motion backward"})
 end
-local function set_default_keymaps(force_3f)
-  for _, _14_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
+local function add_default_mappings(force_3f)
+  for _, _14_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
     local _each_15_ = _14_
-    local mode = _each_15_[1]
+    local modes = _each_15_[1]
     local lhs = _each_15_[2]
     local rhs = _each_15_[3]
+    local desc = _each_15_[4]
+    for _0, mode in ipairs(modes) do
+      if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
+        vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
+      else
+      end
+    end
+  end
+  return nil
+end
+local function set_default_keymaps(force_3f)
+  for _, _17_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
+    local _each_18_ = _17_
+    local mode = _each_18_[1]
+    local lhs = _each_18_[2]
+    local rhs = _each_18_[3]
     if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
       vim.keymap.set(mode, lhs, rhs, {silent = true})
     else
@@ -92,4 +108,4 @@ local function setup(user_opts)
   end
   return nil
 end
-return {add_default_mappings = add_default_mappings, add_repeat_mappings = add_repeat_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
+return {create_default_mappings = create_default_mappings, add_repeat_mappings = add_repeat_mappings, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}

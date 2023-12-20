@@ -1,14 +1,11 @@
 ; Convenience functions for users.
 
-(fn add-default-mappings [force?]
+(fn create-default-mappings [force?]
   (each [_ [modes lhs rhs desc]
          (ipairs
-          [[[:n :x :o] "s"  "<Plug>(leap-forward-to)" "Leap forward to"]
-           [[:n :x :o] "S"  "<Plug>(leap-backward-to)" "Leap backward to"]
-           [   [:x :o] "x"  "<Plug>(leap-forward-till)" "Leap forward till"]
-           [   [:x :o] "X"  "<Plug>(leap-backward-till)" "Leap backward till"]
+          [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
+           [[:n :x :o] "S"  "<Plug>(leap-backward)" "Leap backward"]
            [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
-           [[:n :x :o] "gs" "<Plug>(leap-cross-window)" "Leap from window"]  ; deprecated
            ])]
     (each [_ mode (ipairs modes)]
       (when (or force?
@@ -19,6 +16,7 @@
                 (and (= (vim.fn.mapcheck lhs mode) "")
                      (= (vim.fn.hasmapto rhs mode) 0)))
         (vim.keymap.set mode lhs rhs {:silent true :desc desc})))))
+
 
 (fn add-repeat-mappings [forward-key backward-key kwargs]
   (local kwargs (or kwargs {}))
@@ -62,6 +60,28 @@
   (vim.keymap.set modes backward-key #(do-repeat true)
                   {:silent true :desc "Repeat Leap motion backward"}))
 
+
+; Deprecated.
+(fn add-default-mappings [force?]
+  (each [_ [modes lhs rhs desc]
+         (ipairs
+          [[[:n :x :o] "s"  "<Plug>(leap-forward-to)" "Leap forward to"]
+           [[:n :x :o] "S"  "<Plug>(leap-backward-to)" "Leap backward to"]
+           [   [:x :o] "x"  "<Plug>(leap-forward-till)" "Leap forward till"]
+           [   [:x :o] "X"  "<Plug>(leap-backward-till)" "Leap backward till"]
+           [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
+           [[:n :x :o] "gs" "<Plug>(leap-cross-window)" "Leap from window"]  ; deprecated
+           ])]
+    (each [_ mode (ipairs modes)]
+      (when (or force?
+                ; Otherwise only set the keymaps if:
+                ; 1. (A keyseq starting with) `lhs` is not already mapped
+                ;    to something else.
+                ; 2. There is no existing mapping to the <Plug> key.
+                (and (= (vim.fn.mapcheck lhs mode) "")
+                     (= (vim.fn.hasmapto rhs mode) 0)))
+        (vim.keymap.set mode lhs rhs {:silent true :desc desc})))))
+
 ; Deprecated.
 (fn set-default-keymaps [force?]
   (each [_ [mode lhs rhs]
@@ -87,7 +107,8 @@
   (each [k v (pairs user-opts)]
     (tset (require "leap.opts") :default k v)))
 
-{:add_default_mappings add-default-mappings
+{:create_default_mappings create-default-mappings
  :add_repeat_mappings add-repeat-mappings
+ :add_default_mappings add-default-mappings
  :set_default_keymaps set-default-keymaps
  : setup}
