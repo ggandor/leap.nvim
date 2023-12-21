@@ -107,6 +107,7 @@ Dynamic attributes
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole 2-char match should be visible
+
         (match-positions at-right-bound?)
         (get-match-positions pattern [left-bound right-bound]
                              {: backward? : whole-window?})]
@@ -116,39 +117,37 @@ Dynamic attributes
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
         (when (not= line prev-match.line)
           (set line-str (vim.fn.getline line)))
+        ; Extracting the actual characters from the buffer at the match
+        ; position.
         (local start (vim.fn.charidx line-str (- col 1)))
-        (case (get-char-from line-str start)
-          ; On EOL
-          ; In this case, we're adding another, virtual \n after the real one,
-          ; so that these can be targeted by pressing a newline alias twice.
-          ; (See also `prepare-pattern` in `main.fnl`.)
-          "" (table.insert targets {: wininfo : pos
-                                    :chars ["\n" "\n"]})
-          ch1 (let [ch2 (case (get-char-from line-str (+ start 1))
-                          ; Before EOL
-                          "" "\n"
-                          ch ch)
-                    xxx? (and
-                           ; Same line?
-                           (= line prev-match.line)
-                           ; Overlap? (Multibyte chars considered.)
-                           (if backward?
-                               ; c1 c2
-                               ;    p1 p2
-                               (= col (- prev-match.col (ch1:len)))
-                               ;    c1 c2
-                               ; p1 p2
-                               (= col (+ prev-match.col (prev-match.ch1:len))))
-                            ; Same pair? (Eq-classes & ignorecase considered.)
-                            (= (->representative-char ch2)
-                               (->representative-char (or prev-match.ch2 ""))))]
+        (local ch1 (get-char-from line-str start))
+        (if (= ch1 "")  ; on EOL
+            ; In this case, we're adding another, virtual \n after the real one,
+            ; so that these can be targeted by pressing a newline alias twice.
+            ; (See also `prepare-pattern` in `main.fnl`.)
+            (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
+            (do
+              (var ch2 (get-char-from line-str (+ start 1)))
+              (when (= ch2 "")  ; before EOL
+                (set ch2 "\n"))
+              (let [overlap? (and (= line prev-match.line)
+                                  (if backward?
+                                      ; c1 c2
+                                      ;    p1 p2
+                                      (= col (- prev-match.col (ch1:len)))
+                                      ;    c1 c2
+                                      ; p1 p2
+                                      (= col (+ prev-match.col (prev-match.ch1:len)))))
+                    triplet? (and overlap?
+                                  ; Same pair? (Eq-classes & ignorecase considered.)
+                                  (= (->representative-char ch2)
+                                     (->representative-char (or prev-match.ch2 ""))))]
                 (set prev-match {: line : col : ch1 : ch2})
-                (when (or (not xxx?) (and xxx? match-xxx*-at-the-end?))
-                  (when (and xxx? match-xxx*-at-the-end?)
+                (when (or (not triplet?) (and triplet? match-xxx*-at-the-end?))
+                  (when (and triplet? match-xxx*-at-the-end?)
                     (table.remove targets))  ; delete the previous one
-                  (table.insert targets {: wininfo : pos
-                                         :chars [ch1 ch2]
-                                         :edge-pos? (. at-right-bound? i)}))))))))
+                  (table.insert targets {: wininfo : pos :chars [ch1 ch2]
+                                         :edge-pos? (. at-right-bound? i)})))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
