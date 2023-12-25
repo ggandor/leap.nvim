@@ -16,9 +16,9 @@ a jump.
 Leap's default motions allow you to jump to any positions in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
-Sneak. The main novel idea in Leap is that you get a **live preview** of the
-target labels - by mapping possible futures, Leap can show you which key(s) you
-will need to press _before_ you actually need to do that.
+Sneak. The main novel idea in Leap is that you get a **live preview of the
+target labels** - by mapping possible futures, Leap can show you which key(s)
+you will need to press _before_ you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -28,8 +28,9 @@ will need to press _before_ you actually need to do that.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
   No need to be bothered by remaining labels - those are guaranteed "safe"
   letters -, just continue editing.
-- Else: type the label character. In case of multiple groups, first switch to
-  the desired one, using `<space>` (step back with `<tab>`, if needed).
+- Else: type the label character. If there are too many matches (more than
+  ~50), you might need to switch to the desired group first, using `<space>`
+  (step back with `<tab>`, if needed).
 
 ### Why is this method cool?
 
@@ -60,8 +61,8 @@ At the same time, it **reduces mental effort to almost zero**:
 Type
 
 - `s{char}<space>` to jump to a character before the end of the line.
-- `s<space><space>` to jump to an empty line (or any EOL if in Visual mode or
-  `virtualedit=onemore`)
+- `s<space><space>` to jump to an empty line (or any EOL position if Visual
+  mode or `virtualedit` allows it)
 - `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
 - `s<enter>` to repeat the last search.
 - `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
@@ -131,10 +132,12 @@ can eliminate the surprise factor from the search-based method. Fortunately, a
 also long enough to sufficiently narrow down the matches in the vast majority
 of cases.
 
-This also makes **smart autojump** - switching between a "safe" and an "unsafe"
-label set, depending on the number of targets - more viable: the
-non-determinism it introduces is not really an issue here, since the outcome is
-known ahead of time.
+Fixed pattern length also makes **autojump** possible - you cannot improve on
+jumping directly, not having to read a label at all. With ahead-of-time
+labeling, hovever, we can do this in a smarter way too - disabling autojump and
+switching back to a bigger, "unsafe" label set, if there are lots of targets.
+The non-determinism is not much of an issue here, since the outcome is known
+ahead of time.
 
 ### Auxiliary principles
 

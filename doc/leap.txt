@@ -38,8 +38,9 @@ USAGE                                                               *leap-usage*
   the `{c1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
   No need to be bothered by remaining labels, just continue editing.
-- Else: type the label character. In case of multiple groups, first switch to
-  the desired one, using `<space>` (step back with `<tab>`, if needed).
+- Else: type the label character. If there are too many matches (more than
+  ~50), you might need to switch to the desired group first, using `<space>`
+  (step back with `<tab>`, if needed).
 
 A character at the end of a line can be targeted by pressing `<space>` after
 it. There is no special mechanism behind this: `<space>` is simply an alias
@@ -167,7 +168,7 @@ arguments: `{ backward = true, offset = 2 }`
 suggested mapping: `X` (for Visual and Operator-pending mode only)
 
     abcd|                         |bcde
-    |bcde  ←  Sab         sde  →  abc|e     
+    |bcde  ←  Sab         sde  →  abc|e
     ████e  ←  Sab  (v/o)  sde  →  █████
     ab██e  ←  Xab  (v/o)  xde  →  ███de
 
