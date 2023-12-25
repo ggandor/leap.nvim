@@ -5,7 +5,7 @@
                     :equivalence_classes [" \t\r\n"]
                     :substitute_chars {}
                     :safe_labels ["s" "f" "n" "u" "t" "/"
-                                  "S" "F" "N" "L" "H" "M" "U" "G" "T" "?" "Z"]
+                                  "S" "F" "N" "L" "H" "M" "U" "G" "T" "Z" "?"]
                     :labels ["s" "f" "n"
                              "j" "k" "l" "h" "o" "d" "w" "e" "i" "m" "b" "u"
                              "y" "v" "r" "g" "t" "a" "q" "p" "c" "x" "z" "/"
