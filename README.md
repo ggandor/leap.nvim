@@ -530,16 +530,6 @@ cursor should be reachable by Leap too.
 </details>
 
 <details>
-<summary>Targeting consecutive repeating characters </summary>
-
-An `aaa...` sequence will be matched at one position only (by default, at the
-beginning). In Visual and Operator-pending mode, however, `s` and `X` will
-match at the _end_ instead (so that the sequence behaves as a chunk, and either
-the whole or none of it will be selected).
-
-</details>
-
-<details>
 <summary>Concealed labels</summary>
 
 A special character might replace the label if either:
