@@ -215,22 +215,20 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 <details>
 <summary>Bidirectional search</summary>
 
+Beware that the trade-off in this mode is that you always have to select a
+label, as there is no automatic jump to the first target (it would be very
+confusing if the cursor would suddenly jump in the opposite direction than your
+goal). Former vim-sneak users will know how awesome a feature that is. I really
+suggest trying out the plugin with the defaults for a while first.
+
+An additional disadvantage is that operations cannot be dot-repeated if the
+search is non-directional.
+
+With that out of the way, I'll tell you the simple trick: just initiate
+multi-window mode with the current window as the only target.
+
 ```lua
--- Beware that the trade-off in this mode is that you always have to
--- select a label, as there is no automatic jump to the first target (it
--- would be very confusing if the cursor would suddenly jump in the
--- opposite direction than your goal). Former vim-sneak users will know
--- how awesome a feature that is. I really suggest trying out the plugin
--- with the defaults for a while first.
-
--- An additional disadvantage is that operations cannot be dot-repeated
--- if the search is non-directional.
-
--- With that out of the way, I'll tell you the simple trick: just
--- initiate multi-window mode with the current window as the only
--- target.
-
-vim.keymap.set(<modes>, <your-preferred-key>, function ()
+vim.keymap.set(<modes>, <key>, function ()
   local current_window = vim.fn.win_getid()
   require('leap').leap { target_windows = { current_window } }
 end)
@@ -245,14 +243,41 @@ end)
 ```lua
 -- The same caveats as above about bidirectional search apply here.
 
-vim.keymap.set('n', <your-preferred-key>, function ()
-  local focusable_windows_on_tabpage = vim.tbl_filter(
+vim.keymap.set('n', <key>, function ()
+  local focusable_windows = vim.tbl_filter(
     function (win) return vim.api.nvim_win_get_config(win).focusable end,
     vim.api.nvim_tabpage_list_wins(0)
   )
-  require('leap').leap { target_windows = focusable_windows_on_tabpage }
+  require('leap').leap { target_windows = focusable_windows }
 end)
 ```
+</details>
+
+
+<details>
+<summary>Arbitrary remote actions instead of jumping</summary>
+
+Basic template:
+
+```lua
+local function remote_action ()
+  local focusable_windows = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
+  require('leap').leap {
+    target_windows = focusable_windows,
+    action = function (target)
+      local winid = target.wininfo.winid
+      local lnum, col = unpack(target.pos)  -- 1/1-based indexing!
+      -- ... do something at the given position ...
+    end,
+  }
+end
+```
+
+See [Extending Leap](#extending-leap) for more.
+
 </details>
 
 
