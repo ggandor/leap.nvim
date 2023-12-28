@@ -229,8 +229,7 @@ multi-window mode with the current window as the only target.
 
 ```lua
 vim.keymap.set(<modes>, <key>, function ()
-  local current_window = vim.fn.win_getid()
-  require('leap').leap { target_windows = { current_window } }
+  require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
 end)
 ```
 
@@ -663,7 +662,7 @@ inclusive (`:h inclusive`).
 ```lua
 -- Bidirectional search in the current window is just a specific case of the
 -- multi-window mode.
-require('leap').leap { target_windows = { vim.fn.win_getid() } }
+require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
 
 -- Searching in all windows (including the current one) on the tab page.
 require('leap').leap { target_windows = vim.tbl_filter(
@@ -785,18 +784,20 @@ the most recent pick with `<backspace>`, and accept the selection with
 -- executing a `normal!` command at each selected position (this could be even
 -- more useful if we'd pass in custom targets too).
 
+local api = vim.api
+
 function paranormal(targets)
   -- Get the :normal sequence to be executed.
   local input = vim.fn.input("normal! ")
   if #input < 1 then return end
 
-  local ns = vim.api.nvim_create_namespace("")
+  local ns = api.nvim_create_namespace("")
 
   -- Set an extmark as an anchor for each target, so that we can also execute
   -- commands that modify the positions of other targets (insert/change/delete).
   for _, target in ipairs(targets) do
     local line, col = unpack(target.pos)
-    id = vim.api.nvim_buf_set_extmark(0, ns, line - 1, col - 1, {})
+    id = api.nvim_buf_set_extmark(0, ns, line - 1, col - 1, {})
     target.extmark_id = id
   end
 
@@ -804,18 +805,18 @@ function paranormal(targets)
   -- command sequence.
   for _, target in ipairs(targets) do
     local id = target.extmark_id
-    local pos = vim.api.nvim_buf_get_extmark_by_id(0, ns, id, {})
+    local pos = api.nvim_buf_get_extmark_by_id(0, ns, id, {})
     vim.fn.cursor(pos[1] + 1, pos[2] + 1)
     vim.cmd("normal! " .. input)
   end
 
   -- Clean up the extmarks.
-  vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+  api.nvim_buf_clear_namespace(0, ns, 0, -1)
 end
 
 -- Usage:
 require('leap').leap {
-    target_windows = { vim.fn.win_getid() },
+    target_windows = { api.nvim_get_current_win() },
     action = paranormal,
     multiselect = true,
 }
