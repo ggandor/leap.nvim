@@ -734,13 +734,12 @@ function leap_linewise(skip_range)
   }
 end
 
--- For maximum comfort, make sure to set the mappings in a way that
--- forces linewise selection:
+-- For maximum comfort, force linewise selection in the mappings:
 vim.keymap.set('x', '\\', function ()
-  -- Do not exit from V if already in it (pressing v/V/<C-v>
-  -- again exits the corresponding Visual mode).
-  return (vim.fn.mode(1) == "V" and "" or "V") .. "<cmd>lua leap_linewise()<cr>"
-end, { expr = true })
+  -- Only force V if not already in it (otherwise it would exit Visual mode).
+  if vim.fn.mode(1) ~= 'V' then vim.cmd('normal! V') end
+  leap_linewise()
+end)
 vim.keymap.set('o', '\\', "V<cmd>lua leap_linewise()<cr>")
 ```
 </details>
