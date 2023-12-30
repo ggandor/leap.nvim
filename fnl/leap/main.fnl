@@ -507,6 +507,10 @@ implies changing the labels, C should be checked separately afterwards.
                    vim.v.count))
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
+  (local can-traverse? (and directional?
+                            (not (or count
+                                     op-mode?
+                                     user-given-action))))
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
   (local spec-keys (do (fn __index [_ k]
@@ -938,14 +942,13 @@ implies changing the labels, C should be checked separately afterwards.
     (update-repeat-state {: in1 : offset
                           :backward backward? :inclusive_op inclusive-op?
                           :match_same_char_seq_at_end match-same-char-seq-at-end?})
-    (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
-                              directional? (> (length targets) 1)))
     ; Do this before `do-action`, because it might erase forced motion.
     ; (The `:normal` command in `jump.jump-to!` can change the state of
     ; `mode()`. See vim/vim#9332.)
-    (when-not can-traverse? (set-dot-repeat in1 nil n))
+    (set-dot-repeat in1 nil n)
     (do-action target)
-    (when can-traverse? (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
+    (when (and can-traverse? (> (length targets) 1))
+      (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
   (exec-user-autocmds :LeapPatternPost)
@@ -1004,9 +1007,7 @@ implies changing the labels, C should be checked separately afterwards.
 
   ; Jump to the first match on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
-    (local can-traverse? (and (not op-mode?) (not user-given-action)
-                              directional?))
-    (if can-traverse?
+    (if (and can-traverse? (> (length targets*) 1))
         (let [new-idx (inc vars.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
