@@ -5,11 +5,7 @@ local plug_mappings = {
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward)',
-    function ()
-      -- NOTE: `match-xxx*-at-the-end?` is understood in _relative_ direction
-      -- (i.e., for backward search, it means the beginning).
-      require('leap').leap { backward = true, ['match-xxx*-at-the-end?'] = true }
-    end
+    function () require('leap').leap { backward = true } end
   },
   {
     {'n'}, '<Plug>(leap-forward-to)',
@@ -18,7 +14,7 @@ local plug_mappings = {
   {
     {'x', 'o'}, '<Plug>(leap-forward-to)',
     function () require('leap').leap {
-        offset = 1, inclusive_op = true, ['match-xxx*-at-the-end?'] = true
+        offset = 1, inclusive_op = true, match_same_char_seq_at_end = true
       }
     end
   },
@@ -29,12 +25,15 @@ local plug_mappings = {
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward-to)',
     function ()
-      require('leap').leap { backward = true, ['match-xxx*-at-the-end?'] = true }
+      require('leap').leap { backward = true, }
     end
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-backward-till)',
-    function () require('leap').leap { backward = true, offset = 2 } end
+    function () require('leap').leap {
+        backward = true, offset = 2, match_same_char_seq_at_end = true,
+      }
+    end
   },
   {
     {'n', 'x', 'o'}, '<Plug>(leap-from-window)',

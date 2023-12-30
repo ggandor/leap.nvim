@@ -456,7 +456,7 @@ implies changing the labels, C should be checked separately afterwards.
              kwargs))
   (local {:inclusive_op inclusive-op?
           : offset
-          : match-xxx*-at-the-end?}
+          :match_same_char_seq_at_end match-same-char-seq-at-end?}
          (if dot-repeat? state.dot_repeat
              repeat? state.repeat
              kwargs))
@@ -683,7 +683,7 @@ implies changing the labels, C should be checked separately afterwards.
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
           pattern (prepare-pattern in1 ?in2)
-          kwargs {: backward? : match-xxx*-at-the-end?
+          kwargs {: backward? : match-same-char-seq-at-end?
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))
@@ -739,7 +739,7 @@ implies changing the labels, C should be checked separately afterwards.
                              :callback user-given-targets
                              : target_idx
                              : offset
-                             : match-xxx*-at-the-end?
+                             :match_same_char_seq_at_end match-same-char-seq-at-end?
                              ; Mind the naming conventions.
                              :backward backward?
                              :inclusive_op inclusive-op?})
@@ -935,9 +935,9 @@ implies changing the labels, C should be checked separately afterwards.
     (local target (. targets n))
     (when-not target
       (exit-early))
-    (update-repeat-state {: in1
+    (update-repeat-state {: in1 : offset
                           :backward backward? :inclusive_op inclusive-op?
-                          : offset : match-xxx*-at-the-end?})
+                          :match_same_char_seq_at_end match-same-char-seq-at-end?})
     (local can-traverse? (and (not count) (not op-mode?) (not user-given-action)
                               directional? (> (length targets) 1)))
     ; Do this before `do-action`, because it might erase forced motion.
@@ -950,9 +950,9 @@ implies changing the labels, C should be checked separately afterwards.
 
   (exec-user-autocmds :LeapPatternPost)
   ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state {: in1 :in2 ?in2
+  (update-repeat-state {: in1 :in2 ?in2 : offset
                         :backward backward? :inclusive_op inclusive-op?
-                        : offset : match-xxx*-at-the-end?})
+                        :match_same_char_seq_at_end match-same-char-seq-at-end?})
 
   ; Get the sublist for ?in2, and work with that from here on (except if
   ; we've been given custom targets).

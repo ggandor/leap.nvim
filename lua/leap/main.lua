@@ -430,7 +430,7 @@ local function leap(kwargs)
   local _local_70_ = _71_()
   local inclusive_op_3f = _local_70_["inclusive_op"]
   local offset = _local_70_["offset"]
-  local match_xxx_2a_at_the_end_3f = _local_70_["match-xxx*-at-the-end?"]
+  local match_same_char_seq_at_end_3f = _local_70_["match_same_char_seq_at_end"]
   opts.current_call = (user_given_opts or {})
   do
     local _72_ = opts.current_call.equivalence_classes
@@ -714,7 +714,7 @@ local function leap(kwargs)
   local function get_targets(in1, _3fin2)
     local search = require("leap.search")
     local pattern = prepare_pattern(in1, _3fin2)
-    local kwargs0 = {["backward?"] = backward_3f, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, ["target-windows"] = _3ftarget_windows}
+    local kwargs0 = {["backward?"] = backward_3f, ["match-same-char-seq-at-end?"] = match_same_char_seq_at_end_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local function _119_(...)
       vars.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
@@ -775,7 +775,7 @@ local function leap(kwargs)
   end
   local function set_dot_repeat(in1, in2, target_idx)
     if (dot_repeatable_op_3f and not (dot_repeat_3f or (type(user_given_targets) == "table"))) then
-      state.dot_repeat = {in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), callback = user_given_targets, target_idx = target_idx, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
+      state.dot_repeat = {in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), callback = user_given_targets, target_idx = target_idx, offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
       return set_dot_repeat_2a()
     else
       return nil
@@ -1109,7 +1109,7 @@ local function leap(kwargs)
       return
     else
     end
-    update_repeat_state({in1 = in1, backward = backward_3f, inclusive_op = inclusive_op_3f, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f})
+    update_repeat_state({in1 = in1, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f, match_same_char_seq_at_end = match_same_char_seq_at_end_3f})
     local can_traverse_3f = (not count and not op_mode_3f and not user_given_action and directional_3f and (#targets > 1))
     if not can_traverse_3f then
       set_dot_repeat(in1, nil, n)
@@ -1126,7 +1126,7 @@ local function leap(kwargs)
   else
   end
   exec_user_autocmds("LeapPatternPost")
-  update_repeat_state({in1 = in1, in2 = _3fin20, backward = backward_3f, inclusive_op = inclusive_op_3f, offset = offset, ["match-xxx*-at-the-end?"] = match_xxx_2a_at_the_end_3f})
+  update_repeat_state({in1 = in1, in2 = _3fin20, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f, match_same_char_seq_at_end = match_same_char_seq_at_end_3f})
   local targets_2a
   if targets.sublists then
     targets_2a = targets.sublists[_3fin20]
