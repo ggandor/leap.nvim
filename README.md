@@ -427,8 +427,10 @@ config:
 
 This will override `s`, `S`, and `gs` in all modes. Note that the above
 function will check for conflicts with any custom mappings created by you or
-other plugins, and will _not_ overwrite them, unless explicitly told so (i.e.,
-called with a `true` argument).
+other plugins, and will _not_ overwrite them, unless called with a `true`
+argument.
+
+To set custom mappings instead, see `:h leap-custom-mappings`.
 
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
@@ -529,6 +531,10 @@ target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
 Note that if the safe label set is in use, the labels will remain available the
 whole time!
 
+You can make `next_target` and `prev_target` behave like like `;` and `,`, that
+is, repeat the last motion without explicitly invoking Leap (see `:h
+leap-repeat-keys`).
+
 Traversal mode can be used as a substitute for `fFtT` motions.
 `s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
 `dt{char}`, but they work over multiple lines.
@@ -600,7 +606,9 @@ special_keys = {
 ### Mappings
 
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
-`<Plug>` keys listed at `:h leap-custom-mappings`.
+`<Plug>` keys listed at `:h leap-custom-mappings`. There is also an
+alternative, "fFtT"-style key set for in-window motions, including or excluding
+the whole 2-character match in Visual and Operator-pending-mode.
 
 To set repeat keys that work like `;`/`,` for `f`/`t`, that is, repeat the last
 motion without explicitly invoking Leap, see also `:h leap-custom-mappings`.
@@ -660,7 +668,7 @@ inclusive (`:h inclusive`).
 <summary>Example: bidirectional and all-windows search</summary>
 
 ```lua
--- Bidirectional search in the current window is just a specific case of the
+-- Bidirectional search in the current window is just a specific case of
 -- multi-window mode.
 require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
 

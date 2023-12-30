@@ -7,8 +7,7 @@ CONTENTS                                                         *leap-contents*
 
   Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
-  Default mappings ····································· |leap-default-mappings|
-  Custom mappings ······································· |leap-custom-mappings|
+  Mappings ····················································· |leap-mappings|
   Configuration ·················································· |leap-config|
   Highlighting ················································ |leap-highlight|
   Events ························································· |leap-events|
@@ -59,7 +58,7 @@ jump), but stays in place, and switches to an extended label set otherwise.
 For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
 
-                                                    *leap-repeat* *leap-traversal*
+                                                    *leap-traversal* *leap-repeat*
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
 initiates "traversal" mode, moving on to the next match on each subsequent
 keypress. If you press it right after invoking a Leap motion (e.g.
@@ -67,11 +66,15 @@ keypress. If you press it right after invoking a Leap motion (e.g.
 overshoot your target, `<tab>` (`special_keys.prev_target`) can revert the
 jump(s).
 
+You can make `next_target` and `prev_target` behave like like |;| and |,|,
+that is, repeat the last motion without explicitly invoking Leap (see
+|leap-repeat-keys|).
+
 Traversal mode can be used as a substitute for `fFtT` motions.
 `s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
 `dt{char}`, but they work over multiple lines.
 
-Note: In case of cross-window search (`gs`), you cannot traverse (since
+Note: In case of cross-window search (|leap_gs|), you cannot traverse (since
 there's no direction to follow), but the search can be repeated, and you can
 also accept the first (presumably only) match with `<enter>`, even after one
 input.
@@ -80,20 +83,20 @@ Note: If |leap.opts.safe_labels| is in use, the labels will remain available
 during the whole time.
 
                                                                *leap-dot-repeat*
-You can repeat change and delete operations with the `.` character, if
-repeat.vim (https://github.com/tpope/vim-repeat) is installed.
+Operations can be repeated with |.|, if repeat.vim
+(https://github.com/tpope/vim-repeat) is installed.
 
 ==============================================================================
-DEFAULT MAPPINGS                                         *leap-default-mappings*
+MAPPINGS                                                         *leap-mappings*
 
+Default mappings ~
+                                                         *leap-default-mappings*
 The defaults can be set by calling
 `require('leap').create_default_mappings()`.
 
 Note that the function will check for conflicts with any custom mappings
-created by you or other plugins, and will not overwrite them, unless
-explicitly told so (i.e., called with a `true` argument).
-
-Trigger keys~
+created by you or other plugins, and will not overwrite them, unless called
+with a `true` argument.
 
                                                         *leap_s*
 s{char1}{char2}         Jump forward to a labeled or [count]'th visible
@@ -114,28 +117,12 @@ gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
                         placed on {char1} |exclusive|.
 
-Special keys~
-
-<enter>                 Repeat search with the previous input (after
-                        invocation); jump to the next match in
-                        |leap-traversal| mode; accept the selection in
-                        |leap-multiselect| mode.
-<space>                 Substitute for an EOL character (after the first
-                        input); shift to the next group of labeled matches
-                        (after the second input).
-<tab>                   Revert the previous jump (|leap-traversal| mode) or
-                        the previous group shift.
-<backspace>             Deselect the last selected target in
-                        |leap-multiselect| mode.
-<esc>                   Exit Leap at any stage cleanly.
-
-==============================================================================
-CUSTOM MAPPINGS                                           *leap-custom-mappings*
-
+Custom mappings ~
+                                                          *leap-custom-mappings*
 <Plug> keys are aliases for right hand sides of mappings - in our case, calls
 to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 
-`vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap-forward-to)')`
+`vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')`
 
 *<Plug>(leap-forward)*
 arguments: `{}`
@@ -149,7 +136,8 @@ default mapping: `S`
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 
-Alternative set for in-window motions ("fFtT"-style):
+Alternative set for in-window motions ("fFtT"-style, including or excluding
+the whole 2-character match in Visual and Operator-pending-mode):
 
 *<Plug>(leap-forward-to)*
 arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
@@ -168,15 +156,16 @@ arguments: `{ backward = true, offset = 2 }`
 suggested mapping: `X` (for Visual and Operator-pending mode only)
 
     abcd|                         |bcde
-    |bcde  ←  Sab         sde  →  abc|e
-    ████e  ←  Sab  (v/o)  sde  →  █████
-    ab██e  ←  Xab  (v/o)  xde  →  ███de
+    -----------------------------------
+    |bcde  ←  Sab    n    sde  →  abc|e
+    ████e  ←  Sab  (v|o)  sde  →  █████
+    ab██e  ←  Xab  (v|o)  xde  →  ███de
 
 To create custom motions with behaviours different from the predefined ones,
 see |leap.leap()|.
 
-The keys for jumping to the next/previous target, and for switching between
-groups of matches can be set via |leap.opts.special_keys|.
+Setting repeat keys ~
+                                                              *leap-repeat-keys*
 
 There is also a convenience function that helps you set repeat keys that work
 like `;` / `,` for `f` / `t`, that is, repeat the last motion without
@@ -192,6 +181,23 @@ behave as `next_target` / `prev_target`):
       modes = {'n', 'x', 'o'},
     })
 <
+Special keys (accepted at runtime) ~
+
+See |leap.opts.special_keys| to customize these.
+
+<enter>                 Repeat search with the previous input (after
+                        invocation); jump to the next match in
+                        |leap-traversal| mode; accept the selection in
+                        |leap-multiselect| mode.
+<space>                 Substitute for an EOL character (after the first
+                        input); shift to the next group of labeled matches
+                        (after the second input).
+<tab>                   Revert the previous jump (|leap-traversal| mode) or
+                        the previous group shift.
+<backspace>             Deselect the last selected target in
+                        |leap-multiselect| mode.
+<esc>                   Exit Leap at any stage cleanly.
+
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 
@@ -209,17 +215,15 @@ Available options~
                                                *leap.opts.max_phase_one_targets*
 `max_phase_one_targets = nil`
 
-    By default, the plugin shows labels and/or highlights matches right after
-    the first input character. This option disables ahead-of-time displaying
-    of target beacons beyond a certain number of phase one targets (to
-    mitigate visual noise in extreme cases). Setting it to 0 disables
-    two-phase processing altogether.
+    Disable ahead-of-time displaying of target beacons beyond a certain number
+    of phase one targets (to mitigate visual noise in extreme cases). Setting
+    this option to 0 disables two-phase processing altogether.
 
                                *leap.opts.highlight_unlabeled_phase_one_targets*
 `highlight_unlabeled_phase_one_targets = false`
 
-    Whether to highlight unlabeled (i.e., directly reachable) matches after
-    the first input character.
+    Highlight unlabeled (i.e., directly reachable) matches after the first
+    input character.
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
@@ -230,7 +234,7 @@ Available options~
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
 
-    Whether to consider case in search patterns.
+    Consider case in search patterns.
 
                                                  *leap.opts.equivalence_classes*
 `equivalence_classes = { ' \t\r\n' }`
@@ -282,13 +286,9 @@ Available options~
     where it makes no sense). In this case, do not forget to set
     `special_keys.next_group` to something "safe" too.
 
-Heuristics behind the default label lists:
-- Since the commands invoking the motions are mapped to left-hand keys by
-  default, we tend to prioritize right-hand keys to get a better balance for
-  the whole sequence on average.
-- At least the first few labels should be the same on the two lists, since
-  those become muscle memory, and might be used automatically, a bit like
-  [count] values.
+A heuristic behind the default label lists: since the commands invoking the
+motions are mapped to left-hand keys by default, we tend to prioritize
+right-hand keys to get a better balance for the whole sequence on average.
 
                                                         *leap.opts.special_keys*
 `special_keys` >
