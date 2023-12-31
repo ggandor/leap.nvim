@@ -45,8 +45,8 @@ interrupted change operation."
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
 (fn set-dot-repeat* []
-  ; Note: dot-repeatable (i.e. non-yank) operation is assumed, we're not
-  ; checking it here.
+  ; Note: We're not checking here whether the operation should be
+  ; repeated (see `dot-repeatable-op?` in `leap()`).
   (let [op vim.v.operator
         force (string.sub (vim.fn.mode true) 3)
         cmd (replace-keycodes
@@ -501,7 +501,9 @@ implies changing the labels, C should be checked separately afterwards.
   (local mode (. (api.nvim_get_mode) :mode))
   (local op-mode? (mode:match :o))
   (local change-op? (and op-mode? (= vim.v.operator :c)))
-  (local dot-repeatable-op? (and op-mode? directional? (not= vim.v.operator :y)))
+  (local dot-repeatable-op? (and op-mode? directional?
+                                 (or (vim.o.cpo:match "y")
+                                     (not= vim.v.operator "y"))))
   (local count (if (not directional?) nil
                    (= vim.v.count 0) (if (and op-mode? empty-label-lists?) 1 nil)
                    vim.v.count))

@@ -480,7 +480,7 @@ local function leap(kwargs)
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
-  local dot_repeatable_op_3f = (op_mode_3f and directional_3f and (vim.v.operator ~= "y"))
+  local dot_repeatable_op_3f = (op_mode_3f and directional_3f and ((vim.o.cpo):match("y") or (vim.v.operator ~= "y")))
   local count
   if not directional_3f then
     count = nil
