@@ -85,10 +85,10 @@ targeting methods, and even do arbitrary actions with the selected target(s) -
 read on to dig deeper.
 
 - [Design considerations in detail](#design-considerations-in-detail)
-- [FAQ](#faq)
 - [Getting started](#getting-started)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [FAQ](#faq)
 - [Extending Leap](#extending-leap)
 
 ## Design considerations in detail
@@ -158,245 +158,6 @@ ahead of time.
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
   Complement the small and opinionated core by [extension
   points](#extending-leap), keeping the plugin flexible and future-proof.
-
-## FAQ
-
-<details>
-<summary>Workaround for the duplicate cursor bug when autojumping</summary>
-
-Until https://github.com/neovim/neovim/issues/20793 is fixed:
-
-```lua
--- Hide the (real) cursor when leaping, and restore it afterwards.
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=100')
-      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=0')
-      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-```
-
-Caveat: If you experience any problems after using the above snippet, check
-[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
-and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
-
-</details>
-
-
-<details>
-<summary>Why remap `s`/`S`?</summary>
-
-Common operations should use the fewest keystrokes, so it makes sense to take
-those keys over by Leap, especially given that both have short synonyms:
-
-Normal mode
-
-- `s` = `cl` (or `xi`)
-- `S` = `cc`
-
-Visual mode
-
-- `s` = `c`
-- `S` = `Vc`, or `c` if already in linewise mode
-
-If you are not convinced, just head to `:h leap-custom-mappings`.
-
-</details>
-
-
-<details>
-<summary>Bidirectional search</summary>
-
-Beware that the trade-off in this mode is that you always have to select a
-label, as there is no automatic jump to the first target (it would be very
-confusing if the cursor would suddenly jump in the opposite direction than your
-goal). Former vim-sneak users will know how awesome a feature that is. I really
-suggest trying out the plugin with the defaults for a while first.
-
-An additional disadvantage is that operations cannot be dot-repeated if the
-search is non-directional.
-
-With that out of the way, I'll tell you the simple trick: just initiate
-multi-window mode with the current window as the only target.
-
-```lua
-vim.keymap.set(<modes>, <key>, function ()
-  require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
-end)
-```
-
-</details>
-
-
-<details>
-<summary>Search in all windows</summary>
-
-```lua
--- The same caveats as above about bidirectional search apply here.
-
-vim.keymap.set('n', <key>, function ()
-  local focusable_windows = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
-  require('leap').leap { target_windows = focusable_windows }
-end)
-```
-</details>
-
-
-<details>
-<summary>Arbitrary remote actions instead of jumping</summary>
-
-Basic template:
-
-```lua
-local function remote_action ()
-  local focusable_windows = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
-  require('leap').leap {
-    target_windows = focusable_windows,
-    action = function (target)
-      local winid = target.wininfo.winid
-      local lnum, col = unpack(target.pos)  -- 1/1-based indexing!
-      -- ... do something at the given position ...
-    end,
-  }
-end
-```
-
-See [Extending Leap](#extending-leap) for more.
-
-</details>
-
-
-<details>
-<summary>Other supernatural powers besides clairvoyance?</summary>
-
-You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.nvim).
-
-</details>
-
-
-<details>
-<summary>Jumping to lines</summary>
-
-It's easy to add to your config, see [Extending Leap](#extending-leap)
-for the example snippet (30-40 lines).
-
-</details>
-
-
-<details>
-<summary>Enhanced f/t motions</summary>
-
-Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
-
-</details>
-
-
-<details>
-<summary>Disable auto-jumping to the first match</summary>
-
-```lua
-require('leap').opts.safe_labels = {}
-```
-
-</details>
-
-
-<details>
-<summary>Greying out the search area</summary>
-
-```lua
--- Or just set to grey directly, e.g. { fg = '#777777' },
--- if Comment is saturated.
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
-```
-
-</details>
-
-
-<details>
-<summary>Disable secondary labels</summary>
-
-You can hide the letters, and show emtpy boxes by tweaking the
-`LeapLabelSecondary` highlight group (that way you keep a visual indication
-that the target is labeled):
-
-```lua
-vim.api.nvim_create_autocmd('ColorScheme', {
-  callback = function ()
-    local bg = vim.api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg
-    vim.api.nvim_set_hl(0, "LeapLabelSecondary",{ fg = bg, bg = bg, })
-  end
-})
-```
-
-</details>
-
-
-<details>
-<summary>Lightspeed-style highlighting</summary>
-
-```lua
--- The below settings make Leap's highlighting closer to what you've been
--- used to in Lightspeed.
-
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' }) -- or some grey
-vim.api.nvim_set_hl(0, 'LeapMatch', {
-  -- For light themes, set to 'black' or similar.
-  fg = 'white', bold = true, nocombine = true,
-})
-
--- Lightspeed colors
--- primary labels: bg = "#f02077" (light theme) or "#ff2f87"  (dark theme)
--- secondary labels: bg = "#399d9f" (light theme) or "#99ddff" (dark theme)
--- shortcuts: bg = "#f00077", fg = "white"
--- You might want to use either the primary label or the shortcut colors
--- for Leap primary labels, depending on your taste.
-vim.api.nvim_set_hl(0, 'LeapLabelPrimary', {
-  fg = 'red', bold = true, nocombine = true,
-})
-vim.api.nvim_set_hl(0, 'LeapLabelSecondary', {
-  fg = 'blue', bold = true, nocombine = true,
-})
--- Try it without this setting first, you might find you don't even miss it.
-require('leap').opts.highlight_unlabeled_phase_one_targets = true
-```
-
-</details>
-
-
-<details>
-<summary>Working with non-English text</summary>
-
-Check out `opts.equivalence_classes`. For example, you can group accented
-vowels together: `{ 'aá', 'eé', 'ií', ... }`.
-</details>
-
-
-<details>
-<summary>Was the name inspired by Jef Raskin's Leap?</summary>
-
-To paraphrase Steve Jobs about their logo and Turing's poison apple, I wish it
-were, but it is a coincidence. "Leap" is just another synonym for "jump", that
-happens to rhyme with Sneak. That said, in some respects you can indeed think
-of leap.nvim as a spiritual successor to Raskin's work, and thus the name as a
-little tribute to the great pioneer of interface design, even though embracing
-the modal paradigm is a fundamental difference in our approach.
-
-</details>
 
 ## Getting started
 
@@ -631,6 +392,232 @@ autocmd ColorScheme * lua require('leap').init_highlight(true)
 
 This can be tweaked further, you could e.g. check the actual colorscheme, and
 only execute for certain ones, etc.
+
+## FAQ
+
+<details>
+<summary>Workaround for the duplicate cursor bug when autojumping</summary>
+
+Until https://github.com/neovim/neovim/issues/20793 is fixed:
+
+```lua
+-- Hide the (real) cursor when leaping, and restore it afterwards.
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=100')
+      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
+    callback = function()
+      vim.cmd.hi('Cursor', 'blend=0')
+      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
+    end,
+  }
+)
+```
+
+Caveat: If you experience any problems after using the above snippet, check
+[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
+and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
+
+</details>
+
+<details>
+<summary>Why remap `s`/`S`?</summary>
+
+Common operations should use the fewest keystrokes, so it makes sense to take
+those keys over by Leap, especially given that both have short synonyms:
+
+Normal mode
+
+- `s` = `cl` (or `xi`)
+- `S` = `cc`
+
+Visual mode
+
+- `s` = `c`
+- `S` = `Vc`, or `c` if already in linewise mode
+
+If you are not convinced, just head to `:h leap-custom-mappings`.
+
+</details>
+
+<details>
+<summary>Bidirectional search</summary>
+
+Beware that the trade-off in this mode is that you always have to select a
+label, as there is no automatic jump to the first target (it would be very
+confusing if the cursor would suddenly jump in the opposite direction than your
+goal). Former vim-sneak users will know how awesome a feature that is. I really
+suggest trying out the plugin with the defaults for a while first.
+
+An additional disadvantage is that operations cannot be dot-repeated if the
+search is non-directional.
+
+With that out of the way, I'll tell you the simple trick: just initiate
+multi-window mode with the current window as the only target.
+
+```lua
+vim.keymap.set(<modes>, <key>, function ()
+  require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
+end)
+```
+
+</details>
+
+<details>
+<summary>Search in all windows</summary>
+
+```lua
+-- The same caveats as above about bidirectional search apply here.
+
+vim.keymap.set('n', <key>, function ()
+  local focusable_windows = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
+  require('leap').leap { target_windows = focusable_windows }
+end)
+```
+</details>
+
+<details>
+<summary>Arbitrary remote actions instead of jumping</summary>
+
+Basic template:
+
+```lua
+local function remote_action ()
+  local focusable_windows = vim.tbl_filter(
+    function (win) return vim.api.nvim_win_get_config(win).focusable end,
+    vim.api.nvim_tabpage_list_wins(0)
+  )
+  require('leap').leap {
+    target_windows = focusable_windows,
+    action = function (target)
+      local winid = target.wininfo.winid
+      local lnum, col = unpack(target.pos)  -- 1/1-based indexing!
+      -- ... do something at the given position ...
+    end,
+  }
+end
+```
+
+See [Extending Leap](#extending-leap) for more.
+
+</details>
+
+<details>
+<summary>Other supernatural powers besides clairvoyance?</summary>
+
+You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.nvim).
+
+</details>
+
+<details>
+<summary>Jumping to lines</summary>
+
+It's easy to add to your config, see [Extending Leap](#extending-leap)
+for the example snippet (30-40 lines).
+
+</details>
+
+<details>
+<summary>Enhanced f/t motions</summary>
+
+Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
+
+</details>
+
+<details>
+<summary>Disable auto-jumping to the first match</summary>
+
+```lua
+require('leap').opts.safe_labels = {}
+```
+
+</details>
+
+<details>
+<summary>Greying out the search area</summary>
+
+```lua
+-- Or just set to grey directly, e.g. { fg = '#777777' },
+-- if Comment is saturated.
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
+```
+
+</details>
+
+<details>
+<summary>Disable secondary labels</summary>
+
+You can hide the letters, and show emtpy boxes by tweaking the
+`LeapLabelSecondary` highlight group (that way you keep a visual indication
+that the target is labeled):
+
+```lua
+vim.api.nvim_create_autocmd('ColorScheme', {
+  callback = function ()
+    local bg = vim.api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg
+    vim.api.nvim_set_hl(0, "LeapLabelSecondary",{ fg = bg, bg = bg, })
+  end
+})
+```
+
+</details>
+
+<details>
+<summary>Lightspeed-style highlighting</summary>
+
+```lua
+-- The below settings make Leap's highlighting closer to what you've been
+-- used to in Lightspeed.
+
+vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' }) -- or some grey
+vim.api.nvim_set_hl(0, 'LeapMatch', {
+  -- For light themes, set to 'black' or similar.
+  fg = 'white', bold = true, nocombine = true,
+})
+
+-- Lightspeed colors
+-- primary labels: bg = "#f02077" (light theme) or "#ff2f87"  (dark theme)
+-- secondary labels: bg = "#399d9f" (light theme) or "#99ddff" (dark theme)
+-- shortcuts: bg = "#f00077", fg = "white"
+-- You might want to use either the primary label or the shortcut colors
+-- for Leap primary labels, depending on your taste.
+vim.api.nvim_set_hl(0, 'LeapLabelPrimary', {
+  fg = 'red', bold = true, nocombine = true,
+})
+vim.api.nvim_set_hl(0, 'LeapLabelSecondary', {
+  fg = 'blue', bold = true, nocombine = true,
+})
+-- Try it without this setting first, you might find you don't even miss it.
+require('leap').opts.highlight_unlabeled_phase_one_targets = true
+```
+
+</details>
+
+<details>
+<summary>Working with non-English text</summary>
+
+Check out `opts.equivalence_classes`. For example, you can group accented
+vowels together: `{ 'aá', 'eé', 'ií', ... }`.
+</details>
+
+<details>
+<summary>Was the name inspired by Jef Raskin's Leap?</summary>
+
+To paraphrase Steve Jobs about their logo and Turing's poison apple, I wish it
+were, but it is a coincidence. "Leap" is just another synonym for "jump", that
+happens to rhyme with Sneak. That said, in some respects you can indeed think
+of leap.nvim as a spiritual successor to Raskin's work, and thus the name as a
+little tribute to the great pioneer of interface design, even though embracing
+the modal paradigm is a fundamental difference in our approach.
+
+</details>
 
 ## Extending Leap
 
