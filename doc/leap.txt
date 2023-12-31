@@ -59,12 +59,12 @@ For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
 
                                                     *leap-traversal* *leap-repeat*
-`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
-initiates "traversal" mode, moving on to the next match on each subsequent
-keypress. If you press it right after invoking a Leap motion (e.g.
+`<enter>` (|leap.opts.special_keys.next_target|) is a very special key: at any
+stage, it initiates "traversal" mode, moving on to the next match on each
+subsequent keypress. If you press it right after invoking a Leap motion (e.g.
 `s<enter>`), it uses the previous search pattern. In case you accidentally
-overshoot your target, `<tab>` (`special_keys.prev_target`) can revert the
-jump(s).
+overshoot your target, `<tab>` (|leap.opts.special_keys.prev_target|) can
+revert the jump(s).
 
 You can make `next_target` and `prev_target` behave like like |;| and |,|,
 that is, repeat the last motion without explicitly invoking Leap (see
@@ -166,11 +166,11 @@ see |leap.leap()|.
 
 Setting repeat keys ~
                                                               *leap-repeat-keys*
-
 There is also a convenience function that helps you set repeat keys that work
 like `;` / `,` for `f` / `t`, that is, repeat the last motion without
 explicitly invoking Leap (after that, they enter |leap-traversal| mode, and
-behave as `next_target` / `prev_target`):
+behave as |leap.opts.special_keys.next_target| and
+|leap.opts.special_keys.prev_target|):
 >
     require('leap').add_repeat_mappings(';', ',', {
       -- False by default. If set to true, the keys will work like the
@@ -181,23 +181,6 @@ behave as `next_target` / `prev_target`):
       modes = {'n', 'x', 'o'},
     })
 <
-Special keys (accepted at runtime) ~
-
-See |leap.opts.special_keys| to customize these.
-
-<enter>                 Repeat search with the previous input (after
-                        invocation); jump to the next match in
-                        |leap-traversal| mode; accept the selection in
-                        |leap-multiselect| mode.
-<space>                 Substitute for an EOL character (after the first
-                        input); shift to the next group of labeled matches
-                        (after the second input).
-<tab>                   Revert the previous jump (|leap-traversal| mode) or
-                        the previous group shift.
-<backspace>             Deselect the last selected target in
-                        |leap-multiselect| mode.
-<esc>                   Exit Leap at any stage cleanly.
-
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 
@@ -284,14 +267,14 @@ Available options~
     The list can either be defined as a string or a table. Setting it to `{}`
     or `''` forces autojump to always be on (except for Operator-pending mode,
     where it makes no sense). In this case, do not forget to set
-    `special_keys.next_group` to something "safe" too.
+    |leap.opts.special_keys.next_group| to something "safe" too.
 
 A heuristic behind the default label lists: since the commands invoking the
 motions are mapped to left-hand keys by default, we tend to prioritize
 right-hand keys to get a better balance for the whole sequence on average.
 
                                                         *leap.opts.special_keys*
-`special_keys` >
+`special_keys =` >
     {
       next_target = '<enter>',
       prev_target = '<tab>',
@@ -301,13 +284,20 @@ right-hand keys to get a better balance for the whole sequence on average.
       multi_revert = '<backspace>',
     }
 <
-    Keys captured by the plugin at runtime, to:
-    - repeat with the previous input after invocation
-    - jump to the next/previous match in traversal mode (|leap-traversal|)
-    - switch to the next/previous group of matches, when there are more
-      matches than available labels
-    - accept the selection, and deselect the last selected target in
-      |leap-multiselect| mode
+Meta-keys accepted at runtime:
+
+*leap.opts.special_keys.next_target*   Repeat the previous search.
+                                     |leap-traversal|: jump to the next target
+*leap.opts.special_keys.prev_target*   |leap-traversal|: jump to the previous
+                                     target.
+*leap.opts.special_keys.next_group*    Shift to the next group of labeled targets.
+*leap.opts.special_keys.prev_group*    Shift to the previous group of labeled
+                                     targets.
+*leap.opts.special_keys.multi_accept*  |leap-multiselect|: accept the selection.
+*leap.opts.special_keys.multi_revert*  |leap-multiselect|: deselect the last
+                                     selected target
+
+Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
 
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*
@@ -330,8 +320,8 @@ LeapLabelPrimary
 LeapLabelSecondary
     If the number of matches exceeds the available target labels, the next
     group of labels are shown with a different color. Those targets can be
-    reached by pressing `<space>` (`special_keys.next_group`) before the label
-    character.
+    reached by pressing `<space>` (|leap.opts.special_keys.next_group|) before
+    the label character.
 
                                                           *hl-LeapLabelSelected*
 LeapLabelSelected
