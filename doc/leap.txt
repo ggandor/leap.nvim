@@ -62,9 +62,8 @@ For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 `<enter>` (|leap.opts.special_keys.next_target|) is a very special key: at any
 stage, it initiates "traversal" mode, moving on to the next match on each
 subsequent keypress. If you press it right after invoking a Leap motion (e.g.
-`s<enter>`), it uses the previous search pattern. In case you accidentally
-overshoot your target, `<tab>` (|leap.opts.special_keys.prev_target|) can
-revert the jump(s).
+`s<enter>`), it uses the previous search pattern. In case you overshoot your
+target, `<tab>` (|leap.opts.special_keys.prev_target|) can revert the jump(s).
 
 You can make `next_target` and `prev_target` behave like like |;| and |,|,
 that is, repeat the last motion without explicitly invoking Leap (see
@@ -167,9 +166,9 @@ see |leap.leap()|.
 Setting repeat keys ~
                                                               *leap-repeat-keys*
 There is also a convenience function that helps you set repeat keys that work
-like `;` / `,` for `f` / `t`, that is, repeat the last motion without
-explicitly invoking Leap (after that, they enter |leap-traversal| mode, and
-behave as |leap.opts.special_keys.next_target| and
+like |;| and |,|, that is, repeat the last motion without explicitly invoking
+Leap (after that, they enter |leap-traversal| mode, and behave as
+|leap.opts.special_keys.next_target| and
 |leap.opts.special_keys.prev_target|):
 >
     require('leap').add_repeat_mappings(';', ',', {

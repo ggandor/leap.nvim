@@ -72,9 +72,8 @@ You can also
 
 - search bidirectionally in the window, or bind only one key to Leap, and
   search in all windows, if you are okay with the trade-offs (see [FAQ](#faq)).
-- map keys (presumably the same ones as `next_target`/`prev_target`) to repeat
-  motions without explicitly invoking Leap, similar to how the native `;`/`,`
-  works for `f`/`t` (see `:h leap-custom-mappings`).
+- map keys to repeat motions without explicitly invoking Leap, similar to how
+  `;` and `,` works (see `:h leap-repeat-keys`).
 
 ### Down the kangaroo hole
 
@@ -97,8 +96,8 @@ read on to dig deeper.
 
 Premise: jumping from point A to B on the screen should not be some [exciting
 puzzle](https://www.vimgolf.com/), for which you should train yourself; it
-should be a _non-issue_. An ideal keyboard-driven interface would impose almost
-**no more cognitive burden than using a mouse**, without the constant
+should be a _non-issue_. An ideal keyboard-driven interface would impose
+**almost no more cognitive burden than using a mouse**, without the constant
 context-switching required by the latter.
 
 That is, **you do not want to think about**
@@ -111,10 +110,10 @@ That is, **you do not want to think about**
   repeats)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
   you should be able to type the sequence in one go, always knowing the next
-  step in advance, without having to react to events immediately (↔ any kind of
-  "just-in-time" labeling method; note that the "`/` on steroids" approach by
-  Pounce and Flash, where the pattern length is not fixed, makes this goal
-  inherently unachievable)
+  step in advance (↔ any kind of "just-in-time" labeling method; note that the
+  "`/` on steroids" approach by Pounce and Flash, where the pattern length is
+  not fixed, and thus the labels appear at an unknown time, makes this last
+  goal impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -122,17 +121,17 @@ All the while using **as few keystrokes as possible**, and getting distracted by
 ### How do we measure up?
 
 It is obviously impossible to achieve all of the above at the same time, without
-some trade-offs at least; but Leap comes pretty close, occupying a sweet spot
-in the design space.
+some trade-offs at least; but in our opinion Leap comes pretty close, occupying
+a sweet spot in the design space.
 
 The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
-can eliminate the surprise factor from the search-based method. Fortunately, a
-2-character pattern - the shortest one with which we can play this trick - is
-also long enough to sufficiently narrow down the matches in the vast majority
-of cases.
+can eliminate the surprise factor from the search-based method (which is the
+only viable approach - see "jetpack" above). Fortunately, a 2-character pattern
+\- the shortest one with which we can play this trick - is also long enough to
+sufficiently narrow down the matches in the vast majority of cases.
 
-Fixed pattern length also makes **autojump** possible - you cannot improve on
+Fixed pattern length also makes autojump possible - you cannot improve on
 jumping directly, not having to read a label at all. With ahead-of-time
 labeling, hovever, we can do this in a smarter way too - disabling autojump and
 switching back to a bigger, "unsafe" label set, if there are lots of targets.
@@ -141,18 +140,16 @@ ahead of time.
 
 ### Auxiliary principles
 
-- Optimize for the common case, not the pathological: a good example of this is
-  the Sneak-like "use strictly one-character labels, and switch between
-  groups"-approach, which can become awkward beyond, say, 200 targets, but
-  eliminates a whole bunch of edge cases and UI problems (besides that, it
-  allows for an ergonomic [multiselect](#extending-leap) feature).
+- Optimize for the common case, not the pathological: a good example is using
+  strictly one-character labels and switching between groups, which can become
+  awkward beyond, say, 200 targets, but makes a whole bunch of edge cases and
+  UI problems nonexistent.
 
 - [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
-  build on Vim's native interface, and aim for synergy as much as possible. The
-  plugin supports macros, dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-  [keymaps](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-  (language mappings), autocommands via `User` events, among others, and
-  intends to continuously improve in this respect.
+  build on Vim's native features, aim for synergy, and don't reinvent the wheel
+  (dot-repeat (`.`), inclusive/exclusive toggle (`v`),
+  [keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
+  support, autocommands via `User` events, `<Plug>` keys, etc.).
 
 - [Mechanisms instead of
   policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
@@ -287,10 +284,9 @@ the target labeled, first with blue, and then, after one more `<space>`, green.
 `<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
 initiates "traversal" mode, moving on to the next match on each subsequent
 keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
-it uses the previous search pattern. In case you accidentally overshoot your
-target, `<tab>` (`special_keys.prev_target`) can revert the previous jump(s).
-Note that if the safe label set is in use, the labels will remain available the
-whole time!
+it uses the previous search pattern. In case you overshoot your target, `<tab>`
+(`special_keys.prev_target`) can revert the previous jump(s). Note that if the
+safe label set is in use, the labels will remain available the whole time!
 
 You can make `next_target` and `prev_target` behave like like `;` and `,`, that
 is, repeat the last motion without explicitly invoking Leap (see `:h
@@ -341,6 +337,8 @@ a background in the current color scheme) or a middle dot (U+00B7).
 
 ## Configuration
 
+### Options
+
 Below is a list of all configurable values in the `opts` table, with their
 defaults. Set them like: `require('leap').opts.<key> = <value>`. For details on
 the particular fields, see `:h leap-config`.
@@ -371,11 +369,11 @@ See `:h leap-default-mappings`. To define alternative mappings, you can use the
 alternative, "fFtT"-style key set for in-window motions, including or excluding
 the whole 2-character match in Visual and Operator-pending-mode.
 
-To set repeat keys that work like `;`/`,` for `f`/`t`, that is, repeat the last
-motion without explicitly invoking Leap, see also `:h leap-custom-mappings`.
-
 To create custom motions with behaviours different from the predefined ones,
 see `:h leap.leap()`.
+
+To set repeat keys that work like `;` and `,` that is, repeat the last motion
+without explicitly invoking Leap, see `:h leap-repeat-keys`.
 
 ### Highlight groups
 
@@ -470,9 +468,9 @@ end)
 <details>
 <summary>Search in all windows</summary>
 
-```lua
--- The same caveats as above about bidirectional search apply here.
+The same caveats as above about bidirectional search apply here.
 
+```lua
 vim.keymap.set('n', <key>, function ()
   local focusable_windows = vim.tbl_filter(
     function (win) return vim.api.nvim_win_get_config(win).focusable end,
