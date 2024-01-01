@@ -727,12 +727,12 @@ function leap_linewise(skip_range)
 end
 
 -- For maximum comfort, force linewise selection in the mappings:
-vim.keymap.set('x', '\\', function ()
+vim.keymap.set('x', '|', function ()
   -- Only force V if not already in it (otherwise it would exit Visual mode).
   if vim.fn.mode(1) ~= 'V' then vim.cmd('normal! V') end
   leap_linewise()
 end)
-vim.keymap.set('o', '\\', "V<cmd>lua leap_linewise()<cr>")
+vim.keymap.set('o', '|', "V<cmd>lua leap_linewise()<cr>")
 ```
 </details>
 
@@ -748,6 +748,7 @@ local api = vim.api
 local ts = vim.treesitter
 
 local function get_ts_nodes()
+  if not pcall(ts.get_parser) then return end
   local wininfo = vim.fn.getwininfo(api.nvim_get_current_win())[1]
   -- Get current node, and then its parent nodes recursively.
   local cur_node = ts.get_node()
@@ -776,7 +777,7 @@ local function get_ts_nodes()
   if #targets >= 1 then return targets end
 end
 
-local function select_range(target)
+local function select_node_range(target)
   local mode = api.nvim_get_mode().mode
   -- Force going back to Normal from Visual mode.
   if not mode:match('no?') then vim.cmd('normal! ' .. mode) end
@@ -790,11 +791,11 @@ local function leap_ts()
   require('leap').leap {
     target_windows = { api.nvim_get_current_win() },
     targets = get_ts_nodes,
-    action = select_range,
+    action = select_node_range,
   }
 end
 
-vim.keymap.set({'x', 'o'}, 'x', leap_ts)
+vim.keymap.set({'x', 'o'}, '\\', leap_ts)
 ```
 
 </details>
