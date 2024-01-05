@@ -427,9 +427,9 @@ Accessing the arguments passed to leap() ~
 The arguments of the current call are always available at runtime, in the
 `state.args` table.
 
-Using |leap-events| together with the `args` table, you can customize practically
-anything on a per-call basis. Keep in mind that you can even pass arbitrary
-flags when calling |leap()|:
+Using |leap-events| together with the `args` table, you can customize
+practically anything on a per-call basis. Keep in mind that nothing prevents
+you from passing arbitrary flags when calling |leap.leap()|:
 >
     function my_custom_leap_func()
         require'leap'.leap { my_custom_flag = true, ... }

@@ -262,22 +262,21 @@ otherwise. For fine-tuning or disabling this behaviour, see `:h leap-config`
 ### Multiple target groups
 
 To show the last important feature, let's go back to the start position, and
-start a new jump - we will target the struct member on the line `available =
-oldwin->w_frame->fr_height;` near the bottom, using the pattern `fr`, by first
-pressing `s`, and then `f`:
+start a new jump - we will target the struct member on line 1100, near the
+bottom (`available = oldwin->w_frame->fr_height;`), using the pattern `fr`.
+Press `s`, and then `f`:
 
 ![quick example 3](../media/quick_example_3.png?raw=true)
 
-The blue labels indicate the "secondary" group of matches, where we start to
-reuse the available labels for a given pair (`s`, `f`, `n`... again). You can
-reach those by prefixing the label with `<space>`, that switches to the
-subsequent match group. For example, to jump to the "blue" `j` target, you
-should now press `r<space>j`.
+The blue labels indicate a secondary group of matches, where we start to reuse
+the available labels. You can reach those by pressing `<space>` first, which
+switches to the subsequent match group. To jump to our target (the blue `j`),
+you should now press `r` (to finish the pattern), and then `<space>j`.
 
-In very rare cases, if the large number of matches cannot be covered even by two
-label groups, you might need to press `<space>` multiple times, until you see
-the target labeled, first with blue, and then, after one more `<space>`, green.
-(Substitute "green" and "blue" with the actual colors in the current theme.)
+In very rare cases, if the large number of matches cannot be covered even by
+two label groups, you might need to press `<space>` multiple times, until you
+see the target label, first in blue, and then in green. (Substitute "green" and
+"blue" with the actual colors in the current theme.)
 
 ### Repeat and traversal
 
@@ -852,22 +851,20 @@ require('leap').leap {
 ```
 </details>
 
-### Accessing the arguments passed to `leap`
-
-The arguments of the current call are always available at runtime, in the
-`state.args` table.
-
 ### Setting up autocommands
 
 Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
 `LeapLeave`), so that you can set up autocommands, e.g. to change the values of
 some editor options while the plugin is active (`:h leap-events`).
 
-### Customizing specific invocations
+### Accessing the arguments passed to `leap`
 
-Using autocommands together with the `args` table, you can customize practically
-anything on a per-call basis - keep in mind that nothing prevents you from
-passing arbitrary flags when calling `leap`:
+The arguments of the current call are always available at runtime, in the
+`state.args` table.
+
+Using autocommands together with the `args` table, you can customize
+practically anything on a per-call basis. Keep in mind that nothing prevents
+you from passing arbitrary flags when calling `leap`:
 
 ```Lua
 function my_custom_leap_func()
