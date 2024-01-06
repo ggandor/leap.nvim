@@ -390,6 +390,12 @@ autocmd ColorScheme * lua require('leap').init_highlight(true)
 This can be tweaked further, you could e.g. check the actual colorscheme, and
 only execute for certain ones, etc.
 
+### Autocommands
+
+Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
+`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
+some editor options while the plugin is active (`:h leap-events`).
+
 ## FAQ
 
 <details>
@@ -514,21 +520,6 @@ You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.
 </details>
 
 <details>
-<summary>Jumping to lines</summary>
-
-It's easy to add to your config, see [Extending Leap](#extending-leap)
-for the example snippet (30-40 lines).
-
-</details>
-
-<details>
-<summary>Enhanced f/t motions</summary>
-
-Check [flit.nvim](https://github.com/ggandor/flit.nvim), an extension plugin for Leap.
-
-</details>
-
-<details>
 <summary>Disable auto-jumping to the first match</summary>
 
 ```lua
@@ -621,61 +612,14 @@ the modal paradigm is a fundamental difference in our approach.
 There is more to Leap than meets the eye. On a general level, you should think
 of it as less of a motion plugin and more of an engine for selecting visible
 targets on the screen (acquired by arbitrary means), and doing arbitrary things
-with them.
+with them. See `:h leap.leap()`.
 
 There are lots of ways you can extend the plugin and bend it to your will, and
-the combinations of them give you almost infinite possibilities.
-
-### Calling `leap` with custom arguments
-
-Instead of using the provided `<Plug>` keys, you can also call the `leap`
-function directly. The following arguments are available:
-
-`opts`: A table just like `leap.opts`, to override any default setting for the
-specific call. E.g.:
-
-```lua
-require('leap').leap { opts = { labels = {} } }
-```
-
-`offset`: Where to land with the cursor compared to the target position (-1, 0,
-1, 2).
-
-`inclusive_op`: A flag indicating whether an operation should behave as
-inclusive (`:h inclusive`).
-
-`backward`: Search backward instead of forward in the current window.
-
-`target_windows`: A list of windows (as `winid`s) to be searched.
+the combinations of them give you almost infinite possibilities. Some practical
+examples:
 
 <details>
-<summary>Example: bidirectional and all-windows search</summary>
-
-```lua
--- Bidirectional search in the current window is just a specific case of
--- multi-window mode.
-require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
-
--- Searching in all windows (including the current one) on the tab page.
-require('leap').leap { target_windows = vim.tbl_filter(
-  function (win) return vim.api.nvim_win_get_config(win).focusable end,
-  vim.api.nvim_tabpage_list_wins(0)
-)}
-```
-</details>
-
-This is where things start to become really interesting:
-
-`targets`: Either a list of targets, or a function returning such a list. The
-elements of the list are tables of arbitrary structure, with the only mandatory
-field being `pos` - a (1,1)-indexed tuple; this is the position of the label,
-and also the jump target, if there is no custom `action` provided. If you have
-targets in multiple windows, you also need to provide a `wininfo` field for each
-(`:h getwininfo()`). Targets can represent anything with a position, like
-Tree-sitter nodes, etc.
-
-<details>
-<summary>Example: linewise motions</summary>
+<summary>Linewise motions</summary>
 
 ```lua
 local function get_line_starts(winid, skip_range)
@@ -735,12 +679,11 @@ vim.keymap.set('o', '|', "V<cmd>lua leap_linewise()<cr>")
 ```
 </details>
 
-`action`: A Lua function that will be executed by Leap in place of the jump. (You
-could obviously implement some custom jump logic here too.) Its only argument is
-either a target, or a list of targets (in multiselect mode).
-
 <details>
-<summary>Example: select Tree-sitter nodes</summary>
+<summary>Select Tree-sitter nodes</summary>
+
+Not as sophisticated as flash.nvim's implementation, but totally usable, in 50
+lines:
 
 ```lua
 local api = vim.api
@@ -799,13 +742,8 @@ vim.keymap.set({'x', 'o'}, '\\', leap_ts)
 
 </details>
 
-`multiselect`: A flag allowing for selecting multiple targets for `action`. In
-this mode, you can just start picking labels one after the other. You can revert
-the most recent pick with `<backspace>`, and accept the selection with
-`<enter>`.
-
 <details>
-<summary>Example: multi-cursor `:normal`</summary>
+<summary>Multi-cursor `:normal`</summary>
 
 ```lua
 -- The following example showcases a custom action, using `multiselect`. We're
@@ -851,41 +789,16 @@ require('leap').leap {
 ```
 </details>
 
-### Setting up autocommands
+<details>
+<summary>Remote text objects</summary>
 
-Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
-`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
-some editor options while the plugin is active (`:h leap-events`).
+See [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
 
-### Accessing the arguments passed to `leap`
+</details>
 
-The arguments of the current call are always available at runtime, in the
-`state.args` table.
+<details>
+<summary>Enhanced f/t motions</summary>
 
-Using autocommands together with the `args` table, you can customize
-practically anything on a per-call basis. Keep in mind that nothing prevents
-you from passing arbitrary flags when calling `leap`:
+See [flit.nvim](https://github.com/ggandor/flit.nvim).
 
-```Lua
-function my_custom_leap_func()
-    require('leap').leap { my_custom_flag = true, ... }
-end
-
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'LeapEnter',
-  callback = function ()
-    if require('leap').state.args.my_custom_flag then
-      -- Implement some special logic here, that will only apply to
-      -- my_custom_leap_func() (e.g., change the style of the labels),
-      -- and clean up with an analogous `LeapLeave` autocommand.
-    end
-  end
-})
-```
-
-### Plugins using Leap
-
-- [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim) (remote
-  operations on text objects)
-- [flit.nvim](https://github.com/ggandor/flit.nvim) (enhanced f/t motions)
-
+</details>
