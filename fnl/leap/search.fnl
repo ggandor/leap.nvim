@@ -34,7 +34,8 @@ window area.
     [left-bound right-bound]))
 
 
-(fn get-match-positions [pattern [left-bound right-bound]
+(fn get-match-positions [pattern
+                         [left-bound right-bound]
                          {: backward? : whole-window?}]
   "Return all visible positions of `pattern` in the current window."
   (let [horizontal-bounds (or (and (not vim.wo.wrap)
@@ -83,25 +84,16 @@ window area.
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
                                    {: targets : backward? : whole-window?
-                                    : match-same-char-seq-at-end? : skip-curpos?}]
+                                    : match-same-char-seq-at-end?
+                                    : skip-curpos?}]
   "Fill a table that will store the positions and other metadata of all
-in-window pairs that match `pattern`, in the order of discovery. A
-target element in its final form has the following fields (the latter
-ones might be set by subsequent functions):
+in-window pairs that match `pattern`, in the order of discovery. The following
+attributes are set here for the target elements:
 
-Static attributes (set once and for all)
-pos          : [lnum col]  1/1-indexed
-chars        : [char+]
-edge-pos?    : bool
-?wininfo     : `vim.fn.getwininfo` dict
-?label       : char
-
-Dynamic attributes
-?label-state :   'active-primary'
-               | 'active-secondary'
-               | 'selected'
-               | 'inactive'
-?beacon      : [col-offset [[char hl-group]]]
+wininfo   : dictionary (see `:h getwininfo()`)
+pos       : [lnum col] (1,1)-indexed tuple
+chars     : list of characters in the match
+edge-pos? : boolean (whether the match touches the right edge of the window)
 "
   (let [wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)
