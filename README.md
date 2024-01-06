@@ -80,7 +80,7 @@ You can also
 This was just a teaser - mind that while Leap has deeply thought-through,
 opinionated defaults, its small(ish) but comprehensive API makes it flexible:
 you can configure it to resemble other similar plugins, extend it with custom
-targeting methods, and even do arbitrary actions with the selected target(s) -
+targeting methods, and even do arbitrary actions with the selected target -
 read on to dig deeper.
 
 - [Design considerations in detail](#design-considerations-in-detail)
@@ -740,53 +740,6 @@ end
 vim.keymap.set({'x', 'o'}, '\\', leap_ts)
 ```
 
-</details>
-
-<details>
-<summary>Multi-cursor `:normal`</summary>
-
-```lua
--- The following example showcases a custom action, using `multiselect`. We're
--- executing a `normal!` command at each selected position (this could be even
--- more useful if we'd pass in custom targets too).
-
-local api = vim.api
-
-function paranormal(targets)
-  -- Get the :normal sequence to be executed.
-  local input = vim.fn.input("normal! ")
-  if #input < 1 then return end
-
-  local ns = api.nvim_create_namespace("")
-
-  -- Set an extmark as an anchor for each target, so that we can also execute
-  -- commands that modify the positions of other targets (insert/change/delete).
-  for _, target in ipairs(targets) do
-    local line, col = unpack(target.pos)
-    id = api.nvim_buf_set_extmark(0, ns, line - 1, col - 1, {})
-    target.extmark_id = id
-  end
-
-  -- Jump to each extmark (anchored to the "moving" targets), and execute the
-  -- command sequence.
-  for _, target in ipairs(targets) do
-    local id = target.extmark_id
-    local pos = api.nvim_buf_get_extmark_by_id(0, ns, id, {})
-    vim.fn.cursor(pos[1] + 1, pos[2] + 1)
-    vim.cmd("normal! " .. input)
-  end
-
-  -- Clean up the extmarks.
-  api.nvim_buf_clear_namespace(0, ns, 0, -1)
-end
-
--- Usage:
-require('leap').leap {
-    target_windows = { api.nvim_get_current_win() },
-    action = paranormal,
-    multiselect = true,
-}
-```
 </details>
 
 <details>

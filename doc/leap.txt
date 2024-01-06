@@ -279,8 +279,6 @@ right-hand keys to get a better balance for the whole sequence on average.
       prev_target = '<tab>',
       next_group = '<space>',
       prev_group = '<tab>',
-      multi_accept = '<enter>',
-      multi_revert = '<backspace>',
     }
 <
 Meta-keys accepted at runtime:
@@ -292,9 +290,6 @@ Meta-keys accepted at runtime:
 *leap.opts.special_keys.next_group*    Shift to the next group of labeled targets.
 *leap.opts.special_keys.prev_group*    Shift to the previous group of labeled
                                      targets.
-*leap.opts.special_keys.multi_accept*  |leap-multiselect|: accept the selection.
-*leap.opts.special_keys.multi_revert*  |leap-multiselect|: deselect the last
-                                     selected target
 
 Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
 
@@ -321,10 +316,6 @@ LeapLabelSecondary
     group of labels are shown with a different color. Those targets can be
     reached by pressing `<space>` (|leap.opts.special_keys.next_group|) before
     the label character.
-
-                                                          *hl-LeapLabelSelected*
-LeapLabelSelected
-    Labels that are selected for the action in |leap-multiselect| mode.
 
                                                                *hl-LeapBackdrop*
 LeapBackdrop
@@ -411,15 +402,8 @@ leap({opts})                                                       *leap.leap()*
                  etc.
                                                             *leap-custom-action*
                • action: A Lua function that will be executed by Leap in place
-                 of the jump. (You could obviously implement some custom jump
-                 logic here too.) Its only argument is either a target, or a
-                 list of targets (in multiselect mode).
-                                                              *leap-multiselect*
-               • multiselect: A flag allowing for selecting multiple targets
-                 for `action`. In this mode, you can just start picking labels
-                 one after the other. You can revert the most recent pick with
-                 `<backspace>` (`special_keys.multi_revert`), and accept the
-                 selection with `<enter>` (`special_keys.multi_accept`).
+                 of the jump, taking the selected target as its argument. (You
+                 could obviously implement some custom jump logic here too.)
 
                                                   *leap.state* *leap-runtime-args*
 Accessing the arguments passed to leap() ~
