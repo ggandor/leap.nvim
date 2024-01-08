@@ -318,16 +318,22 @@ cursor should be reachable by Leap too.
 <details>
 <summary>Concealed labels</summary>
 
-A special character might replace the label if either:
+A special character might replace the label in two cases:
 
-* Two labels would occupy the same position (this is possible in phase one,
-  when the target is right before EOL or the window edge, and the label needs
-  to be shifted left).
+* "Here be dragons" (conflict marker in phase one):
 
-* Two-phase processing is enabled, and unlabeled phase one targets have no
-  highlighting (the default). In this case targets beyond the secondary group
-  need to have some kind of label next to them, to signal that they are not
-  directly reachable.
+    * the label is on top of another label (possible when the target is right
+      next to EOL or the window edge, and the label needs to be shifted left)
+    * the label immediately follows an unlabeled match (like above)
+    * the label is on top of an unlabeled match
+
+  In the latter two cases, the match highlight is removed, even if enabled in
+  `opts`.
+
+* Two-phase processing is enabled, and unlabeled targets are not highlighted
+  (i.e., the default settings). In this case, targets beyond the secondary
+  group need to have some kind of label next to them, to signal that they are
+  not unlabeled, that is, not directly reachable.
 
 Leap automatically uses either space (if both primary and secondary labels have
 a background in the current color scheme) or a middle dot (U+00B7).
