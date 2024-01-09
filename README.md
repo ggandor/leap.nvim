@@ -362,8 +362,6 @@ special_keys = {
   prev_target = '<tab>',
   next_group = '<space>',
   prev_group = '<tab>',
-  multi_accept = '<enter>',
-  multi_revert = '<backspace>',
 }
 ```
 
