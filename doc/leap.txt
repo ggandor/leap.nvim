@@ -194,25 +194,6 @@ Example configuration: >
 <
 Available options~
 
-                                               *leap.opts.max_phase_one_targets*
-`max_phase_one_targets = nil`
-
-    Disable ahead-of-time displaying of target beacons beyond a certain number
-    of phase one targets (to mitigate visual noise in extreme cases). Setting
-    this option to 0 disables two-phase processing altogether.
-
-                               *leap.opts.highlight_unlabeled_phase_one_targets*
-`highlight_unlabeled_phase_one_targets = false`
-
-    Highlight unlabeled (i.e., directly reachable) matches after the first
-    input character.
-
-                                   *leap.opts.max_highlighted_traversal_targets*
-`max_highlighted_traversal_targets = 10`
-
-    Number of targets to be highlighted after the cursor in |leap-traversal|
-    mode, if there are no labels used.
-
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
 
@@ -233,6 +214,25 @@ Available options~
     that supporting |smartcase| is not possible: we would need to show two
     different labels, corresponding to two different futures, at the same
     time.
+
+                                               *leap.opts.max_phase_one_targets*
+`max_phase_one_targets = nil`
+
+    Disable ahead-of-time displaying of target beacons beyond a certain number
+    of phase one targets (to mitigate visual noise in extreme cases). Setting
+    this option to 0 disables two-phase processing altogether.
+
+                               *leap.opts.highlight_unlabeled_phase_one_targets*
+`highlight_unlabeled_phase_one_targets = false`
+
+    Highlight unlabeled (i.e., directly reachable) matches after the first
+    input character.
+
+                                   *leap.opts.max_highlighted_traversal_targets*
+`max_highlighted_traversal_targets = 10`
+
+    Number of targets to be highlighted after the cursor in |leap-traversal|
+    mode, if there are no labels used.
 
                                                     *leap.opts.substitute_chars*
 `substitute_chars = {}`

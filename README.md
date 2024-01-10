@@ -349,14 +349,19 @@ defaults. Set them like: `require('leap').opts.<key> = <value>`. For details on
 the particular fields, see `:h leap-config`.
 
 ```Lua
+-- Search
+case_sensitive = false
+equivalence_classes = { ' \t\r\n', }
+
+-- View
 max_phase_one_targets = nil
 highlight_unlabeled_phase_one_targets = false
 max_highlighted_traversal_targets = 10
-case_sensitive = false
-equivalence_classes = { ' \t\r\n', }
 substitute_chars = {}
-safe_labels = 'sfnut/SFNLHMUGTZ?'
+
+-- Target selection
 labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'
+safe_labels = 'sfnut/SFNLHMUGTZ?'
 special_keys = {
   next_target = '<enter>',
   prev_target = '<tab>',
