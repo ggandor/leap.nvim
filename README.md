@@ -17,8 +17,8 @@ Leap's default motions allow you to jump to any positions in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
 Sneak. The main novel idea in Leap is that you get a **live preview of the
-target labels** - by mapping possible futures, Leap can show you which key(s)
-you will need to press _before_ you actually need to do that.
+target labels** - Leap shows you which key you will need to press _before_ you
+actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
@@ -254,17 +254,16 @@ that.
 ![quick example 2](../media/quick_example_2.png?raw=true)
 
 Note that Leap only jumps to the first match if the remaining matches can be
-covered by a limited set of safe target labels (keys you would not use right
-after a jump), but stays in place, and switches to an extended label set
-otherwise. For fine-tuning or disabling this behaviour, see `:h leap-config`
-(`labels` and `safe_labels`).
+covered by the limited set of safe target labels, but stays in place, and
+switches to an extended label set otherwise. For fine-tuning or disabling this
+behaviour, see `:h leap-config` (`labels` and `safe_labels`).
 
 ### Multiple target groups
 
 To show the last important feature, let's go back to the start position, and
-start a new jump - we will target the struct member on line 1100, near the
-bottom (`available = oldwin->w_frame->fr_height;`), using the pattern `fr`.
-Press `s`, and then `f`:
+start a new jump - we will target the struct member `fr_height` on line 1100,
+near the bottom (`available = oldwin->w_frame->fr_height;`), using the pattern
+`fr`. Press `s`, and then `f`:
 
 ![quick example 3](../media/quick_example_3.png?raw=true)
 
@@ -349,19 +348,14 @@ defaults. Set them like: `require('leap').opts.<key> = <value>`. For details on
 the particular fields, see `:h leap-config`.
 
 ```Lua
--- Search
 case_sensitive = false
 equivalence_classes = { ' \t\r\n', }
-
--- View
 max_phase_one_targets = nil
 highlight_unlabeled_phase_one_targets = false
 max_highlighted_traversal_targets = 10
 substitute_chars = {}
-
--- Target selection
-labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'
 safe_labels = 'sfnut/SFNLHMUGTZ?'
+labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'
 special_keys = {
   next_target = '<enter>',
   prev_target = '<tab>',
@@ -567,6 +561,14 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 </details>
 
 <details>
+<summary>Smart case sensitivity</summary>
+
+Unfortunately impossible, [by
+design](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351).
+
+</details>
+
+<details>
 <summary>Lightspeed-style highlighting</summary>
 
 ```lua
@@ -670,7 +672,7 @@ end
 
 -- You can pass an argument to specify a range to be skipped
 -- before/after the cursor (default is +/-2).
-function leap_linewise(skip_range)
+function leap_line_start(skip_range)
   local winid = vim.api.nvim_get_current_win()
   require('leap').leap {
     target_windows = { winid },
@@ -682,9 +684,9 @@ end
 vim.keymap.set('x', '|', function ()
   -- Only force V if not already in it (otherwise it would exit Visual mode).
   if vim.fn.mode(1) ~= 'V' then vim.cmd('normal! V') end
-  leap_linewise()
+  leap_line_start()
 end)
-vim.keymap.set('o', '|', "V<cmd>lua leap_linewise()<cr>")
+vim.keymap.set('o', '|', "V<cmd>lua leap_line_start()<cr>")
 ```
 </details>
 
