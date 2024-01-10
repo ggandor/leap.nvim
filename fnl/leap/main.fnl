@@ -236,13 +236,18 @@ conflicts can occur:
 (A) Two labels on top of each other (possible at EOL or window edge,
     where labels need to be shifted left).
 
+          x1 x-label |
+       y1 y2 y-label |
+       ------------------
+       -3 -2 -1      edge-pos
+
 (B) An unlabeled match touches the label of another match (possible if
-    one of the labels is shifted, like above). This is unacceptable - it
+    the label is shifted, just like above). This is unacceptable - it
     looks like the label is for the unlabeled target:
-          y1 ylabel |
-       x1 x2        |
-       -----------------
-       -3 -2 -1     edge-pos
+          x1 x-label |
+       y1 y2         |
+       ------------------
+       -3 -2 -1      edge-pos
 
 (C) An unlabeled match covers a label.
 
