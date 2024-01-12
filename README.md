@@ -70,8 +70,8 @@ Type
 
 You can also
 
-- search bidirectionally in the window, or bind only one key to Leap, and
-  search in all windows, if you are okay with the trade-offs (see [FAQ](#faq)).
+- search bidirectionally in the whole window, or bind only one key to Leap, and
+  search in all windows (see [FAQ](#faq)).
 - map keys to repeat motions without explicitly invoking Leap, similar to how
   `;` and `,` works (see `:h leap-repeat-keys`).
 
@@ -453,20 +453,14 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 <details>
 <summary>Bidirectional search</summary>
 
-Beware that the trade-off in this mode is that you always have to select a
-label, as there is no automatic jump to the first target (it would be very
-confusing if the cursor would suddenly jump in the opposite direction than your
-goal). Former vim-sneak users will know how awesome a feature that is. I really
-suggest trying out the plugin with the defaults for a while first.
-
-An additional disadvantage is that operations cannot be dot-repeated if the
-search is non-directional.
-
-With that out of the way, I'll tell you the simple trick: just initiate
-multi-window mode with the current window as the only target.
+Simply initiate multi-window mode (i.e., call `leap()` directly, with a
+`target_windows` argument) with the current window as the only target. Not
+recommended for Operator-pending mode, as dot-repeat cannot be used if the
+search is non-directional. Another caveat is that you cannot traverse through
+the matches.
 
 ```lua
-vim.keymap.set(<modes>, <key>, function ()
+vim.keymap.set('n', 's', function ()
   require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
 end)
 ```
@@ -476,10 +470,16 @@ end)
 <details>
 <summary>Search in all windows</summary>
 
-The same caveats as above about bidirectional search apply here.
+The trade-off here is that if you have multiple windows open on the tab page,
+then you always have to select a label, i.e., type at least 3 characters, as
+automatic jump to the first target is explicitly disabled, regardless of having
+safe labels available (it would be too disorienting if the cursor could
+suddenly jump to a different window than your goal, right before selecting the
+target).
+
 
 ```lua
-vim.keymap.set('n', <key>, function ()
+vim.keymap.set('n', 's', function ()
   local focusable_windows = vim.tbl_filter(
     function (win) return vim.api.nvim_win_get_config(win).focusable end,
     vim.api.nvim_tabpage_list_wins(0)

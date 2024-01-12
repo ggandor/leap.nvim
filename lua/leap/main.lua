@@ -708,7 +708,8 @@ local function leap(kwargs)
       end
     end
     funny_edge_case_3f = (backward_3f and _113_())
-    local force_noautojump_3f = (op_mode_3f or multi_select_3f or not directional_3f or user_given_action or funny_edge_case_3f)
+    local multi_window_3f = (_3ftarget_windows and (#_3ftarget_windows > 1))
+    local force_noautojump_3f = (op_mode_3f or multi_select_3f or multi_window_3f or user_given_action or funny_edge_case_3f)
     set_autojump(targets, force_noautojump_3f)
     attach_label_set(targets)
     set_labels(targets, {["force?"] = multi_select_3f})

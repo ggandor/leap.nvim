@@ -687,9 +687,10 @@ an autojump. (In short: always err on the safe side.)
                                    {:pos [l2 c2] :chars [ch1 ch2]}]
                                   (and (= l1 l2)
                                        (= c1 (+ c2 (ch1:len) (ch2:len))))))
+          multi-window? (and ?target-windows (> (length ?target-windows) 1))
           force-noautojump? (or op-mode?           ; should be able to select a target
                                multi-select?       ; likewise
-                               (not directional?)  ; potentially disorienting
+                               multi-window?       ; potentially disorienting
                                user-given-action   ; no jump, doing sg else
                                funny-edge-case?)]  ; see above
       (doto targets
