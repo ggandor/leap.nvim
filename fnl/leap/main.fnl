@@ -751,6 +751,7 @@ an autojump. (In short: always err on the safe side.)
 
     (fn loop [group-offset first-invoc?]
       (display group-offset)
+      (exec-user-autocmds :LeapSelectPre)
       (case (get-input)
         input
         (let [switch-group? (and (> |groups| 1)
@@ -920,7 +921,9 @@ an autojump. (In short: always err on the safe side.)
       (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
+  ; deprecated (LeapSelectPre makes this redundant)
   (exec-user-autocmds :LeapPatternPost)
+
   ; Do this now - repeat can succeed, even if we fail this time.
   (update-repeat-state {: in1 :in2 ?in2 : offset
                         :backward backward? :inclusive_op inclusive-op?

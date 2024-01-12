@@ -770,6 +770,7 @@ local function leap(kwargs)
     end
     local function loop(group_offset, first_invoc_3f0)
       display(group_offset)
+      exec_user_autocmds("LeapSelectPre")
       local _121_ = get_input()
       if (nil ~= _121_) then
         local input = _121_
