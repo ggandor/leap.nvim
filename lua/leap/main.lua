@@ -1184,37 +1184,32 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     else
-      set_dot_repeat(in1, _3fin20, 1)
-      do_action(targets_2a[1])
-      hl:cleanup(hl_affected_windows)
-      exec_user_autocmds("LeapLeave")
-      return
+      if not targets_2a["autojump?"] then
+        set_dot_repeat(in1, _3fin20, 1)
+        do_action(targets_2a[1])
+        hl:cleanup(hl_affected_windows)
+        exec_user_autocmds("LeapLeave")
+        return
+      else
+        vim.fn.feedkeys(in_final, "i")
+        hl:cleanup(hl_affected_windows)
+        exec_user_autocmds("LeapLeave")
+        return
+      end
     end
   else
   end
-  local _local_194_ = get_target_with_active_primary_label(targets_2a, in_final)
-  local idx = _local_194_[1]
-  local _ = _local_194_[2]
+  local _local_195_ = get_target_with_active_primary_label(targets_2a, in_final)
+  local idx = _local_195_[1]
+  local _ = _local_195_[2]
   if idx then
     set_dot_repeat(in1, _3fin20, idx)
     do_action(targets_2a[idx])
     hl:cleanup(hl_affected_windows)
     exec_user_autocmds("LeapLeave")
     return
-  elseif targets_2a["autojump?"] then
-    vim.fn.feedkeys(in_final, "i")
-    hl:cleanup(hl_affected_windows)
-    exec_user_autocmds("LeapLeave")
-    return
   else
-    if change_op_3f then
-      handle_interrupted_change_op_21()
-    else
-    end
-    if vars.errmsg then
-      echo(vars.errmsg)
-    else
-    end
+    vim.fn.feedkeys(in_final, "i")
     hl:cleanup(hl_affected_windows)
     exec_user_autocmds("LeapLeave")
     return
@@ -1222,26 +1217,26 @@ local function leap(kwargs)
   return nil
 end
 do
-  local _198_ = opts.default.equivalence_classes
-  if (nil ~= _198_) then
-    opts.default.eq_class_of = eq_classes__3emembership_lookup(_198_)
+  local _197_ = opts.default.equivalence_classes
+  if (nil ~= _197_) then
+    opts.default.eq_class_of = eq_classes__3emembership_lookup(_197_)
   else
-    opts.default.eq_class_of = _198_
+    opts.default.eq_class_of = _197_
   end
 end
 api.nvim_create_augroup("LeapDefault", {})
 hl["init-highlight"](hl)
-local function _200_()
+local function _199_()
   return hl["init-highlight"](hl)
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _200_, group = "LeapDefault"})
+api.nvim_create_autocmd("ColorScheme", {callback = _199_, group = "LeapDefault"})
 local function set_editor_opts(t)
   state.saved_editor_opts = {}
   local wins = (state.args.target_windows or {state.source_window})
   for opt, val in pairs(t) do
-    local _let_201_ = vim.split(opt, ".", {plain = true})
-    local scope = _let_201_[1]
-    local name = _let_201_[2]
+    local _let_200_ = vim.split(opt, ".", {plain = true})
+    local scope = _let_200_[1]
+    local name = _let_200_[2]
     if (scope == "w") then
       for _, w in ipairs(wins) do
         state.saved_editor_opts[{"w", w, name}] = api.nvim_win_get_option(w, name)
@@ -1288,13 +1283,13 @@ local function set_concealed_label()
   end
   return nil
 end
-local function _205_()
+local function _204_()
   set_editor_opts(temporary_editor_opts)
   return set_concealed_label()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _205_, group = "LeapDefault"})
-local function _206_()
+api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _204_, group = "LeapDefault"})
+local function _205_()
   return restore_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _206_, group = "LeapDefault"})
+api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _205_, group = "LeapDefault"})
 return {state = state, leap = leap}

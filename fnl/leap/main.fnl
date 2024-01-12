@@ -985,13 +985,14 @@ an autojump. (In short: always err on the safe side.)
                                            vars.partial-pattern?
                                            (not targets*.autojump?))})
           (exit))
-        (exit-with-action-on 1)))  ; (implied no autojump)
+        (if (not targets*.autojump?)
+            (exit-with-action-on 1)
+            (do (vim.fn.feedkeys in-final :i) (exit)))))
 
   (local [idx _] (get-target-with-active-primary-label targets* in-final))
-  (if idx (exit-with-action-on idx)
-      targets*.autojump? (do (vim.fn.feedkeys in-final :i)
-                             (exit))
-      (exit-early))
+  (if idx
+      (exit-with-action-on idx)
+      (do (vim.fn.feedkeys in-final :i) (exit)))
 
   ; Do return something here, otherwise Fennel automatically inserts
   ; return statements into the tail-positioned if branches above,
