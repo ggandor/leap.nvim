@@ -154,12 +154,6 @@ suggested mapping: `x` (for Visual and Operator-pending mode only)
 arguments: `{ backward = true, offset = 2 }`
 suggested mapping: `X` (for Visual and Operator-pending mode only)
 
-    abcd|                         |bcde
-    -----------------------------------
-    |bcde  ←  Sab    n    sde  →  abc|e
-    ████e  ←  Sab  (v|o)  sde  →  █████
-    ab██e  ←  Xab  (v|o)  xde  →  ███de
-
 To create custom motions with behaviours different from the predefined ones,
 see |leap.leap()|.
 

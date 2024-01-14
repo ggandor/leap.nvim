@@ -219,11 +219,14 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
-### Lazy loading
+</details>
+<summary>Lazy loading</summary>
 
 ...is all the rage now, but doing it manually or via some plugin manager is
 completely redundant, as Leap takes care of it itself. Nothing unnecessary is
 loaded until you actually trigger a motion.
+
+</details>
 
 ## Usage
 
@@ -561,10 +564,15 @@ vim.api.nvim_create_autocmd('ColorScheme', {
 </details>
 
 <details>
-<summary>Smart case sensitivity</summary>
+<summary>Smart case sensitivity, wildcard characters (one-way
+aliases)</summary>
 
-Unfortunately impossible, [by
-design](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351).
+Ahead-of-time labeling, unfortunately, makes them impossible, by design: for a
+potential match in phase one, we might need to show two different labels
+(corresponding to two different futures) at the same time.
+([1](https://github.com/ggandor/leap.nvim/issues/28),
+[2](https://github.com/ggandor/leap.nvim/issues/89#issuecomment-1368885497),
+[3](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351))
 
 </details>
 
