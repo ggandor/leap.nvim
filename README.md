@@ -219,7 +219,7 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
-</details>
+<details>
 <summary>Lazy loading</summary>
 
 ...is all the rage now, but doing it manually or via some plugin manager is
