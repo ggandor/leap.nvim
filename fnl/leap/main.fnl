@@ -749,9 +749,12 @@ an autojump. (In short: always err on the safe side.)
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
 
+    (var first-iter? true)
     (fn loop [group-offset first-invoc?]
       (display group-offset)
-      (exec-user-autocmds :LeapSelectPre)
+      (when first-iter?
+        (exec-user-autocmds :LeapSelectPre)
+        (set first-iter? false))
       (case (get-input)
         input
         (let [switch-group? (and (> |groups| 1)
