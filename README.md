@@ -177,16 +177,11 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
-config:
+config (overrides `s`, `S`, and `gs` in all modes):
 
 `require('leap').create_default_mappings()` (init.lua)
 
 `lua require('leap').create_default_mappings()` (init.vim)
-
-This will override `s`, `S`, and `gs` in all modes. Note that the above
-function will check for conflicts with any custom mappings created by you or
-other plugins, and will _not_ overwrite them, unless called with a `true`
-argument.
 
 To set custom mappings instead, see `:h leap-custom-mappings`.
 

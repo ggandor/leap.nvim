@@ -1,6 +1,6 @@
 ; Convenience functions for users.
 
-(fn create-default-mappings [force?]
+(fn create-default-mappings []
   (each [_ [modes lhs rhs desc]
          (ipairs
           [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
@@ -8,14 +8,13 @@
            [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
            ])]
     (each [_ mode (ipairs modes)]
-      (when (or force?
-                ; Otherwise only set the keymaps if:
-                ; 1. (A keyseq starting with) `lhs` is not already mapped
-                ;    to something else.
-                ; 2. There is no existing mapping to the <Plug> key.
-                (and (= (vim.fn.mapcheck lhs mode) "")
-                     (= (vim.fn.hasmapto rhs mode) 0)))
-        (vim.keymap.set mode lhs rhs {:silent true :desc desc})))))
+      (local rhs* (vim.fn.mapcheck lhs mode))
+      (if (= rhs* "")
+          (vim.keymap.set mode lhs rhs {:silent true :desc desc})
+          (when (not= rhs* rhs)  ; make the call idempotent
+            (local msg (.. "leap.nvim: create_default_mappings() "
+                           "found conflicting mapping for " lhs ": " rhs*))
+            (vim.notify msg vim.log.levels.WARN))))))
 
 
 (fn add-repeat-mappings [forward-key backward-key kwargs]

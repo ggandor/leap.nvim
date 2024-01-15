@@ -93,10 +93,6 @@ Default mappings ~
 The defaults can be set by calling
 `require('leap').create_default_mappings()`.
 
-Note that the function will check for conflicts with any custom mappings
-created by you or other plugins, and will not overwrite them, unless called
-with a `true` argument.
-
                                                         *leap_s*
 s{char1}{char2}         Jump forward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is placed on
