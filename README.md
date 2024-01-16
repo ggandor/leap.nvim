@@ -21,11 +21,13 @@ target labels** - Leap shows you which key you will need to press _before_ you
 actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`).
-- Start typing a 2-character pattern (`{c1}{c2}`).
+  the other windows (`gs`). (Note: You can configure the plugin to merge these
+  cases, using two keys instead, or even just one, if you are OK with the
+  trade-offs.)
+- Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{c1}{?}` pairs. You cannot _use_ the labels yet.
-- Enter `{c2}`. If the pair was not labeled, then voilà, you're already there.
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet.
+- Enter `{char2}`. If the pair was not labeled, then voilà, you're already there.
   No need to be bothered by remaining labels - those are guaranteed "safe"
   letters -, just continue editing.
 - Else: type the label character. If there are too many matches (more than
