@@ -411,6 +411,8 @@ some editor options while the plugin is active (`:h leap-events`).
 
 ## FAQ
 
+### Bugs
+
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
@@ -440,6 +442,8 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
+### Defaults
+
 <details>
 <summary>Why remap `s`/`S`?</summary>
 
@@ -460,8 +464,10 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 
 </details>
 
+### Features
+
 <details>
-<summary>Bidirectional search</summary>
+<summary>Bidirectional search in the current window</summary>
 
 Simply initiate multi-window mode (i.e., call `leap()` directly, with a
 `target_windows` argument) with the current window as the only target. Not
@@ -500,6 +506,19 @@ end)
 </details>
 
 <details>
+<summary>Smart case sensitivity, wildcard characters (one-way
+aliases)</summary>
+
+Ahead-of-time labeling, unfortunately, makes them impossible, by design: for a
+potential match in phase one, we might need to show two different labels
+(corresponding to two different futures) at the same time.
+([1](https://github.com/ggandor/leap.nvim/issues/28),
+[2](https://github.com/ggandor/leap.nvim/issues/89#issuecomment-1368885497),
+[3](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351))
+
+</details>
+
+<details>
 <summary>Arbitrary remote actions instead of jumping</summary>
 
 Basic template:
@@ -532,6 +551,8 @@ You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.
 
 </details>
 
+### Configuration
+
 <details>
 <summary>Disable auto-jumping to the first match</summary>
 
@@ -553,7 +574,7 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 </details>
 
 <details>
-<summary>Disable secondary labels</summary>
+<summary>Hiding secondary labels</summary>
 
 You can hide the letters, and show emtpy boxes by tweaking the
 `LeapLabelSecondary` highlight group (that way you keep a visual indication
@@ -562,24 +583,11 @@ that the target is labeled):
 ```lua
 vim.api.nvim_create_autocmd('ColorScheme', {
   callback = function ()
-    local bg = vim.api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg
-    vim.api.nvim_set_hl(0, "LeapLabelSecondary",{ fg = bg, bg = bg, })
+    local bg = vim.api.nvim_get_hl(0, {name = 'LeapLabelSecondary'}).bg
+    vim.api.nvim_set_hl(0, 'LeapLabelSecondary',{ fg = bg, bg = bg, })
   end
 })
 ```
-
-</details>
-
-<details>
-<summary>Smart case sensitivity, wildcard characters (one-way
-aliases)</summary>
-
-Ahead-of-time labeling, unfortunately, makes them impossible, by design: for a
-potential match in phase one, we might need to show two different labels
-(corresponding to two different futures) at the same time.
-([1](https://github.com/ggandor/leap.nvim/issues/28),
-[2](https://github.com/ggandor/leap.nvim/issues/89#issuecomment-1368885497),
-[3](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351))
 
 </details>
 
@@ -619,7 +627,10 @@ require('leap').opts.highlight_unlabeled_phase_one_targets = true
 
 Check out `opts.equivalence_classes`. For example, you can group accented
 vowels together: `{ 'aá', 'eé', 'ií', ... }`.
+
 </details>
+
+### The million-dollar question
 
 <details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>
