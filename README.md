@@ -150,18 +150,18 @@ bunch of edge cases and UI problems nonexistent.
 </details>
 
 <details>
-<summary>[Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)</summary>
+<summary>Sharpen the saw</summary>
 
 Build on Vim's native features, aim for synergy, and don't reinvent the wheel
 (dot-repeat (`.`), inclusive/exclusive toggle (`v`),
 [keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
 support, autocommands via `User` events, `<Plug>` keys, etc.).
+(http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)
 
 </details>
 
 <details>
-<summary>[Mechanisms instead of
-policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext)</summary>
+<summary>Mechanisms instead of policies</summary>
 
 Complement the small and opinionated core by [extension
 points](#extending-leap), keeping the plugin flexible and future-proof.
