@@ -74,6 +74,20 @@ interrupted change operation."
     res))
 
 
+(fn expand-to-equivalence-class [ch]               ; <-- "b"
+  "Return a (Vim) regex pattern that will match any character in the
+equivalence class of `ch`."
+  (local chars (get-eq-class-of ch))               ; --> ?{"a","b","c"}
+  (when chars
+    ; (1) `vim.fn.search` cannot interpret actual newline chars in
+    ;     the regex pattern, we need to insert them as raw \ + n.
+    ; (2) '\' itself might appear in the class, needs to be escaped.
+    (each [i ch (ipairs chars)]
+      (if (= ch "\n") (tset chars i "\\n")
+          (= ch "\\") (tset chars i "\\\\")))
+    (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
+
+
 ; Processing targets ///1
 
 (fn set-autojump [targets force-noautojump?]
@@ -617,17 +631,6 @@ an autojump. (In short: always err on the safe side.)
       (in1 in2) (values in1 in2)
       (in1 nil) (case (get-input-by-keymap prompt)
                   in2 (values in1 in2))))
-
-  (fn expand-to-equivalence-class [in]               ; <-- "b"
-    (local chars (get-eq-class-of in))               ; --> ?{"a","b","c"}
-    (when chars
-      ; (1) `vim.fn.search` cannot interpret actual newline chars in
-      ;     the regex pattern, we need to insert them as raw \ + n.
-      ; (2) '\' itself might appear in the class, needs to be escaped.
-      (each [i ch (ipairs chars)]
-        (if (= ch "\n") (tset chars i "\\n")
-            (= ch "\\") (tset chars i "\\\\")))
-      (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
 
   ; NOTE: If two-step processing is ebabled (AOT beacons), for any
   ; kind of input mapping (case-insensitivity, character classes,

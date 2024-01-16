@@ -62,6 +62,22 @@ local function eq_classes__3emembership_lookup(eqcls)
   end
   return res
 end
+local function expand_to_equivalence_class(ch)
+  local chars = get_eq_class_of(ch)
+  if chars then
+    for i, ch0 in ipairs(chars) do
+      if (ch0 == "\n") then
+        chars[i] = "\\n"
+      elseif (ch0 == "\\") then
+        chars[i] = "\\\\"
+      else
+      end
+    end
+    return ("\\(" .. table.concat(chars, "\\|") .. "\\)")
+  else
+    return nil
+  end
+end
 local function set_autojump(targets, force_noautojump_3f)
   targets["autojump?"] = (not (force_noautojump_3f or empty_3f(opts.safe_labels)) and (empty_3f(opts.labels) or (#opts.safe_labels >= dec(#targets))))
   return nil
@@ -78,13 +94,13 @@ local function attach_label_set(targets)
   end
   return nil
 end
-local function set_labels(targets, _7_)
-  local _arg_8_ = _7_
-  local force_3f = _arg_8_["force?"]
+local function set_labels(targets, _9_)
+  local _arg_10_ = _9_
+  local force_3f = _arg_10_["force?"]
   if ((#targets > 1) or empty_3f(opts.safe_labels) or force_3f) then
-    local _local_9_ = targets
-    local autojump_3f = _local_9_["autojump?"]
-    local label_set = _local_9_["label-set"]
+    local _local_11_ = targets
+    local autojump_3f = _local_11_["autojump?"]
+    local label_set = _local_11_["label-set"]
     for i, target in ipairs(targets) do
       local i_2a
       if autojump_3f then
@@ -93,11 +109,11 @@ local function set_labels(targets, _7_)
         i_2a = i
       end
       if (i_2a > 0) then
-        local _11_ = (i_2a % #label_set)
-        if (_11_ == 0) then
+        local _13_ = (i_2a % #label_set)
+        if (_13_ == 0) then
           target.label = label_set[#label_set]
-        elseif (nil ~= _11_) then
-          local n = _11_
+        elseif (nil ~= _13_) then
+          local n = _13_
           target.label = label_set[n]
         else
           target.label = nil
@@ -110,20 +126,20 @@ local function set_labels(targets, _7_)
     return nil
   end
 end
-local function set_label_states(targets, _15_)
-  local _arg_16_ = _15_
-  local group_offset = _arg_16_["group-offset"]
+local function set_label_states(targets, _17_)
+  local _arg_18_ = _17_
+  local group_offset = _arg_18_["group-offset"]
   local _7clabel_set_7c = #targets["label-set"]
   local offset = (group_offset * _7clabel_set_7c)
   local primary_start
-  local function _17_()
+  local function _19_()
     if targets["autojump?"] then
       return 2
     else
       return 1
     end
   end
-  primary_start = (offset + _17_())
+  primary_start = (offset + _19_())
   local primary_end = (primary_start + dec(_7clabel_set_7c))
   local secondary_start = inc(primary_end)
   local secondary_end = (primary_end + _7clabel_set_7c)
@@ -145,20 +161,20 @@ local function set_label_states(targets, _15_)
 end
 local function populate_sublists(targets, multi_window_3f)
   targets.sublists = {}
-  local function _20_(self, ch, sublist)
+  local function _22_(self, ch, sublist)
     return rawset(self, __3erepresentative_char(ch), sublist)
   end
-  local function _21_(self, ch)
+  local function _23_(self, ch)
     return rawget(self, __3erepresentative_char(ch))
   end
-  setmetatable(targets.sublists, {__newindex = _20_, __index = _21_})
+  setmetatable(targets.sublists, {__newindex = _22_, __index = _23_})
   if not multi_window_3f then
-    for _, _22_ in ipairs(targets) do
-      local _each_23_ = _22_
-      local _each_24_ = _each_23_["chars"]
-      local _0 = _each_24_[1]
-      local ch2 = _each_24_[2]
-      local target = _each_23_
+    for _, _24_ in ipairs(targets) do
+      local _each_25_ = _24_
+      local _each_26_ = _each_25_["chars"]
+      local _0 = _each_26_[1]
+      local ch2 = _each_26_[2]
+      local target = _each_25_
       if not targets.sublists[ch2] then
         targets.sublists[ch2] = {}
       else
@@ -167,14 +183,14 @@ local function populate_sublists(targets, multi_window_3f)
     end
     return nil
   else
-    for _, _26_ in ipairs(targets) do
-      local _each_27_ = _26_
-      local _each_28_ = _each_27_["chars"]
-      local _0 = _each_28_[1]
-      local ch2 = _each_28_[2]
-      local _each_29_ = _each_27_["wininfo"]
-      local winid = _each_29_["winid"]
-      local target = _each_27_
+    for _, _28_ in ipairs(targets) do
+      local _each_29_ = _28_
+      local _each_30_ = _each_29_["chars"]
+      local _0 = _each_30_[1]
+      local ch2 = _each_30_[2]
+      local _each_31_ = _each_29_["wininfo"]
+      local winid = _each_31_["winid"]
+      local target = _each_29_
       if not targets.sublists[ch2] then
         targets.sublists[ch2] = {["shared-window?"] = winid}
       else
@@ -196,10 +212,10 @@ local function set_initial_label_states(targets)
   return nil
 end
 local function get_label_offset(target)
-  local _let_33_ = target
-  local _let_34_ = _let_33_["chars"]
-  local ch1 = _let_34_[1]
-  local ch2 = _let_34_[2]
+  local _let_35_ = target
+  local _let_36_ = _let_35_["chars"]
+  local ch1 = _let_36_[1]
+  local ch2 = _let_36_[2]
   if (ch1 == "\n") then
     return 0
   elseif (target["edge-pos?"] or (ch2 == "\n")) then
@@ -208,10 +224,10 @@ local function get_label_offset(target)
     return (ch1:len() + ch2:len())
   end
 end
-local function set_beacon_for_labeled(target, _36_)
-  local _arg_37_ = _36_
-  local user_given_targets_3f = _arg_37_["user-given-targets?"]
-  local phase = _arg_37_["phase"]
+local function set_beacon_for_labeled(target, _38_)
+  local _arg_39_ = _38_
+  local user_given_targets_3f = _arg_39_["user-given-targets?"]
+  local phase = _arg_39_["phase"]
   local offset
   if phase then
     offset = get_label_offset(target)
@@ -228,14 +244,14 @@ local function set_beacon_for_labeled(target, _36_)
   local text = (label .. pad)
   local virttext
   do
-    local _40_ = target["label-state"]
-    if (_40_ == "selected") then
+    local _42_ = target["label-state"]
+    if (_42_ == "selected") then
       virttext = {{text, hl.group["label-selected"]}}
-    elseif (_40_ == "active-primary") then
+    elseif (_42_ == "active-primary") then
       virttext = {{text, hl.group["label-primary"]}}
-    elseif (_40_ == "active-secondary") then
+    elseif (_42_ == "active-secondary") then
       virttext = {{text, hl.group["label-secondary"]}}
-    elseif (_40_ == "inactive") then
+    elseif (_42_ == "inactive") then
       if (phase and not opts.highlight_unlabeled_phase_one_targets) then
         virttext = {{(opts.concealed_label .. pad), hl.group["label-secondary"]}}
       elseif "else" then
@@ -256,10 +272,10 @@ local function set_beacon_for_labeled(target, _36_)
 end
 local function set_beacon_to_match_hl(target)
   local virttext
-  local function _44_(_241)
+  local function _46_(_241)
     return (opts.substitute_chars[_241] or _241)
   end
-  virttext = table.concat(map(_44_, target.chars))
+  virttext = table.concat(map(_46_, target.chars))
   target.beacon = {0, {{virttext, hl.group.match}}}
   return nil
 end
@@ -277,12 +293,12 @@ local function resolve_conflicts(targets)
   for _, target in ipairs(targets) do
     local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
     if not empty_line_3f then
-      local _let_46_ = target.wininfo
-      local bufnr = _let_46_["bufnr"]
-      local winid = _let_46_["winid"]
-      local _let_47_ = target.pos
-      local lnum = _let_47_[1]
-      local col_ch1 = _let_47_[2]
+      local _let_48_ = target.wininfo
+      local bufnr = _let_48_["bufnr"]
+      local winid = _let_48_["winid"]
+      local _let_49_ = target.pos
+      local lnum = _let_49_[1]
+      local col_ch1 = _let_49_[2]
       local col_ch2 = (col_ch1 + string.len(target.chars[1]))
       local key_prefix = (bufnr .. " " .. winid .. " " .. lnum .. " ")
       if (target.label and target.beacon) then
@@ -290,17 +306,17 @@ local function resolve_conflicts(targets)
         local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _48_
-          local function _49_(...)
+          local _50_
+          local function _51_(...)
             if shifted_label_3f then
               return unlabeled_match_positions[(key_prefix .. col_ch1)]
             else
               return nil
             end
           end
-          _48_ = (label_positions[(key_prefix .. col_label)] or _49_() or unlabeled_match_positions[(key_prefix .. col_label)])
-          if (nil ~= _48_) then
-            local other = _48_
+          _50_ = (label_positions[(key_prefix .. col_label)] or _51_() or unlabeled_match_positions[(key_prefix .. col_label)])
+          if (nil ~= _50_) then
+            local other = _50_
             other.beacon = nil
             set_beacon_to_empty_label(target)
           else
@@ -310,9 +326,9 @@ local function resolve_conflicts(targets)
       else
         local col_ch3 = (col_ch2 + string.len(target.chars[2]))
         do
-          local _52_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
-          if (nil ~= _52_) then
-            local other = _52_
+          local _54_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
+          if (nil ~= _54_) then
+            local other = _54_
             target.beacon = nil
             set_beacon_to_empty_label(other)
           else
@@ -326,11 +342,11 @@ local function resolve_conflicts(targets)
   end
   return nil
 end
-local function set_beacons(targets, _56_)
-  local _arg_57_ = _56_
-  local no_labels_3f = _arg_57_["no-labels?"]
-  local user_given_targets_3f = _arg_57_["user-given-targets?"]
-  local phase = _arg_57_["phase"]
+local function set_beacons(targets, _58_)
+  local _arg_59_ = _58_
+  local no_labels_3f = _arg_59_["no-labels?"]
+  local user_given_targets_3f = _arg_59_["user-given-targets?"]
+  local phase = _arg_59_["phase"]
   if (no_labels_3f and targets[1].chars) then
     for _, target in ipairs(targets) do
       set_beacon_to_match_hl(target)
@@ -352,14 +368,14 @@ local function light_up_beacons(targets, _3fstart, _3fend)
   if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then
     for i = (_3fstart or 1), (_3fend or #targets) do
       local target = targets[i]
-      local _60_ = target.beacon
-      if ((_G.type(_60_) == "table") and (nil ~= _60_[1]) and (nil ~= _60_[2])) then
-        local offset = _60_[1]
-        local virttext = _60_[2]
+      local _62_ = target.beacon
+      if ((_G.type(_62_) == "table") and (nil ~= _62_[1]) and (nil ~= _62_[2])) then
+        local offset = _62_[1]
+        local virttext = _62_[2]
         local bufnr = target.wininfo.bufnr
-        local _let_61_ = map(dec, target.pos)
-        local lnum = _let_61_[1]
-        local col = _let_61_[2]
+        local _let_63_ = map(dec, target.pos)
+        local lnum = _let_63_[1]
+        local col = _let_63_[2]
         local id = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, (col + offset), {virt_text = virttext, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.label})
         table.insert(hl.extmarks, {bufnr, id})
       else
@@ -372,24 +388,24 @@ local function light_up_beacons(targets, _3fstart, _3fend)
 end
 local state = {args = nil, source_window = nil, ["repeat"] = {in1 = nil, in2 = nil, inclusive_op = nil, offset = nil, backward = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, saved_editor_opts = {}}
 local function leap(kwargs)
-  local _local_64_ = kwargs
-  local repeat_3f = _local_64_["repeat"]
-  local dot_repeat_3f = _local_64_["dot_repeat"]
-  local target_windows = _local_64_["target_windows"]
-  local user_given_opts = _local_64_["opts"]
-  local user_given_targets = _local_64_["targets"]
-  local user_given_action = _local_64_["action"]
-  local multi_select_3f = _local_64_["multiselect"]
-  local function _66_()
+  local _local_66_ = kwargs
+  local repeat_3f = _local_66_["repeat"]
+  local dot_repeat_3f = _local_66_["dot_repeat"]
+  local target_windows = _local_66_["target_windows"]
+  local user_given_opts = _local_66_["opts"]
+  local user_given_targets = _local_66_["targets"]
+  local user_given_action = _local_66_["action"]
+  local multi_select_3f = _local_66_["multiselect"]
+  local function _68_()
     if dot_repeat_3f then
       return state.dot_repeat
     else
       return kwargs
     end
   end
-  local _local_65_ = _66_()
-  local backward_3f = _local_65_["backward"]
-  local function _68_()
+  local _local_67_ = _68_()
+  local backward_3f = _local_67_["backward"]
+  local function _70_()
     if dot_repeat_3f then
       return state.dot_repeat
     elseif repeat_3f then
@@ -398,17 +414,17 @@ local function leap(kwargs)
       return kwargs
     end
   end
-  local _local_67_ = _68_()
-  local inclusive_op_3f = _local_67_["inclusive_op"]
-  local offset = _local_67_["offset"]
-  local match_same_char_seq_at_end_3f = _local_67_["match_same_char_seq_at_end"]
+  local _local_69_ = _70_()
+  local inclusive_op_3f = _local_69_["inclusive_op"]
+  local offset = _local_69_["offset"]
+  local match_same_char_seq_at_end_3f = _local_69_["match_same_char_seq_at_end"]
   opts.current_call = (user_given_opts or {})
   do
-    local _69_ = opts.current_call.equivalence_classes
-    if (nil ~= _69_) then
-      opts.current_call.eq_class_of = eq_classes__3emembership_lookup(_69_)
+    local _71_ = opts.current_call.equivalence_classes
+    if (nil ~= _71_) then
+      opts.current_call.eq_class_of = eq_classes__3emembership_lookup(_71_)
     else
-      opts.current_call.eq_class_of = _69_
+      opts.current_call.eq_class_of = _71_
     end
   end
   for _, t in ipairs({"default", "current_call"}) do
@@ -472,12 +488,12 @@ local function leap(kwargs)
   local spec_keys
   do
     local function __index(_, k)
-      local _77_ = opts.special_keys[k]
-      if (nil ~= _77_) then
-        local v = _77_
+      local _79_ = opts.special_keys[k]
+      if (nil ~= _79_) then
+        local v = _79_
         if ((k == "next_target") or (k == "prev_target")) then
-          local _78_ = type(v)
-          if (_78_ == "table") then
+          local _80_ = type(v)
+          if (_80_ == "table") then
             local tbl_18_auto = {}
             local i_19_auto = 0
             for _0, str in ipairs(v) do
@@ -489,7 +505,7 @@ local function leap(kwargs)
               end
             end
             return tbl_18_auto
-          elseif (_78_ == "string") then
+          elseif (_80_ == "string") then
             return {replace_keycodes(v)}
           else
             return nil
@@ -504,17 +520,17 @@ local function leap(kwargs)
     spec_keys = setmetatable({}, {__index = __index})
   end
   local vars
-  local _83_
+  local _85_
   if not (repeat_3f or (max_phase_one_targets == 0) or empty_label_lists_3f or multi_select_3f or user_given_targets_3f) then
-    _83_ = 1
+    _85_ = 1
   else
-    _83_ = nil
+    _85_ = nil
   end
-  vars = {phase = _83_, ["curr-idx"] = 0, errmsg = nil, ["partial-pattern?"] = false}
+  vars = {phase = _85_, ["curr-idx"] = 0, errmsg = nil, ["partial-pattern?"] = false}
   local function get_number_of_highlighted_targets()
-    local _85_ = opts.max_highlighted_traversal_targets
-    if (nil ~= _85_) then
-      local group_size = _85_
+    local _87_ = opts.max_highlighted_traversal_targets
+    if (nil ~= _87_) then
+      local group_size = _87_
       local consumed = (dec(vars["curr-idx"]) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
@@ -535,16 +551,16 @@ local function leap(kwargs)
       local start = inc(vars["curr-idx"])
       local _end
       if no_labels_3f then
-        local _88_ = get_number_of_highlighted_targets()
-        if (nil ~= _88_) then
-          local _89_ = (_88_ + dec(start))
-          if (nil ~= _89_) then
-            _end = min(_89_, #targets)
+        local _90_ = get_number_of_highlighted_targets()
+        if (nil ~= _90_) then
+          local _91_ = (_90_ + dec(start))
+          if (nil ~= _91_) then
+            _end = min(_91_, #targets)
           else
-            _end = _89_
+            _end = _91_
           end
         else
-          _end = _88_
+          _end = _90_
         end
       else
         _end = nil
@@ -554,11 +570,11 @@ local function leap(kwargs)
   end
   local function get_target_with_active_primary_label(sublist, input)
     local res = {}
-    for idx, _94_ in ipairs(sublist) do
-      local _each_95_ = _94_
-      local label = _each_95_["label"]
-      local label_state = _each_95_["label-state"]
-      local target = _each_95_
+    for idx, _96_ in ipairs(sublist) do
+      local _each_97_ = _96_
+      local label = _each_97_["label"]
+      local label_state = _each_97_["label-state"]
+      local target = _each_97_
       if (next(res) or (label_state == "inactive")) then break end
       if ((label == input) and (label_state == "active-primary")) then
         res = {idx, target}
@@ -592,9 +608,9 @@ local function leap(kwargs)
       hl["highlight-cursor"](hl)
       vim.cmd("redraw")
     end
-    local _100_ = get_input_by_keymap(prompt)
-    if (nil ~= _100_) then
-      local in1 = _100_
+    local _102_ = get_input_by_keymap(prompt)
+    if (nil ~= _102_) then
+      local in1 = _102_
       if contains_3f(spec_keys.next_target, in1) then
         if state["repeat"].in1 then
           vars.phase = nil
@@ -631,36 +647,20 @@ local function leap(kwargs)
     return get_input_by_keymap(prompt)
   end
   local function get_full_pattern_input()
-    local _107_, _108_ = get_first_pattern_input()
-    if ((nil ~= _107_) and (nil ~= _108_)) then
-      local in1 = _107_
-      local in2 = _108_
+    local _109_, _110_ = get_first_pattern_input()
+    if ((nil ~= _109_) and (nil ~= _110_)) then
+      local in1 = _109_
+      local in2 = _110_
       return in1, in2
-    elseif ((nil ~= _107_) and (_108_ == nil)) then
-      local in1 = _107_
-      local _109_ = get_input_by_keymap(prompt)
-      if (nil ~= _109_) then
-        local in2 = _109_
+    elseif ((nil ~= _109_) and (_110_ == nil)) then
+      local in1 = _109_
+      local _111_ = get_input_by_keymap(prompt)
+      if (nil ~= _111_) then
+        local in2 = _111_
         return in1, in2
       else
         return nil
       end
-    else
-      return nil
-    end
-  end
-  local function expand_to_equivalence_class(_in)
-    local chars = get_eq_class_of(_in)
-    if chars then
-      for i, ch in ipairs(chars) do
-        if (ch == "\n") then
-          chars[i] = "\\n"
-        elseif (ch == "\\") then
-          chars[i] = "\\\\"
-        else
-        end
-      end
-      return ("\\(" .. table.concat(chars, "\\|") .. "\\)")
     else
       return nil
     end
