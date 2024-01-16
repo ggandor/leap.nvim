@@ -178,7 +178,7 @@ local function distance(_29_, _31_)
   local dx0 = (dx * editor_grid_aspect_ratio)
   return pow((pow(dx0, 2) + pow(dy, 2)), 0.5)
 end
-local function sort_by_distance_from_cursor(targets, cursor_positions)
+local function sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
   local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
   if by_screen_pos_3f then
     for winid, _34_ in pairs(cursor_positions) do
@@ -207,7 +207,7 @@ local function sort_by_distance_from_cursor(targets, cursor_positions)
       target.screenpos = {row, col0}
     else
     end
-    target.rank = distance((target.screenpos or target.pos), cursor_positions[winid])
+    target.rank = ((((target.wininfo.winid == source_winid) and 0) or 30) + distance((target.screenpos or target.pos), cursor_positions[winid]))
   end
   local function _44_(_241, _242)
     return (_241.rank < _242.rank)
@@ -247,7 +247,7 @@ local function get_targets(pattern, _45_)
   end
   if not empty_3f(targets) then
     if whole_window_3f then
-      sort_by_distance_from_cursor(targets, cursor_positions)
+      sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
     else
     end
     return targets

@@ -153,7 +153,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
     (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
 
-(fn sort-by-distance-from-cursor [targets cursor-positions]
+(fn sort-by-distance-from-cursor [targets cursor-positions source-winid]
   ; TODO: Check vim.wo.wrap for each window, and calculate accordingly.
   ; TODO: (Performance) vim.fn.screenpos is very costly for a large
   ;       number of targets...
@@ -171,8 +171,10 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         ; PERF. BOTTLENECK
         (local {: row : col} (vim.fn.screenpos winid line col))
         (set target.screenpos [row col]))
-      (set target.rank (distance (or target.screenpos target.pos)
-                                 (. cursor-positions winid))))
+      ; Prioritize the current window (especially relevant for autojump).
+      (set target.rank (+ (or (and (= target.wininfo.winid source-winid) 0) 30)
+                          (distance (or target.screenpos target.pos)
+                                   (. cursor-positions winid)))))
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 
@@ -198,7 +200,8 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
       (api.nvim_set_current_win source-winid))
     (when (not (empty? targets))
       (when whole-window?
-        (sort-by-distance-from-cursor targets cursor-positions))
+        (sort-by-distance-from-cursor
+          targets cursor-positions source-winid))
       targets)))
 
 

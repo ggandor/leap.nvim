@@ -21,8 +21,8 @@ target labels** - Leap shows you which key you will need to press _before_ you
 actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`). (Note: You can configure the plugin to merge these
-  cases, using two keys instead, or even just one, if you are OK with the
+  the other windows (`gs`). (Note: you can configure the plugin to merge these
+  cases, using two keys instead, or even just one, if you are okay with the
   trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
@@ -471,11 +471,12 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 <details>
 <summary>Bidirectional search in the current window</summary>
 
-Simply initiate multi-window mode (i.e., call `leap()` directly, with a
+Simply initiate multi-window mode (that is, call `leap()` directly, giving it a
 `target_windows` argument) with the current window as the only target. Not
 recommended for Operator-pending mode, as dot-repeat cannot be used if the
 search is non-directional. Another caveat is that you cannot traverse through
-the matches.
+the matches. Needless to say, you will also get a lot more visual noise, less
+comfortable labels, and half as many auto-jumps on average.
 
 ```lua
 vim.keymap.set('n', 's', function ()
@@ -488,13 +489,7 @@ end)
 <details>
 <summary>Search in all windows</summary>
 
-The trade-off here is that if you have multiple windows open on the tab page,
-then you always have to select a label, i.e., type at least 3 characters, as
-automatic jump to the first target is explicitly disabled, regardless of having
-safe labels available (it would be too disorienting if the cursor could
-suddenly jump to a different window than your goal, right before selecting the
-target).
-
+The same caveats as above apply here, obviously even more so.
 
 ```lua
 vim.keymap.set('n', 's', function ()

@@ -134,7 +134,7 @@ should actually be displayed depends on the `label-state` flag."
 
 ; Two-step processing
 
-(fn populate-sublists [targets]
+(fn populate-sublists [targets multi-window?]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
 char separately.
@@ -165,9 +165,18 @@ char separately.
      :__index    (fn [self ch]
                    (rawget self (->representative-char ch)))})
   ; Filling the sublists.
-  (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
-    (when-not (. targets.sublists ch2) (tset targets.sublists ch2 []))
-    (table.insert (. targets.sublists ch2) target)))
+  (if (not multi-window?)
+      (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
+        (when-not (. targets.sublists ch2)
+          (tset targets.sublists ch2 []))
+        (table.insert (. targets.sublists ch2) target))
+      (each [_ {:chars [_ ch2] :wininfo {: winid} &as target} (ipairs targets)]
+        (when-not (. targets.sublists ch2)
+          (tset targets.sublists ch2 {:shared-window? winid}))
+        (local sublist (. targets.sublists ch2))
+        (table.insert sublist target)
+        (when (and sublist.shared-window? (not= winid sublist.shared-window?))
+          (set sublist.shared-window? nil)))))
 
 
 (fn set-initial-label-states [targets]
@@ -459,6 +468,7 @@ an autojump. (In short: always err on the safe side.)
   (set state.source_window curr-winid)
 
   (local ?target-windows target-windows)
+  (local multi-window? (and ?target-windows (> (length ?target-windows) 1)))
   (local hl-affected-windows (icollect [_ winid (ipairs (or ?target-windows []))
                                         &into [curr-winid]]  ; cursor is always highlighted
                                winid))
@@ -687,12 +697,17 @@ an autojump. (In short: always err on the safe side.)
                                    {:pos [l2 c2] :chars [ch1 ch2]}]
                                   (and (= l1 l2)
                                        (= c1 (+ c2 (ch1:len) (ch2:len))))))
-          multi-window? (and ?target-windows (> (length ?target-windows) 1))
-          force-noautojump? (or op-mode?           ; should be able to select a target
-                               multi-select?       ; likewise
-                               multi-window?       ; potentially disorienting
-                               user-given-action   ; no jump, doing sg else
-                               funny-edge-case?)]  ; see above
+          force-noautojump? (or
+                              ; Should be able to select a target.
+                              op-mode? multi-select?
+                              ; Disorienting if the chosen target
+                              ; happens to be in (yet) another window.
+                              (and multi-window?
+                                   (not targets.shared-window?))  ; see `populate-sublists`
+                              ; No jump, doing sg else.
+                              user-given-action
+                              ; See above.
+                              funny-edge-case?)]
       (doto targets
         (set-autojump force-noautojump?)
         (attach-label-set)
@@ -889,7 +904,7 @@ an autojump. (In short: always err on the safe side.)
       (do
         (when (> (length targets) max-phase-one-targets)
           (set vars.phase nil))
-        (populate-sublists targets)
+        (populate-sublists targets multi-window?)
         (each [_ sublist (pairs targets.sublists)]
            (prepare-targets sublist))
         (doto targets
