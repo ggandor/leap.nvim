@@ -140,21 +140,33 @@ ahead of time.
 
 ### Auxiliary principles
 
-- Optimize for the common case, not the pathological: a good example is using
-  strictly one-character labels and switching between groups, which can become
-  awkward beyond, say, 200 targets, but makes a whole bunch of edge cases and
-  UI problems nonexistent.
+<details>
+<summary>Optimize for the common case</summary>
 
-- [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
-  build on Vim's native features, aim for synergy, and don't reinvent the wheel
-  (dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-  [keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-  support, autocommands via `User` events, `<Plug>` keys, etc.).
+A good example is using strictly one-character labels and switching between
+groups, which can become awkward beyond, say, 200 targets, but makes a whole
+bunch of edge cases and UI problems nonexistent.
 
-- [Mechanisms instead of
-  policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext):
-  Complement the small and opinionated core by [extension
-  points](#extending-leap), keeping the plugin flexible and future-proof.
+</details>
+
+<details>
+<summary>[Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)</summary>
+
+Build on Vim's native features, aim for synergy, and don't reinvent the wheel
+(dot-repeat (`.`), inclusive/exclusive toggle (`v`),
+[keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
+support, autocommands via `User` events, `<Plug>` keys, etc.).
+
+</details>
+
+<details>
+<summary>[Mechanisms instead of
+policies](https://cacm.acm.org/magazines/2018/11/232214-a-look-at-the-design-of-lua/fulltext)</summary>
+
+Complement the small and opinionated core by [extension
+points](#extending-leap), keeping the plugin flexible and future-proof.
+
+</details>
 
 ## Getting started
 
