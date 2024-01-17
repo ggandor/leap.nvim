@@ -52,7 +52,7 @@ At the same time, it **reduces mental effort to almost zero**:
   target the whole time.
 
 - You _don't have to make decisions on the fly_: the sequence you should enter
-  is determined from the very beginning - just type out what you see.
+  is determined from the very beginning.
 
 - You _don't have to pause in the middle_: if typing at a moderate speed, at
   each step you already know what the immediate next keypress should be, and
@@ -111,10 +111,10 @@ That is, **you do not want to think about**
   (↔ vanilla Vim motion combinations using relative line numbers and/or
   repeats)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
-  you should be able to type the sequence in one go, always knowing the next
-  step in advance (↔ any kind of "just-in-time" labeling method; note that the
-  "`/` on steroids" approach by Pounce and Flash, where the pattern length is
-  not fixed, and thus the labels appear at an unknown time, makes this last
+  you should be able to type the whole sequence in one go, always knowing the
+  next step in advance (↔ any kind of "just-in-time" labeling method; note that
+  the "`/` on steroids" approach by Pounce and Flash, where the pattern length
+  is not fixed, and thus the labels appear at an unknown time, makes this last
   goal impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
@@ -124,7 +124,8 @@ All the while using **as few keystrokes as possible**, and getting distracted by
 
 It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but in our opinion Leap comes pretty close, occupying
-a sweet spot in the design space.
+a sweet spot in the design space. (The worst remaining offender might be visual
+noise.)
 
 The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
@@ -133,12 +134,13 @@ only viable approach - see "jetpack" above). Fortunately, a 2-character pattern
 \- the shortest one with which we can play this trick - is also long enough to
 sufficiently narrow down the matches in the vast majority of cases.
 
-Fixed pattern length also makes autojump possible - you cannot improve on
-jumping directly, not having to read a label at all. With ahead-of-time
-labeling, hovever, we can do this in a smarter way too - disabling autojump and
-switching back to a bigger, "unsafe" label set, if there are lots of targets.
-The non-determinism is not much of an issue here, since the outcome is known
-ahead of time.
+Fixed pattern length also makes **(safe) automatic jump to the first target**
+possible. You cannot improve on jumping directly, just like how `f` and `t`
+works, not having to read a label at all, and not having to accept the match
+with `<enter>` either. With ahead-of-time labeling, however, we can do this in
+a smart way - disabling autojump and switching back to a bigger, "unsafe" label
+set beyond a certain number of targets. The non-determinism is not much of an
+issue here, since the outcome is known in advance.
 
 ### Auxiliary principles
 
@@ -449,8 +451,9 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 <details>
 <summary>Why remap `s`/`S`?</summary>
 
-Common operations should use the fewest keystrokes, so it makes sense to take
-those keys over by Leap, especially given that both have short synonyms:
+Common operations should use the fewest keystrokes and the most comfortable
+keys, so it makes sense to take those over by Leap, especially given that both
+native commands have synonyms:
 
 Normal mode
 
