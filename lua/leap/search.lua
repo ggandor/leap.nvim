@@ -180,6 +180,7 @@ local function distance(_29_, _31_)
 end
 local function sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
   local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
+  local _3fsource_pos = cursor_positions[source_winid]
   if by_screen_pos_3f then
     for winid, _34_ in pairs(cursor_positions) do
       local _each_35_ = _34_
@@ -207,18 +208,30 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
       target.screenpos = {row, col0}
     else
     end
-    target.rank = ((((target.wininfo.winid == source_winid) and 0) or 30) + distance((target.screenpos or target.pos), cursor_positions[winid]))
+    target.rank = distance((target.screenpos or target.pos), cursor_positions[winid])
+    if (target.wininfo.winid == source_winid) then
+      target.rank = (target.rank - 30)
+      if (line == _3fsource_pos[1]) then
+        target.rank = (target.rank - 999)
+        if (col >= _3fsource_pos[2]) then
+          target.rank = (target.rank - 999)
+        else
+        end
+      else
+      end
+    else
+    end
   end
-  local function _44_(_241, _242)
+  local function _47_(_241, _242)
     return (_241.rank < _242.rank)
   end
-  return table.sort(targets, _44_)
+  return table.sort(targets, _47_)
 end
-local function get_targets(pattern, _45_)
-  local _arg_46_ = _45_
-  local backward_3f = _arg_46_["backward?"]
-  local match_same_char_seq_at_end_3f = _arg_46_["match-same-char-seq-at-end?"]
-  local target_windows = _arg_46_["target-windows"]
+local function get_targets(pattern, _48_)
+  local _arg_49_ = _48_
+  local backward_3f = _arg_49_["backward?"]
+  local match_same_char_seq_at_end_3f = _arg_49_["match-same-char-seq-at-end?"]
+  local target_windows = _arg_49_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = vim.fn.win_getid()
   local target_windows0 = (target_windows or {source_winid})

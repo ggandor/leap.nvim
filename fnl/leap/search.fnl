@@ -159,22 +159,32 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   ;       number of targets...
   ;       -> Only get them when at least one line is actually wrapped?
   ;       -> Some FFI magic?
-  (let [by-screen-pos? (and vim.o.wrap (< (length targets) 200))]
+  (let [by-screen-pos? (and vim.o.wrap (< (length targets) 200))
+        ; Cursor positions are registered in target windows only.
+        ?source-pos (. cursor-positions source-winid)]
     (when by-screen-pos?
       ; Update cursor positions to screen positions.
       (each [winid [line col] (pairs cursor-positions)]
         (local {: row : col} (vim.fn.screenpos winid line col))
         (tset cursor-positions winid [row col])))
+    ; Set ranks.
     (each [_ {:pos [line col] :wininfo {: winid} &as target} (ipairs targets)]
       (when by-screen-pos?
         ; Add a screen position field to each target.
         ; PERF. BOTTLENECK
         (local {: row : col} (vim.fn.screenpos winid line col))
         (set target.screenpos [row col]))
-      ; Prioritize the current window (especially relevant for autojump).
-      (set target.rank (+ (or (and (= target.wininfo.winid source-winid) 0) 30)
-                          (distance (or target.screenpos target.pos)
-                                   (. cursor-positions winid)))))
+      (set target.rank (distance (or target.screenpos target.pos)
+                                 (. cursor-positions winid)))
+      (when (= target.wininfo.winid source-winid)
+        ; Prioritize the current window a bit.
+        (set target.rank (- target.rank 30))
+        (when (= line (. ?source-pos 1))
+          ; Prioritize the current line.
+          (set target.rank (- target.rank 999))
+          (when (>= col (. ?source-pos 2))
+            ; Prioritize forward direction.
+            (set target.rank (- target.rank 999))))))
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 
