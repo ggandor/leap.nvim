@@ -505,18 +505,22 @@ an autojump. (In short: always err on the safe side.)
                        (setmetatable {} {: __index})))
 
   ; Ephemeral state (current call).
-  (local vars {:phase
-               ; Show beacons (labels & match highlights) ahead of time,
-               ; right after the first input?
-               (if (not (or repeat?
-                            (= max-phase-one-targets 0)
-                            empty-label-lists?
-                            multi-select?
-                            user-given-targets?))
-                   1
-                   nil)
+  (local vars {; Multi-phase processing (show beacons ahead of time,
+               ; right after the first input)?
+               :phase (if (or repeat?
+                              (= max-phase-one-targets 0)
+                              empty-label-lists?
+                              multi-select?
+                              user-given-targets?)
+                          nil
+                          1)
+               ; When repeating a `{char}<enter>` search (started to
+               ; traverse after the first input).
                :partial-pattern? false
-               :curr-idx 0  ; for traversal mode
+               ; For traversal mode.
+               :curr-idx 0
+               ; Currently selected label group, 0-indexed
+               ; (`target.group` starts at 1).
                :group-offset 0
                :errmsg nil})
 

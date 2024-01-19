@@ -481,10 +481,10 @@ local function leap(kwargs)
   end
   local vars
   local _79_
-  if not (repeat_3f or (max_phase_one_targets == 0) or empty_label_lists_3f or multi_select_3f or user_given_targets_3f) then
-    _79_ = 1
-  else
+  if (repeat_3f or (max_phase_one_targets == 0) or empty_label_lists_3f or multi_select_3f or user_given_targets_3f) then
     _79_ = nil
+  else
+    _79_ = 1
   end
   vars = {phase = _79_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
   local function get_number_of_highlighted_targets()
