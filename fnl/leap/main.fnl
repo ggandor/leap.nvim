@@ -117,33 +117,25 @@ NOTE: `set-autojump` should be called BEFORE this function."
 
 (fn set-labels [targets {: force?}]
   "Assign label characters to each target, using the given label set
-repeated indefinitely.
-Note: `label` is a once and for all fixed attribute - whether and how it
-should actually be displayed depends on the `label-state` flag."
+repeated indefinitely. Note: `label` is a once and for all fixed
+attribute - whether and how it should actually be displayed depends on
+the `label-state` flag.
+
+Also sets a `group` attribute (a static one too, not to be updated)."
   (when (or (> (length targets) 1) (empty? opts.safe_labels) force?)
     (local {: autojump? : label-set} targets)
-    (each [i target (ipairs targets)]
+    (local |label-set| (length label-set))
+    (each [i* target (ipairs targets)]
       ; Skip labeling the first target if autojump is set.
-      (local i* (if autojump? (dec i) i))
-      (when (> i* 0)
-        (set target.label (case (% i* (length label-set))
-                            0 (. label-set (length label-set))
-                            n (. label-set n)))))))
-
-
-(fn set-label-states [targets {: group-offset}]
-  (let [|label-set| (length targets.label-set)
-        offset (* group-offset |label-set|)
-        primary-start (+ offset (if targets.autojump? 2 1))
-        primary-end (+ primary-start (dec |label-set|))
-        secondary-start (inc primary-end)
-        secondary-end (+ primary-end |label-set|)]
-    (each [i target (ipairs targets)]
-      (when (and target.label (not= target.label-state :selected))
-        (set target.label-state
-             (if (<= primary-start i primary-end) :active-primary
-                 (<= secondary-start i secondary-end) :active-secondary
-                 (> i secondary-end) :inactive))))))
+      (local i (if autojump? (dec i*) i*))
+      (when (>= i 1)
+        (case (% i |label-set|)
+          0 (do
+              (set target.label (. label-set |label-set|))
+              (set target.group (math.floor (/ i |label-set|))))
+          n (do
+              (set target.label (. label-set n))
+              (set target.group (inc (math.floor (/ i |label-set|))))))))))
 
 
 ; Two-step processing
@@ -193,11 +185,6 @@ char separately.
           (set sublist.shared-window? nil)))))
 
 
-(fn set-initial-label-states [targets]
-  (each [_ sublist (pairs targets.sublists)]
-    (set-label-states sublist {:group-offset 0})))
-
-
 ; Display ///1
 
 ; "Beacon" is an umbrella term for any kind of visual overlay tied to
@@ -216,27 +203,27 @@ char separately.
         (+ (ch1:len) (ch2:len)))))
 
 
-(fn set-beacon-for-labeled [target {: user-given-targets? : phase}]
+(fn set-beacon-for-labeled [target group-offset {: user-given-targets? : phase}]
   (let [offset (if phase (get-label-offset target) 0)  ; note: user-given-targets
                                                        ; implies (not phase)
         pad (if (or phase user-given-targets?) "" " ")
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
-        virttext (case target.label-state
-                   :selected [[text hl.group.label-selected]]
-                   :active-primary [[text hl.group.label-primary]]
-                   :active-secondary [[text hl.group.label-secondary]]
-                   :inactive (if (and phase
-                                      (not opts.highlight_unlabeled_phase_one_targets))
-                                 ; In this case, "no highlight" should
-                                 ; unambiguously signal "no further keystrokes
-                                 ; needed", so it is mandatory to show all
-                                 ; labeled positions in some way.
-                                 ; (Note: We're keeping this on even after
-                                 ; phase one - sudden visual changes should be
-                                 ; avoided as much as possible.)
-                                 [[(.. opts.concealed_label pad) hl.group.label-secondary]]
-                                 :else nil))]
+        group* (- target.group group-offset)
+        virttext (if target.selected [[text hl.group.label-selected]]
+                     (= group* 1) [[text hl.group.label-primary]]
+                     (= group* 2) [[text hl.group.label-secondary]]
+                     (> group* 2) (if (and phase
+                                           (not opts.highlight_unlabeled_phase_one_targets))
+                                      ; In this case, "no highlight" should
+                                      ; unambiguously signal "no further keystrokes
+                                      ; needed", so it is mandatory to show all
+                                      ; labeled positions in some way.
+                                      ; (Note: We're keeping this on even after
+                                      ; phase one - sudden visual changes should be
+                                      ; avoided as much as possible.)
+                                      [[(.. opts.concealed_label pad) hl.group.label-secondary]]
+                                      nil))]
     (set target.beacon (when virttext [offset virttext]))))
 
 
@@ -376,13 +363,14 @@ an autojump. (In short: always err on the safe side.)
               (tset unlabeled-match-positions (->key col-ch2) target)))))))
 
 
-(fn set-beacons [targets {: no-labels? : user-given-targets? : phase}]
+(fn set-beacons [targets {: group-offset : no-labels? : user-given-targets? : phase}]
   (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (each [_ target (ipairs targets)]
         (if target.label
-            (set-beacon-for-labeled target {: user-given-targets? : phase})
+            (set-beacon-for-labeled target (or group-offset 0)
+                                    {: user-given-targets? : phase})
 
             (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
             (set-beacon-to-match-hl target)))))
@@ -529,6 +517,7 @@ an autojump. (In short: always err on the safe side.)
                    nil)
                :partial-pattern? false
                :curr-idx 0  ; for traversal mode
+               :group-offset 0
                :errmsg nil})
 
   ; Macros
@@ -585,11 +574,13 @@ an autojump. (In short: always err on the safe side.)
                          (min (length targets))))]
           (values start end))))
 
-  (fn get-target-with-active-primary-label [sublist input]
+  (fn get-target-with-active-label [sublist input]
     (var res [])
-    (each [idx {: label : label-state &as target} (ipairs sublist)
-           &until (or (next res) (= label-state :inactive))]
-      (when (and (= label input) (= label-state :active-primary))
+    (each [idx {: label : group &as target} (ipairs sublist)
+           &until (or (next res)
+                      (> (- (or group 0) vars.group-offset) 1))]
+      (when (and (= label input)
+                 (= (- group vars.group-offset) 1))
         (set res [idx target])))
     res)
 
@@ -751,25 +742,24 @@ an autojump. (In short: always err on the safe side.)
 
   ; Target-selection loops
 
-  (fn post-pattern-input-loop [targets ?group-offset first-invoc?]
+  (fn post-pattern-input-loop [targets first-invoc?]
     (local |groups| (if (not targets.label-set) 0
                         (ceil (/ (length targets)
                                  (length targets.label-set)))))
 
-    (fn display [group-offset]
+    (fn display []
       (local no-labels? (or empty-label-lists? vars.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (when targets.label-set
-        (set-label-states targets {: group-offset}))
-      (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
+      (set-beacons targets {:group-offset vars.group-offset : no-labels?
+                            : user-given-targets? :phase vars.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
 
     (var first-iter? true)
-    (fn loop [group-offset first-invoc?]
-      (display group-offset)
+    (fn loop [first-invoc?]
+      (display)
       (when first-iter?
         (exec-user-autocmds :LeapSelectPre)
         (set first-iter? false))
@@ -781,41 +771,40 @@ an autojump. (In short: always err on the safe side.)
                                           (not first-invoc?))))]
           (if switch-group?
               (let [inc/dec (if (= input spec-keys.next_group) inc dec)
-                    max-offset (dec |groups|)
-                    group-offset* (-> group-offset inc/dec (clamp 0 max-offset))]
-                (loop group-offset* false))
+                    max-offset (dec |groups|)]
+                (set vars.group-offset
+                     (-> vars.group-offset inc/dec (clamp 0 max-offset)))
+                (loop false))
               ; Otherwise return with input.
-              (values input group-offset)))))
+              input))))
 
-    (loop (or ?group-offset 0)
-          (not= first-invoc? false)))
+    (loop (not= first-invoc? false)))
 
 
   (local multi-select-loop
     (do
       (local selection [])
-      (var group-offset 0)
       (var first-invoc? true)
 
       (fn loop [targets]
-        (case (post-pattern-input-loop targets group-offset first-invoc?)
+        (case (post-pattern-input-loop targets first-invoc?)
           (where (= spec-keys.multi_accept))
           (if (not (empty? selection))
               selection
               (loop targets))
 
           (where (= spec-keys.multi_revert))
-          (do (-?> (table.remove selection)
-                   (tset :label-state nil))
+          (do (local removed (table.remove selection))
+              (when removed
+                (set removed.selected nil))
               (loop targets))
 
-          (in group-offset*)
-          (do (set group-offset group-offset*)
-              (set first-invoc? false)
-              (case (get-target-with-active-primary-label targets in)
+          in
+          (do (set first-invoc? false)
+              (case (get-target-with-active-label targets in)
                 [_ target] (when-not (contains? selection target)
                              (table.insert selection target)
-                             (set target.label-state :selected)))
+                             (set target.selected true)))
               (loop targets))))))
 
 
@@ -824,16 +813,19 @@ an autojump. (In short: always err on the safe side.)
     (fn on-first-invoc []
       (if no-labels?
           (each [_ t (ipairs targets)]
-            (set t.label-state :inactive))
+            (set t.label nil))
 
-          (not (empty? opts.safe_labels))
           ; Remove all the subsequent label groups if needed.
+          (not (empty? opts.safe_labels))
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
-              (doto (. targets i) (tset :label nil) (tset :beacon nil))))))
+              (doto (. targets i)
+                (tset :label nil)
+                (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {: no-labels? : user-given-targets? :phase vars.phase})
+      (set-beacons targets {:group-offset vars.group-offset : no-labels?
+                            : user-given-targets? :phase vars.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
@@ -856,7 +848,7 @@ an autojump. (In short: always err on the safe side.)
                         (jump-to! (. targets new-idx))
                         (loop new-idx false))
                 ; We still want the labels (if there are) to function.
-              _ (case (get-target-with-active-primary-label targets in)
+              _ (case (get-target-with-active-label targets in)
                   [_ target] (jump-to! target)
                   _ (vim.fn.feedkeys in :i))))))
 
@@ -910,9 +902,7 @@ an autojump. (In short: always err on the safe side.)
         (populate-sublists targets multi-window?)
         (each [_ sublist (pairs targets.sublists)]
            (prepare-targets sublist))
-        (doto targets
-          (set-initial-label-states)
-          (set-beacons {:phase vars.phase}))
+        (set-beacons targets {:phase vars.phase})
         (when (= vars.phase 1)
           (resolve-conflicts targets))))
 
@@ -1010,7 +1000,7 @@ an autojump. (In short: always err on the safe side.)
             (exit-with-action-on 1)
             (do (vim.fn.feedkeys in-final :i) (exit)))))
 
-  (local [idx _] (get-target-with-active-primary-label targets* in-final))
+  (local [idx _] (get-target-with-active-label targets* in-final))
   (if idx
       (exit-with-action-on idx)
       (do (vim.fn.feedkeys in-final :i) (exit)))
