@@ -181,11 +181,20 @@ local function prepare_targets(targets, _28_)
   set_labels(targets, force_labels_3f)
   return targets
 end
+local function set_beacon_to_match_hl(target)
+  local virttext
+  local function _30_(_241)
+    return (opts.substitute_chars[_241] or _241)
+  end
+  virttext = table.concat(map(_30_, target.chars))
+  target.beacon = {0, {{virttext, hl.group.match}}}
+  return nil
+end
 local function get_label_offset(target)
-  local _let_30_ = target
-  local _let_31_ = _let_30_["chars"]
-  local ch1 = _let_31_[1]
-  local ch2 = _let_31_[2]
+  local _let_31_ = target
+  local _let_32_ = _let_31_["chars"]
+  local ch1 = _let_32_[1]
+  local ch2 = _let_32_[2]
   if (ch1 == "\n") then
     return 0
   elseif (target["edge-pos?"] or (ch2 == "\n")) then
@@ -194,10 +203,10 @@ local function get_label_offset(target)
     return (ch1:len() + ch2:len())
   end
 end
-local function set_beacon_for_labeled(target, group_offset, _33_)
-  local _arg_34_ = _33_
-  local user_given_targets_3f = _arg_34_["user-given-targets?"]
-  local phase = _arg_34_["phase"]
+local function set_beacon_for_labeled(target, group_offset, _34_)
+  local _arg_35_ = _34_
+  local user_given_targets_3f = _arg_35_["user-given-targets?"]
+  local phase = _arg_35_["phase"]
   local offset
   if phase then
     offset = get_label_offset(target)
@@ -236,84 +245,12 @@ local function set_beacon_for_labeled(target, group_offset, _33_)
   end
   return nil
 end
-local function set_beacon_to_match_hl(target)
-  local virttext
-  local function _40_(_241)
-    return (opts.substitute_chars[_241] or _241)
-  end
-  virttext = table.concat(map(_40_, target.chars))
-  target.beacon = {0, {{virttext, hl.group.match}}}
-  return nil
-end
-local function set_beacon_to_empty_label(target)
-  if target.beacon then
-    target["beacon"][2][1][1] = opts.concealed_label
-    return nil
-  else
-    return nil
-  end
-end
-local function resolve_conflicts(targets)
-  local unlabeled_match_positions = {}
-  local label_positions = {}
-  for _, target in ipairs(targets) do
-    local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
-    if not empty_line_3f then
-      local _let_42_ = target.wininfo
-      local bufnr = _let_42_["bufnr"]
-      local winid = _let_42_["winid"]
-      local _let_43_ = target.pos
-      local lnum = _let_43_[1]
-      local col_ch1 = _let_43_[2]
-      local col_ch2 = (col_ch1 + string.len(target.chars[1]))
-      local key_prefix = (bufnr .. " " .. winid .. " " .. lnum .. " ")
-      if (target.label and target.beacon) then
-        local label_offset = target.beacon[1]
-        local col_label = (col_ch1 + label_offset)
-        local shifted_label_3f = (col_label == col_ch2)
-        do
-          local _44_
-          local function _45_(...)
-            if shifted_label_3f then
-              return unlabeled_match_positions[(key_prefix .. col_ch1)]
-            else
-              return nil
-            end
-          end
-          _44_ = (label_positions[(key_prefix .. col_label)] or _45_() or unlabeled_match_positions[(key_prefix .. col_label)])
-          if (nil ~= _44_) then
-            local other = _44_
-            other.beacon = nil
-            set_beacon_to_empty_label(target)
-          else
-          end
-        end
-        label_positions[(key_prefix .. col_label)] = target
-      else
-        local col_ch3 = (col_ch2 + string.len(target.chars[2]))
-        do
-          local _48_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
-          if (nil ~= _48_) then
-            local other = _48_
-            target.beacon = nil
-            set_beacon_to_empty_label(other)
-          else
-          end
-        end
-        unlabeled_match_positions[(key_prefix .. col_ch1)] = target
-        unlabeled_match_positions[(key_prefix .. col_ch2)] = target
-      end
-    else
-    end
-  end
-  return nil
-end
-local function set_beacons(targets, _52_)
-  local _arg_53_ = _52_
-  local group_offset = _arg_53_["group-offset"]
-  local no_labels_3f = _arg_53_["no-labels?"]
-  local user_given_targets_3f = _arg_53_["user-given-targets?"]
-  local phase = _arg_53_["phase"]
+local function set_beacons(targets, _41_)
+  local _arg_42_ = _41_
+  local group_offset = _arg_42_["group-offset"]
+  local no_labels_3f = _arg_42_["no-labels?"]
+  local user_given_targets_3f = _arg_42_["user-given-targets?"]
+  local phase = _arg_42_["phase"]
   if (no_labels_3f and targets[1].chars) then
     for _, target in ipairs(targets) do
       set_beacon_to_match_hl(target)
@@ -330,6 +267,69 @@ local function set_beacons(targets, _52_)
     end
     return nil
   end
+end
+local function resolve_conflicts(targets)
+  local function set_beacon_to_empty_label(target)
+    if target.beacon then
+      target["beacon"][2][1][1] = opts.concealed_label
+      return nil
+    else
+      return nil
+    end
+  end
+  local unlabeled_match_positions = {}
+  local label_positions = {}
+  for _, target in ipairs(targets) do
+    local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
+    if not empty_line_3f then
+      local _let_46_ = target.wininfo
+      local bufnr = _let_46_["bufnr"]
+      local winid = _let_46_["winid"]
+      local _let_47_ = target.pos
+      local lnum = _let_47_[1]
+      local col_ch1 = _let_47_[2]
+      local col_ch2 = (col_ch1 + string.len(target.chars[1]))
+      local key_prefix = (bufnr .. " " .. winid .. " " .. lnum .. " ")
+      if (target.label and target.beacon) then
+        local label_offset = target.beacon[1]
+        local col_label = (col_ch1 + label_offset)
+        local shifted_label_3f = (col_label == col_ch2)
+        do
+          local _48_
+          local function _49_(...)
+            if shifted_label_3f then
+              return unlabeled_match_positions[(key_prefix .. col_ch1)]
+            else
+              return nil
+            end
+          end
+          _48_ = (label_positions[(key_prefix .. col_label)] or _49_() or unlabeled_match_positions[(key_prefix .. col_label)])
+          if (nil ~= _48_) then
+            local other = _48_
+            other.beacon = nil
+            set_beacon_to_empty_label(target)
+          else
+          end
+        end
+        label_positions[(key_prefix .. col_label)] = target
+      else
+        local col_ch3 = (col_ch2 + string.len(target.chars[2]))
+        do
+          local _52_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
+          if (nil ~= _52_) then
+            local other = _52_
+            target.beacon = nil
+            set_beacon_to_empty_label(other)
+          else
+          end
+        end
+        unlabeled_match_positions[(key_prefix .. col_ch1)] = target
+        unlabeled_match_positions[(key_prefix .. col_ch2)] = target
+      end
+    else
+    end
+  end
+  return nil
 end
 local function light_up_beacons(targets, _3fstart, _3fend)
   if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then

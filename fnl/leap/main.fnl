@@ -206,6 +206,13 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 ; expects).
 
 
+(fn set-beacon-to-match-hl [target]
+  (local virttext (->> target.chars
+                       (map #(or (. opts.substitute_chars $) $))
+                       table.concat))
+  (set target.beacon [0 [[virttext hl.group.match]]]))
+
+
 ; Handling multibyte characters.
 (fn get-label-offset [target]
   (let [{:chars [ch1 ch2]} target]
@@ -215,8 +222,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
 
 (fn set-beacon-for-labeled [target group-offset {: user-given-targets? : phase}]
-  (let [offset (if phase (get-label-offset target) 0)  ; note: user-given-targets
-                                                       ; implies (not phase)
+  (let [offset (if phase (get-label-offset target) 0)
         pad (if (or phase user-given-targets?) "" " ")
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
@@ -224,30 +230,31 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         virttext (if target.selected [[text hl.group.label-selected]]
                      (= group* 1) [[text hl.group.label-primary]]
                      (= group* 2) [[text hl.group.label-secondary]]
-                     (> group* 2) (if (and phase
-                                           (not opts.highlight_unlabeled_phase_one_targets))
-                                      ; In this case, "no highlight" should
-                                      ; unambiguously signal "no further keystrokes
-                                      ; needed", so it is mandatory to show all
-                                      ; labeled positions in some way.
-                                      ; (Note: We're keeping this on even after
-                                      ; phase one - sudden visual changes should be
-                                      ; avoided as much as possible.)
-                                      [[(.. opts.concealed_label pad) hl.group.label-secondary]]
-                                      nil))]
+                     (> group* 2)
+                     (when (and phase (not opts.highlight_unlabeled_phase_one_targets))
+                       ; In this case, "no highlight" should
+                       ; unambiguously signal "no further keystrokes
+                       ; needed", so it is mandatory to show all labeled
+                       ; positions in some way. (Note: We're keeping
+                       ; this on even after phase one - sudden visual
+                       ; changes should be avoided as much as possible.)
+                       [[(.. opts.concealed_label pad) hl.group.label-secondary]]))]
+    ; Set nil too (= switching off a beacon).
     (set target.beacon (when virttext [offset virttext]))))
 
 
-(fn set-beacon-to-match-hl [target]
-  (local virttext (->> target.chars
-                       (map #(or (. opts.substitute_chars $) $))
-                       table.concat))
-  (set target.beacon [0 [[virttext hl.group.match]]]))
+(fn set-beacons [targets {: group-offset : no-labels?
+                          : user-given-targets? : phase}]
+  (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
+      (each [_ target (ipairs targets)]
+        (set-beacon-to-match-hl target))
+      (each [_ target (ipairs targets)]
+        (if target.label
+            (set-beacon-for-labeled target (or group-offset 0)
+                                    {: user-given-targets? : phase})
 
-
-(fn set-beacon-to-empty-label [target]
-  (when target.beacon
-    (tset target :beacon 2 1 1 opts.concealed_label)))
+            (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
+            (set-beacon-to-match-hl target)))))
 
 
 (fn resolve-conflicts [targets]
@@ -282,6 +289,10 @@ unlabeled targets are set to be highlighted, and remove the match
 highlight instead, for a similar reason - to prevent (falsely) expecting
 an autojump. (In short: always err on the safe side.)
 "
+  (fn set-beacon-to-empty-label [target]
+    (when target.beacon
+      (tset target :beacon 2 1 1 opts.concealed_label)))
+
   ; Tables to help us check potential conflicts (we'll be filling
   ; them as we go):
   ; { "<bufnr> <winid> <lnum> <col>" = <target> }
@@ -372,19 +383,6 @@ an autojump. (In short: always err on the safe side.)
                 ; Register positions.
               (tset unlabeled-match-positions (->key col-ch1) target)
               (tset unlabeled-match-positions (->key col-ch2) target)))))))
-
-
-(fn set-beacons [targets {: group-offset : no-labels? : user-given-targets? : phase}]
-  (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
-      (each [_ target (ipairs targets)]
-        (set-beacon-to-match-hl target))
-      (each [_ target (ipairs targets)]
-        (if target.label
-            (set-beacon-for-labeled target (or group-offset 0)
-                                    {: user-given-targets? : phase})
-
-            (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
-            (set-beacon-to-match-hl target)))))
 
 
 (fn light-up-beacons [targets ?start ?end]
