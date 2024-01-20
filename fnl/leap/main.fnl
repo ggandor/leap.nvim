@@ -90,55 +90,7 @@ equivalence class of `ch`."
 
 ; Processing targets ///1
 
-(fn set-autojump [targets force-noautojump?]
-  "Set a flag indicating whether we should autojump to the first target,
-without having to select a label.
-Note that there is no one-to-one correspondence between this flag and
-the `label-set` field set by `attach-label-set`. No-autojump might be
-forced implicitly, regardless of using safe labels."
-  (set targets.autojump? (and (not (or force-noautojump?
-                                       (empty? opts.safe_labels)))
-                              (or (empty? opts.labels)
-                                  ; Smart mode.
-                                  (>= (length opts.safe_labels)
-                                      ; Skipping the first if autojumping.
-                                      (dec (length targets)))))))
-
-
-(fn attach-label-set [targets]
-  "Set a field referencing the label set to be used for `targets`.
-NOTE: `set-autojump` should be called BEFORE this function."
-  ; (assert (not (and (empty? opts.labels) (empty? opts.safe_labels))))
-  (set targets.label-set (if (empty? opts.labels) opts.safe_labels
-                             (empty? opts.safe_labels) opts.labels
-                             targets.autojump? opts.safe_labels
-                             opts.labels)))
-
-
-(fn set-labels [targets {: force?}]
-  "Assign label characters to each target, using the given label set
-repeated indefinitely. Note: `label` is a once and for all fixed
-attribute - whether and how it should actually be displayed depends on
-the `label-state` flag.
-
-Also sets a `group` attribute (a static one too, not to be updated)."
-  (when (or (> (length targets) 1) (empty? opts.safe_labels) force?)
-    (local {: autojump? : label-set} targets)
-    (local |label-set| (length label-set))
-    (each [i* target (ipairs targets)]
-      ; Skip labeling the first target if autojump is set.
-      (local i (if autojump? (dec i*) i*))
-      (when (>= i 1)
-        (case (% i |label-set|)
-          0 (do
-              (set target.label (. label-set |label-set|))
-              (set target.group (math.floor (/ i |label-set|))))
-          n (do
-              (set target.label (. label-set n))
-              (set target.group (inc (math.floor (/ i |label-set|))))))))))
-
-
-; Two-step processing
+; Might be skipped, if two-step processing is disabled.
 
 (fn populate-sublists [targets multi-window?]
   "Populate a sub-table in `targets` containing lists that allow for
@@ -183,6 +135,65 @@ char separately.
         (table.insert sublist target)
         (when (and sublist.shared-window? (not= winid sublist.shared-window?))
           (set sublist.shared-window? nil)))))
+
+
+; `targets` might be a sublist of an original target list from here on.
+
+(fn set-autojump [targets force-noautojump?]
+  "Set a flag indicating whether we should autojump to the first target,
+without having to select a label.
+Note that there is no one-to-one correspondence between this flag and
+the `label-set` field set by `attach-label-set`. No-autojump might be
+forced implicitly, regardless of using safe labels."
+  (set targets.autojump? (and (not (or force-noautojump?
+                                       (empty? opts.safe_labels)))
+                              (or (empty? opts.labels)
+                                  ; Smart mode.
+                                  (>= (length opts.safe_labels)
+                                      ; Skipping the first if autojumping.
+                                      (dec (length targets)))))))
+
+
+(fn attach-label-set [targets]
+  "Set a field referencing the label set to be used for `targets`.
+NOTE: `set-autojump` should be called BEFORE this function."
+  ; (assert (not (and (empty? opts.labels) (empty? opts.safe_labels))))
+  (set targets.label-set (if (empty? opts.labels) opts.safe_labels
+                             (empty? opts.safe_labels) opts.labels
+                             targets.autojump? opts.safe_labels
+                             opts.labels)))
+
+
+(fn set-labels [targets force-labels?]
+  "Assign label characters to each target, using the given label set
+repeated indefinitely. Note: `label` is a once and for all fixed
+attribute - whether and how it should actually be displayed depends on
+other parts of the code.
+
+Also sets a `group` attribute (a static one too, not to be updated)."
+  (when (or (> (length targets) 1)
+            (empty? opts.safe_labels)
+            force-labels?)
+    (local {: autojump? : label-set} targets)
+    (local |label-set| (length label-set))
+    (each [i* target (ipairs targets)]
+      ; Skip labeling the first target if autojump is set.
+      (local i (if autojump? (dec i*) i*))
+      (when (>= i 1)
+        (case (% i |label-set|)
+          0 (do
+              (set target.label (. label-set |label-set|))
+              (set target.group (math.floor (/ i |label-set|))))
+          n (do
+              (set target.label (. label-set n))
+              (set target.group (inc (math.floor (/ i |label-set|))))))))))
+
+
+(fn prepare-targets [targets {: force-noautojump? : force-labels?}]
+  (doto targets
+    (set-autojump force-noautojump?)
+    (attach-label-set)
+    (set-labels force-labels?)))
 
 
 ; Display ///1
@@ -680,36 +691,33 @@ an autojump. (In short: always err on the safe side.)
           targets*)
         (set vars.errmsg "no targets")))
 
-  (fn prepare-targets [targets]
-    (let [; Note: As opposed to the checks in `resolve-conflicts`, we
-          ; can do this right now, before preparing the list (that is,
-          ; no need for duplicate work), since this situation may arise
-          ; in phase two, when only the chosen sublist remained.
-          ; <-----  backward search
-          ;   ab    target #1
-          ; abL     target #2 (labeled)
-          ;   ^     auto-jump would move the cursor here (covering the label)
-          funny-edge-case? (and backward?
-                                (case targets
-                                  [{:pos [l1 c1]}
-                                   {:pos [l2 c2] :chars [ch1 ch2]}]
-                                  (and (= l1 l2)
-                                       (= c1 (+ c2 (ch1:len) (ch2:len))))))
-          force-noautojump? (or
-                              ; Should be able to select a target.
-                              op-mode? multi-select?
-                              ; Disorienting if the chosen target
-                              ; happens to be in (yet) another window.
-                              (and multi-window?
-                                   (not targets.shared-window?))  ; see `populate-sublists`
-                              ; No jump, doing sg else.
-                              user-given-action
-                              ; See above.
-                              funny-edge-case?)]
-      (doto targets
-        (set-autojump force-noautojump?)
-        (attach-label-set)
-        (set-labels {:force? multi-select?}))))
+  (fn prepare-targets* [targets]
+    ; Note: As opposed to the checks in `resolve-conflicts`, we can do
+    ; this right now, before preparing the list (that is, no need for
+    ; duplicate work), since this situation may arise in phase two, when
+    ; only the chosen sublist remained.
+    ; <-----  backward search
+    ;   ab    target #1
+    ; abL     target #2 (labeled)
+    ;   ^     auto-jump would move the cursor here (covering the label)
+    (local funny-edge-case? (and backward?
+                                 (case targets
+                                   [{:pos [l1 c1]}
+                                    {:pos [l2 c2] :chars [ch1 ch2]}]
+                                   (and (= l1 l2)
+                                        (= c1 (+ c2 (ch1:len) (ch2:len)))))))
+    (local force-noautojump? (or funny-edge-case?
+                                 ; Should be able to select a target.
+                                 op-mode? multi-select?
+                                 ; Disorienting if the chosen target
+                                 ; happens to be in (yet) another window.
+                                 (and multi-window?
+                                      ; see `populate-sublists`
+                                      (not targets.shared-window?))
+                                 ; No jump, doing sg else.
+                                 user-given-action))
+    (prepare-targets
+      targets {: force-noautojump? :force-labels? multi-select?}))
 
   ; Repeat
 
@@ -899,13 +907,13 @@ an autojump. (In short: always err on the safe side.)
   (if (or ?in2 vars.partial-pattern?)
       (if (or empty-label-lists? vars.partial-pattern?)
           (set targets.autojump? true)
-          (prepare-targets targets))
+          (prepare-targets* targets))
       (do
         (when (> (length targets) max-phase-one-targets)
           (set vars.phase nil))
         (populate-sublists targets multi-window?)
         (each [_ sublist (pairs targets.sublists)]
-           (prepare-targets sublist))
+           (prepare-targets* sublist))
         (set-beacons targets {:phase vars.phase})
         (when (= vars.phase 1)
           (resolve-conflicts targets))))

@@ -78,6 +78,52 @@ local function expand_to_equivalence_class(ch)
     return nil
   end
 end
+local function populate_sublists(targets, multi_window_3f)
+  targets.sublists = {}
+  local function _8_(self, ch, sublist)
+    return rawset(self, __3erepresentative_char(ch), sublist)
+  end
+  local function _9_(self, ch)
+    return rawget(self, __3erepresentative_char(ch))
+  end
+  setmetatable(targets.sublists, {__newindex = _8_, __index = _9_})
+  if not multi_window_3f then
+    for _, _10_ in ipairs(targets) do
+      local _each_11_ = _10_
+      local _each_12_ = _each_11_["chars"]
+      local _0 = _each_12_[1]
+      local ch2 = _each_12_[2]
+      local target = _each_11_
+      if not targets.sublists[ch2] then
+        targets.sublists[ch2] = {}
+      else
+      end
+      table.insert(targets.sublists[ch2], target)
+    end
+    return nil
+  else
+    for _, _14_ in ipairs(targets) do
+      local _each_15_ = _14_
+      local _each_16_ = _each_15_["chars"]
+      local _0 = _each_16_[1]
+      local ch2 = _each_16_[2]
+      local _each_17_ = _each_15_["wininfo"]
+      local winid = _each_17_["winid"]
+      local target = _each_15_
+      if not targets.sublists[ch2] then
+        targets.sublists[ch2] = {["shared-window?"] = winid}
+      else
+      end
+      local sublist = targets.sublists[ch2]
+      table.insert(sublist, target)
+      if (sublist["shared-window?"] and (winid ~= sublist["shared-window?"])) then
+        sublist["shared-window?"] = nil
+      else
+      end
+    end
+    return nil
+  end
+end
 local function set_autojump(targets, force_noautojump_3f)
   targets["autojump?"] = (not (force_noautojump_3f or empty_3f(opts.safe_labels)) and (empty_3f(opts.labels) or (#opts.safe_labels >= dec(#targets))))
   return nil
@@ -94,13 +140,11 @@ local function attach_label_set(targets)
   end
   return nil
 end
-local function set_labels(targets, _9_)
-  local _arg_10_ = _9_
-  local force_3f = _arg_10_["force?"]
-  if ((#targets > 1) or empty_3f(opts.safe_labels) or force_3f) then
-    local _local_11_ = targets
-    local autojump_3f = _local_11_["autojump?"]
-    local label_set = _local_11_["label-set"]
+local function set_labels(targets, force_labels_3f)
+  if ((#targets > 1) or empty_3f(opts.safe_labels) or force_labels_3f) then
+    local _local_22_ = targets
+    local autojump_3f = _local_22_["autojump?"]
+    local label_set = _local_22_["label-set"]
     local _7clabel_set_7c = #label_set
     for i_2a, target in ipairs(targets) do
       local i
@@ -110,12 +154,12 @@ local function set_labels(targets, _9_)
         i = i_2a
       end
       if (i >= 1) then
-        local _13_ = (i % _7clabel_set_7c)
-        if (_13_ == 0) then
+        local _24_ = (i % _7clabel_set_7c)
+        if (_24_ == 0) then
           target.label = label_set[_7clabel_set_7c]
           target.group = math.floor((i / _7clabel_set_7c))
-        elseif (nil ~= _13_) then
-          local n = _13_
+        elseif (nil ~= _24_) then
+          local n = _24_
           target.label = label_set[n]
           target.group = inc(math.floor((i / _7clabel_set_7c)))
         else
@@ -128,51 +172,14 @@ local function set_labels(targets, _9_)
     return nil
   end
 end
-local function populate_sublists(targets, multi_window_3f)
-  targets.sublists = {}
-  local function _17_(self, ch, sublist)
-    return rawset(self, __3erepresentative_char(ch), sublist)
-  end
-  local function _18_(self, ch)
-    return rawget(self, __3erepresentative_char(ch))
-  end
-  setmetatable(targets.sublists, {__newindex = _17_, __index = _18_})
-  if not multi_window_3f then
-    for _, _19_ in ipairs(targets) do
-      local _each_20_ = _19_
-      local _each_21_ = _each_20_["chars"]
-      local _0 = _each_21_[1]
-      local ch2 = _each_21_[2]
-      local target = _each_20_
-      if not targets.sublists[ch2] then
-        targets.sublists[ch2] = {}
-      else
-      end
-      table.insert(targets.sublists[ch2], target)
-    end
-    return nil
-  else
-    for _, _23_ in ipairs(targets) do
-      local _each_24_ = _23_
-      local _each_25_ = _each_24_["chars"]
-      local _0 = _each_25_[1]
-      local ch2 = _each_25_[2]
-      local _each_26_ = _each_24_["wininfo"]
-      local winid = _each_26_["winid"]
-      local target = _each_24_
-      if not targets.sublists[ch2] then
-        targets.sublists[ch2] = {["shared-window?"] = winid}
-      else
-      end
-      local sublist = targets.sublists[ch2]
-      table.insert(sublist, target)
-      if (sublist["shared-window?"] and (winid ~= sublist["shared-window?"])) then
-        sublist["shared-window?"] = nil
-      else
-      end
-    end
-    return nil
-  end
+local function prepare_targets(targets, _28_)
+  local _arg_29_ = _28_
+  local force_noautojump_3f = _arg_29_["force-noautojump?"]
+  local force_labels_3f = _arg_29_["force-labels?"]
+  set_autojump(targets, force_noautojump_3f)
+  attach_label_set(targets)
+  set_labels(targets, force_labels_3f)
+  return targets
 end
 local function get_label_offset(target)
   local _let_30_ = target
@@ -676,7 +683,7 @@ local function leap(kwargs)
       return nil
     end
   end
-  local function prepare_targets(targets)
+  local function prepare_targets_2a(targets)
     local funny_edge_case_3f
     local function _114_(...)
       if ((_G.type(targets) == "table") and ((_G.type(targets[1]) == "table") and ((_G.type(targets[1].pos) == "table") and (nil ~= targets[1].pos[1]) and (nil ~= targets[1].pos[2]))) and ((_G.type(targets[2]) == "table") and ((_G.type(targets[2].pos) == "table") and (nil ~= targets[2].pos[1]) and (nil ~= targets[2].pos[2])) and ((_G.type(targets[2].chars) == "table") and (nil ~= targets[2].chars[1]) and (nil ~= targets[2].chars[2])))) then
@@ -692,11 +699,8 @@ local function leap(kwargs)
       end
     end
     funny_edge_case_3f = (backward_3f and _114_())
-    local force_noautojump_3f = (op_mode_3f or multi_select_3f or (multi_window_3f and not targets["shared-window?"]) or user_given_action or funny_edge_case_3f)
-    set_autojump(targets, force_noautojump_3f)
-    attach_label_set(targets)
-    set_labels(targets, {["force?"] = multi_select_3f})
-    return targets
+    local force_noautojump_3f = (funny_edge_case_3f or op_mode_3f or multi_select_3f or (multi_window_3f and not targets["shared-window?"]) or user_given_action)
+    return prepare_targets(targets, {["force-noautojump?"] = force_noautojump_3f, ["force-labels?"] = multi_select_3f})
   end
   local function update_repeat_state(state_2a)
     if not (repeat_3f or user_given_targets_3f) then
@@ -983,7 +987,7 @@ local function leap(kwargs)
     if (empty_label_lists_3f or vars["partial-pattern?"]) then
       targets["autojump?"] = true
     else
-      prepare_targets(targets)
+      prepare_targets_2a(targets)
     end
   else
     if (#targets > max_phase_one_targets) then
@@ -992,7 +996,7 @@ local function leap(kwargs)
     end
     populate_sublists(targets, multi_window_3f)
     for _, sublist in pairs(targets.sublists) do
-      prepare_targets(sublist)
+      prepare_targets_2a(sublist)
     end
     set_beacons(targets, {phase = vars.phase})
     if (vars.phase == 1) then
