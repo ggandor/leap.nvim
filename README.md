@@ -137,10 +137,17 @@ sufficiently narrow down the matches in the vast majority of cases.
 Fixed pattern length also makes **(safe) automatic jump to the first target**
 possible. You cannot improve on jumping directly, just like how `f` and `t`
 works, not having to read a label at all, and not having to accept the match
-with `<enter>` either. With ahead-of-time labeling, however, we can do this in
-a smart way - disabling autojump and switching back to a bigger, "unsafe" label
-set beyond a certain number of targets. The non-determinism is not much of an
-issue here, since the outcome is known in advance.
+with `<enter>` either. However, we can do this in a smart way: if there are
+many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
+label set - getting the best of both worlds. The non-determinism we're
+introducing is less of an issue here, since the outcome is known in advance.
+
+In sum, compared to all other labeling plugins, Leap is unique in that it
+
+* offers a more fluid experience, by (somewhat) eliminating the pause before
+  typing the label
+
+* feels natural to use for both distant _and_ close targets
 
 ### Auxiliary principles
 
