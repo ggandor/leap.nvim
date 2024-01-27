@@ -75,7 +75,7 @@ You can also
 - search bidirectionally in the whole window, or bind only one key to Leap, and
   search in all windows (see [FAQ](#faq)).
 - map keys to repeat motions without explicitly invoking Leap, similar to how
-  `;` and `,` works (see `:h leap-repeat-keys`).
+  `;` and `,` works (see `:h leap-repeat`).
 
 ### Down the kangaroo hole
 
@@ -309,7 +309,7 @@ safe label set is in use, the labels will remain available the whole time!
 
 You can make `next_target` and `prev_target` behave like like `;` and `,`, that
 is, repeat the last motion without explicitly invoking Leap (see `:h
-leap-repeat-keys`).
+leap-repeat`).
 
 Traversal mode can be used as a substitute for `fFtT` motions.
 `s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
@@ -396,7 +396,7 @@ To create custom motions with behaviours different from the predefined ones,
 see `:h leap.leap()`.
 
 To set repeat keys that work like `;` and `,` that is, repeat the last motion
-without explicitly invoking Leap, see `:h leap-repeat-keys`.
+without explicitly invoking Leap, see `:h leap-repeat`.
 
 ### Highlight groups
 

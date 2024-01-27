@@ -942,7 +942,6 @@ an autojump. (In short: always err on the safe side.)
       (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
-  ; deprecated (LeapSelectPre makes this redundant)
   (exec-user-autocmds :LeapPatternPost)
 
   ; Do this now - repeat can succeed, even if we fail this time.

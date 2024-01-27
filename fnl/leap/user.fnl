@@ -17,47 +17,35 @@
             (vim.notify msg vim.log.levels.WARN))))))
 
 
-(fn add-repeat-mappings [forward-key backward-key kwargs]
-  (local kwargs (or kwargs {}))
-  (local modes (or kwargs.modes [:n :x :o]))
-  (local relative-directions? kwargs.relative_directions)
+(fn set-repeat-keys [fwd-key bwd-key opts*]
+  (local opts* (or opts* {}))
+  (local modes (or opts*.modes [:n :x :o]))
+  (local relative-directions? opts*.relative_directions)
 
-  (fn do-repeat [backward?]
-    (let [state (. (require "leap.main") :state)
-          sk (. (require "leap") :opts :special_keys)
-          leap (. (require "leap") :leap)]
-      (local id (vim.api.nvim_create_autocmd "User"
-                  {:pattern "LeapPatternPost" :once true
-                   :callback (fn []
-                               (set state.saved_next_target sk.next_target)
-                               (set state.saved_prev_target sk.prev_target)
-                               (set sk.next_target
-                                    (if backward? backward-key forward-key))
-                               (set sk.prev_target
-                                    (if backward? forward-key backward-key))
-                               ; We might not reach LeapPatternPost if
-                               ; no targets are found!
-                               (set state.added_temp_keys true))}))
-      (vim.api.nvim_create_autocmd "User"
-        {:pattern "LeapLeave" :once true
-         :callback (fn []
-                     ; We might not have reached LeapPatternPost previously!
-                     (pcall vim.api.nvim_del_autocmd id)
-                     (when state.added_temp_keys
-                       (set sk.next_target state.saved_next_target)
-                       (set sk.prev_target state.saved_prev_target)
-                       (set state.added_temp_keys false)))})
-      (leap {:repeat true
-             :backward (if relative-directions?
-                           (if backward? (not state.repeat.backward)
-                               state.repeat.backward)
-                           backward?)})))
+  (fn leap-repeat [backward-invoc?]  ; = started with `bdw-key` (rel. or abs.)
+    (let [leap (require "leap")
+          opts {:special_keys
+                (vim.tbl_extend "force"
+                  leap.opts.special_keys
+                  ; Just overwrite the fields, one wouldn't want to
+                  ; switch to another key after starting with one.
+                  {:next_target (if backward-invoc? bwd-key fwd-key)
+                   :prev_target (if backward-invoc? fwd-key bwd-key)})}
+          backward (if relative-directions?
+                       (if backward-invoc?
+                           (not leap.state.repeat.backward)
+                           leap.state.repeat.backward)
+                       backward-invoc?)]
+      (leap.leap {:repeat true : opts : backward})))
 
-  ; TODO: if `relative-directions?`, change `desc` accordingly?
-  (vim.keymap.set modes forward-key #(do-repeat)
-                  {:silent true :desc "Repeat Leap motion"})
-  (vim.keymap.set modes backward-key #(do-repeat true)
-                  {:silent true :desc "Repeat Leap motion backward"}))
+  (vim.keymap.set modes fwd-key #(leap-repeat false)
+                  {:silent true
+                   :desc "Repeat leap"})
+  (vim.keymap.set modes bwd-key #(leap-repeat true)
+                  {:silent true
+                   :desc (if relative-directions?
+                             "Repeat leap in opposite direction"
+                             "Repeat leap backward")}))
 
 
 ; Deprecated.
@@ -81,6 +69,7 @@
                      (= (vim.fn.hasmapto rhs mode) 0)))
         (vim.keymap.set mode lhs rhs {:silent true :desc desc})))))
 
+
 ; Deprecated.
 (fn set-default-keymaps [force?]
   (each [_ [mode lhs rhs]
@@ -101,13 +90,16 @@
                    (= (vim.fn.hasmapto rhs mode) 0)))
       (vim.keymap.set mode lhs rhs {:silent true}))))
 
+
 ; Deprecated.
 (fn setup [user-opts]
   (each [k v (pairs user-opts)]
     (tset (require "leap.opts") :default k v)))
 
+
 {:create_default_mappings create-default-mappings
- :add_repeat_mappings add-repeat-mappings
+ :set_repeat_keys set-repeat-keys
+ :add_repeat_mappings set-repeat-keys
  :add_default_mappings add-default-mappings
  :set_default_keymaps set-default-keymaps
- : setup}
+ :setup setup}
