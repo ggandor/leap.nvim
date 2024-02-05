@@ -75,13 +75,13 @@ Note: In case of cross-window search (|leap_gs|), you cannot traverse (since
 there's no direction to follow), but the search can be repeated, and you can
 also accept the first (presumably only) match with `<enter>`, even after one
 input.
-<
+
                                                                    *leap-repeat*
 There is a convenience function in the `user` module to set keys that behave
 like |;| and |,|, that is, repeat the last motion without explicitly invoking
 Leap (after that, they enter traversal mode, and behave just like
-`next_target` and `prev_target`):
->
+`next_target` and `prev_target`): >lua
+
     require('leap.user').set_repeat_keys('<cr>', '<bs>', {
       -- False by default. If set to true, the keys will work like the
       -- native semicolon/comma, i.e., forward/backward is understood in
@@ -126,8 +126,8 @@ Custom mappings ~
                                                           *leap-custom-mappings*
 <Plug> keys are aliases for right hand sides of mappings - in our case, calls
 to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
-
-`vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')`
+>lua
+    vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')
 
 *<Plug>(leap-forward)*
 arguments: `{}`
@@ -169,12 +169,12 @@ CONFIGURATION                                            *leap-config* *leap.opt
 Below is the description of all configurable values in the `opts` table, with
 their defaults.
 
-Example configuration: >
+Example configuration: >lua
     local leap = require('leap')
     leap.opts.case_sensitive = true
     leap.opts.substitute_chars = { ['\r'] = '¬' }
     leap.opts.special_keys.prev_target = '<s-enter>'
-<
+
 Available options~
 
                                                       *leap.opts.case_sensitive*
@@ -263,7 +263,7 @@ right-hand keys to get a better balance for the whole sequence on average.
       next_group = '<space>',
       prev_group = '<tab>',
     }
-<
+
 Meta-keys accepted at runtime:
 
 *leap.opts.special_keys.next_target*   Repeat the previous search.
@@ -307,15 +307,16 @@ LeapBackdrop
     adding a uniform grey foreground color, to make Leap matches and labels
     more distinguishable. This group is not set by default.
 
-Example: `vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = 'grey' })`
+Example: >lua
+    vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = 'grey' })
 
 In order to preserve your custom settings after changing the colorscheme, you
 might want to wrap them in a function, and define an autocommand like below.
 (Leap does the same, but with |:hi-default|, so it will not overwrite yours.)
->
+>lua
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
-        vim.api.nvim_set_hl(0, 'LeapMatch', { <def. map> })
+        vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
         -- etc.
       end
     })
@@ -329,7 +330,7 @@ Leap (not in traversal mode):
 *LeapEnter*
 *LeapLeave*
 
-Example: >
+Example: >lua
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       command = 'nohlsearch',
@@ -338,7 +339,7 @@ Example: >
       pattern = 'LeapLeave',
       command = 'let &hlsearch=&hlsearch',
     })
-<
+
 ==============================================================================
 EXTENDING LEAP                                                 *leap-extensions*
 
@@ -396,22 +397,25 @@ The arguments of the current call are always available at runtime, in the
 
 Using |leap-events| together with the `args` table, you can customize
 practically anything on a per-call basis. Keep in mind that nothing prevents
-you from passing arbitrary flags when calling |leap.leap()|:
->
-    function my_custom_leap_func()
-        require'leap'.leap { my_custom_flag = true, ... }
+you from passing arbitrary flags when calling |leap.leap()|: >lua
+
+    function my_custom_leap_function()
+      require('leap').leap {
+        my_custom_leap_function = true,
+        -- ...
+      }
     end
 
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function ()
-        if require'leap'.state.args.my_custom_flag then
+        if require('leap').state.args.my_custom_leap_function then
           -- Implement some special logic here, that will only apply to
-          -- my_custom_leap_func() (e.g., change the style of the labels),
-          -- and clean up with an analogous `LeapLeave` autocommand.
+          -- my_custom_leap_function(), and restore the state (if
+          -- needed) in an analogous `LeapLeave` autocommand.
         end
       end
     })
-<
+
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
