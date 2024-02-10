@@ -36,7 +36,8 @@ USAGE                                                               *leap-usage*
 - After typing the first character, you see "labels" appearing next to some of
   the `{char1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. No need to be bothered by remaining labels, just continue editing.
+  there. No need to be bothered by remaining labels - those are guaranteed
+  "safe" letters -, just continue editing.
 - Else: type the label character. If there are too many matches (more than
   ~50), you might need to switch to the desired group first, using `<space>`
   (step back with `<tab>`, if needed).
@@ -209,7 +210,7 @@ Available options~
 `highlight_unlabeled_phase_one_targets = false`
 
     Highlight unlabeled (i.e., directly reachable) matches after the first
-    input character.
+    input character has been entered.
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
@@ -297,18 +298,15 @@ LeapLabelPrimary
 LeapLabelSecondary
     If the number of matches exceeds the available target labels, the next
     group of labels are shown with a different color. Those targets can be
-    reached by pressing `<space>` (|leap.opts.special_keys.next_group|) before
-    the label character.
+    reached by pressing |leap.opts.special_keys.next_group| before the label
+    character.
 
                                                                *hl-LeapBackdrop*
 LeapBackdrop
-    In some cases it might be useful or even necessary to apply certain
-    settings on the rest of the area, like disabling all `gui` attributes, or
-    adding a uniform grey foreground color, to make Leap matches and labels
-    more distinguishable. This group is not set by default.
-
-Example: >lua
-    vim.api.nvim_set_hl(0, 'LeapBackdrop', { fg = 'grey' })
+    In some cases it might be useful to apply certain settings on the rest of
+    the area, like disabling certain |attr-list| attributes, or adding a
+    uniform grey foreground color, to make labels easier to see. This group is
+    not set by default.
 
 In order to preserve your custom settings after changing the colorscheme, you
 might want to wrap them in a function, and define an autocommand like below.
@@ -357,7 +355,7 @@ function directly:
 leap({opts})                                                       *leap.leap()*
     Entry point for all |leap.nvim| actions.
 
-    Parameters ~
+    Parameters: ~
         {opts} Optional parameters.
                • opts: A table just like |leap.opts|, to override any default
                  setting for the specific call.
