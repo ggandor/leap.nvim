@@ -34,39 +34,37 @@ window area.
     [left-bound right-bound]))
 
 
-(fn get-match-positions [pattern
-                         [left-bound right-bound]
+(fn get-match-positions [pattern [left-bound right-bound]
                          {: backward? : whole-window?}]
   "Return all visible positions of `pattern` in the current window."
-  (let [horizontal-bounds (or (and (not vim.wo.wrap)
-                                   (.. "\\%>" (- left-bound 1) "v"
-                                       "\\%<" (+ right-bound 1) "v"))
-                              "")
+  (let [horizontal-bounds (if vim.wo.wrap ""
+                              (.. "\\%>" (- left-bound 1) "v"
+                                  "\\%<" (+ right-bound 1) "v"))
         pattern (.. horizontal-bounds pattern)
+        flags (if backward? "b" "")
         stopline (vim.fn.line (if backward? "w0" "w$"))
         saved-view (vim.fn.winsaveview)
-        saved-cpo vim.o.cpo
-        cleanup #(do (vim.fn.winrestview saved-view)
-                     (set vim.o.cpo saved-cpo))]
+        saved-cpo vim.o.cpo]
+
+    (var match-at-curpos? whole-window?)
 
     (vim.opt.cpo:remove "c")  ; do not skip overlapping matches
-
-    (var match-at-curpos? false)
     (when whole-window?
-      (vim.fn.cursor [(vim.fn.line "w0") 1])
-      (set match-at-curpos? true))
+      (vim.fn.cursor [(vim.fn.line "w0") 1]))
 
-    (var i 0)  ; match count
-    (local at-right-bound? {})  ; set of indices (1-indexed)
     (local match-positions [])
-    ((fn loop []
-       (local flags (.. (if backward? "b" "") (if match-at-curpos? "c" "")))
-       (set match-at-curpos? false)
-       (local [line col &as pos] (vim.fn.searchpos pattern flags stopline))
-       (if (= line 0)   ; No match ([0,0])?
-           (cleanup)
+    (local at-right-bound? {})  ; set of indices (1-indexed)
 
-           (not= (vim.fn.foldclosed line) -1)  ; In a closed fold?
+    (var n 0)  ; match count (for `at-right-bound?`)
+    ((fn loop []
+       (local flags (or (and match-at-curpos? (.. flags "c")) flags))
+       (set match-at-curpos? false)
+       (local [line &as pos] (vim.fn.searchpos pattern flags stopline))
+       (if (= line 0)   ; no match found
+           (do (vim.fn.winrestview saved-view)
+               (set vim.o.cpo saved-cpo))
+
+           (not= (vim.fn.foldclosed line) -1)  ; in a closed fold
            (do (if backward?
                    (vim.fn.cursor (vim.fn.foldclosed line) 1)
                    (do (vim.fn.cursor (vim.fn.foldclosedend line) 0)
@@ -74,9 +72,9 @@ window area.
                (loop))
 
            (do (table.insert match-positions pos)
-               (set i (+ i 1))
+               (set n (+ n 1))
                (when (= (vim.fn.virtcol ".") right-bound)
-                 (tset at-right-bound? i true))
+                 (tset at-right-bound? n true))
                (loop)))))
 
     (values match-positions at-right-bound?)))
