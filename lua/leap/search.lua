@@ -56,8 +56,8 @@ local function get_match_positions(pattern, _3_, _5_)
   else
   end
   local match_positions = {}
-  local at_right_bound_3f = {}
-  local n = 0
+  local edge_pos_idx_3f = {}
+  local idx = 0
   local function loop()
     local flags0 = ((match_at_curpos_3f and (flags .. "c")) or flags)
     match_at_curpos_3f = false
@@ -78,16 +78,16 @@ local function get_match_positions(pattern, _3_, _5_)
       return loop()
     else
       table.insert(match_positions, pos)
-      n = (n + 1)
+      idx = (idx + 1)
       if (vim.fn.virtcol(".") == right_bound) then
-        at_right_bound_3f[n] = true
+        edge_pos_idx_3f[idx] = true
       else
       end
       return loop()
     end
   end
   loop()
-  return match_positions, at_right_bound_3f
+  return match_positions, edge_pos_idx_3f
 end
 local function get_targets_in_current_window(pattern, _15_)
   local _arg_16_ = _15_
@@ -104,7 +104,7 @@ local function get_targets_in_current_window(pattern, _15_)
   local left_bound = _let_18_[1]
   local right_bound_2a = _let_18_[2]
   local right_bound = dec(right_bound_2a)
-  local match_positions, at_right_bound_3f = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
+  local match_positions, edge_pos_idx_3f = get_match_positions(pattern, {left_bound, right_bound}, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local line_str = nil
   local prev_match = {}
   for i, _19_ in ipairs(match_positions) do
@@ -144,7 +144,7 @@ local function get_targets_in_current_window(pattern, _15_)
             table.remove(targets)
           else
           end
-          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = at_right_bound_3f[i]})
+          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_idx_3f[i]})
         else
         end
       end

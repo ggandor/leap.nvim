@@ -53,9 +53,9 @@ window area.
       (vim.fn.cursor [(vim.fn.line "w0") 1]))
 
     (local match-positions [])
-    (local at-right-bound? {})  ; set of indices (1-indexed)
+    (local edge-pos-idx? {})  ; set of indexes (in `match-positions`)
+    (var idx 0)  ; ~ match count
 
-    (var n 0)  ; match count (for `at-right-bound?`)
     ((fn loop []
        (local flags (or (and match-at-curpos? (.. flags "c")) flags))
        (set match-at-curpos? false)
@@ -72,12 +72,12 @@ window area.
                (loop))
 
            (do (table.insert match-positions pos)
-               (set n (+ n 1))
+               (set idx (+ idx 1))
                (when (= (vim.fn.virtcol ".") right-bound)
-                 (tset at-right-bound? n true))
+                 (tset edge-pos-idx? idx true))
                (loop)))))
 
-    (values match-positions at-right-bound?)))
+    (values match-positions edge-pos-idx?)))
 
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
@@ -98,7 +98,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole 2-char match should be visible
 
-        (match-positions at-right-bound?)
+        (match-positions edge-pos-idx?)
         (get-match-positions pattern [left-bound right-bound]
                              {: backward? : whole-window?})]
     (var line-str nil)
@@ -141,7 +141,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
                 (when (not skip-match?)
                   (when triplet? (table.remove targets))  ; delete the previous one
                   (table.insert targets {: wininfo : pos :chars [ch1 ch2]
-                                         :edge-pos? (. at-right-bound? i)})))))))))
+                                         :edge-pos? (. edge-pos-idx? i)})))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
