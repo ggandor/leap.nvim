@@ -25,7 +25,7 @@ window area.
 +----------------------+
 "
   (let [window-width (api.nvim_win_get_width 0)
-        textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
+        textoff (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1 :textoff)
         offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
         ; Screen column of the first visible column in the editable area.
@@ -93,7 +93,7 @@ pos       : [lnum col] (1,1)-indexed tuple
 chars     : list of characters in the match
 edge-pos? : boolean (whether the match touches the right edge of the window)
 "
-  (let [wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
+  (let [wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1)
         [curline curcol] (get-cursor-pos)
         [left-bound right-bound*] (get-horizontal-bounds)
         right-bound (dec right-bound*)  ; the whole 2-char match should be visible
@@ -189,7 +189,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
 (fn get-targets [pattern
                  {: backward? : match-same-char-seq-at-end? : target-windows}]
   (let [whole-window? target-windows
-        source-winid (vim.fn.win_getid)
+        source-winid (api.nvim_get_current_win)
         target-windows (or target-windows [source-winid])
         curr-win-only? (match target-windows [source-winid nil] true)
         cursor-positions {}

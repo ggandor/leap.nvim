@@ -419,7 +419,7 @@ local function leap(kwargs)
     return
   else
   end
-  local curr_winid = vim.fn.win_getid()
+  local curr_winid = api.nvim_get_current_win()
   state.args = kwargs
   state.source_window = curr_winid
   local _3ftarget_windows = target_windows

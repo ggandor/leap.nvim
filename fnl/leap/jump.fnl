@@ -72,7 +72,7 @@ the API), make the motion appear to behave as an inclusive one."
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
-  (when (not= winid (vim.fn.win_getid))
+  (when (not= winid (api.nvim_get_current_win))
     (api.nvim_set_current_win winid))
   (vim.fn.cursor pos)
   (when offset (add-offset! offset))

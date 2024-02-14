@@ -11,7 +11,7 @@ local abs = _local_2_["abs"]
 local pow = _local_2_["pow"]
 local function get_horizontal_bounds()
   local window_width = api.nvim_win_get_width(0)
-  local textoff = vim.fn.getwininfo(vim.fn.win_getid())[1].textoff
+  local textoff = vim.fn.getwininfo(api.nvim_get_current_win())[1].textoff
   local offset_in_win = dec(vim.fn.wincol())
   local offset_in_editable_win = (offset_in_win - textoff)
   local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
@@ -96,7 +96,7 @@ local function get_targets_in_current_window(pattern, _15_)
   local whole_window_3f = _arg_16_["whole-window?"]
   local match_same_char_seq_at_end_3f = _arg_16_["match-same-char-seq-at-end?"]
   local skip_curpos_3f = _arg_16_["skip-curpos?"]
-  local wininfo = vim.fn.getwininfo(vim.fn.win_getid())[1]
+  local wininfo = vim.fn.getwininfo(api.nvim_get_current_win())[1]
   local _let_17_ = get_cursor_pos()
   local curline = _let_17_[1]
   local curcol = _let_17_[2]
@@ -222,7 +222,7 @@ local function get_targets(pattern, _47_)
   local match_same_char_seq_at_end_3f = _arg_48_["match-same-char-seq-at-end?"]
   local target_windows = _arg_48_["target-windows"]
   local whole_window_3f = target_windows
-  local source_winid = vim.fn.win_getid()
+  local source_winid = api.nvim_get_current_win()
   local target_windows0 = (target_windows or {source_winid})
   local curr_win_only_3f
   if ((_G.type(target_windows0) == "table") and (target_windows0[1] == source_winid) and (target_windows0[2] == nil)) then

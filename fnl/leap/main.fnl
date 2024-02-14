@@ -473,7 +473,7 @@ an autojump. (In short: always err on the safe side.)
     (echo "error: multiselect mode requires user-provided `action` callback")
     (lua :return))
 
-  (local curr-winid (vim.fn.win_getid))
+  (local curr-winid (api.nvim_get_current_win))
 
   (set state.args kwargs)
   (set state.source_window curr-winid)
