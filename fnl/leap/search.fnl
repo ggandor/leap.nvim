@@ -158,31 +158,33 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   ;       -> Only get them when at least one line is actually wrapped?
   ;       -> Some FFI magic?
   (let [by-screen-pos? (and vim.o.wrap (< (length targets) 200))
-        ; Cursor positions are registered in target windows only.
-        ?source-pos (. cursor-positions source-winid)]
+        ; Cursor positions are registered in target windows only (the source
+        ; window is not necessarily among them).
+        [source-line source-col] (or (. cursor-positions source-winid) [-1 -1])]
+
     (when by-screen-pos?
       ; Update cursor positions to screen positions.
       (each [winid [line col] (pairs cursor-positions)]
-        (local {: row : col} (vim.fn.screenpos winid line col))
-        (tset cursor-positions winid [row col])))
+        (local screenpos (vim.fn.screenpos winid line col))
+        (tset cursor-positions winid [screenpos.row screenpos.col])))
+
     ; Set ranks.
     (each [_ {:pos [line col] :wininfo {: winid} &as target} (ipairs targets)]
-      (when by-screen-pos?
-        ; Add a screen position field to each target.
-        ; PERF. BOTTLENECK
-        (local {: row : col} (vim.fn.screenpos winid line col))
-        (set target.screenpos [row col]))
-      (set target.rank (distance (or target.screenpos target.pos)
-                                 (. cursor-positions winid)))
-      (when (= target.wininfo.winid source-winid)
+      (if by-screen-pos?
+          (do (local screenpos (vim.fn.screenpos winid line col))
+              (set target.rank (distance [screenpos.row screenpos.col]
+                                         (. cursor-positions winid))))
+          (set target.rank (distance target.pos (. cursor-positions winid))))
+      (when (= winid source-winid)
         ; Prioritize the current window a bit.
         (set target.rank (- target.rank 30))
-        (when (= line (. ?source-pos 1))
-          ; Prioritize the current line.
+        (when (= line source-line)
+          ; In the current window, prioritize the current line.
           (set target.rank (- target.rank 999))
-          (when (>= col (. ?source-pos 2))
-            ; Prioritize forward direction.
+          (when (>= col source-col)
+            ; On the current line, prioritize forward direction.
             (set target.rank (- target.rank 999))))))
+
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 

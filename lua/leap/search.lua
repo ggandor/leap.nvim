@@ -167,16 +167,16 @@ local function distance(_28_, _30_)
 end
 local function sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
   local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
-  local _3fsource_pos = cursor_positions[source_winid]
+  local _let_32_ = (cursor_positions[source_winid] or {-1, -1})
+  local source_line = _let_32_[1]
+  local source_col = _let_32_[2]
   if by_screen_pos_3f then
-    for winid, _32_ in pairs(cursor_positions) do
-      local _each_33_ = _32_
-      local line = _each_33_[1]
-      local col = _each_33_[2]
-      local _local_34_ = vim.fn.screenpos(winid, line, col)
-      local row = _local_34_["row"]
-      local col0 = _local_34_["col"]
-      cursor_positions[winid] = {row, col0}
+    for winid, _33_ in pairs(cursor_positions) do
+      local _each_34_ = _33_
+      local line = _each_34_[1]
+      local col = _each_34_[2]
+      local screenpos = vim.fn.screenpos(winid, line, col)
+      do end (cursor_positions)[winid] = {screenpos.row, screenpos.col}
     end
   else
   end
@@ -189,18 +189,16 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
     local winid = _each_39_["winid"]
     local target = _each_37_
     if by_screen_pos_3f then
-      local _local_40_ = vim.fn.screenpos(winid, line, col)
-      local row = _local_40_["row"]
-      local col0 = _local_40_["col"]
-      target.screenpos = {row, col0}
+      local screenpos = vim.fn.screenpos(winid, line, col)
+      target.rank = distance({screenpos.row, screenpos.col}, cursor_positions[winid])
     else
+      target.rank = distance(target.pos, cursor_positions[winid])
     end
-    target.rank = distance((target.screenpos or target.pos), cursor_positions[winid])
-    if (target.wininfo.winid == source_winid) then
+    if (winid == source_winid) then
       target.rank = (target.rank - 30)
-      if (line == _3fsource_pos[1]) then
+      if (line == source_line) then
         target.rank = (target.rank - 999)
-        if (col >= _3fsource_pos[2]) then
+        if (col >= source_col) then
           target.rank = (target.rank - 999)
         else
         end
@@ -209,16 +207,16 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
     else
     end
   end
-  local function _45_(_241, _242)
+  local function _44_(_241, _242)
     return (_241.rank < _242.rank)
   end
-  return table.sort(targets, _45_)
+  return table.sort(targets, _44_)
 end
-local function get_targets(pattern, _46_)
-  local _arg_47_ = _46_
-  local backward_3f = _arg_47_["backward?"]
-  local match_same_char_seq_at_end_3f = _arg_47_["match-same-char-seq-at-end?"]
-  local target_windows = _arg_47_["target-windows"]
+local function get_targets(pattern, _45_)
+  local _arg_46_ = _45_
+  local backward_3f = _arg_46_["backward?"]
+  local match_same_char_seq_at_end_3f = _arg_46_["match-same-char-seq-at-end?"]
+  local target_windows = _arg_46_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = api.nvim_get_current_win()
   local target_windows0 = (target_windows or {source_winid})
