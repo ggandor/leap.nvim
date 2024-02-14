@@ -161,39 +161,37 @@ local function distance(_28_, _30_)
   local l2 = _arg_31_[1]
   local c2 = _arg_31_[2]
   local editor_grid_aspect_ratio = 0.3
-  local _let_32_ = {abs((c1 - c2)), abs((l1 - l2))}
-  local dx = _let_32_[1]
-  local dy = _let_32_[2]
-  local dx0 = (dx * editor_grid_aspect_ratio)
-  return pow((pow(dx0, 2) + pow(dy, 2)), 0.5)
+  local dx = (abs((c1 - c2)) * editor_grid_aspect_ratio)
+  local dy = abs((l1 - l2))
+  return pow(((dx * dx) + (dy * dy)), 0.5)
 end
 local function sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
   local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
   local _3fsource_pos = cursor_positions[source_winid]
   if by_screen_pos_3f then
-    for winid, _33_ in pairs(cursor_positions) do
-      local _each_34_ = _33_
-      local line = _each_34_[1]
-      local col = _each_34_[2]
-      local _local_35_ = vim.fn.screenpos(winid, line, col)
-      local row = _local_35_["row"]
-      local col0 = _local_35_["col"]
+    for winid, _32_ in pairs(cursor_positions) do
+      local _each_33_ = _32_
+      local line = _each_33_[1]
+      local col = _each_33_[2]
+      local _local_34_ = vim.fn.screenpos(winid, line, col)
+      local row = _local_34_["row"]
+      local col0 = _local_34_["col"]
       cursor_positions[winid] = {row, col0}
     end
   else
   end
-  for _, _37_ in ipairs(targets) do
-    local _each_38_ = _37_
-    local _each_39_ = _each_38_["pos"]
-    local line = _each_39_[1]
-    local col = _each_39_[2]
-    local _each_40_ = _each_38_["wininfo"]
-    local winid = _each_40_["winid"]
-    local target = _each_38_
+  for _, _36_ in ipairs(targets) do
+    local _each_37_ = _36_
+    local _each_38_ = _each_37_["pos"]
+    local line = _each_38_[1]
+    local col = _each_38_[2]
+    local _each_39_ = _each_37_["wininfo"]
+    local winid = _each_39_["winid"]
+    local target = _each_37_
     if by_screen_pos_3f then
-      local _local_41_ = vim.fn.screenpos(winid, line, col)
-      local row = _local_41_["row"]
-      local col0 = _local_41_["col"]
+      local _local_40_ = vim.fn.screenpos(winid, line, col)
+      local row = _local_40_["row"]
+      local col0 = _local_40_["col"]
       target.screenpos = {row, col0}
     else
     end
@@ -211,16 +209,16 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
     else
     end
   end
-  local function _46_(_241, _242)
+  local function _45_(_241, _242)
     return (_241.rank < _242.rank)
   end
-  return table.sort(targets, _46_)
+  return table.sort(targets, _45_)
 end
-local function get_targets(pattern, _47_)
-  local _arg_48_ = _47_
-  local backward_3f = _arg_48_["backward?"]
-  local match_same_char_seq_at_end_3f = _arg_48_["match-same-char-seq-at-end?"]
-  local target_windows = _arg_48_["target-windows"]
+local function get_targets(pattern, _46_)
+  local _arg_47_ = _46_
+  local backward_3f = _arg_47_["backward?"]
+  local match_same_char_seq_at_end_3f = _arg_47_["match-same-char-seq-at-end?"]
+  local target_windows = _arg_47_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = api.nvim_get_current_win()
   local target_windows0 = (target_windows or {source_winid})

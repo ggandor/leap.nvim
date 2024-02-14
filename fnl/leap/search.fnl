@@ -145,10 +145,10 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
 
 
 (fn distance [[l1 c1] [l2 c2]]
-  (let [editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
-        [dx dy] [(abs (- c1 c2)) (abs (- l1 l2))]
-         dx (* dx editor-grid-aspect-ratio)]
-    (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
+  (let [editor-grid-aspect-ratio 0.3  ; arbitrary, should be good enough usually
+        dx (* (abs (- c1 c2)) editor-grid-aspect-ratio)
+        dy (abs (- l1 l2))]
+    (pow (+ (* dx dx) (* dy dy)) 0.5)))
 
 
 (fn sort-by-distance-from-cursor [targets cursor-positions source-winid]
