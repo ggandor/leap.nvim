@@ -208,6 +208,14 @@ config (overrides `s`, `S`, and `gs` in all modes):
 
 To set custom mappings instead, see `:h leap-custom-mappings`.
 
+The following additional tweaks are suggested:
+
+```lua
+require('leap').opts.special_keys.prev_target = '<bs>'
+require('leap').opts.special_keys.prev_group = '<bs>'
+require('leap.user').set_repeat_keys('<cr>', '<bs>')
+```
+
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
