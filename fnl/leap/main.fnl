@@ -269,9 +269,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   (local ?target-windows target-windows)
   (local multi-window? (and ?target-windows (> (length ?target-windows) 1)))
-  (local hl-affected-windows (icollect [_ winid (ipairs (or ?target-windows []))
-                                        &into [curr-winid]]  ; cursor is always highlighted
-                               winid))
+  (local hl-affected-windows (vim.list_extend
+                               ; The cursor is always highlighted.
+                               [curr-winid] (or ?target-windows [])))
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
   (local mode (. (api.nvim_get_mode) :mode))
@@ -291,16 +291,15 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                      user-given-action))))
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
-  (local spec-keys (do (fn __index [_ k]
-                         (case (. opts.special_keys k)
-                           v (if (or (= k :next_target) (= k :prev_target))
-                                 ; Force those into a table.
-                                 (case (type v)
-                                   :table (icollect [_ str (ipairs v)]
-                                            (replace-keycodes str))
-                                   :string [(replace-keycodes v)])
-                                 (replace-keycodes v))))
-                       (setmetatable {} {: __index})))
+  (local spec-keys (setmetatable {}
+                     {:__index
+                      (fn [_ k]
+                        (case (. opts.special_keys k)
+                          v (if (or (= k :next_target) (= k :prev_target))
+                                ; Force those into a table.
+                                (map replace-keycodes
+                                     (if (= (type v) :string) [v] v))
+                                (replace-keycodes v))))}))
 
   ; Ephemeral state (current call).
   (local vars {; Multi-phase processing (show beacons ahead of time,
@@ -371,9 +370,8 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (values 0 -1)  ; empty range
         (let [start (inc vars.curr-idx)
               end (when no-labels?
-                    (-?> (get-number-of-highlighted-targets)
-                         (+ (dec start))
-                         (min (length targets))))]
+                    (case (get-number-of-highlighted-targets)
+                      n (min (+ (dec start) n) (length targets))))]
           (values start end))))
 
   (fn get-target-with-active-label [sublist input]
@@ -531,15 +529,14 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (set first-iter? false))
       (case (get-input)
         input
-        (let [switch-group? (and (> |groups| 1)
-                                 (or (= input spec-keys.next_group)
-                                     (and (= input spec-keys.prev_group)
-                                          (not first-invoc?))))]
-          (if switch-group?
-              (let [inc/dec (if (= input spec-keys.next_group) inc dec)
+        (let [switch-group? (or (= input spec-keys.next_group)
+                                (and (= input spec-keys.prev_group)
+                                     (not first-invoc?)))]
+          (if (and switch-group? (> |groups| 1))
+              (let [shift (if (= input spec-keys.next_group) 1 -1)
                     max-offset (dec |groups|)]
                 (set vars.group-offset
-                     (-> vars.group-offset inc/dec (clamp 0 max-offset)))
+                     (clamp (+ vars.group-offset shift) 0 max-offset))
                 (loop false))
               ; Otherwise return with input.
               input))))
