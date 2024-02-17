@@ -351,7 +351,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   ; of targets, and do not shift until reaching the end of the group - it
   ; is less disorienting if the "snake" does not move continuously, on
   ; every jump.
-  (fn get-number-of-highlighted-targets []
+  (fn get-number-of-highlighted-traversal-targets []
     (case opts.max_highlighted_traversal_targets
       group-size
       ; Assumption: being here means we are after an autojump, and
@@ -370,7 +370,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (values 0 -1)  ; empty range
         (let [start (inc vars.curr-idx)
               end (when no-labels?
-                    (case (get-number-of-highlighted-targets)
+                    (case (get-number-of-highlighted-traversal-targets)
                       n (min (+ (dec start) n) (length targets))))]
           (values start end))))
 

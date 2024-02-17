@@ -290,7 +290,7 @@ local function leap(kwargs)
     _47_ = 1
   end
   vars = {phase = _47_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
-  local function get_number_of_highlighted_targets()
+  local function get_number_of_highlighted_traversal_targets()
     local _49_ = opts.max_highlighted_traversal_targets
     if (nil ~= _49_) then
       local group_size = _49_
@@ -314,7 +314,7 @@ local function leap(kwargs)
       local start = inc(vars["curr-idx"])
       local _end
       if no_labels_3f then
-        local _52_ = get_number_of_highlighted_targets()
+        local _52_ = get_number_of_highlighted_traversal_targets()
         if (nil ~= _52_) then
           local n = _52_
           _end = min((dec(start) + n), #targets)
