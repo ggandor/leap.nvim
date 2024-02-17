@@ -1,6 +1,9 @@
+(local opts (require "leap.opts"))
+
 (local {: inc
         : dec
         : get-cursor-pos
+        : get-eq-class-of
         : ->representative-char
         : get-char-from}
        (require "leap.util"))
@@ -114,7 +117,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         (if (= ch1 "")  ; on EOL
             ; In this case, we're adding another, virtual \n after the real one,
             ; so that these can be targeted by pressing a newline alias twice.
-            ; (See also `prepare-pattern` in `main.fnl`.)
+            ; (See also `prepare-pattern`.)
             (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
             (do
               (var ch2 (get-char-from line-str (+ start 1)))
@@ -188,6 +191,54 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 
+(fn expand-to-equivalence-class [ch]                  ; <-- "a"
+  "Return a (Vim) regex pattern that will match any character in the
+equivalence class of `ch`."
+  (local eq-chars (get-eq-class-of ch))               ; --> ?{"a","á","ä"}
+  (when eq-chars
+    (each [i char (ipairs eq-chars)]
+      (if
+        ; `vim.fn.search` cannot interpret actual newline chars in the
+        ; regex pattern, we need to insert them as raw \ + n.
+        (= char "\n") (tset eq-chars i "\\n")
+        ; '\' itself might appear in the class, needs to be escaped.
+        (= char "\\") (tset eq-chars i "\\\\")))
+    (.. "\\(" (table.concat eq-chars "\\|") "\\)")))  ; --> "\(a\|á\|ä\)"
+
+
+; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
+; input mapping (case-insensitivity, character classes, etc.) we need to
+; tweak things in two different places:
+;   1. For the first input, we modify the search pattern itself (here).
+;   2. For the second input, we play with the sublist keys (see
+;   `populate-sublists` in `main.fnl`).
+(fn prepare-pattern [in1 ?in2]
+  "Transform user input to the appropriate search pattern."
+  (let [pat1 (or (expand-to-equivalence-class in1)
+                 ; Sole '\' needs to be escaped even for \V.
+                 (in1:gsub "\\" "\\\\"))
+        pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
+                 ?in2
+                 "\\_.")  ; match anything, including EOL
+        potential-\n\n? (and (pat1:match "\\n")
+                             (or (pat2:match "\\n") (not ?in2)))
+        ; If \n\n is a possible sequence to appear, add \n to the
+        ; pattern, to make our convenience feature - targeting EOL
+        ; positions, including empty lines, by typing the newline alias
+        ; twice - work (see `get-targets-in-current-window`).
+        ; This hack is always necessary for single-step processing, when
+        ; we already have the full pattern (this includes repeating the
+        ; previous search), but also for two-step processing, in the
+        ; special case of targeting the very last line in the file
+        ; (normally, `get-targets` takes care of this situation, but the
+        ; pattern `\n\_.` does not match `\n$` if it's on the last
+        ; line).
+        pat (if potential-\n\n?
+                (.. pat1 pat2 "\\|\\n")
+                (.. pat1 pat2))]
+    (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
+
+
 (fn get-targets [pattern
                  {: backward? : match-same-char-seq-at-end? : target-windows}]
   (let [whole-window? target-windows
@@ -217,4 +268,5 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
 
 {: get-horizontal-bounds
  : get-match-positions
+ : prepare-pattern
  : get-targets}

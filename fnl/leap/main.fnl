@@ -13,7 +13,6 @@
         : clamp
         : echo
         : replace-keycodes
-        : get-eq-class-of
         : ->representative-char
         : get-input
         : get-input-by-keymap}
@@ -79,20 +78,6 @@ interrupted change operation."
     res))
 
 
-(fn expand-to-equivalence-class [ch]               ; <-- "b"
-  "Return a (Vim) regex pattern that will match any character in the
-equivalence class of `ch`."
-  (local chars (get-eq-class-of ch))               ; --> ?{"a","b","c"}
-  (when chars
-    ; (1) `vim.fn.search` cannot interpret actual newline chars in
-    ;     the regex pattern, we need to insert them as raw \ + n.
-    ; (2) '\' itself might appear in the class, needs to be escaped.
-    (each [i ch (ipairs chars)]
-      (if (= ch "\n") (tset chars i "\\n")
-          (= ch "\\") (tset chars i "\\\\")))
-    (.. "\\(" (table.concat chars "\\|") "\\)")))  ; --> "\(a\|b\|c\)"
-
-
 ; Processing targets ///1
 
 ; Might be skipped, if two-step processing is disabled.
@@ -115,6 +100,14 @@ char separately.
 }
 "
   (set targets.sublists {})
+
+  ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind
+  ; of input mapping (case-insensitivity, character classes, etc.) we
+  ; need to tweak things in two different places:
+  ;   1. For the first input, we modify the search pattern itself (see
+  ;   `prepare-pattern` in `search.fnl`).
+  ;   2. For the second input, we play with the sublist keys (here).
+
   ; Setting a metatable to handle case insensitivity and equivalence
   ; classes (in both cases: multiple keys -> one value).
   ; If `ch` is not found, try to get a sublist belonging to some common
@@ -127,6 +120,7 @@ char separately.
                    (rawset self (->representative-char ch) sublist))
      :__index    (fn [self ch]
                    (rawget self (->representative-char ch)))})
+
   ; Filling the sublists.
   (if (not multi-window?)
       (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
@@ -431,42 +425,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       (in1 nil) (case (get-input-by-keymap prompt)
                   in2 (values in1 in2))))
 
-  ; NOTE: If two-step processing is ebabled (AOT beacons), for any
-  ; kind of input mapping (case-insensitivity, character classes,
-  ; etc.) we need to tweak things in two different places:
-  ;   1. For the first input, we modify the search pattern itself
-  ;      (here).
-  ;   2. For the second input, we need to play with the sublist keys
-  ;      (see `populate-sublists`).
-  (fn prepare-pattern [in1 ?in2]
-    (let [pat1 (or (expand-to-equivalence-class in1)
-                   ; Sole '\' needs to be escaped even for \V.
-                   (in1:gsub "\\" "\\\\"))
-          pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
-                   ?in2
-                   "\\_.")  ; match anything, including EOL
-          potential-\n\n? (and (pat1:match "\\n")
-                               (or (not ?in2) (pat2:match "\\n")))
-          ; If \n\n is a possible sequence to appear, add \n to the
-          ; pattern, to make our convenience feature - targeting EOL
-          ; positions, including empty lines, by typing the newline
-          ; alias twice - work.
-          ; This hack is always necessary for single-step processing,
-          ; when we already have the full pattern (this includes
-          ; repeating the previous search), but also for two-step
-          ; processing, in the special case of targeting the very last
-          ; line in the file (normally, `search.get-targets` takes care
-          ; of this situation, but the pattern `\n\_.` does not match
-          ; `\n$` if it's on the last line).
-          ; (See also `get-targets-in-current-window` in `search.fnl`.)
-          pat (if potential-\n\n?
-                  (.. pat1 pat2 "\\|\\n")
-                  (.. pat1 pat2))]
-      (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
-
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
-          pattern (prepare-pattern in1 ?in2)
+          pattern (search.prepare-pattern in1 ?in2)
           kwargs {: backward? : match-same-char-seq-at-end?
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
