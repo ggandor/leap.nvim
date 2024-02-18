@@ -301,25 +301,26 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                      (if (= (type v) :string) [v] v))
                                 (replace-keycodes v))))}))
 
-  ; Ephemeral state (current call).
-  (local vars {; Multi-phase processing (show beacons ahead of time,
-               ; right after the first input)?
-               :phase (if (or repeat?
-                              (= max-phase-one-targets 0)
-                              empty-label-lists?
-                              multi-select?
-                              user-given-targets?)
-                          nil
-                          1)
-               ; When repeating a `{char}<enter>` search (started to
-               ; traverse after the first input).
-               :partial-pattern? false
-               ; For traversal mode.
-               :curr-idx 0
-               ; Currently selected label group, 0-indexed
-               ; (`target.group` starts at 1).
-               :group-offset 0
-               :errmsg nil})
+  ; Ephemeral state (of the current call) that is not interesting for
+  ; the outside world.
+  (local _state {; Multi-phase processing (show beacons ahead of time,
+                 ; right after the first input)?
+                 :phase (if (or repeat?
+                                (= max-phase-one-targets 0)
+                                empty-label-lists?
+                                multi-select?
+                                user-given-targets?)
+                            nil
+                            1)
+                 ; When repeating a `{char}<enter>` search (started to
+                 ; traverse after the first input).
+                 :partial-pattern? false
+                 ; For traversal mode.
+                 :curr-idx 0
+                 ; Currently selected label group, 0-indexed
+                 ; (`target.group` starts at 1).
+                 :group-offset 0
+                 :errmsg nil})
 
   ; Macros
 
@@ -332,7 +333,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   ; `handle-interrupted-change-op!` moves the cursor!
   (macro exit-early []
     `(do (when change-op? (handle-interrupted-change-op!))
-         (when vars.errmsg (echo vars.errmsg))
+         (when _state.errmsg (echo _state.errmsg))
          (exit)))
 
   (macro with-highlight-chores [...]
@@ -356,9 +357,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       group-size
       ; Assumption: being here means we are after an autojump, and
       ; started highlighting from the 2nd target (no `count`).
-      ; Thus, we can use `vars.curr-idx` as the reference, instead of
+      ; Thus, we can use `_state.curr-idx` as the reference, instead of
       ; some separate counter (but only because of the above).
-      (let [consumed (% (dec vars.curr-idx) group-size)
+      (let [consumed (% (dec _state.curr-idx) group-size)
             remaining (- group-size consumed)]
         ; Switch just before the whole group gets eaten up.
         (if (= remaining 1) (inc group-size)
@@ -368,7 +369,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   (fn get-highlighted-idx-range [targets no-labels?]
     (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
         (values 0 -1)  ; empty range
-        (let [start (inc vars.curr-idx)
+        (let [start (inc _state.curr-idx)
               end (when no-labels?
                     (case (get-number-of-highlighted-traversal-targets)
                       n (min (+ (dec start) n) (length targets))))]
@@ -378,9 +379,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (var res [])
     (each [idx {: label : group &as target} (ipairs sublist)
            &until (or (next res)
-                      (> (- (or group 0) vars.group-offset) 1))]
+                      (> (- (or group 0) _state.group-offset) 1))]
       (when (and (= label input)
-                 (= (- group vars.group-offset) 1))
+                 (= (- group _state.group-offset) 1))
         (set res [idx target])))
     res)
 
@@ -388,9 +389,10 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   (fn get-repeat-input []
     (if state.repeat.in1
-        (do (when-not state.repeat.in2 (set vars.partial-pattern? true))
+        (do (when-not state.repeat.in2
+              (set _state.partial-pattern? true))
             (values state.repeat.in1 state.repeat.in2))
-        (set vars.errmsg "no previous search")))
+        (set _state.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
     (with-highlight-chores (echo ""))  ; clean up the command line
@@ -400,11 +402,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       in1
       (if (contains? spec-keys.next_target in1)
           (if state.repeat.in1
-              (do (set vars.phase nil)
+              (do (set _state.phase nil)
                   (when-not state.repeat.in2
-                    (set vars.partial-pattern? true))
+                    (set _state.partial-pattern? true))
                   (values state.repeat.in1 state.repeat.in2))
-              (set vars.errmsg "no previous search"))
+              (set _state.errmsg "no previous search"))
           in1)))
 
   (fn get-second-pattern-input [targets]
@@ -429,7 +431,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           kwargs {: backward? : match-same-char-seq-at-end?
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
-      (or targets (set vars.errmsg (.. "not found: " in1 (or ?in2 ""))))))
+      (or targets (set _state.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
   (fn get-user-given-targets [targets]
     (local targets* (if (= (type targets) :function) (targets) targets))
@@ -441,7 +443,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
             (each [_ t (ipairs targets*)]
               (set t.wininfo wininfo)))
           targets*)
-        (set vars.errmsg "no targets")))
+        (set _state.errmsg "no targets")))
 
   (fn prepare-targets* [targets]
     ; Note: As opposed to the checks in `resolve-conflicts`, we can do
@@ -512,11 +514,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                  (length targets.label-set)))))
 
     (fn display []
-      (local no-labels? (or empty-label-lists? vars.partial-pattern?))
+      (local no-labels? (or empty-label-lists? _state.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (set-beacons targets {:group-offset vars.group-offset : no-labels?
-                            : user-given-targets? :phase vars.phase})
+      (set-beacons targets {:group-offset _state.group-offset : no-labels?
+                            : user-given-targets? :phase _state.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
@@ -535,8 +537,8 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           (if (and switch-group? (> |groups| 1))
               (let [shift (if (= input spec-keys.next_group) 1 -1)
                     max-offset (dec |groups|)]
-                (set vars.group-offset
-                     (clamp (+ vars.group-offset shift) 0 max-offset))
+                (set _state.group-offset
+                     (clamp (+ _state.group-offset shift) 0 max-offset))
                 (loop false))
               ; Otherwise return with input.
               input))))
@@ -587,8 +589,8 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                 (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {:group-offset vars.group-offset : no-labels?
-                            : user-given-targets? :phase vars.phase})
+      (set-beacons targets {:group-offset _state.group-offset : no-labels?
+                            : user-given-targets? :phase _state.phase})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
@@ -599,7 +601,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
     (fn loop [idx first-invoc?]
       (when first-invoc? (on-first-invoc))
-      (set vars.curr-idx idx)  ; `display` depends on it!
+      (set _state.curr-idx idx)  ; `display` depends on it!
       (display)
       (case (get-input)
         in
@@ -635,7 +637,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
                         ; `next_target` key.
-                        (= vars.phase 1) (get-first-pattern-input)  ; REDRAW
+                        (= _state.phase 1) (get-first-pattern-input)  ; REDRAW
                         (get-full-pattern-input)))  ; REDRAW
   (when-not in1
     (exit-early))
@@ -655,27 +657,27 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (if (or ?in2 vars.partial-pattern?)
-      (if (or empty-label-lists? vars.partial-pattern?)
+  (if (or ?in2 _state.partial-pattern?)
+      (if (or empty-label-lists? _state.partial-pattern?)
           (set targets.autojump? true)
           (prepare-targets* targets))
       (do
         (when (> (length targets) max-phase-one-targets)
-          (set vars.phase nil))
+          (set _state.phase nil))
         (populate-sublists targets multi-window?)
         (each [_ sublist (pairs targets.sublists)]
            (prepare-targets* sublist))
-        (set-beacons targets {:phase vars.phase})
-        (when (= vars.phase 1)
+        (set-beacons targets {:phase _state.phase})
+        (when (= _state.phase 1)
           (resolve-conflicts targets))))
 
   (local ?in2 (or ?in2
-                  (and (not vars.partial-pattern?)
+                  (and (not _state.partial-pattern?)
                        (get-second-pattern-input targets))))  ; REDRAW
-  (when-not (or vars.partial-pattern? ?in2)
+  (when-not (or _state.partial-pattern? ?in2)
     (exit-early))
 
-  (when vars.phase (set vars.phase 2))
+  (when _state.phase (set _state.phase 2))
 
   ; Jump eagerly to the count-th match (without giving the full pattern)?
   (when (contains? spec-keys.next_target ?in2)
@@ -709,7 +711,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     ; (Note: at this point, ?in2 might only be nil if partial-pattern?
     ; is true; that case implies there are no sublists, and there _are_
     ; targets.)
-    (set vars.errmsg (.. "not found: " in1 ?in2))
+    (set _state.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
 
   (when multi-select?
@@ -731,14 +733,14 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or repeat? vars.partial-pattern?)
+      (or (and (or repeat? _state.partial-pattern?)
                (or op-mode? (not directional?)))
           ; A sole, unlabeled target.
           (= (length targets*) 1))
       (exit-with-action-on 1))
 
   (when targets*.autojump?
-    (set vars.curr-idx 1)
+    (set _state.curr-idx 1)
     (do-action (. targets* 1))
     (when (= (length targets*) 1)
       (exit)))
@@ -751,11 +753,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   ; Jump to the first match on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
     (if (and can-traverse? (> (length targets*) 1))
-        (let [new-idx (inc vars.curr-idx)]
+        (let [new-idx (inc _state.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
                           {:no-labels? (or empty-label-lists?
-                                           vars.partial-pattern?
+                                           _state.partial-pattern?
                                            (not targets*.autojump?))})
           (exit))
         (if (not targets*.autojump?)

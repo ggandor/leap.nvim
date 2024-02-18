@@ -282,19 +282,19 @@ local function leap(kwargs)
     end
   end
   spec_keys = setmetatable({}, {__index = _42_})
-  local vars
+  local _state
   local _47_
   if (repeat_3f or (max_phase_one_targets == 0) or empty_label_lists_3f or multi_select_3f or user_given_targets_3f) then
     _47_ = nil
   else
     _47_ = 1
   end
-  vars = {phase = _47_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
+  _state = {phase = _47_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
   local function get_number_of_highlighted_traversal_targets()
     local _49_ = opts.max_highlighted_traversal_targets
     if (nil ~= _49_) then
       local group_size = _49_
-      local consumed = (dec(vars["curr-idx"]) % group_size)
+      local consumed = (dec(_state["curr-idx"]) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
         return inc(group_size)
@@ -311,7 +311,7 @@ local function leap(kwargs)
     if (no_labels_3f and (opts.max_highlighted_traversal_targets == 0)) then
       return 0, -1
     else
-      local start = inc(vars["curr-idx"])
+      local start = inc(_state["curr-idx"])
       local _end
       if no_labels_3f then
         local _52_ = get_number_of_highlighted_traversal_targets()
@@ -334,8 +334,8 @@ local function leap(kwargs)
       local label = _each_57_["label"]
       local group = _each_57_["group"]
       local target = _each_57_
-      if (next(res) or (((group or 0) - vars["group-offset"]) > 1)) then break end
-      if ((label == input) and ((group - vars["group-offset"]) == 1)) then
+      if (next(res) or (((group or 0) - _state["group-offset"]) > 1)) then break end
+      if ((label == input) and ((group - _state["group-offset"]) == 1)) then
         res = {idx, target}
       else
       end
@@ -345,12 +345,12 @@ local function leap(kwargs)
   local function get_repeat_input()
     if state["repeat"].in1 then
       if not state["repeat"].in2 then
-        vars["partial-pattern?"] = true
+        _state["partial-pattern?"] = true
       else
       end
       return state["repeat"].in1, state["repeat"].in2
     else
-      vars.errmsg = "no previous search"
+      _state.errmsg = "no previous search"
       return nil
     end
   end
@@ -372,14 +372,14 @@ local function leap(kwargs)
       local in1 = _62_
       if contains_3f(spec_keys.next_target, in1) then
         if state["repeat"].in1 then
-          vars.phase = nil
+          _state.phase = nil
           if not state["repeat"].in2 then
-            vars["partial-pattern?"] = true
+            _state["partial-pattern?"] = true
           else
           end
           return state["repeat"].in1, state["repeat"].in2
         else
-          vars.errmsg = "no previous search"
+          _state.errmsg = "no previous search"
           return nil
         end
       else
@@ -430,7 +430,7 @@ local function leap(kwargs)
     local kwargs0 = {["backward?"] = backward_3f, ["match-same-char-seq-at-end?"] = match_same_char_seq_at_end_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local function _74_(...)
-      vars.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
+      _state.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
       return nil
     end
     return (targets or _74_())
@@ -452,7 +452,7 @@ local function leap(kwargs)
       end
       return targets_2a
     else
-      vars.errmsg = "no targets"
+      _state.errmsg = "no targets"
       return nil
     end
   end
@@ -510,8 +510,8 @@ local function leap(kwargs)
       _7cgroups_7c = ceil((#targets / #targets["label-set"]))
     end
     local function display()
-      local no_labels_3f = (empty_label_lists_3f or vars["partial-pattern?"])
-      set_beacons(targets, {["group-offset"] = vars["group-offset"], ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = vars.phase})
+      local no_labels_3f = (empty_label_lists_3f or _state["partial-pattern?"])
+      set_beacons(targets, {["group-offset"] = _state["group-offset"], ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = _state.phase})
       hl:cleanup(hl_affected_windows)
       if not count then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
@@ -544,7 +544,7 @@ local function leap(kwargs)
             shift = -1
           end
           local max_offset = dec(_7cgroups_7c)
-          vars["group-offset"] = clamp((vars["group-offset"] + shift), 0, max_offset)
+          _state["group-offset"] = clamp((_state["group-offset"] + shift), 0, max_offset)
           return loop(false)
         else
           return input
@@ -619,7 +619,7 @@ local function leap(kwargs)
       end
     end
     local function display()
-      set_beacons(targets, {["group-offset"] = vars["group-offset"], ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = vars.phase})
+      set_beacons(targets, {["group-offset"] = _state["group-offset"], ["no-labels?"] = no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = _state.phase})
       hl:cleanup(hl_affected_windows)
       if not count then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
@@ -646,7 +646,7 @@ local function leap(kwargs)
         on_first_invoc()
       else
       end
-      vars["curr-idx"] = idx
+      _state["curr-idx"] = idx
       display()
       local _105_ = get_input()
       if (nil ~= _105_) then
@@ -691,7 +691,7 @@ local function leap(kwargs)
     end
   elseif user_given_targets_3f then
     in1, _3fin2 = true, true
-  elseif (vars.phase == 1) then
+  elseif (_state.phase == 1) then
     in1, _3fin2 = get_first_pattern_input()
   else
     in1, _3fin2 = get_full_pattern_input()
@@ -701,8 +701,8 @@ local function leap(kwargs)
       handle_interrupted_change_op_21()
     else
     end
-    if vars.errmsg then
-      echo(vars.errmsg)
+    if _state.errmsg then
+      echo(_state.errmsg)
     else
     end
     hl:cleanup(hl_affected_windows)
@@ -723,8 +723,8 @@ local function leap(kwargs)
       handle_interrupted_change_op_21()
     else
     end
-    if vars.errmsg then
-      echo(vars.errmsg)
+    if _state.errmsg then
+      echo(_state.errmsg)
     else
     end
     hl:cleanup(hl_affected_windows)
@@ -746,8 +746,8 @@ local function leap(kwargs)
         handle_interrupted_change_op_21()
       else
       end
-      if vars.errmsg then
-        echo(vars.errmsg)
+      if _state.errmsg then
+        echo(_state.errmsg)
       else
       end
       hl:cleanup(hl_affected_windows)
@@ -756,35 +756,35 @@ local function leap(kwargs)
     end
   else
   end
-  if (_3fin2 or vars["partial-pattern?"]) then
-    if (empty_label_lists_3f or vars["partial-pattern?"]) then
+  if (_3fin2 or _state["partial-pattern?"]) then
+    if (empty_label_lists_3f or _state["partial-pattern?"]) then
       targets["autojump?"] = true
     else
       prepare_targets_2a(targets)
     end
   else
     if (#targets > max_phase_one_targets) then
-      vars.phase = nil
+      _state.phase = nil
     else
     end
     populate_sublists(targets, multi_window_3f)
     for _, sublist in pairs(targets.sublists) do
       prepare_targets_2a(sublist)
     end
-    set_beacons(targets, {phase = vars.phase})
-    if (vars.phase == 1) then
+    set_beacons(targets, {phase = _state.phase})
+    if (_state.phase == 1) then
       resolve_conflicts(targets)
     else
     end
   end
-  local _3fin20 = (_3fin2 or (not vars["partial-pattern?"] and get_second_pattern_input(targets)))
-  if not (vars["partial-pattern?"] or _3fin20) then
+  local _3fin20 = (_3fin2 or (not _state["partial-pattern?"] and get_second_pattern_input(targets)))
+  if not (_state["partial-pattern?"] or _3fin20) then
     if change_op_3f then
       handle_interrupted_change_op_21()
     else
     end
-    if vars.errmsg then
-      echo(vars.errmsg)
+    if _state.errmsg then
+      echo(_state.errmsg)
     else
     end
     hl:cleanup(hl_affected_windows)
@@ -792,8 +792,8 @@ local function leap(kwargs)
     return
   else
   end
-  if vars.phase then
-    vars.phase = 2
+  if _state.phase then
+    _state.phase = 2
   else
   end
   if contains_3f(spec_keys.next_target, _3fin20) then
@@ -804,8 +804,8 @@ local function leap(kwargs)
         handle_interrupted_change_op_21()
       else
       end
-      if vars.errmsg then
-        echo(vars.errmsg)
+      if _state.errmsg then
+        echo(_state.errmsg)
       else
       end
       hl:cleanup(hl_affected_windows)
@@ -834,13 +834,13 @@ local function leap(kwargs)
     targets_2a = targets
   end
   if not targets_2a then
-    vars.errmsg = ("not found: " .. in1 .. _3fin20)
+    _state.errmsg = ("not found: " .. in1 .. _3fin20)
     if change_op_3f then
       handle_interrupted_change_op_21()
     else
     end
-    if vars.errmsg then
-      echo(vars.errmsg)
+    if _state.errmsg then
+      echo(_state.errmsg)
     else
     end
     hl:cleanup(hl_affected_windows)
@@ -880,8 +880,8 @@ local function leap(kwargs)
         handle_interrupted_change_op_21()
       else
       end
-      if vars.errmsg then
-        echo(vars.errmsg)
+      if _state.errmsg then
+        echo(_state.errmsg)
       else
       end
       hl:cleanup(hl_affected_windows)
@@ -894,7 +894,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((repeat_3f or vars["partial-pattern?"]) and (op_mode_3f or not directional_3f)) or (#targets_2a == 1)) then
+  elseif (((repeat_3f or _state["partial-pattern?"]) and (op_mode_3f or not directional_3f)) or (#targets_2a == 1)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
@@ -903,7 +903,7 @@ local function leap(kwargs)
   else
   end
   if targets_2a["autojump?"] then
-    vars["curr-idx"] = 1
+    _state["curr-idx"] = 1
     do_action(targets_2a[1])
     if (#targets_2a == 1) then
       hl:cleanup(hl_affected_windows)
@@ -919,8 +919,8 @@ local function leap(kwargs)
       handle_interrupted_change_op_21()
     else
     end
-    if vars.errmsg then
-      echo(vars.errmsg)
+    if _state.errmsg then
+      echo(_state.errmsg)
     else
     end
     hl:cleanup(hl_affected_windows)
@@ -930,9 +930,9 @@ local function leap(kwargs)
   end
   if contains_3f(spec_keys.next_target, in_final) then
     if (can_traverse_3f and (#targets_2a > 1)) then
-      local new_idx = inc(vars["curr-idx"])
+      local new_idx = inc(_state["curr-idx"])
       do_action(targets_2a[new_idx])
-      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or vars["partial-pattern?"] or not targets_2a["autojump?"])})
+      traversal_loop(targets_2a, new_idx, {["no-labels?"] = (empty_label_lists_3f or _state["partial-pattern?"] or not targets_2a["autojump?"])})
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
