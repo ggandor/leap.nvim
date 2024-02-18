@@ -20,8 +20,8 @@ Leap is a motion plugin that allows you to jump to any positions in the
 visible editor area by entering a 2-character search pattern, and then
 potentially a label character to pick your target from multiple matches,
 similar to vim-sneak (https://github.com/justinmk/vim-sneak). The main novel
-idea in Leap is that you get a live preview of the target labels - Leap shows
-you which key you will need to press before you actually need to do that,
+idea in Leap is that you get a preview of the target labels - Leap shows you
+which key you will need to press before you actually need to do that,
 resulting in a much more frictionless experience.
 
 Key mappings should be defined explicitly. To start using the plugin with the

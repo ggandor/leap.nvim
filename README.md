@@ -16,9 +16,9 @@ a jump.
 Leap's default motions allow you to jump to any positions in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
-Sneak. The main novel idea in Leap is that you get a **live preview of the
-target labels** - Leap shows you which key you will need to press _before_ you
-actually need to do that.
+Sneak. The main novel idea in Leap is that **you get a preview of the target
+labels** - Leap shows you which key you will need to press before you actually
+need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`). (Note: you can configure the plugin to merge these
@@ -36,11 +36,11 @@ actually need to do that.
 
 ### Why is this method cool?
 
-It is **ridiculously fast**: not counting the trigger key, leaping to literally
+It is ridiculously fast: not counting the trigger key, leaping to literally
 anywhere on the screen rarely takes more than 3 keystrokes in total, that can be
 typed in one go. Often 2 is enough.
 
-At the same time, it **reduces mental effort to almost zero**:
+At the same time, it reduces mental effort to almost zero:
 
 - You _don't have to weigh alternatives_: a single universal motion type can be
   used in all non-trivial situations.
@@ -98,9 +98,9 @@ read on to dig deeper.
 
 Premise: jumping from point A to B on the screen should not be some [exciting
 puzzle](https://www.vimgolf.com/), for which you should train yourself; it
-should be a _non-issue_. An ideal keyboard-driven interface would impose
-**almost no more cognitive burden than using a mouse**, without the constant
-context-switching required by the latter.
+should be a non-issue. An ideal keyboard-driven interface would impose almost no
+more cognitive burden than using a mouse, without the constant context-switching
+required by the latter.
 
 That is, **you do not want to think about**
 
@@ -142,7 +142,7 @@ many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
 label set - getting the best of both worlds. The non-determinism we're
 introducing is less of an issue here, since the outcome is known in advance.
 
-In sum, compared to all other labeling plugins, Leap is unique in that it
+In sum, compared to other labeling plugins, Leap is unique in that it
 
 * offers a more fluid experience, by (somewhat) eliminating the pause before
   typing the label
