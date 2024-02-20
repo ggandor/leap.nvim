@@ -55,10 +55,10 @@
                                {:priority self.priority.backdrop})))))
 
 
-(fn M.highlight-cursor [self ?pos]
+(fn M.highlight-cursor [self]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."
-  (let [[line col &as pos] (or ?pos (get-cursor-pos))
+  (let [[line col] (get-cursor-pos)
         line-str (vim.fn.getline line)
         ch-at-curpos (case (vim.fn.strpart line-str (- col 1) 1 true)
                        "" " "  ; on an emtpy line

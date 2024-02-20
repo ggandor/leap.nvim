@@ -54,11 +54,10 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
     return nil
   end
 end
-M["highlight-cursor"] = function(self, _3fpos)
-  local _let_11_ = (_3fpos or get_cursor_pos())
+M["highlight-cursor"] = function(self)
+  local _let_11_ = get_cursor_pos()
   local line = _let_11_[1]
   local col = _let_11_[2]
-  local pos = _let_11_
   local line_str = vim.fn.getline(line)
   local ch_at_curpos
   do
