@@ -119,12 +119,11 @@ local function get_targets_in_current_window(pattern, _15_)
         line_str = vim.fn.getline(line)
       else
       end
-      local start = vim.fn.charidx(line_str, (col - 1))
-      local ch1 = get_char_from(line_str, start)
+      local ch1 = vim.fn.strpart(line_str, (col - 1), 1, true)
       if (ch1 == "") then
         table.insert(targets, {wininfo = wininfo, pos = pos, chars = {"\n", "\n"}})
       else
-        local ch2 = get_char_from(line_str, (start + 1))
+        local ch2 = vim.fn.strpart(line_str, (col + -1 + ch1:len()), 1, true)
         if (ch2 == "") then
           ch2 = "\n"
         else

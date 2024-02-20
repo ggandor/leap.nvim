@@ -1,7 +1,6 @@
 (local {: inc
         : dec
-        : get-cursor-pos
-        : get-char-from}
+        : get-cursor-pos}
        (require "leap.util"))
 
 (local api vim.api)
@@ -61,8 +60,7 @@
 so we set a temporary highlight on it to see where we are."
   (let [[line col &as pos] (or ?pos (get-cursor-pos))
         line-str (vim.fn.getline line)
-        char-idx (vim.fn.charidx line-str (- col 1))
-        ch-at-curpos (case (get-char-from line-str char-idx)
+        ch-at-curpos (case (vim.fn.strpart line-str (- col 1) 1 true)
                        "" " "  ; on an emtpy line
                        ch ch)
         id (api.nvim_buf_set_extmark 0 self.ns (dec line) (dec col)

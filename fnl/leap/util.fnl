@@ -50,26 +50,6 @@
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
-; Issue A: failing to calculate the start index properly when composite
-;          characters precede the match
-; Issue B: failing to extract a composite character from the match
-;          (n̂ becomes n)
-
-;                               charidx w/countcc     charidx
-; -----------------------------------------------------------
-; strgetchar                           B                AB
-; strcharpart (stable)                 B                AB
-; strcharpart w/skipcc (0.10+)         A                OK
-
-; It is not worth the fuss (i.e., branching when calling `charidx`) to
-; make this half-broken on stable.
-
-(fn get-char-from [str idx]  ; zero-based (<- vim.fn.charidx())
-  ; `skipcc` is only available from 0.10.<something>.
-  (local (ok? res) (pcall vim.fn.strcharpart str idx 1 1))
-  (if ok? res (vim.fn.strcharpart str idx 1)))
-
-
 ; Input
 
 (local <bs> (replace-keycodes "<bs>"))
@@ -130,6 +110,5 @@
  :get_enterable_windows get-enterable-windows
  : get-eq-class-of
  : ->representative-char
- : get-char-from
  : get-input
  : get-input-by-keymap}

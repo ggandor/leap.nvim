@@ -112,15 +112,14 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
           (set line-str (vim.fn.getline line)))
         ; Extracting the actual characters from the buffer at the match
         ; position.
-        (local start (vim.fn.charidx line-str (- col 1)))
-        (local ch1 (get-char-from line-str start))
+        (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
         (if (= ch1 "")  ; on EOL
             ; In this case, we're adding another, virtual \n after the real one,
             ; so that these can be targeted by pressing a newline alias twice.
             ; (See also `prepare-pattern`.)
             (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
             (do
-              (var ch2 (get-char-from line-str (+ start 1)))
+              (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
               (when (= ch2 "")  ; before EOL
                 (set ch2 "\n"))
               (let [overlap? (and (= line prev-match.line)
