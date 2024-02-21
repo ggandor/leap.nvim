@@ -968,86 +968,90 @@ local function leap(kwargs)
   end
   return nil
 end
-local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
-local function set_editor_opts(event, t)
-  state.saved_editor_opts = {}
-  local wins = (event.data.args.target_windows or {api.nvim_get_current_win()})
-  for opt, val in pairs(t) do
-    local _let_161_ = vim.split(opt, ".", {plain = true})
-    local scope = _let_161_[1]
-    local name = _let_161_[2]
-    if (scope == "w") then
-      for _, win in ipairs(wins) do
-        local saved_val = api.nvim_win_get_option(win, name)
-        do end (state.saved_editor_opts)[{"w", win, name}] = saved_val
-        api.nvim_win_set_option(win, name, val)
-      end
-    elseif (scope == "b") then
-      for _, win in ipairs(wins) do
-        local buf = api.nvim_win_get_buf(win)
-        local saved_val = api.nvim_buf_get_option(buf, name)
-        do end (state.saved_editor_opts)[{"b", buf, name}] = saved_val
-        api.nvim_buf_set_option(buf, name, val)
-      end
-    else
-      local _ = scope
-      local saved_val = api.nvim_get_option(name)
-      do end (state.saved_editor_opts)[name] = saved_val
-      api.nvim_set_option(name, val)
-    end
-  end
-  return nil
-end
-local function restore_editor_opts()
-  for key, val in pairs(state.saved_editor_opts) do
-    if ((_G.type(key) == "table") and (key[1] == "w") and (nil ~= key[2]) and (nil ~= key[3])) then
-      local win = key[2]
-      local name = key[3]
-      api.nvim_win_set_option(win, name, val)
-    elseif ((_G.type(key) == "table") and (key[1] == "b") and (nil ~= key[2]) and (nil ~= key[3])) then
-      local buf = key[2]
-      local name = key[3]
-      api.nvim_buf_set_option(buf, name, val)
-    elseif (nil ~= key) then
-      local name = key
-      api.nvim_set_option(name, val)
-    else
-    end
-  end
-  return nil
-end
-local function set_concealed_label()
-  if ((vim.fn.has("nvim-0.9.1") == 1) and api.nvim_get_hl(0, {name = "LeapLabelPrimary"}).bg and api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg) then
-    opts.concealed_label = " "
-  else
-    opts.concealed_label = "\194\183"
-  end
-  return nil
-end
 local function init()
+  api.nvim_create_augroup("LeapDefault", {})
   do
-    local _165_ = opts.default.equivalence_classes
-    if (nil ~= _165_) then
-      opts.default.eq_class_of = eq_classes__3emembership_lookup(_165_)
+    local _161_ = opts.default.equivalence_classes
+    if (nil ~= _161_) then
+      opts.default.eq_class_of = eq_classes__3emembership_lookup(_161_)
     else
-      opts.default.eq_class_of = _165_
+      opts.default.eq_class_of = _161_
     end
   end
-  api.nvim_create_augroup("LeapDefault", {})
-  local function _167_(event)
-    set_editor_opts(event, temporary_editor_opts)
+  local function set_concealed_label()
+    if ((vim.fn.has("nvim-0.9.1") == 1) and api.nvim_get_hl(0, {name = "LeapLabelPrimary"}).bg and api.nvim_get_hl(0, {name = "LeapLabelSecondary"}).bg) then
+      opts.concealed_label = " "
+    else
+      opts.concealed_label = "\194\183"
+    end
+    return nil
+  end
+  local function _164_(_)
     return set_concealed_label()
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _167_, group = "LeapDefault"})
-  local function _168_(_)
-    return restore_editor_opts()
-  end
-  api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _168_, group = "LeapDefault"})
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _164_, group = "LeapDefault"})
   hl["init-highlight"](hl)
-  local function _169_(_)
+  local function _165_(_)
     return hl["init-highlight"](hl)
   end
-  return api.nvim_create_autocmd("ColorScheme", {callback = _169_, group = "LeapDefault"})
+  api.nvim_create_autocmd("ColorScheme", {callback = _165_, group = "LeapDefault"})
+  local saved_editor_opts = {}
+  local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
+  local function set_editor_opts(event, t)
+    saved_editor_opts = {}
+    local wins = (event.data.args.target_windows or {api.nvim_get_current_win()})
+    for opt, val in pairs(t) do
+      local _let_166_ = vim.split(opt, ".", {plain = true})
+      local scope = _let_166_[1]
+      local name = _let_166_[2]
+      if (scope == "w") then
+        for _, win in ipairs(wins) do
+          local saved_val = api.nvim_win_get_option(win, name)
+          do end (saved_editor_opts)[{"w", win, name}] = saved_val
+          api.nvim_win_set_option(win, name, val)
+        end
+      elseif (scope == "b") then
+        for _, win in ipairs(wins) do
+          local buf = api.nvim_win_get_buf(win)
+          local saved_val = api.nvim_buf_get_option(buf, name)
+          do end (saved_editor_opts)[{"b", buf, name}] = saved_val
+          api.nvim_buf_set_option(buf, name, val)
+        end
+      else
+        local _ = scope
+        local saved_val = api.nvim_get_option(name)
+        do end (saved_editor_opts)[name] = saved_val
+        api.nvim_set_option(name, val)
+      end
+    end
+    return nil
+  end
+  local function restore_editor_opts()
+    for key, val in pairs(saved_editor_opts) do
+      if ((_G.type(key) == "table") and (key[1] == "w") and (nil ~= key[2]) and (nil ~= key[3])) then
+        local win = key[2]
+        local name = key[3]
+        api.nvim_win_set_option(win, name, val)
+      elseif ((_G.type(key) == "table") and (key[1] == "b") and (nil ~= key[2]) and (nil ~= key[3])) then
+        local buf = key[2]
+        local name = key[3]
+        api.nvim_buf_set_option(buf, name, val)
+      elseif (nil ~= key) then
+        local name = key
+        api.nvim_set_option(name, val)
+      else
+      end
+    end
+    return nil
+  end
+  local function _169_(event)
+    return set_editor_opts(event, temporary_editor_opts)
+  end
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _169_, group = "LeapDefault"})
+  local function _170_(_)
+    return restore_editor_opts()
+  end
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _170_, group = "LeapDefault"})
 end
 init()
 return {state = state, leap = leap}
