@@ -665,7 +665,7 @@ the modal paradigm is a fundamental difference in our approach.
 There is more to Leap than meets the eye. On a general level, you should think
 of it as less of a motion plugin and more of an engine for selecting visible
 targets on the screen (acquired by arbitrary means), and doing arbitrary things
-with them. See `:h leap.leap()`.
+with them. See `:h leap.leap()` and `:h leap-events`.
 
 There are lots of ways you can extend the plugin and bend it to your will, and
 the combinations of them give you almost infinite possibilities. Some practical

@@ -21,9 +21,6 @@ local _local_3_ = math
 local ceil = _local_3_["ceil"]
 local max = _local_3_["max"]
 local min = _local_3_["min"]
-local function exec_user_autocmds(pattern)
-  return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
-end
 local function handle_interrupted_change_op_21()
   local seq
   local function _4_()
@@ -168,7 +165,7 @@ local function prepare_targets(targets, _27_)
   set_labels(targets, force_labels_3f)
   return targets
 end
-local state = {args = nil, source_window = nil, ["repeat"] = {in1 = nil, in2 = nil, inclusive_op = nil, offset = nil, backward = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, saved_editor_opts = {}}
+local state = {["repeat"] = {in1 = nil, in2 = nil, inclusive_op = nil, offset = nil, backward = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}}
 local function leap(kwargs)
   local _local_29_ = kwargs
   local repeat_3f = _local_29_["repeat"]
@@ -200,6 +197,7 @@ local function leap(kwargs)
   local inclusive_op_3f = _local_32_["inclusive_op"]
   local offset = _local_32_["offset"]
   local match_same_char_seq_at_end_3f = _local_32_["match_same_char_seq_at_end"]
+  state.args = kwargs
   opts.current_call = (user_given_opts or {})
   do
     local _34_ = opts.current_call.equivalence_classes
@@ -234,11 +232,9 @@ local function leap(kwargs)
     return
   else
   end
-  local curr_winid = api.nvim_get_current_win()
-  state.args = kwargs
-  state.source_window = curr_winid
   local _3ftarget_windows = target_windows
   local multi_window_3f = (_3ftarget_windows and (#_3ftarget_windows > 1))
+  local curr_winid = api.nvim_get_current_win()
   local hl_affected_windows = vim.list_extend({curr_winid}, (_3ftarget_windows or {}))
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
@@ -290,6 +286,9 @@ local function leap(kwargs)
     _47_ = 1
   end
   _state = {phase = _47_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
+  local function exec_user_autocmds(pattern)
+    return api.nvim_exec_autocmds("User", {pattern = pattern, data = {args = kwargs}, modeline = false})
+  end
   local function get_number_of_highlighted_traversal_targets()
     local _49_ = opts.max_highlighted_traversal_targets
     if (nil ~= _49_) then
@@ -970,9 +969,9 @@ local function leap(kwargs)
   return nil
 end
 local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
-local function set_editor_opts(t)
+local function set_editor_opts(event, t)
   state.saved_editor_opts = {}
-  local wins = (state.args.target_windows or {state.source_window})
+  local wins = (event.data.args.target_windows or {api.nvim_get_current_win()})
   for opt, val in pairs(t) do
     local _let_161_ = vim.split(opt, ".", {plain = true})
     local scope = _let_161_[1]
@@ -1034,21 +1033,21 @@ local function init()
       opts.default.eq_class_of = _165_
     end
   end
-  hl["init-highlight"](hl)
   api.nvim_create_augroup("LeapDefault", {})
-  local function _167_()
-    return hl["init-highlight"](hl)
-  end
-  api.nvim_create_autocmd("ColorScheme", {callback = _167_, group = "LeapDefault"})
-  local function _168_()
-    set_editor_opts(temporary_editor_opts)
+  local function _167_(event)
+    set_editor_opts(event, temporary_editor_opts)
     return set_concealed_label()
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _168_, group = "LeapDefault"})
-  local function _169_()
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _167_, group = "LeapDefault"})
+  local function _168_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _169_, group = "LeapDefault"})
+  api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _168_, group = "LeapDefault"})
+  hl["init-highlight"](hl)
+  local function _169_(_)
+    return hl["init-highlight"](hl)
+  end
+  return api.nvim_create_autocmd("ColorScheme", {callback = _169_, group = "LeapDefault"})
 end
 init()
 return {state = state, leap = leap}

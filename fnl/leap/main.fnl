@@ -33,10 +33,6 @@
 
 ; Utils ///1
 
-(fn exec-user-autocmds [pattern]
-  (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
-
-
 (fn handle-interrupted-change-op! []
   "Return to Normal mode and restore the cursor position after an
 interrupted change operation."
@@ -198,9 +194,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 ; Main ///1
 
 ; State that is persisted between invocations.
-(local state {:args nil  ; arguments passed to the current call
-              :source_window nil
-              :repeat {:in1 nil
+(local state {:repeat {:in1 nil
                        :in2 nil
                        :inclusive_op nil
                        :offset nil
@@ -212,8 +206,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                            :target_idx nil
                            :backward nil
                            :inclusive_op nil
-                           :offset nil}
-              :saved_editor_opts {}})
+                           :offset nil}})
 
 
 (fn leap [kwargs]
@@ -235,6 +228,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
          (if dot-repeat? state.dot_repeat
              repeat? state.repeat
              kwargs))
+
+  ; Deprecated, use event.data in the autocommand callbacks instead.
+  (set state.args kwargs)
 
   ; Do this before accessing `opts`.
   (set opts.current_call (or user-given-opts {}))
@@ -262,13 +258,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (echo "error: multiselect mode requires user-provided `action` callback")
     (lua :return))
 
-  (local curr-winid (api.nvim_get_current_win))
-
-  (set state.args kwargs)
-  (set state.source_window curr-winid)
-
   (local ?target-windows target-windows)
   (local multi-window? (and ?target-windows (> (length ?target-windows) 1)))
+  (local curr-winid (api.nvim_get_current_win))
   (local hl-affected-windows (vim.list_extend
                                ; The cursor is always highlighted.
                                [curr-winid] (or ?target-windows [])))
@@ -321,6 +313,12 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                  ; (`target.group` starts at 1).
                  :group-offset 0
                  :errmsg nil})
+
+  (fn exec-user-autocmds [pattern]
+    (api.nvim_exec_autocmds "User"
+                            {: pattern
+                             :modeline false
+                             :data {:args kwargs}}))
 
   ; Macros
 
@@ -786,9 +784,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                               :b.modeline false})  ; lightspeed#81
 
 
-(fn set-editor-opts [t]
+(fn set-editor-opts [event t]
   (set state.saved_editor_opts {})
-  (local wins (or state.args.target_windows [state.source_window]))
+  (local wins (or event.data.args.target_windows [(api.nvim_get_current_win)]))
   (each [opt val (pairs t)]
     (let [[scope name] (vim.split opt "." {:plain true})]
       (case scope
@@ -832,27 +830,27 @@ Also sets a `group` attribute (a static one too, not to be updated)."
        (-?> opts.default.equivalence_classes
             eq-classes->membership-lookup))
 
-  (hl:init-highlight)
-
   (api.nvim_create_augroup "LeapDefault" {})
-
-  ; Colorscheme plugins might clear out our highlight definitions,
-  ; without defining their own, so we re-init the highlight on every
-  ; change.
-  (api.nvim_create_autocmd "ColorScheme"
-                           {:callback (fn [] (hl:init-highlight))
-                            :group "LeapDefault"})
 
   (api.nvim_create_autocmd "User"
                            {:pattern "LeapEnter"
-                            :callback (fn []
-                                        (set-editor-opts temporary-editor-opts)
+                            :callback (fn [event]
+                                        (set-editor-opts
+                                          event temporary-editor-opts)
                                         (set-concealed-label))
                             :group "LeapDefault"})
 
   (api.nvim_create_autocmd "User"
                            {:pattern "LeapLeave"
-                            :callback (fn [] (restore-editor-opts))
+                            :callback (fn [_] (restore-editor-opts))
+                            :group "LeapDefault"})
+
+  (hl:init-highlight)
+  ; Colorscheme plugins might clear out our highlight definitions,
+  ; without defining their own, so we re-init the highlight on every
+  ; change.
+  (api.nvim_create_autocmd "ColorScheme"
+                           {:callback (fn [_] (hl:init-highlight))
                             :group "LeapDefault"}))
 
 
@@ -861,7 +859,8 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
 ; Module ///1
 
-{: state : leap}
+{: state  ; deprecated, not intended to be accessed from the outside anymore
+ : leap}
 
 
 ; vim: foldmethod=marker foldmarker=///,//>

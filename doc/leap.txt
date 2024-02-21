@@ -338,6 +338,33 @@ Example: >lua
       command = 'let &hlsearch=&hlsearch',
     })
 
+For Lua callbacks, the `data` field of the argument table (see
+|nvim_create_autocmd()|) is populated with:
+
+    • args: The argument table passed to |leap.leap()|.
+
+Using `args`, you can customize practically anything on a per-call basis. Keep
+in mind that nothing prevents you from passing arbitrary flags when calling
+|leap.leap()|: >lua
+
+    function my_custom_leap_fn()
+      require('leap').leap {
+        my_custom_leap_fn = true,
+          -- ...
+      }
+    end
+
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'LeapEnter',
+      callback = function (event)
+        if event.data.args.my_custom_leap_fn then
+          -- Implement some special logic here, that will only apply to
+          -- my_custom_leap_fn(), and restore the state (if needed) in an
+          -- analogous `LeapLeave` autocommand.
+        end
+      end
+    })
+
 ==============================================================================
 EXTENDING LEAP                                                 *leap-extensions*
 
@@ -386,34 +413,6 @@ leap({opts})                                                       *leap.leap()*
                • action: A Lua function that will be executed by Leap in place
                  of the jump, taking the selected target as its argument. (You
                  could obviously implement some custom jump logic here too.)
-
-                                                  *leap.state* *leap-runtime-args*
-Accessing the arguments passed to leap() ~
-
-The arguments of the current call are always available at runtime, in the
-`state.args` table.
-
-Using |leap-events| together with the `args` table, you can customize
-practically anything on a per-call basis. Keep in mind that nothing prevents
-you from passing arbitrary flags when calling |leap.leap()|: >lua
-
-    function my_custom_leap_function()
-      require('leap').leap {
-        my_custom_leap_function = true,
-        -- ...
-      }
-    end
-
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'LeapEnter',
-      callback = function ()
-        if require('leap').state.args.my_custom_leap_function then
-          -- Implement some special logic here, that will only apply to
-          -- my_custom_leap_function(), and restore the state (if
-          -- needed) in an analogous `LeapLeave` autocommand.
-        end
-      end
-    })
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
