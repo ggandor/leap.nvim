@@ -159,16 +159,14 @@ NOTE: `set-autojump` should be called BEFORE this function."
                              opts.labels)))
 
 
-(fn set-labels [targets force-labels?]
+(fn set-labels [targets]
   "Assign label characters to each target, using the given label set
 repeated indefinitely. Note: `label` is a once and for all fixed
 attribute - whether and how it should actually be displayed depends on
 other parts of the code.
 
 Also sets a `group` attribute (a static one too, not to be updated)."
-  (when (or (> (length targets) 1)
-            (empty? opts.safe_labels)
-            force-labels?)
+  (when (or (> (length targets) 1) (empty? opts.safe_labels))
     (local {: autojump? : label-set} targets)
     (local |label-set| (length label-set))
     (each [i* target (ipairs targets)]
@@ -184,11 +182,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
               (set target.group (inc (math.floor (/ i |label-set|))))))))))
 
 
-(fn prepare-targets [targets {: force-noautojump? : force-labels?}]
+(fn prepare-targets [targets {: force-noautojump?}]
   (doto targets
     (set-autojump force-noautojump?)
     (attach-label-set)
-    (set-labels force-labels?)))
+    (set-labels)))
 
 
 ; Main ///1
@@ -216,8 +214,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           :target_windows target-windows
           :opts user-given-opts
           :targets user-given-targets
-          :action user-given-action
-          :multiselect multi-select?}
+          :action user-given-action}
          kwargs)
   (local {:backward backward?}
          (if dot-repeat? state.dot_repeat
@@ -253,9 +250,6 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (lua :return))
   (when (and target-windows (empty? target-windows))
     (echo "no targetable windows")
-    (lua :return))
-  (when (and multi-select? (not user-given-action))
-    (echo "error: multiselect mode requires user-provided `action` callback")
     (lua :return))
 
   (local ?target-windows target-windows)
@@ -300,7 +294,6 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                  :phase (if (or repeat?
                                 (= max-phase-one-targets 0)
                                 empty-label-lists?
-                                multi-select?
                                 user-given-targets?)
                             nil
                             1)
@@ -460,7 +453,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                         (= c1 (+ c2 (ch1:len) (ch2:len)))))))
     (local force-noautojump? (or funny-edge-case?
                                  ; Should be able to select a target.
-                                 op-mode? multi-select?
+                                 op-mode?
                                  ; Disorienting if the chosen target
                                  ; happens to be in (yet) another window.
                                  (and multi-window?
@@ -469,7 +462,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                  ; No jump, doing sg else.
                                  user-given-action))
     (prepare-targets
-      targets {: force-noautojump? :force-labels? multi-select?}))
+      targets {: force-noautojump?}))
 
   ; Repeat
 
@@ -506,7 +499,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   ; Target-selection loops
 
-  (fn post-pattern-input-loop [targets first-invoc?]
+  (fn post-pattern-input-loop [targets]
     (local |groups| (if (not targets.label-set) 0
                         (ceil (/ (length targets)
                                  (length targets.label-set)))))
@@ -521,12 +514,10 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (local (start end) (get-highlighted-idx-range targets no-labels?))
         (light-up-beacons targets start end)))
 
-    (var first-iter? true)
     (fn loop [first-invoc?]
       (display)
-      (when first-iter?
-        (exec-user-autocmds :LeapSelectPre)
-        (set first-iter? false))
+      (when first-invoc?
+        (exec-user-autocmds :LeapSelectPre))
       (case (get-input)
         input
         (let [switch-group? (or (= input spec-keys.next_group)
@@ -538,37 +529,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                 (set _state.group-offset
                      (clamp (+ _state.group-offset shift) 0 max-offset))
                 (loop false))
-              ; Otherwise return with input.
               input))))
 
-    (loop (not= first-invoc? false)))
-
-
-  (local multi-select-loop
-    (do
-      (local selection [])
-      (var first-invoc? true)
-
-      (fn loop [targets]
-        (case (post-pattern-input-loop targets first-invoc?)
-          (where (= spec-keys.multi_accept))
-          (if (not (empty? selection))
-              selection
-              (loop targets))
-
-          (where (= spec-keys.multi_revert))
-          (do (local removed (table.remove selection))
-              (when removed
-                (set removed.selected nil))
-              (loop targets))
-
-          in
-          (do (set first-invoc? false)
-              (case (get-target-with-active-label targets in)
-                [_ target] (when-not (contains? selection target)
-                             (table.insert selection target)
-                             (set target.selected true)))
-              (loop targets))))))
+    (loop true))
 
 
   (fn traversal-loop [targets start-idx {: no-labels?}]
@@ -711,15 +674,6 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     ; targets.)
     (set _state.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
-
-  (when multi-select?
-    (case (multi-select-loop targets*)
-      targets**
-      ; The action callback should expect a list in this case.
-      ; It might also get user input, so keep the beacons highlighted.
-      (do (with-highlight-chores (light-up-beacons targets**))
-          (do-action targets**)))
-    (exit))
 
   (macro exit-with-action-on [idx]
     `(do (set-dot-repeat in1 ?in2 ,idx)
