@@ -366,14 +366,16 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                       n (min (+ (dec start) n) (length targets))))]
           (values start end))))
 
-  (fn get-target-with-active-label [sublist input]
-    (var res [])
-    (each [idx {: label : group &as target} (ipairs sublist)
-           &until (or (next res)
-                      (> (- (or group 0) _state.group-offset) 1))]
-      (when (and (= label input)
-                 (= (- group _state.group-offset) 1))
-        (set res [idx target])))
+  (fn get-target-with-active-label [targets input]
+    (var res nil)
+    (var break? false)
+    (each [idx target (ipairs targets) &until (or res break?)]
+      (when target.label
+        (local relative-group (- target.group _state.group-offset))
+        (when (> relative-group 1)  ; we are beyond the currently active group
+          (set break? true))
+        (when (and (= relative-group 1) (= target.label input))
+          (set res (values idx target)))))
     res)
 
   ; Getting targets
@@ -575,7 +577,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                         (loop new-idx false))
                 ; We still want the labels (if there are) to function.
               _ (case (get-target-with-active-label targets in)
-                  [_ target] (jump-to! target)
+                  (_ target) (jump-to! target)
                   _ (vim.fn.feedkeys in :i))))))
 
     (loop start-idx true))
@@ -716,7 +718,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
             (exit-with-action-on 1)
             (do (vim.fn.feedkeys in-final :i) (exit)))))
 
-  (local [idx _] (get-target-with-active-label targets* in-final))
+  (local (idx _) (get-target-with-active-label targets* in-final))
   (if idx
       (exit-with-action-on idx)
       (do (vim.fn.feedkeys in-final :i) (exit)))

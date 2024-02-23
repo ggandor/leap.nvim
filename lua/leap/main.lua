@@ -319,16 +319,21 @@ local function leap(kwargs)
       return start, _end
     end
   end
-  local function get_target_with_active_label(sublist, input)
-    local res = {}
-    for idx, _55_ in ipairs(sublist) do
-      local _each_56_ = _55_
-      local label = _each_56_["label"]
-      local group = _each_56_["group"]
-      local target = _each_56_
-      if (next(res) or (((group or 0) - _state["group-offset"]) > 1)) then break end
-      if ((label == input) and ((group - _state["group-offset"]) == 1)) then
-        res = {idx, target}
+  local function get_target_with_active_label(targets, input)
+    local res = nil
+    local break_3f = false
+    for idx, target in ipairs(targets) do
+      if (res or break_3f) then break end
+      if target.label then
+        local relative_group = (target.group - _state["group-offset"])
+        if (relative_group > 1) then
+          break_3f = true
+        else
+        end
+        if ((relative_group == 1) and (target.label == input)) then
+          res = idx, target
+        else
+        end
       else
       end
     end
@@ -609,10 +614,10 @@ local function leap(kwargs)
             return loop(new_idx, false)
           else
             local _ = _97_
-            local _98_ = get_target_with_active_label(targets, _in)
-            if ((_G.type(_98_) == "table") and true and (nil ~= _98_[2])) then
-              local _0 = _98_[1]
-              local target = _98_[2]
+            local _98_, _99_ = get_target_with_active_label(targets, _in)
+            if (true and (nil ~= _99_)) then
+              local _0 = _98_
+              local target = _99_
               return jump_to_21(target)
             else
               local _0 = _98_
@@ -681,15 +686,15 @@ local function leap(kwargs)
   else
   end
   if dot_repeat_3f then
-    local _112_ = targets[state.dot_repeat.target_idx]
-    if (nil ~= _112_) then
-      local target = _112_
+    local _113_ = targets[state.dot_repeat.target_idx]
+    if (nil ~= _113_) then
+      local target = _113_
       do_action(target)
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
     else
-      local _ = _112_
+      local _ = _113_
       if change_op_3f then
         handle_interrupted_change_op_21()
       else
@@ -874,9 +879,7 @@ local function leap(kwargs)
     end
   else
   end
-  local _local_146_ = get_target_with_active_label(targets_2a, in_final)
-  local idx = _local_146_[1]
-  local _ = _local_146_[2]
+  local idx, _ = get_target_with_active_label(targets_2a, in_final)
   if idx then
     set_dot_repeat(in1, _3fin20, idx)
     do_action(targets_2a[idx])
