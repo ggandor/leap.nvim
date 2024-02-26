@@ -280,7 +280,7 @@ local function leap(kwargs)
   end
   _state = {phase = _46_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
   local function exec_user_autocmds(pattern)
-    return api.nvim_exec_autocmds("User", {pattern = pattern, data = {args = kwargs}, modeline = false})
+    return api.nvim_exec_autocmds("User", {pattern = pattern, data = {args = setmetatable({}, {__index = kwargs})}, modeline = false})
   end
   local function get_number_of_highlighted_traversal_targets()
     local _48_ = opts.max_highlighted_traversal_targets

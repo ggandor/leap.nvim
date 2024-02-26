@@ -309,9 +309,12 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   (fn exec-user-autocmds [pattern]
     (api.nvim_exec_autocmds "User"
-                            {: pattern
-                             :modeline false
-                             :data {:args kwargs}}))
+      {: pattern
+       ; NOTE: `{:args kwargs}` would throw an error if any subtable in
+       ; `kwargs` contains both integer and string keys (~> msgpack
+       ; compat), hence the workaround.
+       :data {:args (setmetatable {} {:__index kwargs})}
+       :modeline false}))
 
   ; Macros
 
