@@ -381,7 +381,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (when (> relative-group 1)  ; we are beyond the currently active group
           (set break? true))
         (when (and (= relative-group 1) (= target.label input))
-          (set res (values idx target)))))
+          (set res [idx target]))))
     res)
 
   ; Getting targets
@@ -587,7 +587,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                         (loop new-idx false))
                 ; We still want the labels (if there are) to function.
               _ (case (get-target-with-active-label targets in)
-                  (_ target) (jump-to! target)
+                  [_ target] (jump-to! target)
                   _ (vim.fn.feedkeys in :i))))))
 
     (loop start-idx true))
@@ -724,7 +724,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
             (exit-with-action-on 1)
             (do (vim.fn.feedkeys in-final :i) (exit)))))
 
-  (local (idx _) (get-target-with-active-label targets* in-final))
+  (local [idx _] (get-target-with-active-label targets* in-final))
   (if idx
       (exit-with-action-on idx)
       (do (vim.fn.feedkeys in-final :i) (exit)))
