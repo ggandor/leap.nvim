@@ -164,7 +164,7 @@ local function prepare_targets(targets, _27_)
   set_labels(targets)
   return targets
 end
-local state = {["repeat"] = {in1 = nil, in2 = nil, inclusive_op = nil, offset = nil, backward = nil}, dot_repeat = {in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}}
+local state = {["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, dot_repeat = {callback = nil, in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}}
 local function leap(kwargs)
   local _local_29_ = kwargs
   local repeat_3f = _local_29_["repeat"]
@@ -472,17 +472,18 @@ local function leap(kwargs)
     local force_noautojump_3f = (funny_edge_case_3f or op_mode_3f or (multi_window_3f and not targets["shared-window?"]) or user_given_action)
     return prepare_targets(targets, {["force-noautojump?"] = force_noautojump_3f})
   end
-  local function update_repeat_state(state_2a)
+  local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
+  local function update_repeat_state(in1, in2)
     if not (repeat_3f or user_given_targets_3f) then
-      state["repeat"] = state_2a
+      state["repeat"] = vim.tbl_extend("error", from_kwargs, {in1 = in1, in2 = in2})
       return nil
     else
       return nil
     end
   end
   local function set_dot_repeat(in1, in2, target_idx)
-    if (dot_repeatable_op_3f and not (dot_repeat_3f or (type(user_given_targets) == "table"))) then
-      state.dot_repeat = {in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), callback = user_given_targets, target_idx = target_idx, offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
+    if (dot_repeatable_op_3f and not dot_repeat_3f and (type(user_given_targets) ~= "table")) then
+      state.dot_repeat = vim.tbl_extend("error", from_kwargs, {callback = user_given_targets, in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), target_idx = target_idx})
       return set_dot_repeat_2a()
     else
       return nil
@@ -766,7 +767,7 @@ local function leap(kwargs)
       return
     else
     end
-    update_repeat_state({in1 = in1, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f, match_same_char_seq_at_end = match_same_char_seq_at_end_3f})
+    update_repeat_state(in1, nil)
     set_dot_repeat(in1, nil, n)
     do_action(target)
     if (can_traverse_3f and (#targets > 1)) then
@@ -779,7 +780,7 @@ local function leap(kwargs)
   else
   end
   exec_user_autocmds("LeapPatternPost")
-  update_repeat_state({in1 = in1, in2 = _3fin20, offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f, match_same_char_seq_at_end = match_same_char_seq_at_end_3f})
+  update_repeat_state(in1, _3fin20)
   local targets_2a
   if targets.sublists then
     targets_2a = targets.sublists[_3fin20]

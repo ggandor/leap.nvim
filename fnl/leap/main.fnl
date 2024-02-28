@@ -194,17 +194,20 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil
                        :in2 nil
-                       :inclusive_op nil
-                       :offset nil
                        ; For when wanting to repeat in relative direction
                        ; (for "outside" use only).
-                       :backward nil}
-              :dot_repeat {:in1 nil
+                       :backward nil
+                       :inclusive_op nil
+                       :offset nil
+                       :match_same_char_seq_at_end nil}
+              :dot_repeat {:callback nil
+                           :in1 nil
                            :in2 nil
                            :target_idx nil
                            :backward nil
                            :inclusive_op nil
-                           :offset nil}})
+                           :offset nil
+                           :match_same_char_seq_at_end nil}})
 
 
 (fn leap [kwargs]
@@ -471,22 +474,26 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   ; Repeat
 
-  (fn update-repeat-state [state*]
+  (local from-kwargs {: offset
+                      ; Mind the naming conventions.
+                      :match_same_char_seq_at_end match-same-char-seq-at-end?
+                      :backward backward?
+                      :inclusive_op inclusive-op?})
+
+  (fn update-repeat-state [in1 in2]
     (when-not (or repeat? user-given-targets?)
-      (set state.repeat state*)))
+      (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
 
   (fn set-dot-repeat [in1 in2 target_idx]
-    (when (and dot-repeatable-op?
-               (not (or dot-repeat? (= (type user-given-targets) :table))))
-      (set state.dot_repeat {:in1 (and (not user-given-targets) in1)
-                             :in2 (and (not user-given-targets) in2)
-                             :callback user-given-targets
-                             : target_idx
-                             : offset
-                             :match_same_char_seq_at_end match-same-char-seq-at-end?
-                             ; Mind the naming conventions.
-                             :backward backward?
-                             :inclusive_op inclusive-op?})
+    (when (and dot-repeatable-op? (not dot-repeat?)
+               (not= (type user-given-targets) :table))
+      (set state.dot_repeat (vim.tbl_extend
+                              :error
+                              from-kwargs
+                              {:callback user-given-targets
+                               :in1 (and (not user-given-targets) in1)
+                               :in2 (and (not user-given-targets) in2)
+                               : target_idx}))
       (set-dot-repeat*)))
 
   ; Jump
@@ -651,9 +658,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (local target (. targets n))
     (when-not target
       (exit-early))
-    (update-repeat-state {: in1 : offset
-                          :backward backward? :inclusive_op inclusive-op?
-                          :match_same_char_seq_at_end match-same-char-seq-at-end?})
+    (update-repeat-state in1 nil)
     ; Do this before `do-action`, because it might erase forced motion.
     ; (The `:normal` command in `jump.jump-to!` can change the state of
     ; `mode()`. See vim/vim#9332.)
@@ -666,9 +671,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   (exec-user-autocmds :LeapPatternPost)
 
   ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state {: in1 :in2 ?in2 : offset
-                        :backward backward? :inclusive_op inclusive-op?
-                        :match_same_char_seq_at_end match-same-char-seq-at-end?})
+  (update-repeat-state in1 ?in2)
 
   ; Get the sublist for ?in2, and work with that from here on (except if
   ; we've been given custom targets).
