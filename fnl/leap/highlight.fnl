@@ -11,7 +11,6 @@
           :extmarks []
           :group {:label-primary "LeapLabelPrimary"
                   :label-secondary "LeapLabelSecondary"
-                  :label-selected "LeapLabelSelected"
                   :match "LeapMatch"
                   :backdrop "LeapBackdrop"}
           :priority {:label 65535
@@ -92,12 +91,7 @@ so we set a temporary highlight on it to see where we are."
                                                     _ "#ddaadd")
                                               :ctermfg "black"
                                               :ctermbg "blue"
-                                              :nocombine true}
-                  self.group.label-selected {:fg "black"
-                                             :bg "magenta"
-                                             :ctermfg "black"
-                                             :ctermbg "magenta"
-                                             :nocombine true}}]
+                                              :nocombine true}}]
     (each [group-name def-map (pairs defaults)]
       (when (not force?) (set def-map.default true))
       (api.nvim_set_hl 0 group-name def-map))))

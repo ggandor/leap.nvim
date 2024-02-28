@@ -46,9 +46,7 @@ local function set_beacon_for_labeled(target, group_offset, _6_)
   local text = (label .. pad)
   local group_2a = (target.group - group_offset)
   local virttext
-  if target.selected then
-    virttext = {{text, hl.group["label-selected"]}}
-  elseif (group_2a == 1) then
+  if (group_2a == 1) then
     virttext = {{text, hl.group["label-primary"]}}
   elseif (group_2a == 2) then
     virttext = {{text, hl.group["label-secondary"]}}

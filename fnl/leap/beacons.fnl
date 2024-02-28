@@ -35,8 +35,7 @@
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
         group* (- target.group group-offset)
-        virttext (if target.selected [[text hl.group.label-selected]]
-                     (= group* 1) [[text hl.group.label-primary]]
+        virttext (if (= group* 1) [[text hl.group.label-primary]]
                      (= group* 2) [[text hl.group.label-secondary]]
                      (> group* 2)
                      (when (and phase (not opts.highlight_unlabeled_phase_one_targets))
