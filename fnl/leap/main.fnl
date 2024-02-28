@@ -245,10 +245,10 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (tset opts t k (vim.fn.split (. opts t k) "\\zs")))))
 
   (local directional? (not target-windows))
-  (local empty-label-lists? (and (empty? opts.labels)
-                                 (empty? opts.safe_labels)))
+  (local no-labels-to-use? (and (empty? opts.labels)
+                                (empty? opts.safe_labels)))
 
-  (when (and (not directional?) empty-label-lists?)
+  (when (and (not directional?) no-labels-to-use?)
     (echo "no labels to use")
     (lua :return))
   (when (and target-windows (empty? target-windows))
@@ -270,7 +270,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                  (or (vim.o.cpo:match "y")
                                      (not= vim.v.operator "y"))))
   (local count (if (not directional?) nil
-                   (= vim.v.count 0) (if (and op-mode? empty-label-lists?) 1 nil)
+                   (= vim.v.count 0) (if (and op-mode? no-labels-to-use?) 1 nil)
                    vim.v.count))
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
@@ -296,7 +296,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                  ; right after the first input)?
                  :phase (if (or repeating?
                                 (= max-phase-one-targets 0)
-                                empty-label-lists?
+                                no-labels-to-use?
                                 user-given-targets?)
                             nil
                             1)
@@ -363,11 +363,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
             (= remaining 0) group-size
             remaining))))
 
-  (fn get-highlighted-idx-range [targets no-labels?]
-    (if (and no-labels? (= opts.max_highlighted_traversal_targets 0))
+  (fn get-highlighted-idx-range [targets use-no-labels?]
+    (if (and use-no-labels? (= opts.max_highlighted_traversal_targets 0))
         (values 0 -1)  ; empty range
         (let [start (inc _state.curr-idx)
-              end (when no-labels?
+              end (when use-no-labels?
                     (case (get-number-of-highlighted-traversal-targets)
                       n (min (+ (dec start) n) (length targets))))]
           (values start end))))
@@ -517,13 +517,13 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                                  (length targets.label-set)))))
 
     (fn display []
-      (local no-labels? (or empty-label-lists? _state.partial-pattern?))
+      (local use-no-labels? (or no-labels-to-use? _state.partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (set-beacons targets {:group-offset _state.group-offset : no-labels?
+      (set-beacons targets {:group-offset _state.group-offset : use-no-labels?
                             : user-given-targets? :phase _state.phase})
       (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
+        (local (start end) (get-highlighted-idx-range targets use-no-labels?))
         (light-up-beacons targets start end)))
 
     (fn loop [first-invoc?]
@@ -546,10 +546,10 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (loop true))
 
 
-  (fn traversal-loop [targets start-idx {: no-labels?}]
+  (fn traversal-loop [targets start-idx {: use-no-labels?}]
 
     (fn on-first-invoc []
-      (if no-labels?
+      (if use-no-labels?
           (each [_ t (ipairs targets)]
             (set t.label nil))
 
@@ -562,10 +562,10 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                 (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {:group-offset _state.group-offset : no-labels?
+      (set-beacons targets {:group-offset _state.group-offset : use-no-labels?
                             : user-given-targets? :phase _state.phase})
       (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets no-labels?))
+        (local (start end) (get-highlighted-idx-range targets use-no-labels?))
         (light-up-beacons targets start end)))
 
     (fn get-new-idx [idx in]
@@ -631,7 +631,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       _ (exit-early)))
 
   (if (or ?in2 _state.partial-pattern?)
-      (if (or empty-label-lists? _state.partial-pattern?)
+      (if (or no-labels-to-use? _state.partial-pattern?)
           (set targets.autojump? true)
           (prepare-targets* targets))
       (do
@@ -665,7 +665,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
     (set-dot-repeat in1 nil n)
     (do-action target)
     (when (and can-traverse? (> (length targets) 1))
-      (traversal-loop targets 1 {:no-labels? true}))  ; REDRAW (LOOP)
+      (traversal-loop targets 1 {:use-no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
   (exec-user-autocmds :LeapPatternPost)
@@ -716,9 +716,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
         (let [new-idx (inc _state.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
-                          {:no-labels? (or empty-label-lists?
-                                           _state.partial-pattern?
-                                           (not targets*.autojump?))})
+                          {:use-no-labels? (or no-labels-to-use?
+                                               _state.partial-pattern?
+                                               (not targets*.autojump?))})
           (exit))
         (if (not targets*.autojump?)
             (exit-with-action-on 1)

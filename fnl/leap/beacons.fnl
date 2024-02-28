@@ -50,9 +50,10 @@
     (set target.beacon (when virttext [offset virttext]))))
 
 
-(fn set-beacons [targets {: group-offset : no-labels?
+(fn set-beacons [targets {: group-offset : use-no-labels?
                           : user-given-targets? : phase}]
-  (if (and no-labels? (. targets 1 :chars))  ; user-given targets might not have :chars
+  (if (and use-no-labels?
+           (. targets 1 :chars))  ; user-given targets might not have :chars
       (each [_ target (ipairs targets)]
         (set-beacon-to-match-hl target))
       (each [_ target (ipairs targets)]

@@ -69,10 +69,10 @@ end
 local function set_beacons(targets, _13_)
   local _arg_14_ = _13_
   local group_offset = _arg_14_["group-offset"]
-  local no_labels_3f = _arg_14_["no-labels?"]
+  local use_no_labels_3f = _arg_14_["use-no-labels?"]
   local user_given_targets_3f = _arg_14_["user-given-targets?"]
   local phase = _arg_14_["phase"]
-  if (no_labels_3f and targets[1].chars) then
+  if (use_no_labels_3f and targets[1].chars) then
     for _, target in ipairs(targets) do
       set_beacon_to_match_hl(target)
     end
