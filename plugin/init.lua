@@ -53,6 +53,6 @@ local plug_mappings = {
 }
 
 for _, t in ipairs(plug_mappings) do
-  modes, lhs, rhs = unpack(t)
+  local modes, lhs, rhs = unpack(t)
   vim.keymap.set(modes, lhs, rhs, {silent = true})
 end
