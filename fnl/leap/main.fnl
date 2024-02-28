@@ -212,21 +212,21 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (local {:repeat repeat?
-          :dot_repeat dot-repeat?
+  (local {:repeat repeating?
+          :dot_repeat dot-repeating?
           :target_windows target-windows
           :opts user-given-opts
           :targets user-given-targets
           :action user-given-action}
          kwargs)
   (local {:backward backward?}
-         (if dot-repeat? state.dot_repeat
+         (if dot-repeating? state.dot_repeat
              kwargs))
   (local {:inclusive_op inclusive-op?
           : offset
           :match_same_char_seq_at_end match-same-char-seq-at-end?}
-         (if dot-repeat? state.dot_repeat
-             repeat? state.repeat
+         (if dot-repeating? state.dot_repeat
+             repeating? state.repeat
              kwargs))
 
   ; Deprecated, use event.data in the autocommand callbacks instead.
@@ -294,7 +294,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   ; the outside world.
   (local _state {; Multi-phase processing (show beacons ahead of time,
                  ; right after the first input)?
-                 :phase (if (or repeat?
+                 :phase (if (or repeating?
                                 (= max-phase-one-targets 0)
                                 empty-label-lists?
                                 user-given-targets?)
@@ -481,11 +481,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
                       :inclusive_op inclusive-op?})
 
   (fn update-repeat-state [in1 in2]
-    (when-not (or repeat? user-given-targets?)
+    (when-not (or repeating? user-given-targets?)
       (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
 
   (fn set-dot-repeat [in1 in2 target_idx]
-    (when (and dot-repeatable-op? (not dot-repeat?)
+    (when (and dot-repeatable-op? (not dot-repeating?)
                (not= (type user-given-targets) :table))
       (set state.dot_repeat (vim.tbl_extend
                               :error
@@ -602,11 +602,11 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
   (exec-user-autocmds :LeapEnter)
 
-  (local (in1 ?in2) (if repeat? (get-repeat-input)
-                        dot-repeat? (if state.dot_repeat.callback
-                                        (values true true)
-                                        (values state.dot_repeat.in1
-                                                state.dot_repeat.in2))
+  (local (in1 ?in2) (if repeating? (get-repeat-input)
+                        dot-repeating? (if state.dot_repeat.callback
+                                           (values true true)
+                                           (values state.dot_repeat.in1
+                                                   state.dot_repeat.in2))
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
                         ; `next_target` key.
@@ -615,7 +615,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   (when-not in1
     (exit-early))
 
-  (local targets (if (and dot-repeat? state.dot_repeat.callback)
+  (local targets (if (and dot-repeating? state.dot_repeat.callback)
                      (get-user-given-targets state.dot_repeat.callback)
 
                      user-given-targets?
@@ -625,7 +625,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   (when-not targets
     (exit-early))
 
-  (when dot-repeat?
+  (when dot-repeating?
     (case (. targets state.dot_repeat.target_idx)
       target (do (do-action target) (exit))
       _ (exit-early)))
@@ -693,7 +693,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or repeat? _state.partial-pattern?)
+      (or (and (or repeating? _state.partial-pattern?)
                (or op-mode? (not directional?)))
           ; A sole, unlabeled target.
           (= (length targets*) 1))
