@@ -323,7 +323,7 @@ local function leap(kwargs)
     local res = {}
     local break_3f = false
     for idx, target in ipairs(targets) do
-      if (res or break_3f) then break end
+      if (next(res) or break_3f) then break end
       if target.label then
         local relative_group = (target.group - _state["group-offset"])
         if (relative_group > 1) then

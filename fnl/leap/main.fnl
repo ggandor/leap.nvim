@@ -375,7 +375,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
   (fn get-target-with-active-label [targets input]
     (var res [])
     (var break? false)
-    (each [idx target (ipairs targets) &until (or res break?)]
+    (each [idx target (ipairs targets) &until (or (next res) break?)]
       (when target.label
         (local relative-group (- target.group _state.group-offset))
         (when (> relative-group 1)  ; we are beyond the currently active group
