@@ -320,7 +320,7 @@ local function leap(kwargs)
     end
   end
   local function get_target_with_active_label(targets, input)
-    local res = nil
+    local res = {}
     local break_3f = false
     for idx, target in ipairs(targets) do
       if (res or break_3f) then break end

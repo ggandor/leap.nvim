@@ -373,7 +373,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
           (values start end))))
 
   (fn get-target-with-active-label [targets input]
-    (var res nil)
+    (var res [])
     (var break? false)
     (each [idx target (ipairs targets) &until (or res break?)]
       (when target.label
