@@ -341,11 +341,11 @@ Example: >lua
 For Lua callbacks, the `data` field of the argument table (see
 |nvim_create_autocmd()|) is populated with:
 
-    • args: The argument table passed to |leap.leap()|.
+    • args (function): Returns the argument table passed to |leap.leap()|.
 
-Using `args`, you can customize practically anything on a per-call basis. Keep
-in mind that nothing prevents you from passing arbitrary flags when calling
-|leap.leap()|: >lua
+Using `args()`, you can customize practically anything on a per-call basis.
+Keep in mind that nothing prevents you from passing arbitrary flags when
+calling |leap.leap()|: >lua
 
     function my_custom_leap_fn()
       require('leap').leap {
@@ -357,7 +357,7 @@ in mind that nothing prevents you from passing arbitrary flags when calling
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function (event)
-        if event.data.args.my_custom_leap_fn then
+        if event.data.args().my_custom_leap_fn then
           -- Implement some special logic here, that will only apply to
           -- my_custom_leap_fn(), and restore the state (if needed) in an
           -- analogous `LeapLeave` autocommand.

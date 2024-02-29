@@ -229,7 +229,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
              repeating? state.repeat
              kwargs))
 
-  ; Deprecated, use event.data in the autocommand callbacks instead.
+  ; Deprecated, use event.data.args() in the autocommand callbacks instead.
   (set state.args kwargs)
 
   ; Do this before accessing `opts`.
@@ -315,8 +315,9 @@ Also sets a `group` attribute (a static one too, not to be updated)."
       {: pattern
        ; NOTE: `{:args kwargs}` would throw an error if any subtable in
        ; `kwargs` contains both integer and string keys (~> msgpack
-       ; compat), hence the workaround.
-       :data {:args (setmetatable {} {:__index kwargs})}
+       ; compat), hence the workaround. (Metatables cannot be used here
+       ; either, so we should make it a callback.)
+       :data {:args (fn [] kwargs)}
        :modeline false}))
 
   ; Macros
@@ -779,7 +780,7 @@ Also sets a `group` attribute (a static one too, not to be updated)."
 
     (fn set-editor-opts [event t]
       (set saved-editor-opts {})
-      (local wins (or event.data.args.target_windows
+      (local wins (or (. (event.data.args) :target_windows)
                       [(api.nvim_get_current_win)]))
       (each [opt val (pairs t)]
         (let [[scope name] (vim.split opt "." {:plain true})]
