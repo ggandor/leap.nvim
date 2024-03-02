@@ -232,7 +232,14 @@ char separately.
                            :backward nil
                            :inclusive_op nil
                            :offset nil
-                           :match_same_char_seq_at_end nil}})
+                           :match_same_char_seq_at_end nil}
+
+              ; We also use this table to reach the argument table
+              ; passed to `leap()` in autocommands (using event data
+              ; would be cleaner, but it is far too problematic [at the
+              ; moment at least], it cannot handle tables with mixed
+              ; keys, metatables, function values, etc.).
+              :args nil})
 
 
 (fn leap [kwargs]
@@ -254,7 +261,6 @@ char separately.
              repeating? state.repeat
              kwargs))
 
-  ; Deprecated, use event.data.args() in the autocommand callbacks instead.
   (set state.args kwargs)
 
   ; Do this before accessing `opts`.
@@ -337,14 +343,7 @@ char separately.
                  :errmsg nil})
 
   (fn exec-user-autocmds [pattern]
-    (api.nvim_exec_autocmds "User"
-      {: pattern
-       ; NOTE: `{:args kwargs}` would throw an error if any subtable in
-       ; `kwargs` contains both integer and string keys (~> msgpack
-       ; compat), hence the workaround. (Metatables cannot be used here
-       ; either, so we should make it a callback.)
-       :data {:args (fn [] kwargs)}
-       :modeline false}))
+    (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
   ; Macros
 
@@ -784,9 +783,9 @@ char separately.
                                   :w.sidescrolloff 0
                                   :b.modeline false})  ; lightspeed#81
 
-    (fn set-editor-opts [event t]
+    (fn set-editor-opts [t]
       (set saved-editor-opts {})
-      (local wins (or (. (event.data.args) :target_windows)
+      (local wins (or (. state.args :target_windows)
                       [(api.nvim_get_current_win)]))
       (each [opt val (pairs t)]
         (let [[scope name] (vim.split opt "." {:plain true})]
@@ -815,9 +814,9 @@ char separately.
 
     (api.nvim_create_autocmd "User"
                              {:pattern "LeapEnter"
-                              :callback (fn [event]
+                              :callback (fn [_]
                                           (set-editor-opts
-                                            event temporary-editor-opts))
+                                            temporary-editor-opts))
                               :group "LeapDefault"})
 
     (api.nvim_create_autocmd "User"
@@ -831,7 +830,7 @@ char separately.
 
 ; Module ///1
 
-{: state  ; deprecated, not intended to be accessed from the outside anymore
+{: state
  : leap}
 
 
