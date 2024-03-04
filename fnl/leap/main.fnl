@@ -244,21 +244,21 @@ char separately.
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
-  (local {:repeat repeating?
-          :dot_repeat dot-repeating?
+  (local {:repeat invoked-repeat?
+          :dot_repeat invoked-dot-repeat?
           :target_windows target-windows
           :opts user-given-opts
           :targets user-given-targets
           :action user-given-action}
          kwargs)
   (local {:backward backward?}
-         (if dot-repeating? state.dot_repeat
+         (if invoked-dot-repeat? state.dot_repeat
              kwargs))
   (local {:inclusive_op inclusive-op?
           : offset
           :match_same_char_seq_at_end match-same-char-seq-at-end?}
-         (if dot-repeating? state.dot_repeat
-             repeating? state.repeat
+         (if invoked-dot-repeat? state.dot_repeat
+             invoked-repeat? state.repeat
              kwargs))
 
   (set state.args kwargs)
@@ -326,7 +326,7 @@ char separately.
   ; the outside world.
   (local _state {; Multi-phase processing (show beacons ahead of time,
                  ; right after the first input)?
-                 :phase (if (or repeating?
+                 :phase (if (or invoked-repeat?
                                 (= max-phase-one-targets 0)
                                 no-labels-to-use?
                                 user-given-targets?)
@@ -487,11 +487,11 @@ char separately.
                       :inclusive_op inclusive-op?})
 
   (fn update-repeat-state [in1 in2]
-    (when-not (or repeating? user-given-targets?)
+    (when-not (or invoked-repeat? user-given-targets?)
       (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
 
   (fn set-dot-repeat [in1 in2 target_idx]
-    (when (and dot-repeatable-op? (not dot-repeating?)
+    (when (and dot-repeatable-op? (not invoked-dot-repeat?)
                (not= (type user-given-targets) :table))
       (set state.dot_repeat (vim.tbl_extend
                               :error
@@ -608,11 +608,11 @@ char separately.
 
   (exec-user-autocmds :LeapEnter)
 
-  (local (in1 ?in2) (if repeating? (get-repeat-input)
-                        dot-repeating? (if state.dot_repeat.callback
-                                           (values true true)
-                                           (values state.dot_repeat.in1
-                                                   state.dot_repeat.in2))
+  (local (in1 ?in2) (if invoked-repeat? (get-repeat-input)
+                        invoked-dot-repeat? (if state.dot_repeat.callback
+                                                (values true true)
+                                                (values state.dot_repeat.in1
+                                                        state.dot_repeat.in2))
                         user-given-targets? (values true true)
                         ; This might also return in2 too, if using the
                         ; `next_target` key.
@@ -621,7 +621,7 @@ char separately.
   (when-not in1
     (exit-early))
 
-  (local targets (if (and dot-repeating? state.dot_repeat.callback)
+  (local targets (if (and invoked-dot-repeat? state.dot_repeat.callback)
                      (get-user-given-targets state.dot_repeat.callback)
 
                      user-given-targets?
@@ -631,7 +631,7 @@ char separately.
   (when-not targets
     (exit-early))
 
-  (when dot-repeating?
+  (when invoked-dot-repeat?
     (case (. targets state.dot_repeat.target_idx)
       target (do (do-action target) (exit))
       _ (exit-early)))
@@ -699,7 +699,7 @@ char separately.
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or repeating? _state.partial-pattern?)
+      (or (and (or invoked-repeat? _state.partial-pattern?)
                (not can-traverse?))
           ; A sole, unlabeled target.
           (= (length targets*) 1))

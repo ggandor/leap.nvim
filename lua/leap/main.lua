@@ -189,14 +189,14 @@ end
 local state = {["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, dot_repeat = {callback = nil, in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, args = nil}
 local function leap(kwargs)
   local _local_31_ = kwargs
-  local repeating_3f = _local_31_["repeat"]
-  local dot_repeating_3f = _local_31_["dot_repeat"]
+  local invoked_repeat_3f = _local_31_["repeat"]
+  local invoked_dot_repeat_3f = _local_31_["dot_repeat"]
   local target_windows = _local_31_["target_windows"]
   local user_given_opts = _local_31_["opts"]
   local user_given_targets = _local_31_["targets"]
   local user_given_action = _local_31_["action"]
   local function _33_()
-    if dot_repeating_3f then
+    if invoked_dot_repeat_3f then
       return state.dot_repeat
     else
       return kwargs
@@ -205,9 +205,9 @@ local function leap(kwargs)
   local _local_32_ = _33_()
   local backward_3f = _local_32_["backward"]
   local function _35_()
-    if dot_repeating_3f then
+    if invoked_dot_repeat_3f then
       return state.dot_repeat
-    elseif repeating_3f then
+    elseif invoked_repeat_3f then
       return state["repeat"]
     else
       return kwargs
@@ -295,7 +295,7 @@ local function leap(kwargs)
   spec_keys = setmetatable({}, {__index = _43_})
   local _state
   local _48_
-  if (repeating_3f or (max_phase_one_targets == 0) or no_labels_to_use_3f or user_given_targets_3f) then
+  if (invoked_repeat_3f or (max_phase_one_targets == 0) or no_labels_to_use_3f or user_given_targets_3f) then
     _48_ = nil
   else
     _48_ = 1
@@ -481,7 +481,7 @@ local function leap(kwargs)
   end
   local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
   local function update_repeat_state(in1, in2)
-    if not (repeating_3f or user_given_targets_3f) then
+    if not (invoked_repeat_3f or user_given_targets_3f) then
       state["repeat"] = vim.tbl_extend("error", from_kwargs, {in1 = in1, in2 = in2})
       return nil
     else
@@ -489,7 +489,7 @@ local function leap(kwargs)
     end
   end
   local function set_dot_repeat(in1, in2, target_idx)
-    if (dot_repeatable_op_3f and not dot_repeating_3f and (type(user_given_targets) ~= "table")) then
+    if (dot_repeatable_op_3f and not invoked_dot_repeat_3f and (type(user_given_targets) ~= "table")) then
       state.dot_repeat = vim.tbl_extend("error", from_kwargs, {callback = user_given_targets, in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), target_idx = target_idx})
       return set_dot_repeat_2a()
     else
@@ -642,9 +642,9 @@ local function leap(kwargs)
   local do_action = (user_given_action or jump_to_21)
   exec_user_autocmds("LeapEnter")
   local in1, _3fin2 = nil, nil
-  if repeating_3f then
+  if invoked_repeat_3f then
     in1, _3fin2 = get_repeat_input()
-  elseif dot_repeating_3f then
+  elseif invoked_dot_repeat_3f then
     if state.dot_repeat.callback then
       in1, _3fin2 = true, true
     else
@@ -672,7 +672,7 @@ local function leap(kwargs)
   else
   end
   local targets
-  if (dot_repeating_3f and state.dot_repeat.callback) then
+  if (invoked_dot_repeat_3f and state.dot_repeat.callback) then
     targets = get_user_given_targets(state.dot_repeat.callback)
   elseif user_given_targets_3f then
     targets = get_user_given_targets(user_given_targets)
@@ -693,7 +693,7 @@ local function leap(kwargs)
     return
   else
   end
-  if dot_repeating_3f then
+  if invoked_dot_repeat_3f then
     local _112_ = targets[state.dot_repeat.target_idx]
     if (nil ~= _112_) then
       local target = _112_
@@ -829,7 +829,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((repeating_3f or _state["partial-pattern?"]) and not can_traverse_3f) or (#targets_2a == 1)) then
+  elseif (((invoked_repeat_3f or _state["partial-pattern?"]) and not can_traverse_3f) or (#targets_2a == 1)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
