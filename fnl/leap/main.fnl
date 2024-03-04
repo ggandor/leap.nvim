@@ -700,7 +700,7 @@ char separately.
           (exit-with-action-on count))
 
       (or (and (or repeating? _state.partial-pattern?)
-               (or op-mode? (not directional?)))
+               (not can-traverse?))
           ; A sole, unlabeled target.
           (= (length targets*) 1))
       (exit-with-action-on 1))
