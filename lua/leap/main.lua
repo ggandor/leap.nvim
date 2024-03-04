@@ -829,7 +829,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((repeating_3f or _state["partial-pattern?"]) and (op_mode_3f or not directional_3f)) or (#targets_2a == 1)) then
+  elseif ((((repeating_3f or _state["partial-pattern?"]) and (op_mode_3f or not directional_3f)) or (#targets_2a == 1)) and targets_2a["autojump?"]) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)

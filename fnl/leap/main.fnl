@@ -699,10 +699,10 @@ char separately.
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or repeating? _state.partial-pattern?)
+      (and (or (and (or repeating? _state.partial-pattern?)
                (or op-mode? (not directional?)))
           ; A sole, unlabeled target.
-          (= (length targets*) 1))
+          (= (length targets*) 1)) targets*.autojump?)
       (exit-with-action-on 1))
 
   (when targets*.autojump?
