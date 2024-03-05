@@ -873,25 +873,24 @@ local function leap(kwargs)
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
+    elseif (_state["curr-idx"] == 0) then
+      set_dot_repeat(in1, _3fin20, 1)
+      do_action(targets_2a[1])
+      hl:cleanup(hl_affected_windows)
+      exec_user_autocmds("LeapLeave")
+      return
+    elseif (_state["curr-idx"] == 1) then
+      vim.fn.feedkeys(in_final, "i")
+      hl:cleanup(hl_affected_windows)
+      exec_user_autocmds("LeapLeave")
+      return
     else
-      if not targets_2a["autojump?"] then
-        set_dot_repeat(in1, _3fin20, 1)
-        do_action(targets_2a[1])
-        hl:cleanup(hl_affected_windows)
-        exec_user_autocmds("LeapLeave")
-        return
-      else
-        vim.fn.feedkeys(in_final, "i")
-        hl:cleanup(hl_affected_windows)
-        exec_user_autocmds("LeapLeave")
-        return
-      end
     end
   else
   end
-  local _local_146_ = get_target_with_active_label(targets_2a, in_final)
-  local idx = _local_146_[1]
-  local _ = _local_146_[2]
+  local _local_145_ = get_target_with_active_label(targets_2a, in_final)
+  local idx = _local_145_[1]
+  local _ = _local_145_[2]
   if idx then
     set_dot_repeat(in1, _3fin20, idx)
     do_action(targets_2a[idx])
@@ -909,11 +908,11 @@ end
 local function init()
   api.nvim_create_augroup("LeapDefault", {})
   do
-    local _148_ = opts.default.equivalence_classes
-    if (nil ~= _148_) then
-      opts.default.eq_class_of = eq_classes__3emembership_lookup(_148_)
+    local _147_ = opts.default.equivalence_classes
+    if (nil ~= _147_) then
+      opts.default.eq_class_of = eq_classes__3emembership_lookup(_147_)
     else
-      opts.default.eq_class_of = _148_
+      opts.default.eq_class_of = _147_
     end
   end
   local function set_concealed_label()
@@ -924,24 +923,24 @@ local function init()
     end
     return nil
   end
-  local function _151_(_)
+  local function _150_(_)
     return set_concealed_label()
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _151_, group = "LeapDefault"})
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _150_, group = "LeapDefault"})
   hl["init-highlight"](hl)
-  local function _152_(_)
+  local function _151_(_)
     return hl["init-highlight"](hl)
   end
-  api.nvim_create_autocmd("ColorScheme", {callback = _152_, group = "LeapDefault"})
+  api.nvim_create_autocmd("ColorScheme", {callback = _151_, group = "LeapDefault"})
   local saved_editor_opts = {}
   local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
   local function set_editor_opts(t)
     saved_editor_opts = {}
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
     for opt, val in pairs(t) do
-      local _let_153_ = vim.split(opt, ".", {plain = true})
-      local scope = _let_153_[1]
-      local name = _let_153_[2]
+      local _let_152_ = vim.split(opt, ".", {plain = true})
+      local scope = _let_152_[1]
+      local name = _let_152_[2]
       if (scope == "w") then
         for _, win in ipairs(wins) do
           local saved_val = api.nvim_win_get_option(win, name)
@@ -982,14 +981,14 @@ local function init()
     end
     return nil
   end
-  local function _156_(_)
+  local function _155_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _156_, group = "LeapDefault"})
-  local function _157_(_)
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _155_, group = "LeapDefault"})
+  local function _156_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _157_, group = "LeapDefault"})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _156_, group = "LeapDefault"})
 end
 init()
 return {state = state, leap = leap}

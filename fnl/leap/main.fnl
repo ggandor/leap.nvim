@@ -718,7 +718,7 @@ char separately.
   (when-not in-final
     (exit-early))
 
-  ; Jump to the first match on the [rest of the] target list?
+  ; Jump to the first target on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
     (if (can-traverse? targets*)
         (let [new-idx (inc _state.curr-idx)]
@@ -728,9 +728,12 @@ char separately.
                                                _state.partial-pattern?
                                                (not targets*.autojump?))})
           (exit))
-        (if (not targets*.autojump?)
-            (exit-with-action-on 1)
-            (do (vim.fn.feedkeys in-final :i) (exit)))))
+
+        (= _state.curr-idx 0)  ; the cursor hasn't moved yet
+        (exit-with-action-on 1)
+
+        (= _state.curr-idx 1)  ; already on the first target (after autojump)
+        (do (vim.fn.feedkeys in-final :i) (exit))))
 
   (local [idx _] (get-target-with-active-label targets* in-final))
   (if idx
