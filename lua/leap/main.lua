@@ -840,13 +840,13 @@ local function leap(kwargs)
   else
   end
   if targets_2a["autojump?"] then
-    _state["curr-idx"] = 1
     do_action(targets_2a[1])
-    if (#targets_2a == 1) then
+    if (#targets_2a > 1) then
+      _state["curr-idx"] = 1
+    else
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return
-    else
     end
   else
   end

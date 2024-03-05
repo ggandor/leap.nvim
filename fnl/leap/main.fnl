@@ -708,10 +708,10 @@ char separately.
       (exit-with-action-on 1))
 
   (when targets*.autojump?
-    (set _state.curr-idx 1)
     (do-action (. targets* 1))
-    (when (= (length targets*) 1)
-      (exit)))
+    (if (> (length targets*) 1)
+        (set _state.curr-idx 1)
+        (exit)))
 
   ; This sets label states (i.e., modifies targets*) in each cycle.
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
