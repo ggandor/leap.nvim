@@ -733,12 +733,14 @@ char separately.
         (exit-with-action-on 1)
 
         (= _state.curr-idx 1)  ; already on the first target (after autojump)
-        (do (vim.fn.feedkeys in-final :i) (exit))))
+        (do (vim.fn.feedkeys in-final :i)
+            (exit))))
 
   (local [idx _] (get-target-with-active-label targets* in-final))
   (if idx
       (exit-with-action-on idx)
-      (do (vim.fn.feedkeys in-final :i) (exit)))
+      (do (vim.fn.feedkeys in-final :i)
+          (exit)))
 
   ; Do return something here, otherwise Fennel automatically inserts
   ; return statements into the tail-positioned if branches above,
