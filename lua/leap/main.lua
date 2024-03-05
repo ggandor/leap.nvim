@@ -269,7 +269,6 @@ local function leap(kwargs)
   end
   local max_phase_one_targets = (opts.max_phase_one_targets or math.huge)
   local user_given_targets_3f = user_given_targets
-  local can_traverse_3f = (directional_3f and not (count or op_mode_3f or user_given_action))
   local prompt = {str = ">"}
   local spec_keys
   local function _43_(_, k)
@@ -303,6 +302,9 @@ local function leap(kwargs)
   _state = {phase = _48_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
   local function exec_user_autocmds(pattern)
     return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
+  end
+  local function can_traverse_3f(targets)
+    return (directional_3f and not (count or op_mode_3f or user_given_action) and (#targets >= 2))
   end
   local function get_number_of_highlighted_traversal_targets()
     local _50_ = opts.max_highlighted_traversal_targets
@@ -777,7 +779,7 @@ local function leap(kwargs)
     update_repeat_state(in1, nil)
     set_dot_repeat(in1, nil, n)
     do_action(target)
-    if (can_traverse_3f and (#targets > 1)) then
+    if can_traverse_3f(targets) then
       traversal_loop(targets, 1, {["use-no-labels?"] = true})
     else
     end
@@ -829,7 +831,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((invoked_repeat_3f or _state["partial-pattern?"]) and not can_traverse_3f) or (#targets_2a == 1)) then
+  elseif (((invoked_repeat_3f or _state["partial-pattern?"]) and not can_traverse_3f(targets_2a)) or (#targets_2a == 1)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
@@ -864,7 +866,7 @@ local function leap(kwargs)
   else
   end
   if contains_3f(spec_keys.next_target, in_final) then
-    if (can_traverse_3f and (#targets_2a > 1)) then
+    if can_traverse_3f(targets_2a) then
       local new_idx = inc(_state["curr-idx"])
       do_action(targets_2a[new_idx])
       traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or _state["partial-pattern?"] or not targets_2a["autojump?"])})

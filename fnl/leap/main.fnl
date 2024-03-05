@@ -306,10 +306,7 @@ char separately.
                    vim.v.count))
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
-  (local can-traverse? (and directional?
-                            (not (or count
-                                     op-mode?
-                                     user-given-action))))
+
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
   (local spec-keys (setmetatable {}
@@ -370,6 +367,11 @@ char separately.
   ; Helper functions ///
 
   ; Misc. helpers
+
+  (fn can-traverse? [targets]
+    (and directional?
+         (not (or count op-mode? user-given-action))
+         (>= (length targets) 2)))
 
   ; When traversing without labels, keep highlighting the same one group
   ; of targets, and do not shift until reaching the end of the group - it
@@ -670,7 +672,7 @@ char separately.
     ; `mode()`. See vim/vim#9332.)
     (set-dot-repeat in1 nil n)
     (do-action target)
-    (when (and can-traverse? (> (length targets) 1))
+    (when (can-traverse? targets)
       (traversal-loop targets 1 {:use-no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
@@ -700,7 +702,7 @@ char separately.
           (exit-with-action-on count))
 
       (or (and (or invoked-repeat? _state.partial-pattern?)
-               (not can-traverse?))
+               (not (can-traverse? targets*)))
           ; A sole, unlabeled target.
           (= (length targets*) 1))
       (exit-with-action-on 1))
@@ -718,7 +720,7 @@ char separately.
 
   ; Jump to the first match on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
-    (if (and can-traverse? (> (length targets*) 1))
+    (if (can-traverse? targets*)
         (let [new-idx (inc _state.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets* new-idx  ; REDRAW (LOOP)
