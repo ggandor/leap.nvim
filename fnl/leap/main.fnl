@@ -46,7 +46,7 @@ interrupted change operation."
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
 (fn set-dot-repeat* []
   ; Note: We're not checking here whether the operation should be
-  ; repeated (see `dot-repeatable-op?` in `leap()`).
+  ; repeated (see `set-dot-repeat` in `leap()`).
   (let [op vim.v.operator
         force (string.sub (vim.fn.mode true) 3)
         cmd (replace-keycodes
@@ -298,9 +298,6 @@ char separately.
   (local mode (. (api.nvim_get_mode) :mode))
   (local op-mode? (mode:match :o))
   (local change-op? (and op-mode? (= vim.v.operator :c)))
-  (local dot-repeatable-op? (and op-mode? directional?
-                                 (or (vim.o.cpo:match "y")
-                                     (not= vim.v.operator "y"))))
   (local count (if (not directional?) nil
                    (= vim.v.count 0) (if (and op-mode? no-labels-to-use?) 1 nil)
                    vim.v.count))
@@ -492,17 +489,30 @@ char separately.
     (when-not (or invoked-repeat? user-given-targets?)
       (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
 
+
   (fn set-dot-repeat [in1 in2 target_idx]
-    (when (and dot-repeatable-op? (not invoked-dot-repeat?)
-               (not= (type user-given-targets) :table))
+    (local dot-repeatable-op? (and op-mode?
+                                   (or (vim.o.cpo:match "y")
+                                       (not= vim.v.operator "y"))))
+
+    (local dot-repeatable-call? (and dot-repeatable-op?
+                                     (not invoked-dot-repeat?)
+                                     directional?
+                                     (not= (type user-given-targets) :table)))
+
+    (fn update-dot-repeat-state []
       (set state.dot_repeat (vim.tbl_extend
                               :error
                               from-kwargs
                               {:callback user-given-targets
                                :in1 (and (not user-given-targets) in1)
                                :in2 (and (not user-given-targets) in2)
-                               : target_idx}))
+                               : target_idx})))
+
+    (when dot-repeatable-call?
+      (update-dot-repeat-state)
       (set-dot-repeat*)))
+
 
   ; Jump
 

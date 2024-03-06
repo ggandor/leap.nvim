@@ -254,7 +254,6 @@ local function leap(kwargs)
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
-  local dot_repeatable_op_3f = (op_mode_3f and directional_3f and ((vim.o.cpo):match("y") or (vim.v.operator ~= "y")))
   local count
   if not directional_3f then
     count = nil
@@ -491,8 +490,14 @@ local function leap(kwargs)
     end
   end
   local function set_dot_repeat(in1, in2, target_idx)
-    if (dot_repeatable_op_3f and not invoked_dot_repeat_3f and (type(user_given_targets) ~= "table")) then
+    local dot_repeatable_op_3f = (op_mode_3f and ((vim.o.cpo):match("y") or (vim.v.operator ~= "y")))
+    local dot_repeatable_call_3f = (dot_repeatable_op_3f and not invoked_dot_repeat_3f and directional_3f and (type(user_given_targets) ~= "table"))
+    local function update_dot_repeat_state()
       state.dot_repeat = vim.tbl_extend("error", from_kwargs, {callback = user_given_targets, in1 = (not user_given_targets and in1), in2 = (not user_given_targets and in2), target_idx = target_idx})
+      return nil
+    end
+    if dot_repeatable_call_3f then
+      update_dot_repeat_state()
       return set_dot_repeat_2a()
     else
       return nil
