@@ -109,7 +109,7 @@ local function populate_sublists(targets, multi_window_search_3f)
     return nil
   end
 end
-local prepare_targets
+local prepare_labeled_targets
 do
   local function first_target_covers_label_of_second_3f(targets)
     if ((_G.type(targets) == "table") and ((_G.type(targets[1]) == "table") and ((_G.type(targets[1].pos) == "table") and (nil ~= targets[1].pos[1]) and (nil ~= targets[1].pos[2]))) and ((_G.type(targets[2]) == "table") and ((_G.type(targets[2].pos) == "table") and (nil ~= targets[2].pos[1]) and (nil ~= targets[2].pos[2])) and ((_G.type(targets[2].chars) == "table") and (nil ~= targets[2].chars[1]) and (nil ~= targets[2].chars[2])))) then
@@ -184,7 +184,7 @@ do
     attach_label_set(targets)
     return set_labels(targets)
   end
-  prepare_targets = _29_
+  prepare_labeled_targets = _29_
 end
 local state = {["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, dot_repeat = {callback = nil, in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, args = nil}
 local function leap(kwargs)
@@ -477,9 +477,9 @@ local function leap(kwargs)
       return nil
     end
   end
-  local function prepare_targets_2a(targets)
+  local function prepare_labeled_targets_2a(targets)
     local force_noautojump_3f = (user_given_action or op_mode_3f)
-    return prepare_targets(targets, force_noautojump_3f)
+    return prepare_labeled_targets(targets, force_noautojump_3f)
   end
   local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
   local function update_repeat_state(in1, in2)
@@ -723,7 +723,7 @@ local function leap(kwargs)
     if (no_labels_to_use_3f or _state["repeating-partial-pattern?"]) then
       targets["autojump?"] = true
     else
-      prepare_targets_2a(targets)
+      prepare_labeled_targets_2a(targets)
     end
   else
     if (#targets > max_phase_one_targets) then
@@ -732,7 +732,7 @@ local function leap(kwargs)
     end
     populate_sublists(targets, multi_window_search_3f)
     for _, sublist in pairs(targets.sublists) do
-      prepare_targets_2a(sublist)
+      prepare_labeled_targets_2a(sublist)
     end
     set_beacons(targets, {phase = _state.phase})
     if (_state.phase == 1) then

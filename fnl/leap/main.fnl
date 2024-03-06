@@ -129,13 +129,13 @@ char separately.
         (table.insert sublist target)
         (when (and sublist.shared-window? (not= winid sublist.shared-window?))
           (set sublist.shared-window? nil)
-          ; See `prepare-targets`.
+          ; See `prepare-labeled-targets`.
           (set sublist.in-multiple-windows? true)))))
 
 
 ; `targets` might be a sublist of an original target list from here on.
 
-(local prepare-targets
+(local prepare-labeled-targets
   (do
     (fn first-target-covers-label-of-second? [targets]
       ; Problem:
@@ -474,11 +474,11 @@ char separately.
 
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.
-  (fn prepare-targets* [targets]
+  (fn prepare-labeled-targets* [targets]
     (local force-noautojump?
            (or user-given-action  ; no jump, doing sg else
                op-mode?))         ; should be able to select a target
-    (prepare-targets targets force-noautojump?))
+    (prepare-labeled-targets targets force-noautojump?))
 
   ; Repeat
 
@@ -642,13 +642,13 @@ char separately.
   (if (or ?in2 _state.repeating-partial-pattern?)
       (if (or no-labels-to-use? _state.repeating-partial-pattern?)
           (set targets.autojump? true)
-          (prepare-targets* targets))
+          (prepare-labeled-targets* targets))
       (do
         (when (> (length targets) max-phase-one-targets)
           (set _state.phase nil))
         (populate-sublists targets multi-window-search?)
         (each [_ sublist (pairs targets.sublists)]
-           (prepare-targets* sublist))
+          (prepare-labeled-targets* sublist))
         (set-beacons targets {:phase _state.phase})
         (when (= _state.phase 1)
           (resolve-conflicts targets))))
