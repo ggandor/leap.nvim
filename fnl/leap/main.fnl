@@ -398,16 +398,17 @@ char separately.
           (values start end))))
 
   (fn get-target-with-active-label [targets input]
-    (var res [])
+    (var target* nil)
+    (var idx* nil)
     (var break? false)
-    (each [idx target (ipairs targets) &until (or (next res) break?)]
+    (each [idx target (ipairs targets) &until (or target* break?)]
       (when target.label
         (local relative-group (- target.group _state.group-offset))
-        (when (> relative-group 1)  ; we are beyond the currently active group
-          (set break? true))
-        (when (and (= relative-group 1) (= target.label input))
-          (set res [idx target]))))
-    res)
+        (if (> relative-group 1) (set break? true)  ; beyond the active group
+            (= relative-group 1) (when (= target.label input)
+                                   (set target* target)
+                                   (set idx* idx)))))
+    (values target* idx*))
 
   ; Getting targets
 
@@ -606,7 +607,7 @@ char separately.
                         (loop new-idx false))
                 ; We still want the labels (if there are) to function.
               _ (case (get-target-with-active-label targets in)
-                  [_ target] (jump-to! target)
+                  target (jump-to! target)
                   _ (vim.fn.feedkeys in :i))))))
 
     (loop start-idx true))
@@ -748,7 +749,7 @@ char separately.
         (do (vim.fn.feedkeys in-final :i)
             (exit))))
 
-  (local [idx _] (get-target-with-active-label targets* in-final))
+  (local (_ idx) (get-target-with-active-label targets* in-final))
   (if idx
       (exit-with-action-on idx)
       (do (vim.fn.feedkeys in-final :i)
