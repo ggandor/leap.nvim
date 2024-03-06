@@ -473,9 +473,11 @@ char separately.
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.
   (fn prepare-labeled-targets* [targets]
-    (local force-noautojump?
-           (or user-given-action  ; no jump, doing sg else
-               op-mode?))         ; should be able to select a target
+    (local force-noautojump? (or
+                               ; No jump, doing sg else.
+                               user-given-action
+                               ; Should be able to select our target.
+                               (and op-mode? (> (length targets) 1))))
     (prepare-labeled-targets targets force-noautojump?))
 
   ; Repeat
@@ -713,10 +715,8 @@ char separately.
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or invoked-repeat? _state.repeating-partial-pattern?)
-               (not (can-traverse? targets*)))
-          ; A sole, unlabeled target.
-          (= (length targets*) 1))
+      (and (or invoked-repeat? _state.repeating-partial-pattern?)
+           (not (can-traverse? targets*)))
       (exit-with-action-on 1))
 
   (when targets*.autojump?

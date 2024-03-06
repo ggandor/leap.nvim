@@ -480,7 +480,7 @@ local function leap(kwargs)
     end
   end
   local function prepare_labeled_targets_2a(targets)
-    local force_noautojump_3f = (user_given_action or op_mode_3f)
+    local force_noautojump_3f = (user_given_action or (op_mode_3f and (#targets > 1)))
     return prepare_labeled_targets(targets, force_noautojump_3f)
   end
   local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
@@ -838,7 +838,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((invoked_repeat_3f or _state["repeating-partial-pattern?"]) and not can_traverse_3f(targets_2a)) or (#targets_2a == 1)) then
+  elseif ((invoked_repeat_3f or _state["repeating-partial-pattern?"]) and not can_traverse_3f(targets_2a)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
