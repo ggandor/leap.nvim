@@ -299,7 +299,7 @@ local function leap(kwargs)
   else
     _48_ = 1
   end
-  _state = {phase = _48_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["partial-pattern?"] = false}
+  _state = {phase = _48_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["repeating-partial-pattern?"] = false}
   local function exec_user_autocmds(pattern)
     return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
   end
@@ -366,7 +366,7 @@ local function leap(kwargs)
   local function get_repeat_input()
     if state["repeat"].in1 then
       if not state["repeat"].in2 then
-        _state["partial-pattern?"] = true
+        _state["repeating-partial-pattern?"] = true
       else
       end
       return state["repeat"].in1, state["repeat"].in2
@@ -395,7 +395,7 @@ local function leap(kwargs)
         if state["repeat"].in1 then
           _state.phase = nil
           if not state["repeat"].in2 then
-            _state["partial-pattern?"] = true
+            _state["repeating-partial-pattern?"] = true
           else
           end
           return state["repeat"].in1, state["repeat"].in2
@@ -517,7 +517,7 @@ local function leap(kwargs)
       _7cgroups_7c = ceil((#targets / #targets["label-set"]))
     end
     local function display()
-      local use_no_labels_3f = (no_labels_to_use_3f or _state["partial-pattern?"])
+      local use_no_labels_3f = (no_labels_to_use_3f or _state["repeating-partial-pattern?"])
       set_beacons(targets, {["group-offset"] = _state["group-offset"], ["use-no-labels?"] = use_no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = _state.phase})
       hl:cleanup(hl_affected_windows)
       if not count then
@@ -719,8 +719,8 @@ local function leap(kwargs)
     end
   else
   end
-  if (_3fin2 or _state["partial-pattern?"]) then
-    if (no_labels_to_use_3f or _state["partial-pattern?"]) then
+  if (_3fin2 or _state["repeating-partial-pattern?"]) then
+    if (no_labels_to_use_3f or _state["repeating-partial-pattern?"]) then
       targets["autojump?"] = true
     else
       prepare_targets_2a(targets)
@@ -740,8 +740,8 @@ local function leap(kwargs)
     else
     end
   end
-  local _3fin20 = (_3fin2 or (not _state["partial-pattern?"] and get_second_pattern_input(targets)))
-  if not (_state["partial-pattern?"] or _3fin20) then
+  local _3fin20 = (_3fin2 or (not _state["repeating-partial-pattern?"] and get_second_pattern_input(targets)))
+  if not (_state["repeating-partial-pattern?"] or _3fin20) then
     if change_op_3f then
       handle_interrupted_change_op_21()
     else
@@ -831,7 +831,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif (((invoked_repeat_3f or _state["partial-pattern?"]) and not can_traverse_3f(targets_2a)) or (#targets_2a == 1)) then
+  elseif (((invoked_repeat_3f or _state["repeating-partial-pattern?"]) and not can_traverse_3f(targets_2a)) or (#targets_2a == 1)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
@@ -869,7 +869,7 @@ local function leap(kwargs)
     if can_traverse_3f(targets_2a) then
       local new_idx = inc(_state["curr-idx"])
       do_action(targets_2a[new_idx])
-      traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or _state["partial-pattern?"] or not targets_2a["autojump?"])})
+      traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or _state["repeating-partial-pattern?"] or not targets_2a["autojump?"])})
       hl:cleanup(hl_affected_windows)
       exec_user_autocmds("LeapLeave")
       return

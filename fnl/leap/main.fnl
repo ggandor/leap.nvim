@@ -331,7 +331,7 @@ char separately.
                             1)
                  ; When repeating a `{char}<enter>` search (started to
                  ; traverse after the first input).
-                 :partial-pattern? false
+                 :repeating-partial-pattern? false
                  ; For traversal mode.
                  :curr-idx 0
                  ; Currently selected label group, 0-indexed
@@ -417,7 +417,7 @@ char separately.
   (fn get-repeat-input []
     (if state.repeat.in1
         (do (when-not state.repeat.in2
-              (set _state.partial-pattern? true))
+              (set _state.repeating-partial-pattern? true))
             (values state.repeat.in1 state.repeat.in2))
         (set _state.errmsg "no previous search")))
 
@@ -431,7 +431,7 @@ char separately.
           (if state.repeat.in1
               (do (set _state.phase nil)
                   (when-not state.repeat.in2
-                    (set _state.partial-pattern? true))
+                    (set _state.repeating-partial-pattern? true))
                   (values state.repeat.in1 state.repeat.in2))
               (set _state.errmsg "no previous search"))
           in1)))
@@ -525,7 +525,8 @@ char separately.
                                  (length targets.label-set)))))
 
     (fn display []
-      (local use-no-labels? (or no-labels-to-use? _state.partial-pattern?))
+      (local use-no-labels? (or no-labels-to-use?
+                                _state.repeating-partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
       (set-beacons targets {:group-offset _state.group-offset : use-no-labels?
@@ -638,8 +639,8 @@ char separately.
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (if (or ?in2 _state.partial-pattern?)
-      (if (or no-labels-to-use? _state.partial-pattern?)
+  (if (or ?in2 _state.repeating-partial-pattern?)
+      (if (or no-labels-to-use? _state.repeating-partial-pattern?)
           (set targets.autojump? true)
           (prepare-targets* targets))
       (do
@@ -653,9 +654,9 @@ char separately.
           (resolve-conflicts targets))))
 
   (local ?in2 (or ?in2
-                  (and (not _state.partial-pattern?)
+                  (and (not _state.repeating-partial-pattern?)
                        (get-second-pattern-input targets))))  ; REDRAW
-  (when-not (or _state.partial-pattern? ?in2)
+  (when-not (or _state.repeating-partial-pattern? ?in2)
     (exit-early))
 
   (when _state.phase (set _state.phase 2))
@@ -685,9 +686,9 @@ char separately.
   ; we've been given custom targets).
   (local targets* (if targets.sublists (. targets.sublists ?in2) targets))
   (when-not targets*
-    ; (Note: at this point, ?in2 might only be nil if partial-pattern?
-    ; is true; that case implies there are no sublists, and there _are_
-    ; targets.)
+    ; (Note: at this point, ?in2 might only be nil if
+    ; `_state.repeating-partial-pattern?` is true; that case implies
+    ; there are no sublists, and there _are_ targets.)
     (set _state.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
 
@@ -701,7 +702,7 @@ char separately.
           (exit-early)
           (exit-with-action-on count))
 
-      (or (and (or invoked-repeat? _state.partial-pattern?)
+      (or (and (or invoked-repeat? _state.repeating-partial-pattern?)
                (not (can-traverse? targets*)))
           ; A sole, unlabeled target.
           (= (length targets*) 1))
@@ -723,9 +724,10 @@ char separately.
     (if (can-traverse? targets*)
         (let [new-idx (inc _state.curr-idx)]
           (do-action (. targets* new-idx))
-          (traversal-loop targets* new-idx  ; REDRAW (LOOP)
+          (traversal-loop targets*  ; REDRAW (LOOP)
+                          new-idx
                           {:use-no-labels? (or no-labels-to-use?
-                                               _state.partial-pattern?
+                                               _state.repeating-partial-pattern?
                                                (not targets*.autojump?))})
           (exit))
 
