@@ -725,7 +725,6 @@ char separately.
         (set _state.curr-idx 1)
         (exit)))
 
-  ; This sets label states (i.e., modifies targets*) in each cycle.
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
   (when-not in-final
     (exit-early))
