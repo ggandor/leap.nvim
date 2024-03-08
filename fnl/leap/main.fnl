@@ -675,12 +675,15 @@ char separately.
   (when _state.phase (set _state.phase 2))
 
   ; Jump eagerly to the count-th match (without giving the full pattern)?
-  (when (contains? spec-keys.next_target ?in2)
+  (local partial-pattern? (contains? spec-keys.next_target ?in2))
+  ; Do this now - repeat can succeed, even if we fail this time.
+  (update-repeat-state in1 (when-not partial-pattern? ?in2))
+
+  (when partial-pattern?
     (local n (or count 1))
     (local target (. targets n))
     (when-not target
       (exit-early))
-    (update-repeat-state in1 nil)
     ; Do this before `do-action`, because it might erase forced motion.
     ; (The `:normal` command in `jump.jump-to!` can change the state of
     ; `mode()`. See vim/vim#9332.)
@@ -691,9 +694,6 @@ char separately.
     (exit))
 
   (exec-user-autocmds :LeapPatternPost)
-
-  ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state in1 ?in2)
 
   ; Get the sublist for ?in2, and work with that from here on (except if
   ; we've been given custom targets).
