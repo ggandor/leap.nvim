@@ -624,15 +624,22 @@ char separately.
 
   (exec-user-autocmds :LeapEnter)
 
-  (local (in1 ?in2) (if invoked-repeat? (get-repeat-input)
-                        invoked-dot-repeat? (if state.dot_repeat.callback
-                                                (values true true)
-                                                (values state.dot_repeat.in1
-                                                        state.dot_repeat.in2))
-                        user-given-targets? (values true true)
+  (local (in1 ?in2) (if invoked-repeat?
+                        (get-repeat-input)
+
+                        invoked-dot-repeat?
+                        (if state.dot_repeat.callback
+                            (values true true)
+                            (values state.dot_repeat.in1 state.dot_repeat.in2))
+
+                        user-given-targets?
+                        (values true true)
+
+                        (= _state.phase 1)
                         ; This might also return in2 too, if using the
                         ; `next_target` key.
-                        (= _state.phase 1) (get-first-pattern-input)  ; REDRAW
+                        (get-first-pattern-input)   ; REDRAW
+
                         (get-full-pattern-input)))  ; REDRAW
   (when-not in1
     (exit-early))
@@ -735,7 +742,7 @@ char separately.
     (if (can-traverse? targets*)
         (let [new-idx (inc _state.curr-idx)]
           (do-action (. targets* new-idx))
-          (traversal-loop targets*  ; REDRAW (LOOP)
+          (traversal-loop targets*                     ; REDRAW (LOOP)
                           new-idx
                           {:use-no-labels? (or no-labels-to-use?
                                                _state.repeating-partial-pattern?
