@@ -674,8 +674,10 @@ char separately.
 
   (when _state.phase (set _state.phase 2))
 
-  ; Jump eagerly to the count-th match (without giving the full pattern)?
-  (local partial-pattern? (contains? spec-keys.next_target ?in2))
+  ; Jump eagerly to the first/count-th match on the whole target list?
+  (local partial-pattern? (or _state.repeating-partial-pattern?
+                              (contains? spec-keys.next_target ?in2)))
+
   ; Do this now - repeat can succeed, even if we fail this time.
   (update-repeat-state in1 (when-not partial-pattern? ?in2))
 
@@ -715,8 +717,7 @@ char separately.
           (exit-early)
           (exit-with-action-on count))
 
-      (and (or invoked-repeat? _state.repeating-partial-pattern?)
-           (not (can-traverse? targets*)))
+      (and invoked-repeat? (not (can-traverse? targets*)))
       (exit-with-action-on 1))
 
   (when targets*.autojump?

@@ -766,7 +766,7 @@ local function leap(kwargs)
     _state.phase = 2
   else
   end
-  local partial_pattern_3f = contains_3f(spec_keys.next_target, _3fin20)
+  local partial_pattern_3f = (_state["repeating-partial-pattern?"] or contains_3f(spec_keys.next_target, _3fin20))
   local function _125_()
     if not partial_pattern_3f then
       return _3fin20
@@ -845,7 +845,7 @@ local function leap(kwargs)
       exec_user_autocmds("LeapLeave")
       return
     end
-  elseif ((invoked_repeat_3f or _state["repeating-partial-pattern?"]) and not can_traverse_3f(targets_2a)) then
+  elseif (invoked_repeat_3f and not can_traverse_3f(targets_2a)) then
     set_dot_repeat(in1, _3fin20, 1)
     do_action(targets_2a[1])
     hl:cleanup(hl_affected_windows)
