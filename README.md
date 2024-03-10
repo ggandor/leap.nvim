@@ -72,8 +72,8 @@ Type
 
 You can also
 
-- search bidirectionally in the whole window, or bind only one key to Leap, and
-  search in all windows (see [FAQ](#faq)).
+- search bidirectionally in the whole window (`<Plug>(leap)`), or bind only one
+  key to Leap, and search in all windows (see [FAQ](#faq)).
 - map keys to repeat motions without explicitly invoking Leap, similar to how
   `;` and `,` works (see `:h leap-repeat`).
 
@@ -233,10 +233,10 @@ vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 Note that you will get half as many auto-jumps on average, but not needing to
 press `shift` might compensate for that.
 
-`<Plug>(leap)` sorts matches according to euclidean ("beeline") distance from
-the cursor, with the exception that the current line, and on the current line,
-forward direction is always prioritized. That is, you can be sure that the
-target right in front of you will be the first one.
+`<Plug>(leap)` sorts matches by euclidean distance from the cursor, with the
+exception that the current line, and on the current line, forward direction is
+prioritized. That is, you can always be sure that the targets right in front of
+you will be the first ones.
 
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
 a random direction might be too annoying with the selection highlight on, and
@@ -294,6 +294,9 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 ## Usage
 
+See `:h leap-usage` for supplemental features not mentioned here (targeting
+empty lines, "traversal" mode, repeating motions, etc.)
+
 [Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
 to the example file, if you want to follow along.
 
@@ -343,69 +346,6 @@ In very rare cases, if the large number of matches cannot be covered even by
 two label groups, you might need to press `<space>` multiple times, until you
 see the target label, first in blue, and then in green. (Substitute "green" and
 "blue" with the actual colors in the current theme.)
-
-### Repeat and traversal
-
-`<enter>` (`special_keys.next_target`) is a very special key: at any stage, it
-initiates "traversal" mode, moving on to the next match on each subsequent
-keypress. If you press it right after invoking a Leap motion (e.g. `s<enter>`),
-it uses the previous search pattern. In case you overshoot your target, `<tab>`
-(`special_keys.prev_target`) can revert the previous jump(s). Note that if the
-safe label set is in use, the labels will remain available the whole time!
-
-You can make `next_target` and `prev_target` behave like like `;` and `,`, that
-is, repeat the last motion without explicitly invoking Leap (see `:h
-leap-repeat`).
-
-Traversal mode can be used as a substitute for `fFtT` motions.
-`s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
-`dt{char}`, but they work over multiple lines.
-
-In case of cross-window search (`gs`), you cannot traverse (since there's no
-direction to follow), but the search can be repeated, and you can also accept
-the first (presumably only) match with `<enter>`, even after one input.
-
-### Special cases
-
-<details>
-<summary>Jumping to the end of the line and to empty lines</summary>
-
-A character at the end of a line can be targeted by pressing `<space>` after it.
-There is no special mechanism behind this: `<space>` is simply an alias for the
-newline character, defined in `opts.equivalence_classes` by default.
-
-Empty lines or EOL positions can also be targeted, by pressing the newline
-alias twice (`<space><space>`). This latter is a slightly more magical feature,
-but fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
-
-</details>
-
-<details>
-<summary>Concealed labels</summary>
-
-In phase one, a special character might replace the label in two cases:
-
-* "Here be dragons" (conflict marker):
-
-    * the label is on top of another label
-    * the label immediately follows an unlabeled match
-    * the label is on top of an unlabeled match
-
-  The first two cases are possbible when the target is right next to EOL or the
-  window edge, and the label needs to be shifted left.
-
-  Note: In the latter two cases, the match highlight is removed, even if
-  enabled in `opts`.
-
-* If unlabeled targets are not highlighted (i.e., the default settings),
-  targets beyond the secondary group need to have some kind of label next to
-  them, to signal that they are not directly reachable.
-
-Leap automatically uses either space (if both primary and secondary labels have
-a background in the current color scheme) or a middle dot (U+00B7).
-
-</details>
 
 ## Configuration
 
@@ -664,7 +604,7 @@ vowels together: `{ 'aá', 'eé', 'ií', ... }`.
 
 </details>
 
-### The million-dollar question
+### Miscellaneous
 
 <details>
 <summary>Was the name inspired by Jef Raskin's Leap?</summary>

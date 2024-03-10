@@ -1,5 +1,5 @@
 *leap.txt*	Neovim's answer to the mouse
-*leap.nvim*
+
 For Neovim version 0.7.0
 
 ==============================================================================
@@ -14,7 +14,7 @@ CONTENTS                                                         *leap-contents*
   Extending Leap ············································· |leap-extensions|
 
 ==============================================================================
-INTRODUCTION                                                 *leap-introduction*
+INTRODUCTION                                  *leap* *leap.nvim* *leap-introduction*
 
 Leap is a motion plugin that allows you to jump to any positions in the
 visible editor area by entering a 2-character search pattern, and then
@@ -47,10 +47,10 @@ it. There is no special mechanism behind this: `<space>` is simply an alias
 for the newline character, defined in |leap.opts.equivalence_classes| by
 default.
 
-Empty lines or EOL positions can also be targeted, by pressing the newline
-alias twice (`<space><space>`). This latter is a slightly more magical
-feature, but fulfills the principle that any visible position you can move to
-with the cursor should be reachable by Leap too.
+A slightly more magical feature is that you can target even empty lines or EOL
+positions, by pressing the newline alias twice (`<space><space>`). This
+fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
 
                                                            *leap-smart-autojump*
 Leap only jumps to the first match if the remaining matches can be covered by
@@ -61,21 +61,20 @@ For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 
                                                                 *leap-traversal*
 `<enter>` (|leap.opts.special_keys.next_target|) is a very special key: at any
-stage, it initiates "traversal" mode, moving on to the next match on each
-subsequent keypress. If you press it right after invoking a Leap motion (e.g.
-`s<enter>`), it uses the previous search pattern. In case you overshoot your
-target, `<tab>` (|leap.opts.special_keys.prev_target|) can revert the jump(s).
-Note that if |leap.opts.safe_labels| is in use, the labels will remain
-available during the whole time.
+stage, it initiates "traversal" mode, jumping to the first match, and then
+moving on to the next one on each subsequent keypress. When pressing it right
+after invoking a Leap motion (e.g. `s<enter>`), it uses the previous search
+pattern. If you overshoot your target, `<tab>`
+(|leap.opts.special_keys.prev_target|) can revert the jump(s).
 
-Traversal mode can be used as a substitute for `fFtT` motions.
+You cannot traverse through the matches if there is no direction to follow
+(|leap_gs|), but `<enter>` still allows you to repeat the previous search
+(`gs<enter>`), or to accept the closest - presumably only - match
+(`gs<enter><enter>`, `gs{char}<enter>`, `gs{char}{char}<enter>`).
+
+Note: Traversal mode can be used as a substitute for `fFtT` motions.
 `s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
 `dt{char}`, but they work over multiple lines.
-
-Note: In case of cross-window search (|leap_gs|), you cannot traverse (since
-there's no direction to follow), but the search can be repeated, and you can
-also accept the first (presumably only) match with `<enter>`, even after one
-input.
 
                                                                    *leap-repeat*
 There is a convenience function in the `user` module to set keys that behave
@@ -95,6 +94,27 @@ Leap (after that, they enter traversal mode, and behave just like
                                                                *leap-dot-repeat*
 Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed.
+
+                                                         *leap-concealed-labels*
+In phase one - i.e., after typing the first input character -, some labels
+might be concealed with an empty block or a middle dot, depending on the
+colorscheme. Those mark that there is some kind of conflict or potential
+source of confusion, that will only be resolved in phase two (after entering
+the full pattern):
+
+    A. The label is on top of another label.
+    B. The label immediately follows an unlabeled match.
+    C. The label is on top of an unlabeled match.
+
+Case A and B are possible when the target is right next to EOL or the window
+edge, and the label needs to be shifted left.
+
+Note: In case B and C, the match highlight is removed, even if
+|leap.opts.highlight_unlabeled_phase_one_targets| is true.
+
+If |leap.opts.highlight_unlabeled_phase_one_targets| is false, targets beyond
+the secondary group also have these concealed labels next to them, to signal
+that they are not directly reachable.
 
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
@@ -130,6 +150,8 @@ to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 >lua
     vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')
 
+Default motions:
+
 *<Plug>(leap-forward)*
 arguments: `{}`
 default mapping: `s`
@@ -142,12 +164,20 @@ default mapping: `S`
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 
+Bidirectional search in the current-window:
+
 *<Plug>(leap)*
 arguments: `{ target_windows = { vim.api.nvim_get_current_win() } }`
 suggested mapping: `s` (recommended for Normal mode only)
 
-Alternative set for in-window motions ("fFtT"-style, including or excluding
-the whole 2-character match in Visual and Operator-pending-mode):
+Note: This sorts matches by euclidean distance from the cursor, with the
+exception that the current line, and on the current line, forward direction is
+prioritized. That is, you can always be sure that the targets right in front
+of you will be the first ones.
+
+Alternative, "fFtT"-style directional set for in-window motions, in the vein
+of evil-snipe (https://github.com/hlissner/evil-snipe), including or excluding
+the whole 2-character match in Visual and Operator-pending-mode:
 
 *<Plug>(leap-forward-to)*
 arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
@@ -206,9 +236,10 @@ Available options~
                                                *leap.opts.max_phase_one_targets*
 `max_phase_one_targets = nil`
 
-    Disable ahead-of-time displaying of target beacons beyond a certain number
-    of phase one targets (to mitigate visual noise in extreme cases). Setting
-    this option to 0 disables two-phase processing altogether.
+    Number of phase-one targets (`{char1}{?}` pairs) above which ahead-of-time
+    displaying of target beacons - labels and/or match highlight - will be
+    disabled (to mitigate visual noise in extreme cases). `nil` means no
+    limit, `0` disables two-phase processing altogether.
 
                                *leap.opts.highlight_unlabeled_phase_one_targets*
 `highlight_unlabeled_phase_one_targets = false`
@@ -327,12 +358,13 @@ might want to wrap them in a function, and define an autocommand like below.
 EVENTS                                                             *leap-events*
 
 The |User| event is triggered with the following patterns on entering/exiting
-Leap (not in traversal mode):
+Leap:
 
 *LeapEnter*
 *LeapLeave*
 
-Example: >lua
+Example - turning off |hlsearch| while leaping: >lua
+
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       command = 'nohlsearch',
@@ -378,25 +410,27 @@ with them.
 There are lots of ways you can extend the plugin and bend it to your will, and
 the combinations of them give you almost infinite possibilities.
 
-Instead of using the provided `<Plug>` keys, you can also call the `leap()`
-function directly:
+Instead of using the provided `<Plug>` keys (|leap-custom-mappings|), you can
+also call the `leap()` function directly:
 
 leap({opts})                                                       *leap.leap()*
     Entry point for all |leap.nvim| actions.
 
     Parameters: ~
         {opts} Optional parameters.
-               • opts: A table just like |leap.opts|, to override any default
-                 setting for the specific call.
-                 E.g.: `require('leap').leap { opts = { labels = {} } }`
-               • offset: Where to land with the cursor compared to the target
-                 position (-1, 0, 1, 2).
-               • inclusive_op: A flag indicating whether an operation should
-                 behave as |inclusive|.
                • backward: Search backward instead of forward in the current
                  window.
                • target_windows: A list of windows (as |winid|s) to be
                  searched.
+               • offset: Where to land with the cursor compared to the target
+                 position (-1, 0, 1, 2).
+               • inclusive_op: A flag indicating whether an operation should
+                 behave as |inclusive|.
+               • opts: A table just like |leap.opts|, to override any default
+                 setting for the specific call. Example: >lua
+
+                    `require('leap').leap { opts = { safe_labels = '' } }`
+<
                                                            *leap-custom-targets*
                • targets: Either a list of targets, or a function returning
                  such a list. The advantage of the latter is that the function
@@ -409,7 +443,7 @@ leap({opts})                                                       *leap.leap()*
                  target, if there is no custom `action` provided. If you have
                  targets in multiple windows, you also need to provide a
                  `wininfo` field for each (|getwininfo()|). Targets can
-                 represent anything with a position, like Tree-sitter nodes,
+                 represent anything with a position, like |treesitter| nodes,
                  etc.
                                                             *leap-custom-action*
                • action: A Lua function that will be executed by Leap in place
