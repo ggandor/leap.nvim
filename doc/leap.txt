@@ -142,6 +142,10 @@ default mapping: `S`
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
 default mapping: `gs`
 
+*<Plug>(leap)*
+arguments: `{ target_windows = { vim.api.nvim_get_current_win() } }`
+suggested mapping: `s` (recommended for Normal mode only)
+
 Alternative set for in-window motions ("fFtT"-style, including or excluding
 the whole 2-character match in Visual and Operator-pending-mode):
 

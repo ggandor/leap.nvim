@@ -22,6 +22,15 @@ local plug_mappings = {
 
   -- Alternative
   {
+    { 'n', 'x', 'o' },
+    '<Plug>(leap)',
+    function ()
+      require('leap').leap {
+        target_windows = { vim.api.nvim_get_current_win() }
+      }
+    end
+  },
+  {
     { 'n' },
     '<Plug>(leap-forward-to)',
     function () require('leap').leap {} end

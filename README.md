@@ -200,21 +200,68 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
-config (overrides `s`, `S`, and `gs` in all modes):
+config (overrides `s`, `S` and `gs` in all modes):
 
 `require('leap').create_default_mappings()` (init.lua)
 
 `lua require('leap').create_default_mappings()` (init.vim)
 
-To set custom mappings instead, see `:h leap-custom-mappings`.
+Note: Do not set lazy loading via your fancy plugin manager, as it is
+completely redundant (Leap takes care of lazy loading itself), and might even
+cause [problems](https://github.com/ggandor/leap.nvim/issues/191).
 
-The following additional tweaks are suggested:
+<details>
+<summary>Alternative key mappings</summary>
+
+Calling `require('leap').create_default_mappings()` is equivalent to:
 
 ```lua
-require('leap').opts.special_keys.prev_target = '<bs>'
-require('leap').opts.special_keys.prev_group = '<bs>'
-require('leap.user').set_repeat_keys('<cr>', '<bs>')
+vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
+vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
+vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 ```
+
+A suggested alternative arrangement (bidirectional `s` for Normal mode):
+
+```lua
+vim.keymap.set('n',        's', '<Plug>(leap)')
+vim.keymap.set('n',        'S', '<Plug>(leap-from-window)')
+vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
+vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
+```
+
+Note that you will get half as many auto-jumps on average, but not needing to
+press `shift` might compensate for that.
+
+`<Plug>(leap)` sorts matches according to euclidean ("beeline") distance from
+the cursor, with the exception that the current line, and on the current line,
+forward direction is always prioritized. That is, you can be sure that the
+target right in front of you will be the first one.
+
+Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
+a random direction might be too annoying with the selection highlight on, and
+neither for Operator-pending mode, as dot-repeat cannot be used if the search
+is non-directional. Another caveat is that you cannot traverse through the
+matches (`:h leap-traversal`).
+
+For further customization, see `:h leap-custom-mappings`.
+
+</details>
+
+<details>
+<summary>Suggested additional tweaks</summary>
+
+```lua
+-- Override some old defaults - use backspace instead of tab (see issue #165).
+require('leap').opts.special_keys.prev_target = '<backspace>'
+require('leap').opts.special_keys.prev_group = '<backspace>'
+
+-- Use the traversal keys to repeat the previous motion without explicitly
+-- invoking Leap.
+require('leap.user').set_repeat_keys('<enter>', '<backspace>')
+```
+
+</details>
 
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
@@ -242,15 +289,6 @@ vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
 Caveat: If you experience any problems after using the above snippet, check
 [#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
 and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
-
-</details>
-
-<details>
-<summary>Lazy loading</summary>
-
-...is all the rage now, but doing it manually or via some plugin manager is
-completely redundant, as Leap takes care of it itself. Nothing unnecessary is
-loaded until you actually trigger a motion.
 
 </details>
 
@@ -488,27 +526,7 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 ### Features
 
 <details>
-<summary>Bidirectional search in the current window</summary>
-
-Simply initiate multi-window mode (that is, call `leap()` directly, giving it a
-`target_windows` argument) with the current window as the only target. Not
-recommended for Operator-pending mode, as dot-repeat cannot be used if the
-search is non-directional. Another caveat is that you cannot traverse through
-the matches. Needless to say, you will also get a lot more visual noise, less
-comfortable labels, and half as many auto-jumps on average.
-
-```lua
-vim.keymap.set('n', 's', function ()
-  require('leap').leap { target_windows = { vim.api.nvim_get_current_win() } }
-end)
-```
-
-</details>
-
-<details>
 <summary>Search in all windows</summary>
-
-The same caveats as above apply here, obviously even more so.
 
 ```lua
 vim.keymap.set('n', 's', function ()
