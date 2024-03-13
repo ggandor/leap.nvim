@@ -365,14 +365,20 @@ Leap:
 
 Example - turning off |hlsearch| while leaping: >lua
 
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'LeapEnter',
-      command = 'nohlsearch',
-    })
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'LeapLeave',
-      command = 'let &hlsearch=&hlsearch',
-    })
+    do
+      local saved_hls
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'LeapEnter',
+        callback = function ()
+          saved_hls = vim.o.hlsearch
+          vim.o.hlsearch = false
+        end,
+      })
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'LeapLeave',
+        callback = function () vim.o.hlsearch = saved_hls end,
+      })
+    end
 
 The argument table passed to |leap.leap()| can be accessed at runtime via the
 `state` table: `require('leap').state.args`.
