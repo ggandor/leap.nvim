@@ -668,8 +668,8 @@ char separately.
           (set _state.phase nil))
         (populate-sublists targets multi-window-search?)
         (each [_ sublist (pairs targets.sublists)]
-          (prepare-labeled-targets* sublist))
-        (set-beacons targets {:phase _state.phase})
+          (prepare-labeled-targets* sublist)
+          (set-beacons targets {:phase _state.phase}))
         (when (= _state.phase 1)
           (resolve-conflicts targets))))
 

@@ -740,8 +740,8 @@ local function leap(kwargs)
     populate_sublists(targets, multi_window_search_3f)
     for _, sublist in pairs(targets.sublists) do
       prepare_labeled_targets_2a(sublist)
+      set_beacons(targets, {phase = _state.phase})
     end
-    set_beacons(targets, {phase = _state.phase})
     if (_state.phase == 1) then
       resolve_conflicts(targets)
     else
