@@ -635,12 +635,12 @@ char separately.
                         user-given-targets?
                         (values true true)
 
-                        (= _state.phase 1)
+                        (not _state.phase)
+                        (get-full-pattern-input)     ; REDRAW
+
                         ; This might also return in2 too, if using the
                         ; `next_target` key.
-                        (get-first-pattern-input)   ; REDRAW
-
-                        (get-full-pattern-input)))  ; REDRAW
+                        (get-first-pattern-input)))  ; REDRAW
   (when-not in1
     (exit-early))
 

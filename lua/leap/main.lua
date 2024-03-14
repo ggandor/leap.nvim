@@ -661,10 +661,10 @@ local function leap(kwargs)
     end
   elseif user_given_targets_3f then
     in1, _3fin2 = true, true
-  elseif (_state.phase == 1) then
-    in1, _3fin2 = get_first_pattern_input()
-  else
+  elseif not _state.phase then
     in1, _3fin2 = get_full_pattern_input()
+  else
+    in1, _3fin2 = get_first_pattern_input()
   end
   if not in1 then
     if change_op_3f then
