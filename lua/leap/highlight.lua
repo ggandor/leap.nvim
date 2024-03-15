@@ -32,10 +32,10 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
       end
       return nil
     else
-      local _let_5_ = map(dec, {vim.fn.line("."), vim.fn.col(".")})
+      local _let_5_ = map(dec, get_cursor_pos())
       local curline = _let_5_[1]
       local curcol = _let_5_[2]
-      local _let_6_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
+      local _let_6_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
       local win_top = _let_6_[1]
       local win_bot = _let_6_[2]
       local function _8_()
@@ -61,7 +61,7 @@ M["highlight-cursor"] = function(self)
   local line_str = vim.fn.getline(line)
   local ch_at_curpos
   do
-    local _12_ = vim.fn.strpart(line_str, (col - 1), 1, true)
+    local _12_ = vim.fn.strpart(line_str, dec(col), 1, true)
     if (_12_ == "") then
       ch_at_curpos = " "
     elseif (nil ~= _12_) then
