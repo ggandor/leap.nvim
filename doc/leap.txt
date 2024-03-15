@@ -223,10 +223,11 @@ Available options~
     A character in search patterns will match any other in its equivalence
     class. The sets can either be defined as strings or tables.
 
-    Example: `{ ' \t\r\n', ')]}', '([{', '\'"' }`
-
+    Example - whitespace, brackets, and quotes: >lua
+        { ' \t\r\n', '([{', ')]}', '\'"`' }
+<
     Note: Make sure to have a set containing `\n` if you want to be able to
-    target characters at the end of the line.
+    target empty lines and characters at the end of the line.
 
     Note: Non-mutual aliases are not possible in Leap, for the same reason
     that supporting |smartcase| is not possible: we would need to show two
