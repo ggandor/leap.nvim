@@ -543,8 +543,8 @@ char separately.
                                 _state.repeating-partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (set-beacons targets {:group-offset _state.group-offset : use-no-labels?
-                            : user-given-targets? :phase _state.phase})
+      (set-beacons targets {:group-offset _state.group-offset
+                            :phase _state.phase : use-no-labels?})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets use-no-labels?))
         (light-up-beacons targets start end)))
@@ -585,8 +585,8 @@ char separately.
                 (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {:group-offset _state.group-offset : use-no-labels?
-                            : user-given-targets? :phase _state.phase})
+      (set-beacons targets {:group-offset _state.group-offset
+                            :phase _state.phase : use-no-labels?})
       (with-highlight-chores
         (local (start end) (get-highlighted-idx-range targets use-no-labels?))
         (light-up-beacons targets start end)))

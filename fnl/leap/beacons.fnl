@@ -15,9 +15,8 @@
 
 
 (fn set-beacon-to-match-hl [target]
-  (local virttext (->> target.chars
-                       (map #(or (. opts.substitute_chars $) $))
-                       table.concat))
+  (local virttext (table.concat
+                    (map #(or (. opts.substitute_chars $) $) target.chars)))
   (set target.beacon [0 [[virttext hl.group.match]]]))
 
 
@@ -29,37 +28,35 @@
         (+ (ch1:len) (ch2:len)))))
 
 
-(fn set-beacon-for-labeled [target group-offset {: user-given-targets? : phase}]
-  (let [offset (if phase (get-label-offset target) 0)
-        pad (if (or phase user-given-targets?) "" " ")
+(fn set-beacon-for-labeled [target ?group-offset ?phase]
+  (let [offset (if (and target.chars ?phase) (get-label-offset target) 0)
+        pad (if (and (not ?phase) target.chars (. target.chars 2)) " " "")
         label (or (. opts.substitute_chars target.label) target.label)
         text (.. label pad)
-        group* (- target.group group-offset)
-        virttext (if (= group* 1) [[text hl.group.label-primary]]
-                     (= group* 2) [[text hl.group.label-secondary]]
-                     (> group* 2)
-                     (when (and phase (not opts.highlight_unlabeled_phase_one_targets))
-                       ; In this case, "no highlight" should
-                       ; unambiguously signal "no further keystrokes
-                       ; needed", so it is mandatory to show all labeled
-                       ; positions in some way. (Note: We're keeping
-                       ; this on even after phase one - sudden visual
-                       ; changes should be avoided as much as possible.)
-                       [[(.. opts.concealed_label pad) hl.group.label-secondary]]))]
+        relative-group (- target.group (or ?group-offset 0))
+        virttext
+        (if (= relative-group 1) [[text hl.group.label-primary]]
+            (= relative-group 2) [[text hl.group.label-secondary]]
+            (> relative-group 2)
+            (when (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
+              ; In this case, "no highlight" should unambiguously signal
+              ; "no further keystrokes needed", so it is mandatory to
+              ; show all labeled positions in some way. (Note: We're
+              ; keeping this on even after phase one - sudden visual
+              ; changes should be avoided as much as possible.)
+              [[(.. opts.concealed_label pad) hl.group.label-secondary]]))]
     ; Set nil too (= switching off a beacon).
     (set target.beacon (when virttext [offset virttext]))))
 
 
-(fn set-beacons [targets {: group-offset : use-no-labels?
-                          : user-given-targets? : phase}]
-  (if (and use-no-labels?
-           (. targets 1 :chars))  ; user-given targets might not have :chars
-      (each [_ target (ipairs targets)]
-        (set-beacon-to-match-hl target))
+(fn set-beacons [targets {: group-offset : use-no-labels? : phase}]
+  (if use-no-labels?
+      (when (. targets 1 :chars)  ; user-given targets might not have :chars
+        (each [_ target (ipairs targets)]
+          (set-beacon-to-match-hl target)))
       (each [_ target (ipairs targets)]
         (if target.label
-            (set-beacon-for-labeled target (or group-offset 0)
-                                    {: user-given-targets? : phase})
+            (set-beacon-for-labeled target group-offset phase)
 
             (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
             (set-beacon-to-match-hl target)))))

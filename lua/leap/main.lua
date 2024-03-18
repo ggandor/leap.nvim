@@ -532,7 +532,7 @@ local function leap(kwargs)
     end
     local function display()
       local use_no_labels_3f = (no_labels_to_use_3f or _state["repeating-partial-pattern?"])
-      set_beacons(targets, {["group-offset"] = _state["group-offset"], ["use-no-labels?"] = use_no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = _state.phase})
+      set_beacons(targets, {["group-offset"] = _state["group-offset"], phase = _state.phase, ["use-no-labels?"] = use_no_labels_3f})
       hl:cleanup(hl_affected_windows)
       if not count then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
@@ -599,7 +599,7 @@ local function leap(kwargs)
       end
     end
     local function display()
-      set_beacons(targets, {["group-offset"] = _state["group-offset"], ["use-no-labels?"] = use_no_labels_3f, ["user-given-targets?"] = user_given_targets_3f, phase = _state.phase})
+      set_beacons(targets, {["group-offset"] = _state["group-offset"], phase = _state.phase, ["use-no-labels?"] = use_no_labels_3f})
       hl:cleanup(hl_affected_windows)
       if not count then
         hl["apply-backdrop"](hl, backward_3f, _3ftarget_windows)
