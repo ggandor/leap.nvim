@@ -105,7 +105,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         (get-match-positions pattern [left-bound right-bound]
                              {: backward? : whole-window?})]
     (var line-str nil)
-    (var prev-match {})  ; to find overlaps
+    (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
     (each [i [line col &as pos] (ipairs match-positions)]
       (when (not (and skip-curpos? (= line curline) (= col curcol)))
         (when (not= line prev-match.line)
@@ -113,15 +113,14 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         ; Extracting the actual characters from the buffer at the match
         ; position.
         (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-        (if (= ch1 "")  ; on EOL
-            ; In this case, we're adding another, virtual \n after the real one,
-            ; so that these can be targeted by pressing a newline alias twice.
-            ; (See also `prepare-pattern`.)
+        (if (= ch1 "")
+            ; On EOL - in this case, we're adding another, virtual \n after the
+            ; real one, so that these can be targeted by pressing a newline alias
+            ; twice. (See also `prepare-pattern`.)
             (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
             (do
               (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-              (when (= ch2 "")  ; before EOL
-                (set ch2 "\n"))
+              (when (= ch2 "") (set ch2 "\n"))  ; before EOL
               (let [overlap? (and (= line prev-match.line)
                                   (if backward?
                                       ; c1 c2
@@ -133,12 +132,11 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
                     triplet? (and overlap?
                                   ; Same pair? (Eq-classes & ignorecase considered.)
                                   (= (->representative-char ch2)
-                                     (->representative-char (or prev-match.ch2 ""))))
+                                     (->representative-char prev-match.ch2)))
                     skip-match? (and triplet?
-                                     (or (and backward?
-                                              match-same-char-seq-at-end?)
-                                         (and (not backward?)
-                                              (not match-same-char-seq-at-end?))))]
+                                     (if backward?
+                                         match-same-char-seq-at-end?
+                                         (not match-same-char-seq-at-end?)))]
                 (set prev-match {: line : col : ch1 : ch2})
                 (when (not skip-match?)
                   (when triplet? (table.remove targets))  ; delete the previous one
