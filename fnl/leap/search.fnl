@@ -96,52 +96,52 @@ pos       : [lnum col] (1,1)-indexed tuple
 chars     : list of characters in the match
 edge-pos? : boolean (whether the match touches the right edge of the window)
 "
-  (let [wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1)
-        [curline curcol] (get-cursor-pos)
-        [left-bound right-bound*] (get-horizontal-bounds)
-        right-bound (dec right-bound*)  ; the whole 2-char match should be visible
+  (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
+  (local [curline curcol] (get-cursor-pos))
+  (local bounds (get-horizontal-bounds))  ; [left right]
+  (tset bounds 2 (dec (. bounds 2)))    ; the whole 2-char match should be visible
 
-        (match-positions edge-pos-idx?)
-        (get-match-positions pattern [left-bound right-bound]
-                             {: backward? : whole-window?})]
-    (var line-str nil)
-    (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
-    (each [i [line col &as pos] (ipairs match-positions)]
-      (when (not (and skip-curpos? (= line curline) (= col curcol)))
-        (when (not= line prev-match.line)
-          (set line-str (vim.fn.getline line)))
-        ; Extracting the actual characters from the buffer at the match
-        ; position.
-        (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-        (if (= ch1 "")
-            ; On EOL - in this case, we're adding another, virtual \n after the
-            ; real one, so that these can be targeted by pressing a newline alias
-            ; twice. (See also `prepare-pattern`.)
-            (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
-            (do
-              (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-              (when (= ch2 "") (set ch2 "\n"))  ; before EOL
-              (let [overlap? (and (= line prev-match.line)
-                                  (if backward?
-                                      ; c1 c2
-                                      ;    p1 p2
-                                      (= col (- prev-match.col (ch1:len)))
-                                      ;    c1 c2
-                                      ; p1 p2
-                                      (= col (+ prev-match.col (prev-match.ch1:len)))))
-                    triplet? (and overlap?
-                                  ; Same pair? (Eq-classes & ignorecase considered.)
-                                  (= (->representative-char ch2)
-                                     (->representative-char prev-match.ch2)))
-                    skip-match? (and triplet?
-                                     (if backward?
-                                         match-same-char-seq-at-end?
-                                         (not match-same-char-seq-at-end?)))]
-                (set prev-match {: line : col : ch1 : ch2})
-                (when (not skip-match?)
-                  (when triplet? (table.remove targets))  ; delete the previous one
-                  (table.insert targets {: wininfo : pos :chars [ch1 ch2]
-                                         :edge-pos? (. edge-pos-idx? i)})))))))))
+  (local (match-positions edge-pos-idx?)
+         (get-match-positions pattern bounds {: backward? : whole-window?}))
+
+  (var line-str nil)
+  (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
+  (each [i [line col &as pos] (ipairs match-positions)]
+    (when (not (and skip-curpos? (= line curline) (= col curcol)))
+      (when (not= line prev-match.line)
+        (set line-str (vim.fn.getline line)))
+      ; Extracting the actual characters from the buffer at the match
+      ; position.
+      (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+      (if (= ch1 "")
+          ; On EOL - in this case, we're adding another, virtual \n after the
+          ; real one, so that these can be targeted by pressing a newline alias
+          ; twice. (See also `prepare-pattern`.)
+          (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
+          (do
+            (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
+            (when (= ch2 "") (set ch2 "\n"))  ; before EOL
+            (let [overlap? (and (= line prev-match.line)
+                                (if backward?
+                                    ; c1 c2
+                                    ;    p1 p2
+                                    (= col (- prev-match.col (ch1:len)))
+                                    ;    c1 c2
+                                    ; p1 p2
+                                    (= col (+ prev-match.col (prev-match.ch1:len)))))
+                  triplet? (and overlap?
+                                ; Same pair? (Eq-classes & ignorecase considered.)
+                                (= (->representative-char ch2)
+                                   (->representative-char prev-match.ch2)))
+                  skip-match? (and triplet?
+                                   (if backward?
+                                       match-same-char-seq-at-end?
+                                       (not match-same-char-seq-at-end?)))]
+              (set prev-match {: line : col : ch1 : ch2})
+              (when (not skip-match?)
+                (when triplet? (table.remove targets))  ; delete the previous one
+                (table.insert targets {: wininfo : pos :chars [ch1 ch2]
+                                       :edge-pos? (. edge-pos-idx? i)}))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
