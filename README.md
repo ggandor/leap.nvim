@@ -270,7 +270,7 @@ require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
-Until https://github.com/neovim/neovim/issues/20793 is fixed:
+For Neovim versions < 0.10 (https://github.com/neovim/neovim/issues/20793):
 
 ```lua
 -- Hide the (real) cursor when leaping, and restore it afterwards.
@@ -418,7 +418,7 @@ some editor options while the plugin is active (`:h leap-events`).
 <details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
-Until https://github.com/neovim/neovim/issues/20793 is fixed:
+For Neovim versions < 0.10 (https://github.com/neovim/neovim/issues/20793):
 
 ```lua
 -- Hide the (real) cursor when leaping, and restore it afterwards.

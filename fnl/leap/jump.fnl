@@ -67,14 +67,17 @@ the API), make the motion appear to behave as an inclusive one."
   (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
-(fn jump-to! [pos {: winid : add-to-jumplist? : mode
-                   : offset : backward? : inclusive-op?}]
+(fn jump-to! [[lnum col]
+              {: winid : add-to-jumplist? : mode : offset
+               : backward? : inclusive-op?}]
   (local op-mode? (mode:match :o))
   ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
   (when add-to-jumplist? (vim.cmd "norm! m`"))
   (when (not= winid (api.nvim_get_current_win))
     (api.nvim_set_current_win winid))
-  (vim.fn.cursor pos)
+
+  (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)
+
   (when offset (add-offset! offset))
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
   ; we need custom tweaks to behave as an inclusive one. (This is only

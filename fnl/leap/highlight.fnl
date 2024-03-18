@@ -54,6 +54,7 @@
                                {:priority self.priority.backdrop})))))
 
 
+; NOTE: Can be removed once minimal required nvim version is >= 0.10. (#70)
 (fn M.highlight-cursor [self]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."

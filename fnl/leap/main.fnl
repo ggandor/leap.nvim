@@ -358,7 +358,8 @@ char separately.
          (when-not count
            (hl:apply-backdrop backward? ?target-windows))
          (do ,...)
-         (hl:highlight-cursor)
+         (when (= (vim.fn.has "nvim-0.10") 0)
+           (hl:highlight-cursor))
          (vim.cmd :redraw)))
 
   ; Helper functions ///

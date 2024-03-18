@@ -62,14 +62,17 @@ local function force_matchparen_refresh()
   pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
   return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
 end
-local function jump_to_21(pos, _9_)
+local function jump_to_21(_9_, _11_)
   local _arg_10_ = _9_
-  local winid = _arg_10_["winid"]
-  local add_to_jumplist_3f = _arg_10_["add-to-jumplist?"]
-  local mode = _arg_10_["mode"]
-  local offset = _arg_10_["offset"]
-  local backward_3f = _arg_10_["backward?"]
-  local inclusive_op_3f = _arg_10_["inclusive-op?"]
+  local lnum = _arg_10_[1]
+  local col = _arg_10_[2]
+  local _arg_12_ = _11_
+  local winid = _arg_12_["winid"]
+  local add_to_jumplist_3f = _arg_12_["add-to-jumplist?"]
+  local mode = _arg_12_["mode"]
+  local offset = _arg_12_["offset"]
+  local backward_3f = _arg_12_["backward?"]
+  local inclusive_op_3f = _arg_12_["inclusive-op?"]
   local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
@@ -79,7 +82,7 @@ local function jump_to_21(pos, _9_)
     api.nvim_set_current_win(winid)
   else
   end
-  vim.fn.cursor(pos)
+  api.nvim_win_set_cursor(0, {lnum, (col - 1)})
   if offset then
     add_offset_21(offset)
   else
