@@ -425,15 +425,10 @@ char separately.
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      in1
-      (if (contains? spec-keys.next_target in1)
-          (if state.repeat.in1
+      in1 (if (contains? spec-keys.next_target in1)
               (do (set _state.phase nil)
-                  (when-not state.repeat.in2
-                    (set _state.repeating-partial-pattern? true))
-                  (values state.repeat.in1 state.repeat.in2))
-              (set _state.errmsg "no previous search"))
-          in1)))
+                  (get-repeat-input))
+              in1)))
 
   (fn get-second-pattern-input [targets]
     (when (and (<= (length targets) max-phase-one-targets)
@@ -627,8 +622,8 @@ char separately.
 
   (local (in1 ?in2) (if keyboard-input?
                         (if _state.phase
-                            ; This might also return in2 too, if using
-                            ; the `next_target` key.
+                            ; This might call `get-repeat-input`, and
+                            ; also return `?in2`, if using `next_target`.
                             (get-first-pattern-input)  ; REDRAW
                             (get-full-pattern-input))  ; REDRAW
 
