@@ -386,7 +386,6 @@ local function leap(kwargs)
       else
       end
       do
-        echo("")
       end
       if (vim.fn.has("nvim-0.10") == 0) then
         hl["highlight-cursor"](hl)

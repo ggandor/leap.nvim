@@ -421,7 +421,7 @@ char separately.
         (set _state.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
-    (with-highlight-chores (echo ""))  ; clean up the command line
+    (with-highlight-chores nil)
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
