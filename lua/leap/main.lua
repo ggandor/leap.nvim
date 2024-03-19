@@ -268,6 +268,7 @@ local function leap(kwargs)
   end
   local max_phase_one_targets = (opts.max_phase_one_targets or math.huge)
   local user_given_targets_3f = user_given_targets
+  local keyboard_input_3f = not (invoked_repeat_3f or invoked_dot_repeat_3f or user_given_targets)
   local prompt = {str = ">"}
   local spec_keys
   local function _43_(_, k)
@@ -293,10 +294,10 @@ local function leap(kwargs)
   spec_keys = setmetatable({}, {__index = _43_})
   local _state
   local _48_
-  if (invoked_repeat_3f or (max_phase_one_targets == 0) or no_labels_to_use_3f or user_given_targets_3f) then
-    _48_ = nil
-  else
+  if (keyboard_input_3f and (max_phase_one_targets ~= 0) and not no_labels_to_use_3f) then
     _48_ = 1
+  else
+    _48_ = nil
   end
   _state = {phase = _48_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["repeating-partial-pattern?"] = false}
   local function exec_user_autocmds(pattern)
@@ -491,7 +492,7 @@ local function leap(kwargs)
   end
   local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
   local function update_repeat_state(in1, in2)
-    if not (invoked_repeat_3f or user_given_targets_3f) then
+    if keyboard_input_3f then
       state["repeat"] = vim.tbl_extend("error", from_kwargs, {in1 = in1, in2 = in2})
       return nil
     else
@@ -663,20 +664,18 @@ local function leap(kwargs)
   local do_action = (user_given_action or jump_to_21)
   exec_user_autocmds("LeapEnter")
   local in1, _3fin2 = nil, nil
-  if invoked_repeat_3f then
-    in1, _3fin2 = get_repeat_input()
-  elseif invoked_dot_repeat_3f then
-    if state.dot_repeat.callback then
-      in1, _3fin2 = true, true
+  if keyboard_input_3f then
+    if _state.phase then
+      in1, _3fin2 = get_first_pattern_input()
     else
-      in1, _3fin2 = state.dot_repeat.in1, state.dot_repeat.in2
+      in1, _3fin2 = get_full_pattern_input()
     end
-  elseif user_given_targets_3f then
-    in1, _3fin2 = true, true
-  elseif not _state.phase then
-    in1, _3fin2 = get_full_pattern_input()
+  elseif invoked_repeat_3f then
+    in1, _3fin2 = get_repeat_input()
+  elseif (invoked_dot_repeat_3f and not state.dot_repeat.callback) then
+    in1, _3fin2 = state.dot_repeat.in1, state.dot_repeat.in2
   else
-    in1, _3fin2 = get_first_pattern_input()
+    in1, _3fin2 = true, true
   end
   if not in1 then
     if change_op_3f then

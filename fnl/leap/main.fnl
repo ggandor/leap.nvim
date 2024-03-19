@@ -303,6 +303,8 @@ char separately.
                    vim.v.count))
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
+  (local keyboard-input? (not (or invoked-repeat? invoked-dot-repeat?
+                                  user-given-targets)))
 
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
@@ -320,12 +322,10 @@ char separately.
   ; the outside world.
   (local _state {; Multi-phase processing (show beacons ahead of time,
                  ; right after the first input)?
-                 :phase (if (or invoked-repeat?
-                                (= max-phase-one-targets 0)
-                                no-labels-to-use?
-                                user-given-targets?)
-                            nil
-                            1)
+                 :phase (when (and keyboard-input?
+                                   (not= max-phase-one-targets 0)
+                                   (not no-labels-to-use?))
+                          1)
                  ; When repeating a `{char}<enter>` search (started to
                  ; traverse after the first input).
                  :repeating-partial-pattern? false
@@ -490,7 +490,7 @@ char separately.
                       :inclusive_op inclusive-op?})
 
   (fn update-repeat-state [in1 in2]
-    (when-not (or invoked-repeat? user-given-targets?)
+    (when keyboard-input?
       (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
 
 
@@ -625,23 +625,20 @@ char separately.
 
   (exec-user-autocmds :LeapEnter)
 
-  (local (in1 ?in2) (if invoked-repeat?
+  (local (in1 ?in2) (if keyboard-input?
+                        (if _state.phase
+                            ; This might also return in2 too, if using
+                            ; the `next_target` key.
+                            (get-first-pattern-input)  ; REDRAW
+                            (get-full-pattern-input))  ; REDRAW
+
+                        invoked-repeat?
                         (get-repeat-input)
 
-                        invoked-dot-repeat?
-                        (if state.dot_repeat.callback
-                            (values true true)
-                            (values state.dot_repeat.in1 state.dot_repeat.in2))
+                        (and invoked-dot-repeat? (not state.dot_repeat.callback))
+                        (values state.dot_repeat.in1 state.dot_repeat.in2)
 
-                        user-given-targets?
-                        (values true true)
-
-                        (not _state.phase)
-                        (get-full-pattern-input)     ; REDRAW
-
-                        ; This might also return in2 too, if using the
-                        ; `next_target` key.
-                        (get-first-pattern-input)))  ; REDRAW
+                        (values true true)))
   (when-not in1
     (exit-early))
 
