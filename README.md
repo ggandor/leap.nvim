@@ -770,3 +770,10 @@ See [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
 See [flit.nvim](https://github.com/ggandor/flit.nvim).
 
 </details>
+
+<details>
+<summary>Leap with 1 less key-stroke</summary>
+
+See [Sleepful/leap-by-word.nvim](https://github.com/Sleepful/leap-by-word.nvim).
+
+</details>
