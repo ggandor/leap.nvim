@@ -202,9 +202,9 @@ Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
 config (overrides `s`, `S` and `gs` in all modes):
 
-`require('leap').create_default_mappings()` (init.lua)
+`require('leap').add_default_mappings()` (init.lua)
 
-`lua require('leap').create_default_mappings()` (init.vim)
+`lua require('leap').add_default_mappings()` (init.vim)
 
 Note: Do not set lazy loading via your fancy plugin manager, as it is
 completely redundant (Leap takes care of lazy loading itself), and might even
@@ -213,7 +213,7 @@ cause [problems](https://github.com/ggandor/leap.nvim/issues/191).
 <details>
 <summary>Alternative key mappings</summary>
 
-Calling `require('leap').create_default_mappings()` is equivalent to:
+Calling `require('leap').add_default_mappings()` is equivalent to:
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
