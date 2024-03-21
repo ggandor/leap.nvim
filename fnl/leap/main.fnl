@@ -721,10 +721,11 @@ char separately.
       (exit-with-action-on 1))
 
   (when targets*.autojump?
-    (do-action (. targets* 1))
-    (if (> (length targets*) 1)
-        (set _state.curr-idx 1)
-        (exit)))
+    (if (= (length targets*) 1)
+        (exit-with-action-on 1)
+        (do
+          (do-action (. targets* 1))
+          (set _state.curr-idx 1))))
 
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
   (when-not in-final
