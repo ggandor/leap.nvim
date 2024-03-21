@@ -198,6 +198,8 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Installation
 
+[![LuaRocks](https://img.shields.io/luarocks/v/gpandor/leap.nvim?logo=lua&color=purple)](https://luarocks.org/modules/gpandor/leap.nvim)
+
 Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
 config (overrides `s`, `S` and `gs` in all modes):

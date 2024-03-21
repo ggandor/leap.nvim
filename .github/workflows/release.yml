@@ -1,0 +1,19 @@
+name: "release"
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  luarocks-upload:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: LuaRocks Upload
+        uses: nvim-neorocks/luarocks-tag-release@v5
+        env:
+          LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
+        with:
+          detailed_description: |
+            Leap is a general-purpose motion plugin for Neovim,
+            with the ultimate goal of establishing a new standard interface for moving
+            around in the visible area in Vim-like modal editors.
