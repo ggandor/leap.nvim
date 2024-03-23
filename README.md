@@ -27,9 +27,10 @@ need to do that.
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
   the `{char1}{?}` pairs. You cannot _use_ the labels yet.
-- Enter `{char2}`. If the pair was not labeled, then voilà, you're already there.
-  No need to be bothered by remaining labels - those are guaranteed "safe"
-  letters -, just continue editing.
+- Enter `{char2}`. If the pair was not labeled, then voilà, you're already
+  there. No need to be bothered by remaining labels - those are guaranteed
+  "safe" letters, and will disappear on the next keypress -, just continue
+  editing.
 - Else: type the label character. If there are too many matches (more than
   ~50), you might need to switch to the desired group first, using `<space>`
   (step back with `<tab>`, if needed).
@@ -144,7 +145,7 @@ introducing is less of an issue here, since the outcome is known in advance.
 
 In sum, compared to other labeling plugins, Leap is unique in that it
 
-* offers a more fluid experience, by (somewhat) eliminating the pause before
+* offers a smoother experience, by (somewhat) eliminating the pause before
   typing the label
 
 * feels natural to use for both distant _and_ close targets
@@ -198,17 +199,17 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Installation
 
-Use your preferred method or plugin manager. No extra steps needed besides
-defining keybindings - to use the default ones, put the following into your
-config (overrides `s`, `S` and `gs` in all modes):
+Use your preferred method or plugin manager. (Note: Setting any kind of lazy
+loading is redundant, as Leap lazy loads itself. Using the `keys` feature of
+lazy.nvim might even cause
+[problems](https://github.com/ggandor/leap.nvim/issues/191).)
+
+No extra steps needed besides defining keybindings - to use the default ones,
+put the following into your config (overrides `s`, `S` and `gs` in all modes):
 
 `require('leap').create_default_mappings()` (init.lua)
 
 `lua require('leap').create_default_mappings()` (init.vim)
-
-Note: Do not set lazy loading via your fancy plugin manager, as it is
-completely redundant (Leap takes care of lazy loading itself), and might even
-cause [problems](https://github.com/ggandor/leap.nvim/issues/191).
 
 <details>
 <summary>Alternative key mappings</summary>
@@ -230,19 +231,20 @@ vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
 vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 ```
 
-Note that you will get half as many auto-jumps on average, but not needing to
-press `shift` might compensate for that.
+`<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
+with the exception that the current line, and on the current line, forward
+direction is prioritized. That is, you can always be sure that the targets
+right in front of you will be the first ones.
 
-`<Plug>(leap)` sorts matches by euclidean distance from the cursor, with the
-exception that the current line, and on the current line, forward direction is
-prioritized. That is, you can always be sure that the targets right in front of
-you will be the first ones.
+Note that you will get half as many autojumps on average, but not needing to
+press the Shift key for backward motions might compensate for that.
 
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
-a random direction might be too annoying with the selection highlight on, and
-neither for Operator-pending mode, as dot-repeat cannot be used if the search
-is non-directional. Another caveat is that you cannot traverse through the
-matches (`:h leap-traversal`).
+a random direction might be too disorienting with the selection highlight on,
+and neither for Operator-pending mode, as dot-repeat cannot be used if the
+search is non-directional. Another caveat is that you cannot traverse through
+the matches (`:h leap-traversal`), although invoking repeat right away (`:h
+leap-repeat`) can substitute for that.
 
 For further customization, see `:h leap-custom-mappings`.
 
@@ -299,7 +301,7 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 ## Usage
 
 See `:h leap-usage` for supplemental features not mentioned here (targeting
-empty lines, "traversal" mode, repeating motions, etc.)
+empty lines, traversal mode, repeating motions, etc.)
 
 [Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
 to the example file, if you want to follow along.
@@ -381,7 +383,8 @@ special_keys = {
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
 `<Plug>` keys listed at `:h leap-custom-mappings`. There is also an
 alternative, "fFtT"-style key set for in-window motions, including or excluding
-the whole 2-character match in Visual and Operator-pending-mode.
+the whole 2-character match in Visual and Operator-pending-mode, in the vein of
+[evil-snipe](https://github.com/hlissner/evil-snipe).
 
 To create custom motions with behaviours different from the predefined ones,
 see `:h leap.leap()`.
