@@ -236,15 +236,16 @@ with the exception that the current line, and on the current line, forward
 direction is prioritized. That is, you can always be sure that the targets
 right in front of you will be the first ones.
 
-Note that you will get half as many autojumps on average, but not needing to
-press the Shift key for backward motions might compensate for that.
+Note that you will get twice as many targets and thus half as many autojumps on
+average, but not needing to press the Shift key for backward motions might
+compensate for that. Another caveat is that you cannot traverse through the
+matches (`:h leap-traversal`), although invoking repeat right away (`:h
+leap-repeat`) can substitute for that.
 
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
 a random direction might be too disorienting with the selection highlight on,
 and neither for Operator-pending mode, as dot-repeat cannot be used if the
-search is non-directional. Another caveat is that you cannot traverse through
-the matches (`:h leap-traversal`), although invoking repeat right away (`:h
-leap-repeat`) can substitute for that.
+search is non-directional.
 
 For further customization, see `:h leap-custom-mappings`.
 

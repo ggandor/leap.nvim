@@ -38,20 +38,21 @@ USAGE                                                               *leap-usage*
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. No need to be bothered by remaining labels - those are guaranteed
   "safe" letters, and will disappear on the next keypress -, just continue
-  editing.
+  editing. *leap-autojump*
 - Else: type the label character. If there are too many matches (more than
   ~50), you might need to switch to the desired group first, using `<space>`
   (step back with `<tab>`, if needed).
 
+                                                *leap-to-eol* *leap-to-empty-line*
 A character at the end of a line can be targeted by pressing `<space>` after
 it. There is no special mechanism behind this: `<space>` is simply an alias
 for the newline character, defined in |leap.opts.equivalence_classes| by
 default.
 
-A slightly more magical feature is that you can target even empty lines or EOL
-positions, by pressing the newline alias twice (`<space><space>`). This
-fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
+A slightly more magical feature is that you can target even actual EOL
+positions, including empty lines, by pressing the newline alias twice
+(`<space><space>`). This fulfills the principle that any visible position you
+can move to with the cursor should be reachable by Leap too.
 
                                                            *leap-smart-autojump*
 Leap only jumps to the first match if the remaining matches can be covered by
@@ -67,6 +68,9 @@ moving on to the next one on each subsequent keypress. When pressing it right
 after invoking a Leap motion (e.g. `s<enter>`), it uses the previous search
 pattern. If you overshoot your target, `<tab>`
 (|leap.opts.special_keys.prev_target|) can revert the jump(s).
+
+In case of using |leap.opts.safe_labels|, the labels will remain available the
+whole time.
 
 You cannot traverse through the matches if there is no direction to follow
 (|leap_gs|), but `<enter>` still allows you to repeat the previous search
@@ -149,55 +153,51 @@ to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 >lua
     vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')
 
-
 Default motions:
 
 *<Plug>(leap-forward)*
 arguments: `{}`
-default mapping: `s`
 
 *<Plug>(leap-backward)*
 arguments: `{ backward = true }`
-default mapping: `S`
 
 *<Plug>(leap-from-window)*
 arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
-default mapping: `gs`
 
-Calling `require('leap').create_default_mappings()` is equivalent to:
->lua
+Calling `require('leap').create_default_mappings()` is equivalent to: >lua
+
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
 
-Bidirectional search in the current-window:
+Bidirectional search in the current window:
 
 *<Plug>(leap)*
 arguments: `{ target_windows = { vim.api.nvim_get_current_win() } }`
-suggested mapping: `s` (recommended for Normal mode only)
 
 `<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
 with the exception that the current line, and on the current line, forward
 direction is prioritized. That is, you can always be sure that the targets
 right in front of you will be the first ones.
 
-A suggested alternative arrangement (bidirectional `s` for Normal mode):
->lua
+Note that you will get twice as many targets and thus half as many autojumps
+on average, but not needing to press the Shift key for backward motions might
+compensate for that. Another caveat is that you cannot traverse through the
+matches (|leap-traversal|), although invoking repeat right away
+(|leap-repeat|) can substitute for that.
+
+Suggested arrangement: >lua
+
     vim.keymap.set('n',        's', '<Plug>(leap)')
     vim.keymap.set('n',        'S', '<Plug>(leap-from-window)')
     vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
     vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 
-Note that you will get half as many autojumps on average, but not needing to
-press the Shift key for backward motions might compensate for that.
-
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping
 in a random direction might be too disorienting with the selection highlight
 on, and neither for Operator-pending mode, as dot-repeat cannot be used if the
-search is non-directional. Another caveat is that you cannot traverse through
-the matches (|leap-traversal|), although invoking repeat right away
-(|leap-repeat|) can substitute for that.
+search is non-directional.
 
 
 Alternative, "fFtT"-style directional set for in-window motions, in the vein
@@ -206,19 +206,23 @@ the whole 2-character match in Visual and Operator-pending-mode:
 
 *<Plug>(leap-forward-to)*
 arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
-suggested mapping: `s`
 
 *<Plug>(leap-backward-to)*
 arguments: `{ backward = true }`
-suggested mapping: `S`
 
 *<Plug>(leap-forward-till)*
 arguments: `{ offset = -1, inclusive_op = true }`
-suggested mapping: `x` (for Visual and Operator-pending mode only)
 
 *<Plug>(leap-backward-till)*
 arguments: `{ backward = true, offset = 2 }`
-suggested mapping: `X` (for Visual and Operator-pending mode only)
+
+Suggested arrangement: >lua
+
+    vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward-to)')
+    vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
+    vim.keymap.set({'x', 'o'},      'x',  '<Plug>(leap-forward-till)')
+    vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
+    vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
 
 To create custom motions with behaviours different from the predefined ones,
@@ -345,26 +349,21 @@ liking (using |:hi| or |nvim_set_hl()|):
 
                                                                   *hl-LeapMatch*
 LeapMatch
-    Matches that can be reached directly, without having to use a label. (By
-    default, this group is only used for |leap-traversal|.)
+    Matches that can be reached without picking a label. By default, this
+    group is only used for |leap-traversal|.
 
                                                            *hl-LeapLabelPrimary*
 LeapLabelPrimary
-    The character needed to be pressed to jump to the match position, after
-    the whole search pattern has been given. It appears once the first input
-    has been entered, right next to the pair.
+    Target labels in the currently selected group.
 
                                                          *hl-LeapLabelSecondary*
 LeapLabelSecondary
-    If the number of matches exceeds the available target labels, the next
-    group of labels are shown with a different color. Those targets can be
-    reached by pressing |leap.opts.special_keys.next_group| before the label
-    character.
+    Target labels in the group(s) beyond the currently selected one.
 
                                                                *hl-LeapBackdrop*
 LeapBackdrop
-    In some cases it might be useful to apply certain settings on the rest of
-    the area, like disabling certain |attr-list| attributes, or adding a
+    In some cases it might be useful to apply certain settings on the whole
+    search area, like disabling certain |attr-list| attributes, or adding a
     uniform grey foreground color, to make labels easier to see. This group is
     not set by default.
 
