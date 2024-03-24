@@ -17,15 +17,15 @@
   "Return the first an last visible virtual column of the editable
 window area.
 
- [--------------------]  window-width
- [--]                    textoff (e.g. foldcolumn)
- (--------]              offset-in-win
-     (----]              offset-in-editable-win
 +----------------------+
 |XXXX                  |
 |XXXX     C            |
 |XXXX                  |
 +----------------------+
+ [--------------------]  window-width
+ [--]                    textoff (e.g. foldcolumn)
+ (--------]              offset-in-win
+     (----]              offset-in-editable-win
 "
   (let [window-width (api.nvim_win_get_width 0)
         textoff (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1 :textoff)
