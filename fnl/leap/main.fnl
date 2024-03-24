@@ -78,7 +78,7 @@ interrupted change operation."
 
 ; Might be skipped, if two-step processing is disabled.
 
-(fn populate-sublists [targets multi-window-search?]
+(fn populate-sublists [targets]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
 char separately.
@@ -115,42 +115,46 @@ char separately.
                         (rawget self (->representative-char ch)))
           :__newindex (fn [self ch sublist]
                         (rawset self (->representative-char ch) sublist))}))
-
   ; Filling the sublists.
-  (if (not multi-window-search?)
-      (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
-        (when-not (. targets.sublists ch2)
-          (tset targets.sublists ch2 []))
-        (table.insert (. targets.sublists ch2) target))
-      (each [_ {:chars [_ ch2] :wininfo {: winid} &as target} (ipairs targets)]
-        (when-not (. targets.sublists ch2)
-          (tset targets.sublists ch2 {:shared-window? winid}))
-        (local sublist (. targets.sublists ch2))
-        (table.insert sublist target)
-        (when (and sublist.shared-window? (not= winid sublist.shared-window?))
-          (set sublist.shared-window? nil)
-          ; See `prepare-labeled-targets`.
-          (set sublist.in-multiple-windows? true)))))
+  (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
+    (when-not (. targets.sublists ch2)
+      (tset targets.sublists ch2 []))
+    (table.insert (. targets.sublists ch2) target)))
 
 
 ; `targets` might be a sublist of an original target list from here on.
 
 (local prepare-labeled-targets
   (do
+    ; Problem:
+    ; We are autojumping to some position in window A, but our chosen
+    ; labeled target happens to be in window B - in that case we do not
+    ; actually want to reposition the cursor in window A. Restoring it
+    ; afterwards would be overcomplicated, not to mention that the jump
+    ; itself is disorienting in the first place, especially an A->B->C
+    ; version (autojumping to B from A, before moving on to C).
+    (fn sharing-the-same-window? [targets]
+      (var same-win? true)
+      (local winid (. targets 1 :wininfo :winid))
+      (each [_ target (ipairs targets) &until (= same-win? false)]
+        (when (not= target.wininfo.winid winid)
+          (set same-win? false)))
+      same-win?)
+
+    ; Problem:
+    ;     xy   target #1
+    ;   xyL    target #2 (labeled)
+    ;     ^    auto-jump would move the cursor here (covering the label)
+    ;
+    ; Note: The situation implies backward search, and may arise in
+    ; phase two, when only the chosen sublist remained.
+    ;
+    ; Caveat: this case in fact depends on the label position, for
+    ; which the `beacons` module is responsible (e.g. the label is on
+    ; top of the match when repeating), but we're not considering
+    ; that, and just err on the safe side instead of complicating the
+    ; code.
     (fn first-target-covers-label-of-second? [targets]
-      ; Problem:
-      ;     xy   target #1
-      ;   xyL    target #2 (labeled)
-      ;     ^    auto-jump would move the cursor here (covering the label)
-      ;
-      ; Note: The situation implies backward search, and may arise in
-      ; phase two, when only the chosen sublist remained.
-      ;
-      ; Caveat: this case in fact depends on the label position, for
-      ; which the `beacons` module is responsible (e.g. the label is on
-      ; top of the match when repeating), but we're not considering
-      ; that, and just err on the safe side instead of complicating the
-      ; code.
       (case targets
         [{:pos [l1 c1]} {:pos [l2 c2] :chars [char1 char2]}]
         (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
@@ -183,7 +187,7 @@ char separately.
                   (set target.label (. label-set n))
                   (set target.group (inc (floor (/ i |label-set|))))))))))
 
-    (fn [targets force-noautojump?]
+    (fn [targets force-noautojump? multi-window-search?]
       "Set the following attributes for `targets`:
 
       `autojump?`: A flag indicating whether we should autojump to the
@@ -205,9 +209,8 @@ char separately.
                actual state is followed in `_state.group-offset` in
                `leap`)."
       (when-not (or force-noautojump?
-                    ; It is disorienting if the chosen target happens to
-                    ; be in (yet) another window. (Set by `populate-sublists`.)
-                    targets.in-multiple-windows?
+                    (and multi-window-search?
+                         (not (sharing-the-same-window? targets)))
                     (first-target-covers-label-of-second? targets))
         (set-autojump targets))
       (attach-label-set targets)
@@ -474,7 +477,7 @@ char separately.
                                user-given-action
                                ; Should be able to select our target.
                                (and op-mode? (> (length targets) 1))))
-    (prepare-labeled-targets targets force-noautojump?))
+    (prepare-labeled-targets targets force-noautojump? multi-window-search?))
 
   ; Repeat
 
@@ -659,7 +662,7 @@ char separately.
       (do
         (when (> (length targets) max-phase-one-targets)
           (set _state.phase nil))
-        (populate-sublists targets multi-window-search?)
+        (populate-sublists targets)
         (each [_ sublist (pairs targets.sublists)]
           (prepare-labeled-targets* sublist)
           (set-beacons targets {:phase _state.phase}))
