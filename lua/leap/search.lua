@@ -219,46 +219,59 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
   end
   return table.sort(targets, _44_)
 end
-local function expand_to_equivalence_class(ch)
-  local eq_chars = get_eq_class_of(ch)
-  if eq_chars then
-    for i, char in ipairs(eq_chars) do
-      if (char == "\n") then
-        eq_chars[i] = "\\n"
-      elseif (char == "\\") then
-        eq_chars[i] = "\\\\"
+local function prepare_pattern(in1, _3fin2)
+  local function char_list_to_branching_regexp(chars)
+    local branches
+    local function _45_(_241)
+      if (_241 == "\n") then
+        return "\\n"
+      elseif (_241 == "\\") then
+        return "\\\\"
+      elseif (nil ~= _241) then
+        local ch = _241
+        return ch
       else
+        return nil
       end
     end
-    return ("\\(" .. table.concat(eq_chars, "\\|") .. "\\)")
-  else
-    return nil
+    branches = vim.tbl_map(_45_, chars)
+    local pattern = table.concat(branches, "\\|")
+    return ("\\(" .. pattern .. "\\)")
   end
-end
-local function prepare_pattern(in1, _3fin2)
+  local function expand_to_equivalence_class(char)
+    local _47_ = get_eq_class_of(char)
+    if (nil ~= _47_) then
+      return char_list_to_branching_regexp(_47_)
+    else
+      return _47_
+    end
+  end
   local pat1 = (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\"))
   local pat2 = ((_3fin2 and expand_to_equivalence_class(_3fin2)) or _3fin2 or "\\_.")
-  local potential__5cn_5cn_3f = (pat1:match("\\n") and (pat2:match("\\n") or not _3fin2))
-  local pat
-  if potential__5cn_5cn_3f then
-    pat = (pat1 .. pat2 .. "\\|\\n")
-  else
-    pat = (pat1 .. pat2)
+  local potential_nl_nl_3f = (pat1:match("\\n") and (pat2:match("\\n") or not _3fin2))
+  local pattern
+  local function _49_()
+    if potential_nl_nl_3f then
+      return "\\|\\n"
+    else
+      return ""
+    end
   end
-  local function _48_()
+  pattern = (pat1 .. pat2 .. _49_())
+  local function _50_()
     if opts.case_sensitive then
       return "\\C"
     else
       return "\\c"
     end
   end
-  return ("\\V" .. _48_() .. pat)
+  return (_50_() .. "\\V" .. pattern)
 end
-local function get_targets(pattern, _49_)
-  local _arg_50_ = _49_
-  local backward_3f = _arg_50_["backward?"]
-  local match_same_char_seq_at_end_3f = _arg_50_["match-same-char-seq-at-end?"]
-  local target_windows = _arg_50_["target-windows"]
+local function get_targets(pattern, _51_)
+  local _arg_52_ = _51_
+  local backward_3f = _arg_52_["backward?"]
+  local match_same_char_seq_at_end_3f = _arg_52_["match-same-char-seq-at-end?"]
+  local target_windows = _arg_52_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = api.nvim_get_current_win()
   local target_windows0 = (target_windows or {source_winid})

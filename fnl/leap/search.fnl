@@ -188,21 +188,6 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 
-(fn expand-to-equivalence-class [ch]                  ; <-- "a"
-  "Return a (Vim) regex pattern that will match any character in the
-equivalence class of `ch`."
-  (local eq-chars (get-eq-class-of ch))               ; --> ?{"a","á","ä"}
-  (when eq-chars
-    (each [i char (ipairs eq-chars)]
-      (if
-        ; `vim.fn.search` cannot interpret actual newline chars in the
-        ; regex pattern, we need to insert them as raw \ + n.
-        (= char "\n") (tset eq-chars i "\\n")
-        ; '\' itself might appear in the class, needs to be escaped.
-        (= char "\\") (tset eq-chars i "\\\\")))
-    (.. "\\(" (table.concat eq-chars "\\|") "\\)")))  ; --> "\(a\|á\|ä\)"
-
-
 ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
 ; input mapping (case-insensitivity, character classes, etc.) we need to
 ; tweak things in two different places:
@@ -211,29 +196,41 @@ equivalence class of `ch`."
 ;   `populate-sublists` in `main.fnl`).
 (fn prepare-pattern [in1 ?in2]
   "Transform user input to the appropriate search pattern."
-  (let [pat1 (or (expand-to-equivalence-class in1)
-                 ; Sole '\' needs to be escaped even for \V.
-                 (in1:gsub "\\" "\\\\"))
-        pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
-                 ?in2
-                 "\\_.")  ; match anything, including EOL
-        potential-\n\n? (and (pat1:match "\\n")
-                             (or (pat2:match "\\n") (not ?in2)))
-        ; If \n\n is a possible sequence to appear, add \n to the
-        ; pattern, to make our convenience feature - targeting EOL
-        ; positions, including empty lines, by typing the newline alias
-        ; twice - work (see `get-targets-in-current-window`).
-        ; This hack is always necessary for single-step processing, when
-        ; we already have the full pattern (this includes repeating the
-        ; previous search), but also for two-step processing, in the
-        ; special case of targeting the very last line in the file
-        ; (normally, `get-targets` takes care of this situation, but the
-        ; pattern `\n\_.` does not match `\n$` if it's on the last
-        ; line).
-        pat (if potential-\n\n?
-                (.. pat1 pat2 "\\|\\n")
-                (.. pat1 pat2))]
-    (.. "\\V" (if opts.case_sensitive "\\C" "\\c") pat)))
+
+  (fn char-list-to-branching-regexp [chars]
+    ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
+    ; 2. `\` itself might appear in the class, needs to be escaped.
+    (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
+    (local pattern (table.concat branches "\\|"))
+    (.. "\\(" pattern "\\)"))
+
+  (fn expand-to-equivalence-class [char]    ; <-- 'a'
+    (-?> (get-eq-class-of char)             ; --> {'a','á','ä'}
+         (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
+
+  (local pat1 (or (expand-to-equivalence-class in1)
+                  ; Sole '\' needs to be escaped even for \V.
+                  (in1:gsub "\\" "\\\\")))
+  (local pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
+                  ?in2
+                  "\\_."))  ; match anything, including EOL
+
+  ; If `\n\n` is a possible sequence to appear, add `\n` as a separate
+  ; branch to the pattern, to make our convenience feature - targeting
+  ; EOL positions (including empty lines) by typing the newline alias
+  ; twice - work (see `get-targets-in-current-window`).
+  ; This hack is always necessary for single-step processing, when we
+  ; already have the full pattern (this includes repeating the previous
+  ; search), but also for two-step processing, in the special case of
+  ; targeting EOF (normally, `get-targets` takes care of this situation,
+  ; but the pattern `\n\_.` does not match `\n$` if it's on the last
+  ; line of the file).
+  ; Note: The condition should be checked after the input patterns are
+  ; expanded to include their whole equivalence classes.
+  (local potential-nl-nl? (and (pat1:match "\\n")
+                               (or (pat2:match "\\n") (not ?in2))))
+  (local pattern (.. pat1 pat2 (if potential-nl-nl? "\\|\\n" "")))
+  (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
 
 (fn get-targets [pattern
