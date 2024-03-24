@@ -4,8 +4,7 @@
         : dec
         : get-cursor-pos
         : get-eq-class-of
-        : ->representative-char
-        : get-char-from}
+        : ->representative-char}
        (require "leap.util"))
 
 (local api vim.api)

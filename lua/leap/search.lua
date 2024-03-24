@@ -5,7 +5,6 @@ local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local get_eq_class_of = _local_1_["get-eq-class-of"]
 local __3erepresentative_char = _local_1_["->representative-char"]
-local get_char_from = _local_1_["get-char-from"]
 local api = vim.api
 local empty_3f = vim.tbl_isempty
 local _local_2_ = math
