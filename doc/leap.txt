@@ -34,14 +34,14 @@ USAGE                                                               *leap-usage*
   the other windows (`gs`).
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet.
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet. *leap-phase-one*
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. No need to be bothered by remaining labels - those are guaranteed
   "safe" letters, and will disappear on the next keypress -, just continue
   editing. *leap-autojump*
 - Else: type the label character. If there are too many matches (more than
   ~50), you might need to switch to the desired group first, using `<space>`
-  (step back with `<tab>`, if needed).
+  (step back with `<tab>`, if needed). *leap-phase-two*
 
                                                 *leap-to-eol* *leap-to-empty-line*
 A character at the end of a line can be targeted by pressing `<space>` after
@@ -49,10 +49,10 @@ it. There is no special mechanism behind this: `<space>` is simply an alias
 for the newline character, defined in |leap.opts.equivalence_classes| by
 default.
 
-A slightly more magical feature is that you can target even actual EOL
-positions, including empty lines, by pressing the newline alias twice
-(`<space><space>`). This fulfills the principle that any visible position you
-can move to with the cursor should be reachable by Leap too.
+A slightly more magical feature is that you can target actual EOL positions,
+including empty lines, by pressing the newline alias twice (`<space><space>`).
+This fulfills the principle that any visible position you can move to with the
+cursor should be reachable by Leap too.
 
                                                            *leap-smart-autojump*
 Leap only jumps to the first match if the remaining matches can be covered by
@@ -61,33 +61,25 @@ jump), but stays in place, and switches to an extended label set otherwise.
 For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
 
-                                                                *leap-traversal*
-`<enter>` (|leap.opts.special_keys.next_target|) is a very special key: at any
-stage, it initiates "traversal" mode, jumping to the first match, and then
-moving on to the next one on each subsequent keypress. When pressing it right
-after invoking a Leap motion (e.g. `s<enter>`), it uses the previous search
-pattern. If you overshoot your target, `<tab>`
+                                                    *leap-repeat* *leap-traversal*
+At any stage (after 0, 1, or 2 input characters), `<enter>`
+(|leap.opts.special_keys.next_target|) consistently jumps to the first
+available target. Pressing it right after invocation (`s<enter>`) repeats the
+previous search. Pressing it after one input character (`s{char}<enter>`) can
+be used as a multiline substitute for `fFtT` motions.
+
+If the search is directional, `<enter>` can also traverse through the rest of
+the targets, moving on to the next one on each subsequent keypress
+(`s<enter><enter>...`). If you overshoot, `<tab>`
 (|leap.opts.special_keys.prev_target|) can revert the jump(s).
 
-In case of using |leap.opts.safe_labels|, the labels will remain available the
-whole time.
-
-You cannot traverse through the matches if there is no direction to follow
-(|leap_gs|), but `<enter>` still allows you to repeat the previous search
-(`gs<enter>`), or to accept the closest - presumably only - match
-(`gs<enter><enter>`, `gs{char}<enter>`, `gs{char}{char}<enter>`).
-
-Note: Traversal mode can be used as a substitute for `fFtT` motions.
-`s{char}<enter><enter>` is the same as `f{char};`, or `ds{char}<enter>` as
-`dt{char}`, but they work over multiple lines.
-
-                                                                   *leap-repeat*
 There is a convenience function in the `user` module to set keys that behave
 like |;| and |,|, that is, repeat the last motion without explicitly invoking
-Leap (after that, they enter traversal mode, and behave just like
-`next_target` and `prev_target`): >lua
+Leap (after that, they enter traversal mode, and behave as you would expect).
+It makes sense to use `next_target` and `prev_target`, for maximum
+consistency: >lua
 
-    require('leap.user').set_repeat_keys('<cr>', '<bs>', {
+    require('leap.user').set_repeat_keys('<enter>', '<backspace>', {
       -- False by default. If set to true, the keys will work like the
       -- native semicolon/comma, i.e., forward/backward is understood in
       -- relation to the last motion.
@@ -101,25 +93,20 @@ Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed.
 
                                                          *leap-concealed-labels*
-In phase one - i.e., after typing the first input character -, some labels
-might be concealed with an empty block or a middle dot, depending on the
-colorscheme. Those mark that there is some kind of conflict or potential
-source of confusion, that will only be resolved in phase two (after entering
-the full pattern):
+In |leap-phase-one|, some labels might be concealed with an empty block or a
+middle dot, depending on the colorscheme. Those mark that there is some kind
+of conflict or potential source of confusion, that will only be resolved after
+entering the second input character:
 
     A. The label is on top of another label.
     B. The label immediately follows an unlabeled match.
     C. The label is on top of an unlabeled match.
+    D. The label is not active yet (it is for a distant match), but no
+       highlighting is set for unlabeled matches - in this case, we need to
+       signal that this is in fact a labeled match, do not expect an autojump.
 
 Case A and B are possible when the target is right next to EOL or the window
-edge, and the label needs to be shifted left.
-
-Note: In case B and C, the match highlight is removed, even if
-|leap.opts.highlight_unlabeled_phase_one_targets| is true.
-
-If |leap.opts.highlight_unlabeled_phase_one_targets| is false, targets beyond
-the secondary group also have these concealed labels next to them, to signal
-that they are not directly reachable.
+edge, and the label is shifted left.
 
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
@@ -152,6 +139,7 @@ gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
 to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
 >lua
     vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')
+
 
 Default motions:
 
@@ -200,9 +188,9 @@ on, and neither for Operator-pending mode, as dot-repeat cannot be used if the
 search is non-directional.
 
 
-Alternative, "fFtT"-style directional set for in-window motions, in the vein
-of evil-snipe (https://github.com/hlissner/evil-snipe), including or excluding
-the whole 2-character match in Visual and Operator-pending-mode:
+Evil-snipe-style (https://github.com/hlissner/evil-snipe) directional set for
+in-window motions (including or excluding the whole 2-character match in
+Visual and Operator-pending-mode):
 
 *<Plug>(leap-forward-to)*
 arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
@@ -265,7 +253,7 @@ Example configuration: >lua
                                                *leap.opts.max_phase_one_targets*
 `max_phase_one_targets = nil`
 
-    Number of phase-one targets (`{char1}{?}` pairs) above which ahead-of-time
+    Number of targets in |leap-phase-one|, above which ahead-of-time
     displaying of target beacons - labels and/or match highlight - will be
     disabled (to mitigate visual noise in extreme cases). `nil` means no
     limit, `0` disables two-phase processing altogether.
@@ -273,8 +261,8 @@ Example configuration: >lua
                                *leap.opts.highlight_unlabeled_phase_one_targets*
 `highlight_unlabeled_phase_one_targets = false`
 
-    Highlight unlabeled (i.e., directly reachable) matches after the first
-    input character has been entered.
+    Highlight unlabeled (i.e., directly reachable) matches in
+    |leap-phase-one|.
 
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
@@ -411,9 +399,9 @@ Using `state.args`, you can customize practically anything on a per-call
 basis. Keep in mind that nothing prevents you from passing arbitrary flags
 when calling |leap.leap()|: >lua
 
-    function my_custom_leap_fn()
+    function custom_leap_func()
       require('leap').leap {
-        my_custom_leap_fn = true,
+        is_custom_leap_func = true,
           -- ...
       }
     end
@@ -421,9 +409,9 @@ when calling |leap.leap()|: >lua
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function (event)
-        if require('leap').state.args.my_custom_leap_fn then
+        if require('leap').state.args.is_custom_leap_func then
           -- Implement some special logic here, that will only apply to
-          -- my_custom_leap_fn(), and restore the state (if needed) in an
+          -- custom_leap_func(), and restore the state (if needed) in an
           -- analogous `LeapLeave` autocommand.
         end
       end

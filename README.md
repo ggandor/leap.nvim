@@ -66,17 +66,10 @@ Type
 - `s{char}<space>` to jump to a character before the end of the line.
 - `s<space><space>` to jump to an empty line (or any EOL position if Visual
   mode or `virtualedit` allows it)
-- `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
 - `s<enter>` to repeat the last search.
+- `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
 - `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
   matches.
-
-You can also
-
-- search bidirectionally in the whole window (`<Plug>(leap)`), or bind only one
-  key to Leap, and search in all windows (see [FAQ](#faq)).
-- map keys to repeat motions without explicitly invoking Leap, similar to how
-  `;` and `,` works (see `:h leap-repeat`).
 
 ### Down the kangaroo hole
 
@@ -382,10 +375,10 @@ special_keys = {
 ### Mappings
 
 See `:h leap-default-mappings`. To define alternative mappings, you can use the
-`<Plug>` keys listed at `:h leap-custom-mappings`. There is also an
-alternative, "fFtT"-style key set for in-window motions, including or excluding
-the whole 2-character match in Visual and Operator-pending-mode, in the vein of
-[evil-snipe](https://github.com/hlissner/evil-snipe).
+`<Plug>` keys listed at `:h leap-custom-mappings`. Besides the default motions,
+you can also find the bidirectional `<Plug>(leap)`, and an alternative,
+[evil-snipe](https://github.com/hlissner/evil-snipe)-style key set for
+in-window jumps there.
 
 To create custom motions with behaviours different from the predefined ones,
 see `:h leap.leap()`.
