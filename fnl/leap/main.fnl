@@ -832,8 +832,10 @@ char separately.
     (fn restore-editor-opts []
       (each [key val (pairs saved-editor-opts)]
         (case key
-          [:w win name] (api.nvim_win_set_option win name val)
-          [:b buf name] (api.nvim_buf_set_option buf name val)
+          [:w win name] (if (api.nvim_win_is_valid win)
+                         (api.nvim_win_set_option win name val))
+        [:b buf name] (if (api.nvim_buf_is_valid buf)
+                         (api.nvim_buf_set_option buf name val))
           name (api.nvim_set_option name val))))
 
     (api.nvim_create_autocmd "User"
