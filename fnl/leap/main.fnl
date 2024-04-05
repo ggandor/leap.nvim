@@ -354,19 +354,22 @@ char separately.
   (fn exec-user-autocmds [pattern]
     (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
-  ; Macros
+  ; Exit macros
 
-  (macro exit []
-    `(do (hl:cleanup hl-affected-windows)
-         (exec-user-autocmds :LeapLeave)
-         (lua :return)))
+  (fn exit* []
+    (hl:cleanup hl-affected-windows)
+    (exec-user-autocmds :LeapLeave))
 
-  ; Be sure not to call the macro twice accidentally,
+  ; Be sure not to call this twice accidentally,
   ; `handle-interrupted-change-op!` moves the cursor!
-  (macro exit-early []
-    `(do (when change-op? (handle-interrupted-change-op!))
-         (when _state.errmsg (echo _state.errmsg))
-         (exit)))
+  (fn exit-early* []
+    (when change-op? (handle-interrupted-change-op!))
+    (when _state.errmsg (echo _state.errmsg))
+    (exit*))
+
+  ; See also `exit-with-action-on` later.
+  (macro exit [] `(do (exit*) (lua :return)))
+  (macro exit-early [] `(do (exit-early*) (lua :return)))
 
   ; Helper functions ///
 
@@ -719,10 +722,13 @@ char separately.
     (set _state.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
 
+  (fn exit-with-action-on* [idx]
+    (set-dot-repeat in1 ?in2 idx)
+    (do-action (. targets* idx))
+    (exit*))
+
   (macro exit-with-action-on [idx]
-    `(do (set-dot-repeat in1 ?in2 ,idx)
-         (do-action (. targets* ,idx))
-         (exit)))
+    `(do (exit-with-action-on* ,idx) (lua :return)))
 
   (if count
       (if (> count (length targets*))
