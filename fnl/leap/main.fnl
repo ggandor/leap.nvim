@@ -290,26 +290,35 @@ char separately.
     (lua :return))
 
   (local ?target-windows target-windows)
+
   (local multi-window-search? (and ?target-windows
                                    (> (length ?target-windows) 1)))
+
   (local curr-winid (api.nvim_get_current_win))
+
   (local hl-affected-windows (if (= (vim.fn.has "nvim-0.10") 0)
-                                 ; A fake cursor should always be shown in the
-                                 ; current window, since the real one disappears.
-                                 (vim.list_extend [curr-winid]
-                                                  (or ?target-windows []))
+                                 ; For pre-0.10, a fake cursor is shown in the
+                                 ; source window, since the real one disappears.
+                                 ; (See `with-highlight-chores`.)
+                                 (vim.list_extend
+                                   [curr-winid] (or ?target-windows []))
                                  (or ?target-windows [curr-winid])))
+
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
   (local mode (. (api.nvim_get_mode) :mode))
   (local op-mode? (mode:match :o))
   (local change-op? (and op-mode? (= vim.v.operator :c)))
+
   (local count (if (not directional?) nil
                    (= vim.v.count 0) (if (and op-mode? no-labels-to-use?) 1 nil)
                    vim.v.count))
+
   (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
-  (local keyboard-input? (not (or invoked-repeat? invoked-dot-repeat?
+
+  (local keyboard-input? (not (or invoked-repeat?
+                                  invoked-dot-repeat?
                                   user-given-targets)))
 
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
