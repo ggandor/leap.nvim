@@ -356,18 +356,16 @@ char separately.
          (when _state.errmsg (echo _state.errmsg))
          (exit)))
 
-  (macro with-highlight-chores [...]
-    `(do (hl:cleanup hl-affected-windows)
-         (when-not count
-           (hl:apply-backdrop backward? ?target-windows))
-         (do ,...)
-         (when (= (vim.fn.has "nvim-0.10") 0)
-           (hl:highlight-cursor))
-         (vim.cmd :redraw)))
-
   ; Helper functions ///
 
   ; Misc. helpers
+
+  (fn with-highlight-chores [f]
+    (hl:cleanup hl-affected-windows)
+    (when-not count (hl:apply-backdrop backward? ?target-windows))
+    (when f (f))
+    (when (= (vim.fn.has "nvim-0.10") 0) (hl:highlight-cursor))
+    (vim.cmd :redraw))
 
   (fn can-traverse? [targets]
     (and directional?
@@ -440,7 +438,7 @@ char separately.
                ; char<enter> partial input (but it implies not needing
                ; to show beacons).
                (not count))
-      (with-highlight-chores (light-up-beacons targets)))
+      (with-highlight-chores #(light-up-beacons targets)))
     (get-input-by-keymap prompt))
 
   (fn get-full-pattern-input []
@@ -543,9 +541,9 @@ char separately.
       ; setting the initial label states if using `spec-keys.next_target`.
       (set-beacons targets {:group-offset _state.group-offset
                             :phase _state.phase : use-no-labels?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-        (light-up-beacons targets start end)))
+
+      (local (start end) (get-highlighted-idx-range targets use-no-labels?))
+      (with-highlight-chores #(light-up-beacons targets start end)))
 
     (fn loop [first-invoc?]
       (display)
@@ -585,9 +583,8 @@ char separately.
     (fn display []
       (set-beacons targets {:group-offset _state.group-offset
                             :phase _state.phase : use-no-labels?})
-      (with-highlight-chores
-        (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-        (light-up-beacons targets start end)))
+      (local (start end) (get-highlighted-idx-range targets use-no-labels?))
+      (with-highlight-chores #(light-up-beacons targets start end)))
 
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
