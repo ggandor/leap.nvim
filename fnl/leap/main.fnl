@@ -293,9 +293,12 @@ char separately.
   (local multi-window-search? (and ?target-windows
                                    (> (length ?target-windows) 1)))
   (local curr-winid (api.nvim_get_current_win))
-  (local hl-affected-windows (vim.list_extend
-                               ; The cursor is always highlighted.
-                               [curr-winid] (or ?target-windows [])))
+  (local hl-affected-windows (if (= (vim.fn.has "nvim-0.10") 0)
+                                 ; A fake cursor should always be shown in the
+                                 ; current window, since the real one disappears.
+                                 (vim.list_extend [curr-winid]
+                                                  (or ?target-windows []))
+                                 (or ?target-windows [curr-winid])))
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
   (local mode (. (api.nvim_get_mode) :mode))
