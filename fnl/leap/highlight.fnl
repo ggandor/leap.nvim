@@ -81,14 +81,14 @@ so we set a temporary highlight on it to see where we are."
                                     :nocombine true}
                   self.group.label-primary {:fg "black"
                                             :bg (case bg
-                                                  :light "#ff8877"
+                                                  :light "#ffaa99"
                                                   _ "#ccff88")
                                             :ctermfg "black"
                                             :ctermbg "red"
                                             :nocombine true}
                   self.group.label-secondary {:fg "black"
                                               :bg (case bg
-                                                    :light "#77aaff"
+                                                    :light "#99ccff"
                                                     _ "#ddaadd")
                                               :ctermfg "black"
                                               :ctermbg "blue"

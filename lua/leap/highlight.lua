@@ -86,14 +86,14 @@ M["init-highlight"] = function(self, force_3f)
   end
   local _18_
   if (bg == "light") then
-    _18_ = "#ff8877"
+    _18_ = "#ffaa99"
   else
     local _ = bg
     _18_ = "#ccff88"
   end
   local _22_
   if (bg == "light") then
-    _22_ = "#77aaff"
+    _22_ = "#99ccff"
   else
     local _ = bg
     _22_ = "#ddaadd"
