@@ -471,11 +471,9 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 
 ```lua
 vim.keymap.set('n', 's', function ()
-  local focusable_windows = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
-  require('leap').leap { target_windows = focusable_windows }
+  require('leap').leap {
+    target_windows = require('leap.user').get_focusable_windows()
+  }
 end)
 ```
 </details>
@@ -500,12 +498,8 @@ Basic template:
 
 ```lua
 local function remote_action ()
-  local focusable_windows = vim.tbl_filter(
-    function (win) return vim.api.nvim_win_get_config(win).focusable end,
-    vim.api.nvim_tabpage_list_wins(0)
-  )
   require('leap').leap {
-    target_windows = focusable_windows,
+    target_windows = require('leap.user').get_focusable_windows(),
     action = function (target)
       local winid = target.wininfo.winid
       local lnum, col = unpack(target.pos)  -- 1/1-based indexing!

@@ -48,6 +48,15 @@
                              "Repeat leap backward")}))
 
 
+(fn get-enterable-windows []
+  (local util (require "leap.util"))
+  (util.get_enterable_windows))
+
+
+(fn get-focusable-windows []
+  [(vim.api.nvim_get_current_win) (unpack (get-enterable-windows))])
+
+
 ; Deprecated.
 (fn add-default-mappings [force?]
   (each [_ [modes lhs rhs desc]
@@ -99,6 +108,8 @@
 
 {:create_default_mappings create-default-mappings
  :set_repeat_keys set-repeat-keys
+ :get_enterable_windows get-enterable-windows
+ :get_focusable_windows get-focusable-windows
  :add_repeat_mappings set-repeat-keys
  :add_default_mappings add-default-mappings
  :set_default_keymaps set-default-keymaps

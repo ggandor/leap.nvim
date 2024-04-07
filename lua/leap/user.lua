@@ -67,6 +67,13 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
   end
   return vim.keymap.set(modes, bwd_key, _12_, {silent = true, desc = _13_})
 end
+local function get_enterable_windows()
+  local util = require("leap.util")
+  return util.get_enterable_windows()
+end
+local function get_focusable_windows()
+  return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}
+end
 local function add_default_mappings(force_3f)
   for _, _15_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
     local _each_16_ = _15_
@@ -102,4 +109,4 @@ local function setup(user_opts)
   end
   return nil
 end
-return {create_default_mappings = create_default_mappings, set_repeat_keys = set_repeat_keys, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
+return {create_default_mappings = create_default_mappings, set_repeat_keys = set_repeat_keys, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
