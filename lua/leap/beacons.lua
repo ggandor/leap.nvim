@@ -34,7 +34,7 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
     offset = 0
   end
   local pad
-  if (not _3fphase and target.chars and target.chars[2]) then
+  if ((opts.max_phase_one_targets ~= 0) and not _3fphase and target.chars and target.chars[2]) then
     pad = " "
   else
     pad = ""
