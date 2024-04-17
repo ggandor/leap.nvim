@@ -10,8 +10,7 @@ M.cleanup = function(self, affected_windows)
     local _each_3_ = _2_
     local bufnr = _each_3_[1]
     local id = _each_3_[2]
-    local is_valid_buf = api.nvim_buf_is_valid(bufnr)
-    if is_valid_buf() then
+    if api.nvim_buf_is_valid(bufnr) then
       api.nvim_buf_del_extmark(bufnr, self.ns, id)
     else
     end
@@ -19,8 +18,8 @@ M.cleanup = function(self, affected_windows)
   self.extmarks = {}
   if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
     for _, winid in ipairs(affected_windows) do
-      local wininfo = vim.fn.getwininfo(winid)[1]
-      if (#wininfo > 0) then
+      if vim.api.nvim_win_is_valid(winid) then
+        local wininfo = vim.fn.getwininfo(winid)[1]
         api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
       else
       end

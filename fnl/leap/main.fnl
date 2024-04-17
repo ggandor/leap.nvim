@@ -834,7 +834,7 @@ char separately.
         (case key
           [:w win name] (if (api.nvim_win_is_valid win)
                          (api.nvim_win_set_option win name val))
-        [:b buf name] (if (api.nvim_buf_is_valid buf)
+          [:b buf name] (if (api.nvim_buf_is_valid buf)
                          (api.nvim_buf_set_option buf name val))
           name (api.nvim_set_option name val))))
 
