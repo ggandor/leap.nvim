@@ -83,6 +83,7 @@ local function jump_to_21(_9_, _11_)
   else
   end
   api.nvim_win_set_cursor(0, {lnum, (col - 1)})
+  pcall(api.nvim__redraw, {cursor = true})
   if offset then
     add_offset_21(offset)
   else
