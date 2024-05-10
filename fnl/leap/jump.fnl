@@ -77,9 +77,9 @@ the API), make the motion appear to behave as an inclusive one."
     (api.nvim_set_current_win winid))
 
   (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)
+  (when offset (add-offset! offset))
   (pcall api.nvim__redraw {:cursor true})  ; EXPERIMENTAL
 
-  (when offset (add-offset! offset))
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
   ; we need custom tweaks to behave as an inclusive one. (This is only
   ; relevant in the forward direction, as inclusiveness applies to the

@@ -83,11 +83,11 @@ local function jump_to_21(_9_, _11_)
   else
   end
   api.nvim_win_set_cursor(0, {lnum, (col - 1)})
-  pcall(api.nvim__redraw, {cursor = true})
   if offset then
     add_offset_21(offset)
   else
   end
+  pcall(api.nvim__redraw, {cursor = true})
   if (op_mode_3f and inclusive_op_3f and not backward_3f) then
     simulate_inclusive_op_21(mode)
   else
