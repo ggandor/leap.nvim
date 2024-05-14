@@ -78,7 +78,6 @@ the API), make the motion appear to behave as an inclusive one."
 
   (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)
   (when offset (add-offset! offset))
-  (pcall api.nvim__redraw {:cursor true})  ; EXPERIMENTAL
 
   ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
   ; we need custom tweaks to behave as an inclusive one. (This is only
@@ -86,7 +85,9 @@ the API), make the motion appear to behave as an inclusive one."
   ; end of the selection.)
   (when (and op-mode? inclusive-op? (not backward?))
     (simulate-inclusive-op! mode))
-  (when (not op-mode?) (force-matchparen-refresh)))
+  (when (not op-mode?)
+    (pcall api.nvim__redraw {:cursor true})  ; EXPERIMENTAL
+    (force-matchparen-refresh)))
 
 
 {: jump-to!}

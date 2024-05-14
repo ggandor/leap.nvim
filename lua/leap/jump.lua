@@ -87,12 +87,12 @@ local function jump_to_21(_9_, _11_)
     add_offset_21(offset)
   else
   end
-  pcall(api.nvim__redraw, {cursor = true})
   if (op_mode_3f and inclusive_op_3f and not backward_3f) then
     simulate_inclusive_op_21(mode)
   else
   end
   if not op_mode_3f then
+    pcall(api.nvim__redraw, {cursor = true})
     return force_matchparen_refresh()
   else
     return nil
