@@ -21,8 +21,8 @@ labels** - Leap shows you which key you will need to press before you actually
 need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`). (Note: you can configure the plugin to merge these
-  cases, using two keys instead, or even just one, if you are okay with the
+  the other windows (`gs`). (Note: you can search bidirectionally in the
+  current window, or even in the whole tab page, if you are okay with the
   trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
@@ -34,6 +34,16 @@ need to do that.
 - Else: type the label character. If there are too many matches (more than
   ~50), you might need to switch to the desired group first, using `<space>`
   (step back with `<tab>`, if needed).
+
+Bigrams give you full coverage of the screen:
+
+- `s{char}<space>` jumps to a character before the end of the line.
+- `s<space><space>` jumps to any EOL position, including empty lines.
+
+At any stage, `<enter>` consistently jumps to the next available target:
+
+- `s<enter>...` repeats the previous search.
+- `s{char}<enter>...` can be used as a multiline substitute for `fFtT` motions.
 
 ### Why is this method cool?
 
@@ -58,18 +68,6 @@ At the same time, it reduces mental effort to almost zero:
 - You _don't have to pause in the middle_: if typing at a moderate speed, at
   each step you already know what the immediate next keypress should be, and
   your mind can process the rest in the background.
-
-### Supplemental features
-
-Type
-
-- `s{char}<space>` to jump to a character before the end of the line.
-- `s<space><space>` to jump to an empty line (or any EOL position if Visual
-  mode or `virtualedit` allows it)
-- `s<enter>` to repeat the last search.
-- `s{char}<enter>` to jump to the first `{char}{?}` pair right away.
-- `s<enter><enter>...` or `s{char}<enter><enter>...` to traverse through the
-  matches.
 
 ### Down the kangaroo hole
 
@@ -99,17 +97,20 @@ required by the latter.
 That is, **you do not want to think about**
 
 - **the command**: we need one fundamental targeting method that can bring you
-  anywhere: a "jetpack" instead of a "railway network" (↔ EasyMotion and its
+  anywhere: a "jetpack on the back", instead of "airline routes" (↔
+  [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
   derivatives)
 - **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations using relative line numbers and/or
   repeats)
 - **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
-  you should be able to type the whole sequence in one go, always knowing the
-  next step in advance (↔ any kind of "just-in-time" labeling method; note that
-  the "`/` on steroids" approach by Pounce and Flash, where the pattern length
-  is not fixed, and thus the labels appear at an unknown time, makes this last
-  goal impossible)
+  you should be able to type the whole sequence in one go, on more or less
+  autopilot (↔ any kind of "just-in-time" labeling method; note that the
+  "search command on steroids" approach by
+  [Pounce](https://github.com/rlane/pounce.nvim) and
+  [Flash](https://github.com/folke/flash.nvim), where the pattern length is not
+  fixed, and thus the labels appear at an unknown time, makes this last goal
+  impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -136,7 +137,8 @@ many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
 label set - getting the best of both worlds. The non-determinism we're
 introducing is less of an issue here, since the outcome is known in advance.
 
-In sum, compared to other labeling plugins, Leap is unique in that it
+In sum, compared to other methods based on labeling targets, Leap's approach is
+unique in that it
 
 * offers a smoother experience, by (somewhat) eliminating the pause before
   typing the label
