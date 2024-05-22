@@ -285,14 +285,14 @@ local function leap(kwargs)
     end
   end
   spec_keys = setmetatable({}, {__index = _38_})
-  local _state
+  local st
   local _43_
   if (keyboard_input_3f and (max_phase_one_targets ~= 0) and not no_labels_to_use_3f) then
     _43_ = 1
   else
     _43_ = nil
   end
-  _state = {phase = _43_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["repeating-partial-pattern?"] = false}
+  st = {phase = _43_, ["curr-idx"] = 0, ["group-offset"] = 0, errmsg = nil, ["repeating-partial-pattern?"] = false}
   local function exec_user_autocmds(pattern)
     return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
   end
@@ -305,8 +305,8 @@ local function leap(kwargs)
       handle_interrupted_change_op_21()
     else
     end
-    if _state.errmsg then
-      echo(_state.errmsg)
+    if st.errmsg then
+      echo(st.errmsg)
     else
     end
     return exit_2a()
@@ -334,7 +334,7 @@ local function leap(kwargs)
     local _50_ = opts.max_highlighted_traversal_targets
     if (nil ~= _50_) then
       local group_size = _50_
-      local consumed = (dec(_state["curr-idx"]) % group_size)
+      local consumed = (dec(st["curr-idx"]) % group_size)
       local remaining = (group_size - consumed)
       if (remaining == 1) then
         return inc(group_size)
@@ -351,7 +351,7 @@ local function leap(kwargs)
     if (use_no_labels_3f and (opts.max_highlighted_traversal_targets == 0)) then
       return 0, -1
     else
-      local start = inc(_state["curr-idx"])
+      local start = inc(st["curr-idx"])
       local _end
       if use_no_labels_3f then
         local _53_ = get_number_of_highlighted_traversal_targets()
@@ -374,7 +374,7 @@ local function leap(kwargs)
     for idx, target in ipairs(targets) do
       if (target_2a or break_3f) then break end
       if target.label then
-        local relative_group = (target.group - _state["group-offset"])
+        local relative_group = (target.group - st["group-offset"])
         if (relative_group > 1) then
           break_3f = true
         elseif (relative_group == 1) then
@@ -393,12 +393,12 @@ local function leap(kwargs)
   local function get_repeat_input()
     if state["repeat"].in1 then
       if not state["repeat"].in2 then
-        _state["repeating-partial-pattern?"] = true
+        st["repeating-partial-pattern?"] = true
       else
       end
       return state["repeat"].in1, state["repeat"].in2
     else
-      _state.errmsg = "no previous search"
+      st.errmsg = "no previous search"
       return nil
     end
   end
@@ -408,7 +408,7 @@ local function leap(kwargs)
     if (nil ~= _62_) then
       local in1 = _62_
       if contains_3f(spec_keys.next_target, in1) then
-        _state.phase = nil
+        st.phase = nil
         return get_repeat_input()
       else
         return in1
@@ -452,7 +452,7 @@ local function leap(kwargs)
     local kwargs0 = {["backward?"] = backward_3f, ["match-same-char-seq-at-end?"] = match_same_char_seq_at_end_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local function _72_(...)
-      _state.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
+      st.errmsg = ("not found: " .. in1 .. (_3fin2 or ""))
       return nil
     end
     return (targets or _72_())
@@ -474,7 +474,7 @@ local function leap(kwargs)
       end
       return targets_2a
     else
-      _state.errmsg = "no targets"
+      st.errmsg = "no targets"
       return nil
     end
   end
@@ -524,8 +524,8 @@ local function leap(kwargs)
       _7cgroups_7c = ceil((#targets / #targets["label-set"]))
     end
     local function display()
-      local use_no_labels_3f = (no_labels_to_use_3f or _state["repeating-partial-pattern?"])
-      set_beacons(targets, {["group-offset"] = _state["group-offset"], phase = _state.phase, ["use-no-labels?"] = use_no_labels_3f})
+      local use_no_labels_3f = (no_labels_to_use_3f or st["repeating-partial-pattern?"])
+      set_beacons(targets, {["group-offset"] = st["group-offset"], phase = st.phase, ["use-no-labels?"] = use_no_labels_3f})
       local start, _end = get_highlighted_idx_range(targets, use_no_labels_3f)
       local function _80_()
         return light_up_beacons(targets, start, _end)
@@ -550,7 +550,7 @@ local function leap(kwargs)
             shift = -1
           end
           local max_offset = dec(_7cgroups_7c)
-          _state["group-offset"] = clamp((_state["group-offset"] + shift), 0, max_offset)
+          st["group-offset"] = clamp((st["group-offset"] + shift), 0, max_offset)
           return loop(false)
         else
           return input
@@ -583,7 +583,7 @@ local function leap(kwargs)
       end
     end
     local function display()
-      set_beacons(targets, {["group-offset"] = _state["group-offset"], phase = _state.phase, ["use-no-labels?"] = use_no_labels_3f})
+      set_beacons(targets, {["group-offset"] = st["group-offset"], phase = st.phase, ["use-no-labels?"] = use_no_labels_3f})
       local start, _end = get_highlighted_idx_range(targets, use_no_labels_3f)
       local function _90_()
         return light_up_beacons(targets, start, _end)
@@ -604,7 +604,7 @@ local function leap(kwargs)
         on_first_invoc()
       else
       end
-      _state["curr-idx"] = idx
+      st["curr-idx"] = idx
       display()
       local _93_ = get_input()
       if (nil ~= _93_) then
@@ -639,7 +639,7 @@ local function leap(kwargs)
   exec_user_autocmds("LeapEnter")
   local in1, _3fin2 = nil, nil
   if keyboard_input_3f then
-    if _state.phase then
+    if st.phase then
       in1, _3fin2 = get_first_pattern_input()
     else
       in1, _3fin2 = get_full_pattern_input()
@@ -683,38 +683,38 @@ local function leap(kwargs)
     end
   else
   end
-  if (_3fin2 or _state["repeating-partial-pattern?"]) then
-    if (no_labels_to_use_3f or _state["repeating-partial-pattern?"]) then
+  if (_3fin2 or st["repeating-partial-pattern?"]) then
+    if (no_labels_to_use_3f or st["repeating-partial-pattern?"]) then
       targets["autojump?"] = true
     else
       prepare_labeled_targets_2a(targets)
     end
   else
     if (#targets > max_phase_one_targets) then
-      _state.phase = nil
+      st.phase = nil
     else
     end
     populate_sublists(targets)
     for _, sublist in pairs(targets.sublists) do
       prepare_labeled_targets_2a(sublist)
-      set_beacons(targets, {phase = _state.phase})
+      set_beacons(targets, {phase = st.phase})
     end
-    if (_state.phase == 1) then
+    if (st.phase == 1) then
       resolve_conflicts(targets)
     else
     end
   end
-  local _3fin20 = (_3fin2 or (not _state["repeating-partial-pattern?"] and get_second_pattern_input(targets)))
-  if not (_state["repeating-partial-pattern?"] or _3fin20) then
+  local _3fin20 = (_3fin2 or (not st["repeating-partial-pattern?"] and get_second_pattern_input(targets)))
+  if not (st["repeating-partial-pattern?"] or _3fin20) then
     exit_early_2a()
     return
   else
   end
-  if _state.phase then
-    _state.phase = 2
+  if st.phase then
+    st.phase = 2
   else
   end
-  local partial_pattern_3f = (_state["repeating-partial-pattern?"] or contains_3f(spec_keys.next_target, _3fin20))
+  local partial_pattern_3f = (st["repeating-partial-pattern?"] or contains_3f(spec_keys.next_target, _3fin20))
   local function _114_()
     if not partial_pattern_3f then
       return _3fin20
@@ -749,7 +749,7 @@ local function leap(kwargs)
     targets_2a = targets
   end
   if not targets_2a then
-    _state.errmsg = ("not found: " .. in1 .. _3fin20)
+    st.errmsg = ("not found: " .. in1 .. _3fin20)
     exit_early_2a()
     return
   else
@@ -778,7 +778,7 @@ local function leap(kwargs)
       return
     else
       do_action(targets_2a[1])
-      _state["curr-idx"] = 1
+      st["curr-idx"] = 1
     end
   else
   end
@@ -790,15 +790,15 @@ local function leap(kwargs)
   end
   if contains_3f(spec_keys.next_target, in_final) then
     if can_traverse_3f(targets_2a) then
-      local new_idx = inc(_state["curr-idx"])
+      local new_idx = inc(st["curr-idx"])
       do_action(targets_2a[new_idx])
-      traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or _state["repeating-partial-pattern?"] or not targets_2a["autojump?"])})
+      traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or st["repeating-partial-pattern?"] or not targets_2a["autojump?"])})
       exit_2a()
       return
-    elseif (_state["curr-idx"] == 0) then
+    elseif (st["curr-idx"] == 0) then
       exit_with_action_on_2a(1)
       return
-    elseif (_state["curr-idx"] == 1) then
+    elseif (st["curr-idx"] == 1) then
       vim.fn.feedkeys(in_final, "i")
       exit_2a()
       return

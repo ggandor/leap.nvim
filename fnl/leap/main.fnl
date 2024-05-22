@@ -206,7 +206,7 @@ char separately.
                labels should actually be displayed depends on other
                parts of the code.
       `group`: Number of the label group (also a fixed attribute - the
-               actual state is followed in `_state.group-offset` in
+               actual state is followed in `st.group-offset` in
                `leap`)."
       (when-not (or force-noautojump?
                     (and multi-window-search?
@@ -335,21 +335,21 @@ char separately.
 
   ; Ephemeral state (of the current call) that is not interesting for
   ; the outside world.
-  (local _state {; Multi-phase processing (show beacons ahead of time,
-                 ; right after the first input)?
-                 :phase (when (and keyboard-input?
-                                   (not= max-phase-one-targets 0)
-                                   (not no-labels-to-use?))
-                          1)
-                 ; When repeating a `{char}<enter>` search (started to
-                 ; traverse after the first input).
-                 :repeating-partial-pattern? false
-                 ; For traversal mode.
-                 :curr-idx 0
-                 ; Currently selected label group, 0-indexed
-                 ; (`target.group` starts at 1).
-                 :group-offset 0
-                 :errmsg nil})
+  (local st {; Multi-phase processing (show beacons ahead of time,
+             ; right after the first input)?
+             :phase (when (and keyboard-input?
+                               (not= max-phase-one-targets 0)
+                               (not no-labels-to-use?))
+                      1)
+             ; When repeating a `{char}<enter>` search (started to
+             ; traverse after the first input).
+             :repeating-partial-pattern? false
+             ; For traversal mode.
+             :curr-idx 0
+             ; Currently selected label group, 0-indexed
+             ; (`target.group` starts at 1).
+             :group-offset 0
+             :errmsg nil})
 
   (fn exec-user-autocmds [pattern]
     (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
@@ -364,7 +364,7 @@ char separately.
   ; `handle-interrupted-change-op!` moves the cursor!
   (fn exit-early* []
     (when change-op? (handle-interrupted-change-op!))
-    (when _state.errmsg (echo _state.errmsg))
+    (when st.errmsg (echo st.errmsg))
     (exit*))
 
   ; See also `exit-with-action-on` later.
@@ -396,9 +396,9 @@ char separately.
       group-size
       ; Assumption: being here means we are after an autojump, and
       ; started highlighting from the 2nd target (no `count`).
-      ; Thus, we can use `_state.curr-idx` as the reference, instead of
-      ; some separate counter (but only because of the above).
-      (let [consumed (% (dec _state.curr-idx) group-size)
+      ; Thus, we can use `st.curr-idx` as the reference, instead of some
+      ; separate counter (but only because of the above).
+      (let [consumed (% (dec st.curr-idx) group-size)
             remaining (- group-size consumed)]
         ; Switch just before the whole group gets eaten up.
         (if (= remaining 1) (inc group-size)
@@ -408,7 +408,7 @@ char separately.
   (fn get-highlighted-idx-range [targets use-no-labels?]
     (if (and use-no-labels? (= opts.max_highlighted_traversal_targets 0))
         (values 0 -1)  ; empty range
-        (let [start (inc _state.curr-idx)
+        (let [start (inc st.curr-idx)
               end (when use-no-labels?
                     (case (get-number-of-highlighted-traversal-targets)
                       n (min (+ (dec start) n) (length targets))))]
@@ -420,7 +420,7 @@ char separately.
     (var break? false)
     (each [idx target (ipairs targets) &until (or target* break?)]
       (when target.label
-        (local relative-group (- target.group _state.group-offset))
+        (local relative-group (- target.group st.group-offset))
         (if (> relative-group 1) (set break? true)  ; beyond the active group
             (= relative-group 1) (when (= target.label input)
                                    (set target* target)
@@ -432,9 +432,9 @@ char separately.
   (fn get-repeat-input []
     (if state.repeat.in1
         (do (when-not state.repeat.in2
-              (set _state.repeating-partial-pattern? true))
+              (set st.repeating-partial-pattern? true))
             (values state.repeat.in1 state.repeat.in2))
-        (set _state.errmsg "no previous search")))
+        (set st.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
     (with-highlight-chores nil)
@@ -442,7 +442,7 @@ char separately.
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
       in1 (if (contains? spec-keys.next_target in1)
-              (do (set _state.phase nil)
+              (do (set st.phase nil)
                   (get-repeat-input))
               in1)))
 
@@ -468,7 +468,7 @@ char separately.
           kwargs {: backward? : match-same-char-seq-at-end?
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
-      (or targets (set _state.errmsg (.. "not found: " in1 (or ?in2 ""))))))
+      (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
   (fn get-user-given-targets [targets]
     (local targets* (if (= (type targets) :function) (targets) targets))
@@ -480,7 +480,7 @@ char separately.
             (each [_ t (ipairs targets*)]
               (set t.wininfo wininfo)))
           targets*)
-        (set _state.errmsg "no targets")))
+        (set st.errmsg "no targets")))
 
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.
@@ -551,11 +551,11 @@ char separately.
 
     (fn display []
       (local use-no-labels? (or no-labels-to-use?
-                                _state.repeating-partial-pattern?))
+                                st.repeating-partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (set-beacons targets {:group-offset _state.group-offset
-                            :phase _state.phase : use-no-labels?})
+      (set-beacons targets {:group-offset st.group-offset
+                            :phase st.phase : use-no-labels?})
 
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
       (with-highlight-chores #(light-up-beacons targets start end)))
@@ -572,8 +572,8 @@ char separately.
           (if (and switch-group? (> |groups| 1))
               (let [shift (if (= input spec-keys.next_group) 1 -1)
                     max-offset (dec |groups|)]
-                (set _state.group-offset
-                     (clamp (+ _state.group-offset shift) 0 max-offset))
+                (set st.group-offset
+                     (clamp (+ st.group-offset shift) 0 max-offset))
                 (loop false))
               input))))
 
@@ -596,8 +596,8 @@ char separately.
                 (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {:group-offset _state.group-offset
-                            :phase _state.phase : use-no-labels?})
+      (set-beacons targets {:group-offset st.group-offset
+                            :phase st.phase : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
       (with-highlight-chores #(light-up-beacons targets start end)))
 
@@ -607,7 +607,7 @@ char separately.
 
     (fn loop [idx first-invoc?]
       (when first-invoc? (on-first-invoc))
-      (set _state.curr-idx idx)  ; `display` depends on it!
+      (set st.curr-idx idx)  ; `display` depends on it!
       (display)
       (case (get-input)
         in
@@ -636,7 +636,7 @@ char separately.
   (exec-user-autocmds :LeapEnter)
 
   (local (in1 ?in2) (if keyboard-input?
-                        (if _state.phase
+                        (if st.phase
                             ; This might call `get-repeat-input`, and
                             ; also return `?in2`, if using `next_target`.
                             (get-first-pattern-input)  ; REDRAW
@@ -667,30 +667,30 @@ char separately.
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (if (or ?in2 _state.repeating-partial-pattern?)
-      (if (or no-labels-to-use? _state.repeating-partial-pattern?)
+  (if (or ?in2 st.repeating-partial-pattern?)
+      (if (or no-labels-to-use? st.repeating-partial-pattern?)
           (set targets.autojump? true)
           (prepare-labeled-targets* targets))
       (do
         (when (> (length targets) max-phase-one-targets)
-          (set _state.phase nil))
+          (set st.phase nil))
         (populate-sublists targets)
         (each [_ sublist (pairs targets.sublists)]
           (prepare-labeled-targets* sublist)
-          (set-beacons targets {:phase _state.phase}))
-        (when (= _state.phase 1)
+          (set-beacons targets {:phase st.phase}))
+        (when (= st.phase 1)
           (resolve-conflicts targets))))
 
   (local ?in2 (or ?in2
-                  (and (not _state.repeating-partial-pattern?)
+                  (and (not st.repeating-partial-pattern?)
                        (get-second-pattern-input targets))))  ; REDRAW
-  (when-not (or _state.repeating-partial-pattern? ?in2)
+  (when-not (or st.repeating-partial-pattern? ?in2)
     (exit-early))
 
-  (when _state.phase (set _state.phase 2))
+  (when st.phase (set st.phase 2))
 
   ; Jump eagerly to the first/count-th match on the whole target list?
-  (local partial-pattern? (or _state.repeating-partial-pattern?
+  (local partial-pattern? (or st.repeating-partial-pattern?
                               (contains? spec-keys.next_target ?in2)))
 
   ; Do this now - repeat can succeed, even if we fail this time.
@@ -717,9 +717,9 @@ char separately.
   (local targets* (if targets.sublists (. targets.sublists ?in2) targets))
   (when-not targets*
     ; (Note: at this point, ?in2 might only be nil if
-    ; `_state.repeating-partial-pattern?` is true; that case implies
-    ; there are no sublists, and there _are_ targets.)
-    (set _state.errmsg (.. "not found: " in1 ?in2))
+    ; `st.repeating-partial-pattern?` is true; that case implies there
+    ; are no sublists, and there _are_ targets.)
+    (set st.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
 
   (fn exit-with-action-on* [idx]
@@ -743,7 +743,7 @@ char separately.
         (exit-with-action-on 1)
         (do
           (do-action (. targets* 1))
-          (set _state.curr-idx 1))))
+          (set st.curr-idx 1))))
 
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
   (when-not in-final
@@ -752,19 +752,19 @@ char separately.
   ; Jump to the first target on the [rest of the] target list?
   (when (contains? spec-keys.next_target in-final)
     (if (can-traverse? targets*)
-        (let [new-idx (inc _state.curr-idx)]
+        (let [new-idx (inc st.curr-idx)]
           (do-action (. targets* new-idx))
           (traversal-loop targets*                     ; REDRAW (LOOP)
                           new-idx
                           {:use-no-labels? (or no-labels-to-use?
-                                               _state.repeating-partial-pattern?
+                                               st.repeating-partial-pattern?
                                                (not targets*.autojump?))})
           (exit))
 
-        (= _state.curr-idx 0)  ; the cursor hasn't moved yet
+        (= st.curr-idx 0)  ; the cursor hasn't moved yet
         (exit-with-action-on 1)
 
-        (= _state.curr-idx 1)  ; already on the first target (after autojump)
+        (= st.curr-idx 1)  ; already on the first target (after autojump)
         (do (vim.fn.feedkeys in-final :i)
             (exit))))
 
