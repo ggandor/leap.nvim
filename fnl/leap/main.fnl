@@ -539,26 +539,28 @@ char separately.
         (jump.jump-to! target.pos
                        {:winid target.wininfo.winid
                         :add-to-jumplist? first-jump?
-                        : mode : offset : backward? : inclusive-op?})
+                        : mode
+                        : offset
+                        : backward?
+                        : inclusive-op?})
         (set first-jump? false))))
 
   ; Target-selection loops
 
   (fn post-pattern-input-loop [targets]
-    (local |groups| (if (not targets.label-set) 0
-                        (ceil (/ (length targets)
-                                 (length targets.label-set)))))
+    (local |groups| (if (not targets.label-set)
+                        0
+                        (ceil (/ (length targets) (length targets.label-set)))))
 
     (fn display []
-      (local use-no-labels? (or no-labels-to-use?
-                                st.repeating-partial-pattern?))
+      (local use-no-labels? (or no-labels-to-use? st.repeating-partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `spec-keys.next_target`.
-      (set-beacons targets {:group-offset st.group-offset
-                            :phase st.phase : use-no-labels?})
-
+      (set-beacons targets {:group-offset st.group-offset :phase st.phase
+                            : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-      (with-highlight-chores #(light-up-beacons targets start end)))
+      (with-highlight-chores
+        #(light-up-beacons targets start end)))
 
     (fn loop [first-invoc?]
       (display)
@@ -572,8 +574,9 @@ char separately.
           (if (and switch-group? (> |groups| 1))
               (let [shift (if (= input spec-keys.next_group) 1 -1)
                     max-offset (dec |groups|)]
-                (set st.group-offset
-                     (clamp (+ st.group-offset shift) 0 max-offset))
+                (set st.group-offset (clamp (+ st.group-offset shift)
+                                            0
+                                            max-offset))
                 (loop false))
               input))))
 
@@ -596,10 +599,11 @@ char separately.
                 (tset :beacon nil))))))
 
     (fn display []
-      (set-beacons targets {:group-offset st.group-offset
-                            :phase st.phase : use-no-labels?})
+      (set-beacons targets {:group-offset st.group-offset :phase st.phase
+                            : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-      (with-highlight-chores #(light-up-beacons targets start end)))
+      (with-highlight-chores
+        #(light-up-beacons targets start end)))
 
     (fn get-new-idx [idx in]
       (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
