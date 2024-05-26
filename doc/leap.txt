@@ -361,8 +361,13 @@ might want to wrap them in a function, and define an autocommand like below.
 >lua
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
-        vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
-        -- etc.
+        if vim.g.colors_name == "this_colorscheme_needs_tweaking" then
+          -- Force using the defaults of Leap:
+          require('leap').init_highlight(true)
+          -- And/or make your own tweaks:
+          vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
+          -- etc.
+        end
       end
     })
 
