@@ -31,16 +31,18 @@ need to do that.
   there. No need to be bothered by remaining labels - those are guaranteed
   "safe" letters, and will disappear on the next keypress -, just continue
   editing.
-- Else: type the label character. If there are too many matches (more than
-  ~50), you might need to switch to the desired group first, using `<space>`
-  (step back with `<tab>`, if needed).
+- Else: type the label character. If there are too many matches, you might need
+  to switch to the desired group first, using `<space>` (step back with
+  `<tab>`, if needed). Labels in the immediate next group are already visible,
+  but highlighted differently than the active ones.
 
-Bigrams give you full coverage of the screen:
+Character pairs give you full coverage of the screen:
 
 - `s{char}<space>` jumps to a character before the end of the line.
 - `s<space><space>` jumps to any EOL position, including empty lines.
 
-At any stage, `<enter>` consistently jumps to the next available target:
+At any stage, `<enter>` consistently jumps to the next available target
+(`<tab>` steps back):
 
 - `s<enter>...` repeats the previous search.
 - `s{char}<enter>...` can be used as a multiline substitute for `fFtT` motions.
@@ -69,112 +71,6 @@ At the same time, it reduces mental effort to almost zero:
   each step you already know what the immediate next keypress should be, and
   your mind can process the rest in the background.
 
-### Down the kangaroo hole
-
-This was just a teaser - mind that while Leap has deeply thought-through,
-opinionated defaults, its small(ish) but comprehensive API makes it flexible:
-you can configure it to resemble other similar plugins, extend it with custom
-targeting methods, and even do arbitrary actions with the selected target -
-read on to dig deeper.
-
-- [Design considerations in detail](#design-considerations-in-detail)
-- [Getting started](#getting-started)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [FAQ](#faq)
-- [Extending Leap](#extending-leap)
-
-## Design considerations in detail
-
-### The ideal
-
-Premise: jumping from point A to B on the screen should not be some [exciting
-puzzle](https://www.vimgolf.com/), for which you should train yourself; it
-should be a non-issue. An ideal keyboard-driven interface would impose almost no
-more cognitive burden than using a mouse, without the constant context-switching
-required by the latter.
-
-That is, **you do not want to think about**
-
-- **the command**: we need one fundamental targeting method that can bring you
-  anywhere: a "jetpack on the back", instead of "airline routes" (↔
-  [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
-  derivatives)
-- **the context**: it should be enough to look at the target, and nothing else
-  (↔ vanilla Vim motion combinations using relative line numbers and/or
-  repeats)
-- **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
-  you should be able to type the whole sequence in one go, on more or less
-  autopilot (↔ any kind of "just-in-time" labeling method; note that the
-  "search command on steroids" approach by
-  [Pounce](https://github.com/rlane/pounce.nvim) and
-  [Flash](https://github.com/folke/flash.nvim), where the pattern length is not
-  fixed, and thus the labels appear at an unknown time, makes this last goal
-  impossible)
-
-All the while using **as few keystrokes as possible**, and getting distracted by
-**as little incidental visual noise as possible**.
-
-### How do we measure up?
-
-It is obviously impossible to achieve all of the above at the same time, without
-some trade-offs at least; but in our opinion Leap comes pretty close, occupying
-a sweet spot in the design space. (The worst remaining offender might be visual
-noise.)
-
-The **one-step shift between perception and action** is the big idea that cuts
-the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
-can eliminate the surprise factor from the search-based method (which is the
-only viable approach - see "jetpack" above). Fortunately, a 2-character pattern
-\- the shortest one with which we can play this trick - is also long enough to
-sufficiently narrow down the matches in the vast majority of cases.
-
-Fixed pattern length also makes **(safe) automatic jump to the first target**
-possible. You cannot improve on jumping directly, just like how `f` and `t`
-works, not having to read a label at all, and not having to accept the match
-with `<enter>` either. However, we can do this in a smart way: if there are
-many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
-label set - getting the best of both worlds. The non-determinism we're
-introducing is less of an issue here, since the outcome is known in advance.
-
-In sum, compared to other methods based on labeling targets, Leap's approach is
-unique in that it
-
-* offers a smoother experience, by (somewhat) eliminating the pause before
-  typing the label
-
-* feels natural to use for both distant _and_ close targets
-
-### Auxiliary principles
-
-<details>
-<summary>Optimize for the common case</summary>
-
-A good example is using strictly one-character labels and switching between
-groups, which can become awkward beyond, say, 200 targets, but makes a whole
-bunch of edge cases and UI problems nonexistent.
-
-</details>
-
-<details>
-<summary>Sharpen the saw</summary>
-
-Build on Vim's native features, aim for synergy, and don't reinvent the wheel
-(dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-[keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-support, autocommands via `User` events, `<Plug>` keys, etc.).
-(http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)
-
-</details>
-
-<details>
-<summary>Mechanisms instead of policies</summary>
-
-Complement the small and opinionated core by [extension
-points](#extending-leap), keeping the plugin flexible and future-proof.
-
-</details>
-
 ## Getting started
 
 ### Status
@@ -194,13 +90,9 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Installation
 
-Use your preferred method or plugin manager. (Note: Setting any kind of lazy
-loading is redundant, as Leap lazy loads itself. Using the `keys` feature of
-lazy.nvim might even cause
-[problems](https://github.com/ggandor/leap.nvim/issues/191).)
-
-No extra steps needed besides defining keybindings - to use the default ones,
-put the following into your config (overrides `s`, `S` and `gs` in all modes):
+Use your preferred method or plugin manager. No extra steps needed besides
+defining keybindings - to use the default ones, put the following into your
+config (overrides `s`, `S` and `gs` in all modes):
 
 `require('leap').create_default_mappings()` (init.lua)
 
@@ -294,121 +186,113 @@ and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
-## Usage
+<details>
+<summary>Lazy loading</summary>
 
-See `:h leap-usage` for supplemental features not mentioned here (targeting
-empty lines, traversal mode, repeating motions, etc.)
+...is all the rage now, but doing it via your plugin manager is unnecessary, as
+Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
+[problems](https://github.com/ggandor/leap.nvim/issues/191).
 
-[Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
-to the example file, if you want to follow along.
+</details>
 
-### Phase one
+### Next steps
 
-The search is invoked with `s` in the forward direction, `S` in the backward
-direction, and `gs` in the other windows. Let's target some word containing
-`ol`. After entering the letter `o`, the plugin processes all character pairs
-starting with it, and from here on, you have all the visual information you
-need to reach your specific target. (The highlighting of unlabeled matches -
-green underlined on the screenshots - is opt-in, turned on for clarity here.)
+Help files are not exactly page-turners, but `:h leap` is, dare I say, not that
+dry a read - I suggest at least skimming it, even if you don't have a specific
+question yet (if nothing else: `:h leap-usage`, `:h leap-config`, `:h
+leap-events`). While Leap has deeply thought-through, opinionated defaults, its
+small(ish) but comprehensive API makes it pretty flexible.
 
-![quick example 1](../media/quick_example_1.png?raw=true)
+## Design considerations in detail
 
-### Phase two
+### The ideal
 
-Let's finish the pattern, i.e., type `l`. Leap now jumps to the first match
-(the unlabeled one) automatically - if you aimed for that, you are good to go,
-just continue your work! (The labels for the subsequent matches of `ol` will
-remain visible until the next keypress, but they are carefully chosen "safe"
-letters, guaranteed to not interfere with your following editing command.)
-Otherwise, type the label character next to your target match, and move on to
-that.
+Premise: jumping from point A to B on the screen should not be some [exciting
+puzzle](https://www.vimgolf.com/), for which you should train yourself; it
+should be a non-issue. An ideal keyboard-driven interface would impose almost no
+more cognitive burden than using a mouse, without the constant context-switching
+required by the latter.
 
-![quick example 2](../media/quick_example_2.png?raw=true)
+That is, **you do not want to think about**
 
-Note that Leap only jumps to the first match if the remaining matches can be
-covered by the limited set of safe target labels, but stays in place, and
-switches to an extended label set otherwise. For fine-tuning or disabling this
-behaviour, see `:h leap-config` (`labels` and `safe_labels`).
+- **the command**: we need one fundamental targeting method that can bring you
+  anywhere: a "jetpack on the back", instead of "airline routes" (↔
+  [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
+  derivatives)
+- **the context**: it should be enough to look at the target, and nothing else
+  (↔ vanilla Vim motion combinations using relative line numbers and/or
+  repeats)
+- **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
+  you should be able to type the whole sequence in one go, on more or less
+  autopilot (↔ any kind of "just-in-time" labeling method; note that the
+  "search command on steroids" approach by
+  [Pounce](https://github.com/rlane/pounce.nvim) and
+  [Flash](https://github.com/folke/flash.nvim), where the pattern length is not
+  fixed, and thus the labels appear at an unknown time, makes this last goal
+  impossible)
 
-### Multiple target groups
+All the while using **as few keystrokes as possible**, and getting distracted by
+**as little incidental visual noise as possible**.
 
-To show the last important feature, let's go back to the start position, and
-start a new jump - we will target the struct member `fr_height` on line 1100,
-near the bottom (`available = oldwin->w_frame->fr_height;`), using the pattern
-`fr`. Press `s`, and then `f`:
+### How do we measure up?
 
-![quick example 3](../media/quick_example_3.png?raw=true)
+It is obviously impossible to achieve all of the above at the same time, without
+some trade-offs at least; but in our opinion Leap comes pretty close, occupying
+a sweet spot in the design space. (The worst remaining offender might be visual
+noise.)
 
-The blue labels indicate a secondary group of matches, where we start to reuse
-the available labels. You can reach those by pressing `<space>` first, which
-switches to the subsequent match group. To jump to our target (the blue `j`),
-you should now press `r` (to finish the pattern), and then `<space>j`.
+The **one-step shift between perception and action** is the big idea that cuts
+the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
+can eliminate the surprise factor from the search-based method (which is the
+only viable approach - see "jetpack" above). Fortunately, a 2-character pattern
+\- the shortest one with which we can play this trick - is also long enough to
+sufficiently narrow down the matches in the vast majority of cases.
 
-In very rare cases, if the large number of matches cannot be covered even by
-two label groups, you might need to press `<space>` multiple times, until you
-see the target label, first in blue, and then in green. (Substitute "green" and
-"blue" with the actual colors in the current theme.)
+Fixed pattern length also makes **(safe) automatic jump to the first target**
+possible. You cannot improve on jumping directly, just like how `f` and `t`
+works, not having to read a label at all, and not having to accept the match
+with `<enter>` either. However, we can do this in a smart way: if there are
+many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
+label set - getting the best of both worlds. The non-determinism we're
+introducing is less of an issue here, since the outcome is known in advance.
 
-## Configuration
+In sum, compared to other methods based on labeling targets, Leap's approach is
+unique in that it
 
-### Options
+* offers a smoother experience, by (somewhat) eliminating the pause before
+  typing the label
 
-Below is a list of all configurable values in the `opts` table, with their
-defaults. Set them like: `require('leap').opts.<key> = <value>`. For details on
-the particular fields, see `:h leap-config`.
+* feels natural to use for both distant _and_ close targets
 
-```Lua
-case_sensitive = false
-equivalence_classes = { ' \t\r\n', }
-max_phase_one_targets = nil
-highlight_unlabeled_phase_one_targets = false
-max_highlighted_traversal_targets = 10
-substitute_chars = {}
-safe_labels = 'sfnut/SFNLHMUGTZ?'
-labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'
-special_keys = {
-  next_target = '<enter>',
-  prev_target = '<tab>',
-  next_group = '<space>',
-  prev_group = '<tab>',
-}
-```
+### Auxiliary principles
 
-### Mappings
+<details>
+<summary>Optimize for the common case</summary>
 
-See `:h leap-default-mappings`. To define alternative mappings, you can use the
-`<Plug>` keys listed at `:h leap-custom-mappings`. Besides the default motions,
-you can also find the bidirectional `<Plug>(leap)`, and an alternative,
-[evil-snipe](https://github.com/hlissner/evil-snipe)-style key set for
-in-window jumps there.
+A good example is using strictly one-character labels and switching between
+groups, which can become awkward beyond, say, 200 targets, but makes a whole
+bunch of edge cases and UI problems nonexistent.
 
-To create custom motions with behaviours different from the predefined ones,
-see `:h leap.leap()`.
+</details>
 
-To set repeat keys that work like `;` and `,` that is, repeat the last motion
-without explicitly invoking Leap, see `:h leap-repeat`.
+<details>
+<summary>Sharpen the saw</summary>
 
-### Highlight groups
+Build on Vim's native features, aim for synergy, and don't reinvent the wheel
+(dot-repeat (`.`), inclusive/exclusive toggle (`v`),
+[keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
+support, autocommands via `User` events, `<Plug>` keys, etc.).
+(http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)
 
-For customizing the highlight colors, see `:h leap-highlight`.
+</details>
 
-In case you - as a user - are not happy with a certain colorscheme's
-integration, you could force reloading the default settings by calling
-`leap.init_highlight(true)`. The call can even be wrapped in an
-autocommand to automatically re-init on every colorscheme change:
+<details>
+<summary>Mechanisms instead of policies</summary>
 
-```Vim
-autocmd ColorScheme * lua require('leap').init_highlight(true)
-```
+Complement the small and opinionated core by [extension
+points](#extending-leap), keeping the plugin flexible and future-proof.
 
-This can be tweaked further, you could e.g. check the actual colorscheme, and
-only execute for certain ones, etc.
-
-### Autocommands
-
-Leap triggers `User` events on entering/exiting (with patterns `LeapEnter` and
-`LeapLeave`), so that you can set up autocommands, e.g. to change the values of
-some editor options while the plugin is active (`:h leap-events`).
+</details>
 
 ## FAQ
 
