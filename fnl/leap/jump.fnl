@@ -18,8 +18,10 @@
 (fn add-offset! [offset]
   (if (< offset 0) (push-cursor! :bwd)
       ; Safe first forward push for pre-EOL matches.
-      (> offset 0) (do (when (not (cursor-before-eol?)) (push-cursor! :fwd))
-                       (when (> offset 1) (push-cursor! :fwd)))))
+      (> offset 0) (do (when (not (cursor-before-eol?))
+                         (push-cursor! :fwd))
+                       (when (> offset 1)
+                         (push-cursor! :fwd)))))
 
 
 (fn push-beyond-eof! []
@@ -30,7 +32,8 @@
   (vim.cmd "norm! l")
   (api.nvim_create_autocmd
     [:CursorMoved :WinLeave :BufLeave :InsertEnter :CmdlineEnter :CmdwinEnter]
-    {:callback #(set vim.o.virtualedit saved) :once true}))
+    {:callback #(set vim.o.virtualedit saved)
+     :once true}))
 
 
 (fn simulate-inclusive-op! [mode]
@@ -68,23 +71,30 @@ the API), make the motion appear to behave as an inclusive one."
 
 
 (fn jump-to! [[lnum col]
-              {: winid : add-to-jumplist? : mode : offset
-               : backward? : inclusive-op?}]
+              {: winid
+               : add-to-jumplist?
+               : mode
+               : offset
+               : backward?
+               : inclusive-op?}]
   (local op-mode? (mode:match :o))
-  ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
-  (when add-to-jumplist? (vim.cmd "norm! m`"))
+  (when add-to-jumplist?
+    ; Note: <C-o> will ignore this on the same line (neovim#9874).
+    (vim.cmd "norm! m`"))
   (when (not= winid (api.nvim_get_current_win))
     (api.nvim_set_current_win winid))
 
+  ; Set cursor.
   (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)
   (when offset (add-offset! offset))
-
-  ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
-  ; we need custom tweaks to behave as an inclusive one. (This is only
-  ; relevant in the forward direction, as inclusiveness applies to the
-  ; end of the selection.)
   (when (and op-mode? inclusive-op? (not backward?))
+    ; Since Vim interprets our jump as exclusive (:h exclusive), we need
+    ; custom tweaks to behave as inclusive. (This is only relevant in
+    ; the forward direction, as inclusiveness applies to the end of the
+    ; selection.)
     (simulate-inclusive-op! mode))
+
+  ; Refresh view.
   (when (not op-mode?)
     (pcall api.nvim__redraw {:cursor true})  ; EXPERIMENTAL
     (force-matchparen-refresh)))
