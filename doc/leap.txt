@@ -319,13 +319,18 @@ right-hand keys to get a better balance for the whole sequence on average.
 
 Meta-keys accepted at runtime:
 
-*leap.opts.special_keys.next_target*   Repeat the previous search.
-                                     |leap-traversal|: jump to the next target
-*leap.opts.special_keys.prev_target*   |leap-traversal|: jump to the previous
-                                     target.
-*leap.opts.special_keys.next_group*    Shift to the next group of labeled targets.
-*leap.opts.special_keys.prev_group*    Shift to the previous group of labeled
-                                     targets.
+*leap.opts.special_keys.next_target*
+Jump to the next available target (use the previous search pattern if no input
+has been given). |leap-traversal|
+
+*leap.opts.special_keys.prev_target*
+Jump to the previous target (revert `next_target`).
+
+*leap.opts.special_keys.next_group*
+Shift to the next group of labeled targets.
+
+*leap.opts.special_keys.prev_group*
+Shift to the previous group of labeled targets (revert `next_group`).
 
 Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
 
