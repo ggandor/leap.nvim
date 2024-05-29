@@ -362,6 +362,14 @@ vim.keymap.set('n', 's', function ()
   }
 end)
 ```
+
+The additional trade-off here is that if you have multiple windows open on the
+tab page, then you will almost never get an autojump, except if all targets are
+in the same window (it would be too disorienting if the cursor could suddenly
+jump in/to a different window than your goal, right before selecting the
+target, not to mention that we don't want to change the state of a window we're
+not targeting).
+
 </details>
 
 <details>
