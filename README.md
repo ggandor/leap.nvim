@@ -26,15 +26,16 @@ need to do that.
   trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet.
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet, but your brain can
+  already start processing the relevant one.
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. No need to be bothered by remaining labels - those are guaranteed
   "safe" letters, and will disappear on the next keypress -, just continue
   editing.
-- Else: type the label character. If there are too many matches, you might need
-  to switch to the desired group first, using `<space>` (step back with
-  `<tab>`, if needed). Labels in the immediate next group are already visible,
-  but highlighted differently than the active ones.
+- Else: type the label character. If there are more matches than available
+  label characters, you might need to switch to the desired group first, using
+  `<space>` (step back with `<tab>`, if needed). Labels in the immediate next
+  group are already visible, but highlighted differently than the active ones.
 
 Character pairs give you full coverage of the screen:
 

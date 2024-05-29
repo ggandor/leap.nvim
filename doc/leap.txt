@@ -30,24 +30,30 @@ default ones, call `require('leap').create_default_mappings()`.
 ==============================================================================
 USAGE                                                               *leap-usage*
 
-- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
+• Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`).
-- Start typing a 2-character pattern (`{char1}{char2}`).
-- After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet. *leap-phase-one*
-- Enter `{char2}`. If the pair was not labeled, then voilà, you're already
+
+• Start typing a 2-character pattern (`{char1}{char2}`).
+
+• After typing the first character, you see "labels" appearing next to some of
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet, but your brain can
+  already start processing the relevant one. *leap-phase-one*
+
+• Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. No need to be bothered by remaining labels - those are guaranteed
-  "safe" letters, and will disappear on the next keypress -, just continue
-  editing. *leap-autojump*
-- Else: type the label character. If there are too many matches (more than
-  ~50), you might need to switch to the desired group first, using `<space>`
-  (step back with `<tab>`, if needed). *leap-phase-two*
+  "safe" letters (|leap.opts.safe_labels|), and will disappear on the next
+  keypress -, just continue editing. *leap-autojump*
+
+• Else: type the label character. If there are more matches than available
+  label characters, you might need to switch to the desired group first, using
+  `<space>` (step back with `<tab>`, if needed). Labels in the immediate next
+  group are already visible, but highlighted differently than the active ones.
+  *leap-phase-two*
 
                                                 *leap-to-eol* *leap-to-empty-line*
 A character at the end of a line can be targeted by pressing `<space>` after
-it. There is no special mechanism behind this: `<space>` is simply an alias
-for the newline character, defined in |leap.opts.equivalence_classes| by
-default.
+it. Note that there is no special mechanism behind this: `<space>` is simply
+an alias for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
 
 A slightly more magical feature is that you can target actual EOL positions,
 including empty lines, by pressing the newline alias twice (`<space><space>`).
@@ -242,8 +248,9 @@ Example configuration: >lua
     Example - whitespace, brackets, and quotes: >lua
         { ' \t\r\n', '([{', ')]}', '\'"`' }
 <
-    Note: Make sure to have a set containing `\n` if you want to be able to
-    target empty lines and characters at the end of the line.
+    Note: If you want to be able to target empty lines, and characters at the
+    end of a line, make sure to keep an alias for `\n` and `\r`
+    (|leap-to-eol|, |leap-to-empty-line|).
 
     Note: Non-mutual aliases are not possible in Leap, for the same reason
     that supporting |smartcase| is not possible: we would need to show two
@@ -344,6 +351,10 @@ liking (using |:hi| or |nvim_set_hl()|):
 LeapMatch
     Matches that can be reached without picking a label. By default, this
     group is only used for |leap-traversal|.
+
+    See also:
+    • |leap.opts.highlight_unlabeled_phase_one_targets|
+    • |leap.opts.max_highlighted_traversal_targets|
 
                                                            *hl-LeapLabelPrimary*
 LeapLabelPrimary
