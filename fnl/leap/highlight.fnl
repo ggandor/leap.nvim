@@ -21,14 +21,18 @@
 (fn M.cleanup [self affected-windows]
   ; Clear beacons & cursor.
   (each [_ [bufnr id] (ipairs self.extmarks)]
-    (api.nvim_buf_del_extmark bufnr self.ns id))
+    (when (api.nvim_buf_is_valid bufnr)
+      (api.nvim_buf_del_extmark bufnr self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
     (each [_ winid (ipairs affected-windows)]
-      (local wininfo (. (vim.fn.getwininfo winid) 1))
-      (api.nvim_buf_clear_namespace
-        wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline))
+      ; TODO: Edge case: what if the window has become invalid, but the
+      ;       buffer is still there?
+      (when (api.nvim_win_is_valid winid)
+        (local wininfo (. (vim.fn.getwininfo winid) 1))
+        (api.nvim_buf_clear_namespace
+          wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
     ; Safety measure for scrolloff > 0: we always clean up the current view too.
     (api.nvim_buf_clear_namespace 0 self.ns
                                   (dec (vim.fn.line "w0"))

@@ -880,11 +880,17 @@ local function init()
       if ((_G.type(key) == "table") and (key[1] == "w") and (nil ~= key[2]) and (nil ~= key[3])) then
         local win = key[2]
         local name = key[3]
-        api.nvim_win_set_option(win, name, val)
+        if api.nvim_win_is_valid(win) then
+          api.nvim_win_set_option(win, name, val)
+        else
+        end
       elseif ((_G.type(key) == "table") and (key[1] == "b") and (nil ~= key[2]) and (nil ~= key[3])) then
         local buf = key[2]
         local name = key[3]
-        api.nvim_buf_set_option(buf, name, val)
+        if api.nvim_buf_is_valid(buf) then
+          api.nvim_buf_set_option(buf, name, val)
+        else
+        end
       elseif (nil ~= key) then
         local name = key
         api.nvim_set_option(name, val)
@@ -893,14 +899,14 @@ local function init()
     end
     return nil
   end
-  local function _136_(_)
+  local function _138_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _136_, group = "LeapDefault"})
-  local function _137_(_)
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _138_, group = "LeapDefault"})
+  local function _139_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _137_, group = "LeapDefault"})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _139_, group = "LeapDefault"})
 end
 init()
 return {state = state, leap = leap}
