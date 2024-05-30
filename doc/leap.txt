@@ -31,24 +31,23 @@ default ones, call `require('leap').create_default_mappings()`.
 USAGE                                                               *leap-usage*
 
 • Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`).
+  the other windows (`gs`). (For different arrangements, see
+  |leap-custom-mappings|.)
 
 • Start typing a 2-character pattern (`{char1}{char2}`).
 
 • After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet, but your brain can
-  already start processing the relevant one. *leap-phase-one*
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet. *leap-phase-one*
 
 • Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. No need to be bothered by remaining labels - those are guaranteed
-  "safe" letters (|leap.opts.safe_labels|), and will disappear on the next
-  keypress -, just continue editing. *leap-autojump*
+  there. You can safely ignore the remaining labels - those are guaranteed
+  non-conflicting letters (|leap.opts.safe_labels|), disappearing on the next
+  keypress - and continue editing. *leap-autojump*
 
 • Else: type the label character. If there are more matches than available
-  label characters, you might need to switch to the desired group first, using
-  `<space>` (step back with `<tab>`, if needed). Labels in the immediate next
-  group are already visible, but highlighted differently than the active ones.
-  *leap-phase-two*
+  labels, you can switch between groups, using `<space>` and `<tab>`. Labels
+  in the immediate next group are already visible, but highlighted differently
+  than the active ones. *leap-phase-two*
 
                                                 *leap-to-eol* *leap-to-empty-line*
 A character at the end of a line can be targeted by pressing `<space>` after

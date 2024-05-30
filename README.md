@@ -21,21 +21,19 @@ labels** - Leap shows you which key you will need to press before you actually
 need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`). (Note: you can search bidirectionally in the
-  current window, or even in the whole tab page, if you are okay with the
-  trade-offs.)
+  the other windows (`gs`). (Note: you can use a single key for the current
+  window or even the whole tab page, if you are okay with the trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet, but your brain can
-  already start processing the relevant one.
+  the `{char1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. No need to be bothered by remaining labels - those are guaranteed
-  "safe" letters, and will disappear on the next keypress -, just continue
+  there. You can safely ignore the remaining labels - those are guaranteed
+  non-conflicting letters, disappearing on the next keypress - and continue
   editing.
 - Else: type the label character. If there are more matches than available
-  label characters, you might need to switch to the desired group first, using
-  `<space>` (step back with `<tab>`, if needed). Labels in the immediate next
-  group are already visible, but highlighted differently than the active ones.
+  labels, you can switch between groups, using `<space>` and `<tab>`. Labels in
+  the immediate next group are already visible, but highlighted differently
+  than the active ones.
 
 Character pairs give you full coverage of the screen:
 
