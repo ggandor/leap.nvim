@@ -16,13 +16,13 @@ CONTENTS                                                         *leap-contents*
 ==============================================================================
 INTRODUCTION                                  *leap* *leap.nvim* *leap-introduction*
 
-Leap is a motion plugin that allows you to jump to any positions in the
-visible editor area by entering a 2-character search pattern, and then
-potentially a label character to pick your target from multiple matches,
-similar to vim-sneak (https://github.com/justinmk/vim-sneak). The main novel
-idea in Leap is that you get a preview of the target labels - Leap shows you
-which key you will need to press before you actually need to do that,
-resulting in a smoother overall experience.
+Leap is a motion plugin that allows you to jump to any position in the visible
+editor area by entering a 2-character search pattern, and then potentially a
+label character to pick your target from multiple matches, similar to
+vim-sneak (https://github.com/justinmk/vim-sneak). The main novel idea in Leap
+is that you get a preview of the target labels - Leap shows you which key you
+will need to press before you actually need to do that, resulting in a
+smoother overall experience.
 
 Key mappings should be defined explicitly. To start using the plugin with the
 default ones, call `require('leap').create_default_mappings()`.
@@ -40,16 +40,16 @@ USAGE                                                               *leap-usage*
   the `{char1}{?}` pairs. You cannot _use_ the labels yet. *leap-phase-one*
 
 • Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. You can safely ignore the remaining labels - those are guaranteed
-  non-conflicting letters (|leap.opts.safe_labels|), disappearing on the next
-  keypress - and continue editing. *leap-autojump*
+  there. You can safely ignore the remaining labels, and continue editing -
+  those are guaranteed non-conflicting letters, disappearing on the next
+  keypress (|leap.opts.safe_labels|). *leap-autojump*
 
 • Else: type the label character. If there are more matches than available
   labels, you can switch between groups, using `<space>` and `<tab>`. Labels
   in the immediate next group are already visible, but highlighted differently
   than the active ones. *leap-phase-two*
 
-                                                *leap-to-eol* *leap-to-empty-line*
+                                                           *leap-to-end-of-line*
 A character at the end of a line can be targeted by pressing `<space>` after
 it. Note that there is no special mechanism behind this: `<space>` is simply
 an alias for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
@@ -125,9 +125,8 @@ s{char1}{char2}         Jump forward to a labeled or [count]'th visible
                         occurrence of {char1}{char2}. The cursor is placed on
                         {char1} |exclusive|.
                         To operate till the end of the line, use |o_v|, and
-                        include the newline characer (aliased to `<space>` by
-                        default in |leap.opts.equivalence_classes|) in the
-                        input pattern: `{op}vs{char}{newline}`.
+                        finish the pattern with a newline alias, e.g.
+                        `yvs{char}<space>`. |leap.opts.equivalence_classes|
 
                                                         *leap_S*
 S{char1}{char2}         Jump backward to a labeled or [count]'th visible
@@ -248,8 +247,8 @@ Example configuration: >lua
         { ' \t\r\n', '([{', ')]}', '\'"`' }
 <
     Note: If you want to be able to target empty lines, and characters at the
-    end of a line, make sure to keep an alias for `\n` and `\r`
-    (|leap-to-eol|, |leap-to-empty-line|).
+    end of a line, make sure to keep an alias for `\n` and `\r`.
+    |leap-to-end-of-line|
 
     Note: Non-mutual aliases are not possible in Leap, for the same reason
     that supporting |smartcase| is not possible: we would need to show two
@@ -288,21 +287,23 @@ Example configuration: >lua
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`
 
-    When the number of matches does not exceed the number of these "safe"
-    labels plus one, the plugin jumps to the first match automatically after
-    entering the pattern. Obviously, for this purpose you should choose keys
-    that are unlikely to be used right after a jump!
+    These should be keys that you would never use right after a jump, so that
+    the plugin can instantly jump to the first match when this safe list
+    covers the rest. Any other key than these "falls through" to Normal mode.
+    This removes a step in the common case: you don't need to explicitly exit,
+    just type your next command. |leap-autojump|
 
     The list can either be defined as a string or a table. Setting it to `{}`
     or `''` effectively disables the autojump feature.
 
-    Note: Operator-pending mode ignores this, since we need to be able to
-    select the actual target before executing the operation.
+    Note: Operator-pending mode ignores this, and tries to use
+    |leap.opts.labels|, since we need to be able to select the actual target
+    before executing the operation anyway.
 
                                                               *leap.opts.labels*
 `labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'`
 
-    Target labels to be used when there are more matches than labels in
+    Target labels to be used when there are more matches than
     |leap.opts.safe_labels| plus one.
 
     The list can either be defined as a string or a table. Setting it to `{}`

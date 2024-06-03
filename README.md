@@ -13,7 +13,7 @@ a jump.
 
 ### How to use it (TL;DR)
 
-Leap's default motions allow you to jump to any positions in the visible editor
+Leap's default motions allow you to jump to any position in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
 character to pick your target from multiple matches, in a manner similar to
 Sneak. The main novel idea in Leap is that **you get a preview of the target
@@ -27,9 +27,9 @@ need to do that.
 - After typing the first character, you see "labels" appearing next to some of
   the `{char1}{?}` pairs. You cannot _use_ the labels yet.
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. You can safely ignore the remaining labels - those are guaranteed
-  non-conflicting letters, disappearing on the next keypress - and continue
-  editing.
+  there. You can safely ignore the remaining labels, and continue editing -
+  those are guaranteed non-conflicting letters, disappearing on the next
+  keypress.
 - Else: type the label character. If there are more matches than available
   labels, you can switch between groups, using `<space>` and `<tab>`. Labels in
   the immediate next group are already visible, but highlighted differently
@@ -227,9 +227,8 @@ That is, **you do not want to think about**
   autopilot (↔ any kind of "just-in-time" labeling method; note that the
   "search command on steroids" approach by
   [Pounce](https://github.com/rlane/pounce.nvim) and
-  [Flash](https://github.com/folke/flash.nvim), where the pattern length is not
-  fixed, and thus the labels appear at an unknown time, makes this last goal
-  impossible)
+  [Flash](https://github.com/folke/flash.nvim), where the labels appear, by
+  design, at an unknown time, makes this last goal impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
