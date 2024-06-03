@@ -196,11 +196,12 @@ Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
 
 ### Next steps
 
-Help files are not exactly page-turners, but `:h leap` is, dare I say, not that
-dry a read - I suggest at least skimming it, even if you don't have a specific
-question yet (if nothing else: `:h leap-usage`, `:h leap-config`, `:h
-leap-events`). While Leap has deeply thought-through, opinionated defaults, its
-small(ish) but comprehensive API makes it pretty flexible.
+Help files are not exactly page-turners, but [`:help leap`](doc/leap.txt) is,
+dare I say, not that dry a read - I suggest at least skimming it, even if you
+don't have a specific question yet (if nothing else: `:h leap-usage`, `:h
+leap-config`, `:h leap-events`). While Leap has deeply thought-through,
+opinionated defaults, its small(ish) but comprehensive API makes it pretty
+flexible.
 
 ## Design considerations in detail
 
