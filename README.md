@@ -117,23 +117,24 @@ vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
 vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 ```
 
-`<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
-with the exception that the current line, and on the current line, forward
-direction is prioritized. That is, you can always be sure that the targets
-right in front of you will be the first ones.
-
-Note that you will get twice as many targets and thus half as many autojumps on
-average, but not needing to press the Shift key for backward motions might
-compensate for that. Another caveat is that you cannot traverse through the
-matches (`:h leap-traversal`), although invoking repeat right away (`:h
-leap-repeat`) can substitute for that.
-
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
 a random direction might be too disorienting with the selection highlight on,
 and neither for Operator-pending mode, as dot-repeat cannot be used if the
 search is non-directional.
 
-For further customization, see `:h leap-custom-mappings`.
+Note that compared to using separate keys for the two directions, you will get
+twice as many targets and thus half as many autojumps on average, but not
+needing to press the Shift key for backward motions might compensate for that.
+Another caveat is that you cannot traverse through the matches (`:h
+leap-traversal`), although invoking repeat right away (`:h leap-repeat`) can
+substitute for that.
+
+`<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
+with the exception that the current line, and on the current line, forward
+direction is prioritized. That is, you can always be sure that the targets
+right in front of you will be the first ones.
+
+See `:h leap-custom-mappings` for more.
 
 </details>
 
@@ -279,8 +280,8 @@ bunch of edge cases and UI problems nonexistent.
 
 Build on Vim's native features, aim for synergy, and don't reinvent the wheel
 (dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-[keymap](http://vimdoc.sourceforge.net/htmldoc/mbyte.html#mbyte-keymap)
-support, autocommands via `User` events, `<Plug>` keys, etc.).
+[keymap](https://neovim.io/doc/user/mbyte.html#mbyte-keymap) support,
+autocommands via `User` events, `<Plug>` keys, etc.).
 (http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)
 
 </details>
@@ -487,8 +488,20 @@ require('leap').opts.highlight_unlabeled_phase_one_targets = true
 <details>
 <summary>Working with non-English text</summary>
 
-Check out `opts.equivalence_classes`. For example, you can group accented
-vowels together: `{ 'aá', 'eé', 'ií', ... }`.
+If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
+([`'keymap'`](https://neovim.io/doc/user/options.html#'keymap')) is active,
+Leap waits for keymapped sequences as needed and searches for the keymapped
+result as expected.
+
+Also check out `opts.equivalence_classes`, that lets you group certain
+characters together:
+
+```lua
+{
+  ' \t\r\n', 'aäàáâãā', 'dḍ', 'eëéèêē', 'gǧğ', 'hḥḫ',
+  'iïīíìîı', 'nñ', 'oō', 'sṣšß', 'tṭ', 'uúûüűū', 'zẓ'
+}
+```
 
 </details>
 

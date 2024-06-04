@@ -50,6 +50,9 @@ USAGE                                                               *leap-usage*
   in the immediate next group are already visible, but highlighted differently
   than the active ones. *leap-phase-two*
 
+If a |language-mapping| ('keymap') is active, Leap waits for keymapped
+sequences as needed and searches for the keymapped result as expected.
+
                                                            *leap-to-end-of-line*
 A character at the end of a line can be targeted by pressing `<space>` after
 it. Note that there is no special mechanism behind this: `<space>` is simply
@@ -181,17 +184,17 @@ Bidirectional search in the current window: >lua
     vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
     vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 
+Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping
+in a random direction might be too disorienting with the selection highlight
+on, and neither for Operator-pending mode, as |leap-dot-repeat| cannot be used
+if the search is non-directional.
+
 Note that compared to using separate keys for the two directions, you will get
 twice as many targets and thus half as many |leap-autojump|s on average, but
 not needing to press the Shift key for backward motions might compensate for
 that. Another caveat is that you cannot traverse through the matches
 (|leap-traversal|), although invoking repeat right away (|leap-repeat|) can
 substitute for that.
-
-Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping
-in a random direction might be too disorienting with the selection highlight
-on, and neither for Operator-pending mode, as |leap-dot-repeat| cannot be used
-if the search is non-directional.
 
 Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
 
@@ -455,7 +458,7 @@ leap({opts})                                                       *leap.leap()*
                • opts: A table just like |leap.opts|, to override any default
                  setting for the specific call. Example: >lua
 
-                    `require('leap').leap { opts = { safe_labels = '' } }`
+                    require('leap').leap { opts = { safe_labels = '' } }
 <
                                                            *leap-custom-targets*
                • targets: Either a list of targets, or a function returning
