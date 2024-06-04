@@ -7,7 +7,8 @@ CONTENTS                                                         *leap-contents*
 
   Introduction ············································· |leap-introduction|
   Usage ··························································· |leap-usage|
-  Mappings ····················································· |leap-mappings|
+  Default mappings ············································· |leap-mappings|
+  Custom mappings ······································· |leap-custom-mappings|
   Configuration ·················································· |leap-config|
   Highlighting ················································ |leap-highlight|
   Events ························································· |leap-events|
@@ -116,9 +117,7 @@ edge, and the label is shifted left.
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
 
-                                                         *leap-default-mappings*
-The defaults can be set by calling
-`require('leap').create_default_mappings()`.
+To set the defaults, call `require('leap').create_default_mappings()`.
 
                                                         *leap_s*
 s{char1}{char2}         Jump forward to a labeled or [count]'th visible
@@ -138,77 +137,63 @@ gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
                         placed on {char1} |exclusive|.
 
-                                                          *leap-custom-mappings*
-<Plug> keys are aliases for right hand sides of mappings - in our case, calls
-to |leap.leap()|. So simply use these strings as `rhs` in |vim.keymap.set()|:
+==============================================================================
+CUSTOM MAPPINGS                                            *leap-custom-mappings*
+
+Leap defines <Plug> keys aliasing calls to |leap.leap()|. To create custom
+motions different from the predefined ones, simply call the function with your
+preferred arguments instead. E.g., `<Plug>(leap-backward)` is a synonym for:
 >lua
-    vim.keymap.set({'n', 'x', 'o'}, 'f', '<Plug>(leap-forward)')
+    function () require('leap').leap { backward = true } end
 
+Available <Plug> keys ~
 
-Default motions:
+    Key                         |  Search scope   | Offset | |inclusive|
+    ----------------------------|-----------------|--------|------------
+    *<Plug>(leap-forward)*        |  After cursor   |        |
+    *<Plug>(leap-forward-to)*     |  After cursor   | +1 (*) | true
+    *<Plug>(leap-forward-till)*   |  After cursor   | -1     | true
+    *<Plug>(leap-backward)*       |  Before cursor  |        |
+    *<Plug>(leap-backward-to)*    |  Before cursor  |        |
+    *<Plug>(leap-backward-till)*  |  Before cursor  | +2     |
+    *<Plug>(leap)*                |  Current window |        |
+    *<Plug>(leap-from-window)*    |  Other windows  |        |
 
-*<Plug>(leap-forward)*
-arguments: `{}`
+(*) Only in Visual and Operator-pending mode.
 
-*<Plug>(leap-backward)*
-arguments: `{ backward = true }`
+Note: `<Plug>(leap)` sorts matches by euclidean distance from the cursor, with
+the exception that the current line, and on the current line, forward
+direction is prioritized. That is, you can always be sure that the targets
+right in front of you will be the first ones.
 
-*<Plug>(leap-from-window)*
-arguments: `{ target_windows = require('leap.util').get_enterable_windows() }`
+Suggested arrangements ~
 
-Calling `require('leap').create_default_mappings()` is equivalent to: >lua
-
+Calling `require('leap').create_default_mappings()` is equivalent to:
+>lua
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
-
-Bidirectional search in the current window:
-
-*<Plug>(leap)*
-arguments: `{ target_windows = { vim.api.nvim_get_current_win() } }`
-
-`<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
-with the exception that the current line, and on the current line, forward
-direction is prioritized. That is, you can always be sure that the targets
-right in front of you will be the first ones.
-
-Note that you will get twice as many targets and thus half as many autojumps
-on average, but not needing to press the Shift key for backward motions might
-compensate for that. Another caveat is that you cannot traverse through the
-matches (|leap-traversal|), although invoking repeat right away
-(|leap-repeat|) can substitute for that.
-
-Suggested arrangement: >lua
+Bidirectional search in the current window: >lua
 
     vim.keymap.set('n',        's', '<Plug>(leap)')
     vim.keymap.set('n',        'S', '<Plug>(leap-from-window)')
     vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
     vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
 
+Note that compared to using separate keys for the two directions, you will get
+twice as many targets and thus half as many |leap-autojump|s on average, but
+not needing to press the Shift key for backward motions might compensate for
+that. Another caveat is that you cannot traverse through the matches
+(|leap-traversal|), although invoking repeat right away (|leap-repeat|) can
+substitute for that.
+
 Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping
 in a random direction might be too disorienting with the selection highlight
-on, and neither for Operator-pending mode, as dot-repeat cannot be used if the
-search is non-directional.
+on, and neither for Operator-pending mode, as |leap-dot-repeat| cannot be used
+if the search is non-directional.
 
-
-Evil-snipe-style (https://github.com/hlissner/evil-snipe) directional set for
-in-window motions (including or excluding the whole 2-character match in
-Visual and Operator-pending-mode):
-
-*<Plug>(leap-forward-to)*
-arguments: `{}` in Normal mode, otherwise `{ offset = +1, inclusive_op = true }`
-
-*<Plug>(leap-backward-to)*
-arguments: `{ backward = true }`
-
-*<Plug>(leap-forward-till)*
-arguments: `{ offset = -1, inclusive_op = true }`
-
-*<Plug>(leap-backward-till)*
-arguments: `{ backward = true, offset = 2 }`
-
-Suggested arrangement: >lua
+Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
 
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward-to)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
@@ -216,9 +201,11 @@ Suggested arrangement: >lua
     vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
-
-To create custom motions with behaviours different from the predefined ones,
-see |leap.leap()|.
+Note: Consecutive repeating characters (`xxxx...`) are matched at one position
+only - by default, at the beginning, but `<Plug>(leap-forward-to)` and
+`<Plug>(leap-backward-till)` will match at the end instead. Thus, in Visual
+and Operator-pending mode the sequence behaves as a chunk, and either the
+whole or none of it will be selected.
 
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
