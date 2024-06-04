@@ -15,9 +15,7 @@
                     :special_keys {:next_target "<enter>"
                                    :prev_target "<tab>"
                                    :next_group "<space>"
-                                   :prev_group "<tab>"
-                                   :multi_accept "<enter>"
-                                   :multi_revert "<backspace>"}}
+                                   :prev_group "<tab>"}}
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
