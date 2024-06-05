@@ -34,7 +34,7 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
     if _3ftarget_windows then
       for _, winid in ipairs(_3ftarget_windows) do
         local wininfo = vim.fn.getwininfo(winid)[1]
-        vim.highlight.range(wininfo.bufnr, self.ns, self.group.backdrop, {dec(wininfo.topline), 0}, {dec(wininfo.botline), -1}, {priority = self.priority.backdrop})
+        vim.highlight.range(wininfo.bufnr, self.ns, self.group.backdrop, {dec(wininfo.topline), 0}, {dec(wininfo.botline), vim.v.maxcol}, {priority = self.priority.backdrop})
       end
       return nil
     else
@@ -48,7 +48,7 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
         if backward_3f then
           return {{win_top, 0}, {curline, curcol}}
         else
-          return {{curline, inc(curcol)}, {win_bot, -1}}
+          return {{curline, inc(curcol)}, {win_bot, vim.v.maxcol}}
         end
       end
       local _let_9_ = _10_()
