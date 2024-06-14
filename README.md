@@ -129,10 +129,10 @@ Another caveat is that you cannot traverse through the matches (`:h
 leap-traversal`), although invoking repeat right away (`:h leap-repeat`) can
 substitute for that.
 
-`<Plug>(leap)` sorts matches by euclidean (beeline) distance from the cursor,
-with the exception that the current line, and on the current line, forward
-direction is prioritized. That is, you can always be sure that the targets
-right in front of you will be the first ones.
+`<Plug>(leap)` sorts matches by euclidean distance from the cursor, with the
+exception that the current line, and on the current line, forward direction is
+prioritized. That is, you can always be sure that the targets right in front of
+you will be the first ones.
 
 See `:h leap-custom-mappings` for more.
 
@@ -197,12 +197,11 @@ Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
 
 ### Next steps
 
-Help files are not exactly page-turners, but [`:help leap`](doc/leap.txt) is,
-dare I say, not that dry a read - I suggest at least skimming it, even if you
-don't have a specific question yet (if nothing else: `:h leap-usage`, `:h
-leap-config`, `:h leap-events`). While Leap has deeply thought-through,
-opinionated defaults, its small(ish) but comprehensive API makes it pretty
-flexible.
+Help files are not exactly page-turners, but I suggest at least skimming
+[`:help leap`](doc/leap.txt), even if you don't have a specific question yet
+(if nothing else: `:h leap-usage`, `:h leap-config`, `:h leap-events`). While
+Leap has deeply thought-through, opinionated defaults, its small(ish) but
+comprehensive API makes it pretty flexible.
 
 ## Design considerations in detail
 
@@ -228,8 +227,8 @@ That is, **you do not want to think about**
   autopilot (↔ any kind of "just-in-time" labeling method; note that the
   "search command on steroids" approach by
   [Pounce](https://github.com/rlane/pounce.nvim) and
-  [Flash](https://github.com/folke/flash.nvim), where the labels appear, by
-  design, at an unknown time, makes this last goal impossible)
+  [Flash](https://github.com/folke/flash.nvim), where the labels appear at an
+  unknown time by design, makes this last goal impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -494,7 +493,7 @@ Leap waits for keymapped sequences as needed and searches for the keymapped
 result as expected.
 
 Also check out `opts.equivalence_classes`, that lets you group certain
-characters together:
+characters together as aliases, e.g.:
 
 ```lua
 {
@@ -521,14 +520,16 @@ the modal paradigm is a fundamental difference in our approach.
 
 ## Extending Leap
 
-There is more to Leap than meets the eye. On a general level, you should think
-of it as less of a motion plugin and more of an engine for selecting visible
-targets on the screen (acquired by arbitrary means), and doing arbitrary things
-with them. See `:h leap.leap()` and `:h leap-events`.
+There are lots of ways you can extend the plugin and bend it to your will - see
+`:h leap.leap()` and `:h leap-events`. Besides tweaking the basic parameters
+(search scope, jump offset, etc.) of the function, you can:
 
-There are lots of ways you can extend the plugin and bend it to your will, and
-the combinations of them give you almost infinite possibilities. Some practical
-examples:
+* give it a custom **action** to perform, instead of jumping
+* feed it with custom **targets**, aquired by arbitrary means, and only use it
+  as labeler/selector
+* customize the behavior on a per-call basis via **autocommands**
+
+Some practical examples:
 
 <details>
 <summary>Linewise motions</summary>

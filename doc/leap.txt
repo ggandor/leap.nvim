@@ -171,7 +171,7 @@ right in front of you will be the first ones.
 
 Suggested arrangements ~
 
-Calling `require('leap').create_default_mappings()` is equivalent to:
+Default:
 >lua
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
@@ -240,10 +240,13 @@ Example configuration: >lua
     end of a line, make sure to keep an alias for `\n` and `\r`.
     |leap-to-end-of-line|
 
-    Note: Non-mutual aliases are not possible in Leap, for the same reason
-    that supporting |smartcase| is not possible: we would need to show two
-    different labels, corresponding to two different futures, at the same
-    time.
+    Note: Wildcard characters (non-mutual aliases) are not possible in Leap,
+    for the same reason that supporting |smartcase| is not possible: we cannot
+    read your mind, and decide on which label to show ahead of time.
+    (Generally: having a `?` -> `[bc]` mapping, after pressing `a`, we either
+    label an `ab` match as part of the `ab` subset of matches - corresponding
+    to pressing `b` next -, or the potentially bigger `a[bc]` subset -
+    corresponding to pressing `?` next, the wildcard.)
 
                                                *leap.opts.max_phase_one_targets*
 `max_phase_one_targets = nil`
@@ -460,6 +463,10 @@ leap({opts})                                                       *leap.leap()*
 
                     require('leap').leap { opts = { safe_labels = '' } }
 <
+                                                            *leap-custom-action*
+               • action: A Lua function that will be executed by Leap in place
+                 of the jump, taking the selected target as its argument. (You
+                 could obviously implement some custom jump logic here too.)
                                                            *leap-custom-targets*
                • targets: Either a list of targets, or a function returning
                  such a list. The advantage of the latter is that the function
@@ -474,10 +481,6 @@ leap({opts})                                                       *leap.leap()*
                  `wininfo` field for each (|getwininfo()|). Targets can
                  represent anything with a position, like |treesitter| nodes,
                  etc.
-                                                            *leap-custom-action*
-               • action: A Lua function that will be executed by Leap in place
-                 of the jump, taking the selected target as its argument. (You
-                 could obviously implement some custom jump logic here too.)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
