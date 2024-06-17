@@ -36,19 +36,23 @@
                 " "
                 "")
         label (or (. opts.substitute_chars target.label) target.label)
-        text (.. label pad)
         relative-group (- target.group (or ?group-offset 0))
-        virttext
-        (if (= relative-group 1) [[text hl.group.label-primary]]
-            (= relative-group 2) [[text hl.group.label-secondary]]
-            (> relative-group 2)
-            (when (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
-              ; In this case, "no highlight" should unambiguously signal
-              ; "no further keystrokes needed", so it is mandatory to
-              ; show all labeled positions in some way. (Note: We're
-              ; keeping this on even after phase one - sudden visual
-              ; changes should be avoided as much as possible.)
-              [[(.. opts.concealed_label pad) hl.group.label-secondary]]))]
+        virttext (if (= relative-group 1)
+                     [[(.. label pad) hl.group.label-primary]]
+
+                     (= relative-group 2)
+                     [[(if ?phase (.. label pad) (.. opts.concealed_label pad))
+                       hl.group.label-secondary]]
+
+                     (> relative-group 2)
+                     (when (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
+                       ; In this case, "no highlight" should unambiguously
+                       ; signal "no further keystrokes needed", so it is
+                       ; mandatory to show all labeled positions in some way.
+                       ; (Note: We're keeping this on even after phase one -
+                       ; sudden visual changes should be avoided as much as
+                       ; possible.)
+                       [[(.. opts.concealed_label pad) hl.group.label-secondary]]))]
     ; Set nil too (= switching off a beacon).
     (set target.beacon (when virttext [offset virttext]))))
 
