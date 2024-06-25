@@ -46,9 +46,8 @@ USAGE                                                               *leap-usage*
   keypress (|leap.opts.safe_labels|). *leap-autojump*
 
 • Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<tab>`. Labels
-  in the immediate next group are already visible, but highlighted differently
-  than the active ones. *leap-phase-two*
+  labels, you can switch between groups, using `<space>` and `<tab>`.
+  *leap-phase-two*
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
@@ -342,20 +341,15 @@ liking (using |:hi| or |nvim_set_hl()|):
 
                                                                   *hl-LeapMatch*
 LeapMatch
-    Matches that can be reached without picking a label. By default, this
-    group is only used for |leap-traversal|.
+    Search matches. By default, this group is only used for |leap-traversal|.
 
     See also:
     • |leap.opts.highlight_unlabeled_phase_one_targets|
     • |leap.opts.max_highlighted_traversal_targets|
 
-                                                           *hl-LeapLabelPrimary*
-LeapLabelPrimary
-    Target labels in the currently selected group.
-
-                                                         *hl-LeapLabelSecondary*
-LeapLabelSecondary
-    Target labels in the group(s) beyond the currently selected one.
+                                                                  *hl-LeapLabel*
+LeapLabel
+    Target labels.
 
                                                                *hl-LeapBackdrop*
 LeapBackdrop

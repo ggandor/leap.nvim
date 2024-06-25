@@ -31,9 +31,7 @@ need to do that.
   those are guaranteed non-conflicting letters, disappearing on the next
   keypress.
 - Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<tab>`. Labels in
-  the immediate next group are already visible, but highlighted differently
-  than the active ones.
+  labels, you can switch between groups, using `<space>` and `<tab>`.
 
 Character pairs give you full coverage of the screen:
 
@@ -436,24 +434,6 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 </details>
 
 <details>
-<summary>Hiding secondary labels</summary>
-
-You can hide the letters, and show emtpy boxes by tweaking the
-`LeapLabelSecondary` highlight group (that way you keep a visual indication
-that the target is labeled):
-
-```lua
-vim.api.nvim_create_autocmd('ColorScheme', {
-  callback = function ()
-    local bg = vim.api.nvim_get_hl(0, {name = 'LeapLabelSecondary'}).bg
-    vim.api.nvim_set_hl(0, 'LeapLabelSecondary',{ fg = bg, bg = bg, })
-  end
-})
-```
-
-</details>
-
-<details>
 <summary>Lightspeed-style highlighting</summary>
 
 ```lua
@@ -465,20 +445,8 @@ vim.api.nvim_set_hl(0, 'LeapMatch', {
   -- For light themes, set to 'black' or similar.
   fg = 'white', bold = true, nocombine = true,
 })
-
--- Lightspeed colors
--- primary labels: bg = "#f02077" (light theme) or "#ff2f87"  (dark theme)
--- secondary labels: bg = "#399d9f" (light theme) or "#99ddff" (dark theme)
--- shortcuts: bg = "#f00077", fg = "white"
--- You might want to use either the primary label or the shortcut colors
--- for Leap primary labels, depending on your taste.
-vim.api.nvim_set_hl(0, 'LeapLabelPrimary', {
-  fg = 'red', bold = true, nocombine = true,
-})
-vim.api.nvim_set_hl(0, 'LeapLabelSecondary', {
-  fg = 'blue', bold = true, nocombine = true,
-})
--- Try it without this setting first, you might find you don't even miss it.
+-- Deprecated option. Try it without this setting first, you might find
+-- you don't even miss it.
 require('leap').opts.highlight_unlabeled_phase_one_targets = true
 ```
 

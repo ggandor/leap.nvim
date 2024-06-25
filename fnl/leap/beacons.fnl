@@ -45,14 +45,13 @@
         ; visual changes should be avoided as much as possible.)
         show-all? (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
         virttext (if (= relative-group 1)
-                     [[(.. label pad) hl.group.label-primary]]
+                     [[(.. label pad) hl.group.label]]
 
                      (= relative-group 2)
-                     [[(if ?phase (.. label pad) (.. opts.concealed_label pad))
-                       hl.group.label-secondary]]
+                     [[(.. opts.concealed_label pad) hl.group.label]]
 
                      (and (> relative-group 2) show-all?)
-                     [[(.. opts.concealed_label pad) hl.group.label-secondary]])]
+                     [[(.. opts.concealed_label pad) hl.group.label]])]
     ; Set nil too (= switching off a beacon).
     (set target.beacon (when virttext [offset virttext]))))
 
