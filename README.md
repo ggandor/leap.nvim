@@ -239,10 +239,10 @@ a sweet spot in the design space. (The worst remaining offender might be visual
 noise.)
 
 The **one-step shift between perception and action** is the big idea that cuts
-the Gordian knot: a fixed pattern length combined with ahead-of-time labeling
-can eliminate the surprise factor from the search-based method (which is the
-only viable approach - see "jetpack" above). Fortunately, a 2-character pattern
-\- the shortest one with which we can play this trick - is also long enough to
+the Gordian knot: a fixed pattern length combined with previewing labels can
+eliminate the surprise factor from the search-based method (which is the only
+viable approach - see "jetpack" above). Fortunately, a 2-character pattern \-
+the shortest one with which we can play this trick - is also long enough to
 sufficiently narrow down the matches in the vast majority of cases.
 
 Fixed pattern length also makes **(safe) automatic jump to the first target**
@@ -373,9 +373,9 @@ not targeting).
 <summary>Smart case sensitivity, wildcard characters (one-way
 aliases)</summary>
 
-Ahead-of-time labeling, unfortunately, makes them impossible, by design: for a
-potential match in phase one, we might need to show two different labels
-(corresponding to two different futures) at the same time.
+The preview phase, unfortunately, makes them impossible, by design: for a
+potential match, we might need to show two different labels (corresponding to
+two different futures) at the same time.
 ([1](https://github.com/ggandor/leap.nvim/issues/28),
 [2](https://github.com/ggandor/leap.nvim/issues/89#issuecomment-1368885497),
 [3](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351))
@@ -418,6 +418,15 @@ You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.
 
 ```lua
 require('leap').opts.safe_labels = {}
+```
+
+</details>
+
+<details>
+<summary>Disable previewing labels</summary>
+
+```lua
+require('leap').opts.preview_filter = function () return false end
 ```
 
 </details>

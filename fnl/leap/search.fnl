@@ -112,11 +112,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
       ; Extracting the actual characters from the buffer at the match
       ; position.
       (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-      (if (= ch1 "")
-          ; On EOL - in this case, we're adding another, virtual \n after the
-          ; real one, so that these can be targeted by pressing a newline alias
-          ; twice. (See also `prepare-pattern`.)
-          (table.insert targets {: wininfo : pos :chars ["\n" "\n"]})
+      (if (not= ch1 "")
           (do
             (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
             (when (= ch2 "") (set ch2 "\n"))  ; before EOL
@@ -139,8 +135,26 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
               (set prev-match {: line : col : ch1 : ch2})
               (when (not skip-match?)
                 (when triplet? (table.remove targets))  ; delete the previous one
-                (table.insert targets {: wininfo : pos :chars [ch1 ch2]
-                                       :edge-pos? (. edge-pos-idx? i)}))))))))
+                (table.insert targets
+                              {: wininfo
+                               : pos
+                               :chars [ch1 ch2]
+                               :edge-pos? (. edge-pos-idx? i)
+                               :previewable?
+                               (or (not opts.preview_filter)
+                                   (opts.preview_filter
+                                     (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
+                                     ch1
+                                     ch2))}))))
+          ; On EOL - in this case, we're adding another, virtual \n after the
+          ; real one, so that these can be targeted by pressing a newline alias
+          ; twice. (See also `prepare-pattern`.)
+          (table.insert targets
+                        {: wininfo
+                         : pos
+                         :chars ["\n" "\n"]
+                         :previewable? (or (not opts.preview_filter)
+                                           (opts.preview_filter "" "\n" "\n"))})))))
 
 
 (fn distance [[l1 c1] [l2 c2]]

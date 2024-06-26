@@ -38,7 +38,7 @@ USAGE                                                               *leap-usage*
 • Start typing a 2-character pattern (`{char1}{char2}`).
 
 • After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet. *leap-phase-one*
+  the `{char1}{?}` pairs. You cannot use the labels yet. *leap-preview*
 
 • Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. You can safely ignore the remaining labels, and continue editing -
@@ -47,7 +47,6 @@ USAGE                                                               *leap-usage*
 
 • Else: type the label character. If there are more matches than available
   labels, you can switch between groups, using `<space>` and `<tab>`.
-  *leap-phase-two*
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
@@ -101,20 +100,20 @@ Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed.
 
                                                          *leap-concealed-labels*
-In |leap-phase-one|, some labels might be concealed with an empty block or a
-middle dot, depending on the colorscheme. Those mark that there is some kind
+In |leap-preview| phase, some labels might be concealed with an empty block or
+a middle dot, depending on the colorscheme. Those mark that there is some kind
 of conflict or potential source of confusion, that will only be resolved after
 entering the second input character:
 
     A. The label is on top of another label.
-    B. The label immediately follows an unlabeled match.
-    C. The label is on top of an unlabeled match.
-    D. The label is not active yet (it is for a distant match), but no
-       highlighting is set for unlabeled matches - in this case, we need to
-       signal that this is in fact a labeled match, do not expect an autojump.
+    B. The label is on top of an unlabeled match.
+    C. The label immediately follows an unlabeled match.
+    D. The label is not active yet (the match is in a subsequent group). In
+       this case we still need to signal that this a labeled match (do not
+       expect |leap-autojump|).
 
-Case A and B are possible when the target is right next to EOL or the window
-edge, and the label is shifted left.
+Case A and C are possible when the match is right next to EOL or the window
+edge, and the label is shifted left, displayed over the second character.
 
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
@@ -241,26 +240,34 @@ Example configuration: >lua
 
     Note: Wildcard characters (non-mutual aliases) are not possible in Leap,
     for the same reason that supporting |smartcase| is not possible: we cannot
-    read your mind, and decide on which label to show ahead of time.
+    read your mind, and decide on which label to show for |leap-preview|.
     (Generally: having a `?` -> `[bc]` mapping, after pressing `a`, we either
     label an `ab` match as part of the `ab` subset of matches - corresponding
     to pressing `b` next -, or the potentially bigger `a[bc]` subset -
     corresponding to pressing `?` next, the wildcard.)
 
-                                               *leap.opts.max_phase_one_targets*
-`max_phase_one_targets = nil`
+                                                      *leap.opts.preview_filter*
+`preview_filter = nil`
 
-    Number of targets in |leap-phase-one|, above which ahead-of-time
-    displaying of target beacons - labels and/or match highlight - will be
-    disabled (to mitigate visual noise in extreme cases). `nil` means no
-    limit, `0` disables two-phase processing altogether.
+    [EXPERIMENTAL]
+    A function that only lets through selected matches for |leap-preview|, to
+    reduce visual noise. It gets three characters as arguments: the character
+    preceding the match (might be an empty string) and the matched pair
+    itself. Examples: >lua
 
-                               *leap.opts.highlight_unlabeled_phase_one_targets*
-`highlight_unlabeled_phase_one_targets = false`
+    -- Skip the pair if it begins with whitespace or mid-word alphanumeric
+    -- character: foobar[quux]
+    --            ^    ^^^  ^^
+    function (ch0, ch1, ch2)
+      return not (
+        ch1:match('%s') or
+        ch0:match('%w') and ch1:match('%w') and ch2:match('%w')
+      )
+    end
 
-    Highlight unlabeled (i.e., directly reachable) matches in
-    |leap-phase-one|.
-
+    -- Disable preview altogether.
+    function () return false end
+<
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
 
@@ -342,10 +349,6 @@ liking (using |:hi| or |nvim_set_hl()|):
                                                                   *hl-LeapMatch*
 LeapMatch
     Search matches. By default, this group is only used for |leap-traversal|.
-
-    See also:
-    • |leap.opts.highlight_unlabeled_phase_one_targets|
-    • |leap.opts.max_highlighted_traversal_targets|
 
                                                                   *hl-LeapLabel*
 LeapLabel

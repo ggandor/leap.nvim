@@ -117,9 +117,7 @@ local function get_targets_in_current_window(pattern, _15_)
       else
       end
       local ch1 = vim.fn.strpart(line_str, (col - 1), 1, true)
-      if (ch1 == "") then
-        table.insert(targets, {wininfo = wininfo, pos = pos, chars = {"\n", "\n"}})
-      else
+      if (ch1 ~= "") then
         local ch2 = vim.fn.strpart(line_str, (col + -1 + ch1:len()), 1, true)
         if (ch2 == "") then
           ch2 = "\n"
@@ -150,9 +148,11 @@ local function get_targets_in_current_window(pattern, _15_)
             table.remove(targets)
           else
           end
-          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_idx_3f[i]})
+          table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_idx_3f[i], ["previewable?"] = (not opts.preview_filter or opts.preview_filter(vim.fn.strpart(line_str, (col - 2), 1, true), ch1, ch2))})
         else
         end
+      else
+        table.insert(targets, {wininfo = wininfo, pos = pos, chars = {"\n", "\n"}, ["previewable?"] = (not opts.preview_filter or opts.preview_filter("", "\n", "\n"))})
       end
     else
     end

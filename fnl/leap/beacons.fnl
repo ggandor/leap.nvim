@@ -63,9 +63,11 @@
           (set-beacon-to-match-hl target)))
       (each [_ target (ipairs targets)]
         (if target.label
-            (set-beacon-for-labeled target group-offset phase)
+            (when (or (not= phase 1) target.previewable?)
+              (set-beacon-for-labeled target group-offset phase))
 
-            (and (= phase 1) opts.highlight_unlabeled_phase_one_targets)
+            (and (= phase 1) target.previewable?
+                 opts.highlight_unlabeled_phase_one_targets)
             (set-beacon-to-match-hl target)))))
 
 
@@ -128,7 +130,7 @@ an autojump. (In short: always err on the safe side.)
 
         (macro ->key [col] `(.. key-prefix ,col))
 
-        (if (and target.label target.beacon) ; inactive label has nil beacon
+        (if (and target.label target.beacon)  ; = visible label
 
             ; Labeled target.
             (let [label-offset (. target.beacon 1)
@@ -170,7 +172,7 @@ an autojump. (In short: always err on the safe side.)
               ; positive).
               (tset label-positions (->key col-label) target))
 
-            ; Unlabeled target.
+            ; No visible label (unlabeled or inactive).
             (let [col-ch3 (+ col-ch2 (string.len (. target.chars 2)))]
               (case (or
                       ; unlabeled covers label (C2)

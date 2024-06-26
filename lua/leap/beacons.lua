@@ -76,8 +76,11 @@ local function set_beacons(targets, _10_)
   else
     for _, target in ipairs(targets) do
       if target.label then
-        set_beacon_for_labeled(target, group_offset, phase)
-      elseif ((phase == 1) and opts.highlight_unlabeled_phase_one_targets) then
+        if ((phase ~= 1) or target["previewable?"]) then
+          set_beacon_for_labeled(target, group_offset, phase)
+        else
+        end
+      elseif ((phase == 1) and target["previewable?"] and opts.highlight_unlabeled_phase_one_targets) then
         set_beacon_to_match_hl(target)
       else
       end
@@ -99,12 +102,12 @@ local function resolve_conflicts(targets)
   for _, target in ipairs(targets) do
     local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
     if not empty_line_3f then
-      local _let_16_ = target.wininfo
-      local bufnr = _let_16_["bufnr"]
-      local winid = _let_16_["winid"]
-      local _let_17_ = target.pos
-      local lnum = _let_17_[1]
-      local col_ch1 = _let_17_[2]
+      local _let_17_ = target.wininfo
+      local bufnr = _let_17_["bufnr"]
+      local winid = _let_17_["winid"]
+      local _let_18_ = target.pos
+      local lnum = _let_18_[1]
+      local col_ch1 = _let_18_[2]
       local col_ch2 = (col_ch1 + string.len(target.chars[1]))
       local key_prefix = (bufnr .. " " .. winid .. " " .. lnum .. " ")
       if (target.label and target.beacon) then
@@ -112,17 +115,17 @@ local function resolve_conflicts(targets)
         local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _18_
-          local function _19_(...)
+          local _19_
+          local function _20_(...)
             if shifted_label_3f then
               return unlabeled_match_positions[(key_prefix .. col_ch1)]
             else
               return nil
             end
           end
-          _18_ = (label_positions[(key_prefix .. col_label)] or _19_() or unlabeled_match_positions[(key_prefix .. col_label)])
-          if (nil ~= _18_) then
-            local other = _18_
+          _19_ = (label_positions[(key_prefix .. col_label)] or _20_() or unlabeled_match_positions[(key_prefix .. col_label)])
+          if (nil ~= _19_) then
+            local other = _19_
             other.beacon = nil
             set_beacon_to_empty_label(target)
           else
@@ -132,9 +135,9 @@ local function resolve_conflicts(targets)
       else
         local col_ch3 = (col_ch2 + string.len(target.chars[2]))
         do
-          local _22_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
-          if (nil ~= _22_) then
-            local other = _22_
+          local _23_ = (label_positions[(key_prefix .. col_ch1)] or label_positions[(key_prefix .. col_ch2)] or label_positions[(key_prefix .. col_ch3)])
+          if (nil ~= _23_) then
+            local other = _23_
             target.beacon = nil
             set_beacon_to_empty_label(other)
           else
@@ -152,14 +155,14 @@ local function light_up_beacons(targets, _3fstart, _3fend)
   if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then
     for i = (_3fstart or 1), (_3fend or #targets) do
       local target = targets[i]
-      local _26_ = target.beacon
-      if ((_G.type(_26_) == "table") and (nil ~= _26_[1]) and (nil ~= _26_[2])) then
-        local offset = _26_[1]
-        local virttext = _26_[2]
+      local _27_ = target.beacon
+      if ((_G.type(_27_) == "table") and (nil ~= _27_[1]) and (nil ~= _27_[2])) then
+        local offset = _27_[1]
+        local virttext = _27_[2]
         local bufnr = target.wininfo.bufnr
-        local _let_27_ = map(dec, target.pos)
-        local lnum = _let_27_[1]
-        local col = _let_27_[2]
+        local _let_28_ = map(dec, target.pos)
+        local lnum = _let_28_[1]
+        local col = _let_28_[2]
         local id = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, (col + offset), {virt_text = virttext, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.label})
         table.insert(hl.extmarks, {bufnr, id})
       else
