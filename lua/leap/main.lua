@@ -837,7 +837,7 @@ local function init()
   api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _130_, group = "LeapDefault"})
   hl["init-highlight"](hl)
   local function _131_(_)
-    return hl["init-highlight"](hl)
+    return hl["init-highlight"](hl, (vim.g.colors_name == "default"))
   end
   api.nvim_create_autocmd("ColorScheme", {callback = _131_, group = "LeapDefault"})
   local saved_editor_opts = {}

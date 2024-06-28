@@ -93,28 +93,37 @@ M["highlight-cursor"] = function(self)
   return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
 end
 M["init-highlight"] = function(self, force_3f)
+  local name = vim.g.colors_name
   local bg = vim.o.background
   local defaults
   local _19_
-  if (bg == "light") then
-    _19_ = "#222222"
+  if ((name == "default") and (bg == "light")) then
+    _19_ = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}
+  elseif ((name == "default") and (bg == "dark")) then
+    _19_ = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}
   else
-    _19_ = "#ccff88"
+    _19_ = {link = "IncSearch"}
   end
   local _21_
-  if (bg == "light") then
-    _21_ = "#ffaa99"
+  if ((name == "default") and (bg == "light")) then
+    _21_ = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}
+  elseif ((name == "default") and (bg == "dark")) then
+    _21_ = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}
   else
-    _21_ = "#ccff88"
+    _21_ = {link = "Search"}
   end
-  defaults = {[self.group.match] = {fg = _19_, ctermfg = "red", underline = true, nocombine = true}, [self.group.label] = {fg = "black", bg = _21_, ctermfg = "black", ctermbg = "red", nocombine = true}}
-  for group_name, def_map in pairs(defaults) do
-    if not force_3f then
-      def_map.default = true
-    else
+  defaults = {[self.group.label] = _19_, [self.group.match] = _21_}
+  if (force_3f or (vim.fn.has("nvim-0.9.1") == 0) or vim.tbl_isempty(api.nvim_get_hl(0, {name = "LeapLabelPrimary"}))) then
+    for group_name, def_map in pairs(defaults) do
+      if not force_3f then
+        def_map["default"] = true
+      else
+      end
+      api.nvim_set_hl(0, group_name, def_map)
     end
-    api.nvim_set_hl(0, group_name, def_map)
+    return nil
+  else
+    return nil
   end
-  return nil
 end
 return M

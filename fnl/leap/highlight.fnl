@@ -19,7 +19,8 @@
 (setmetatable M.group
   {:__index (fn [_ key]
               (when (= key :label)
-                (if (pcall api.nvim_get_hl_by_name "LeapLabel" false)  ; deprecated
+                ; NOTE: `nvim_get_hl_by_name` is deprecated.
+                (if (pcall api.nvim_get_hl_by_name "LeapLabel" false)
                     "LeapLabel"
                     "LeapLabelPrimary"
 
@@ -36,6 +37,7 @@
       (api.nvim_buf_del_extmark bufnr self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
+  ; NOTE: `nvim_get_hl_by_name` is deprecated.
   (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
     (each [_ winid (ipairs affected-windows)]
       ; TODO: Edge case: what if the window has become invalid, but the
@@ -87,19 +89,44 @@ so we set a temporary highlight on it to see where we are."
 
 
 (fn M.init-highlight [self force?]
-  (let [bg vim.o.background
-        defaults {self.group.match {:fg (if (= bg "light") "#222222" "#ccff88")
-                                    :ctermfg "red"
-                                    :underline true
-                                    :nocombine true}
-                  self.group.label {:fg "black"
-                                    :bg (if (= bg "light") "#ffaa99" "#ccff88")
-                                    :ctermfg "black"
-                                    :ctermbg "red"
-                                    :nocombine true}}]
-    (each [group-name def-map (pairs defaults)]
-      (when (not force?) (set def-map.default true))
-      (api.nvim_set_hl 0 group-name def-map))))
+  (let [name vim.g.colors_name
+        bg vim.o.background
+        defaults {self.group.label
+                  (if (and (= name "default") (= bg "light"))
+                      {:fg "#eef1f0"  ; NvimLightGrey1
+                       :bg "#5588aa"
+                       :bold true
+                       :nocombine true
+                       :ctermfg "red"}
+
+                      (and (= name "default") (= bg "dark"))
+                      {:fg "black"
+                       :bg "#ccff88"
+                       :nocombine true
+                       :ctermfg "black"
+                       :ctermbg "red"}
+
+                      {:link "IncSearch"})
+
+                  self.group.match
+                  (if (and (= name "default") (= bg "light"))
+                      {:bg "#eef1f0"  ; NvimLightGrey1
+                       :ctermfg "black"
+                       :ctermbg "red"}
+
+                      (and (= name "default") (= bg "dark"))
+                      {:fg "#ccff88"
+                       :underline true
+                       :nocombine true
+                       :ctermfg "red"}
+
+                      {:link "Search"})}]
+    (when (or force?
+              (= (vim.fn.has "nvim-0.9.1") 0)
+              (vim.tbl_isempty (api.nvim_get_hl 0 {:name "LeapLabelPrimary"})))
+      (each [group-name def-map (pairs defaults)]
+          (when (not force?) (tset def-map :default true))
+          (api.nvim_set_hl 0 group-name def-map)))))
 
 
 M

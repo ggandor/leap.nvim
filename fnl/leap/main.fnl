@@ -811,7 +811,9 @@ char separately.
   ; without defining their own, so we re-init the highlight on every
   ; change.
   (api.nvim_create_autocmd "ColorScheme"
-                           {:callback (fn [_] (hl:init-highlight))
+                           {:callback (fn [_]
+                                        (hl:init-highlight
+                                          (= vim.g.colors_name "default")))  ; force?
                             :group "LeapDefault"})
 
   (do
