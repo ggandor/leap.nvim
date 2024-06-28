@@ -324,14 +324,11 @@ char separately.
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
   (local spec-keys (setmetatable {}
-                     {:__index
-                      (fn [_ k]
-                        (case (. opts.special_keys k)
-                          v (if (or (= k :next_target) (= k :prev_target))
-                                ; Force those into a table.
-                                (map replace-keycodes
-                                     (if (= (type v) :string) [v] v))
-                                (replace-keycodes v))))}))
+                     {:__index (fn [_ k]
+                                 (case (. opts.special_keys k)
+                                   v (map replace-keycodes
+                                          ; Force them into a table.
+                                          (if (= (type v) :string) [v] v))))}))
 
   ; Ephemeral state (of the current call) that is not interesting for
   ; the outside world.
@@ -568,11 +565,11 @@ char separately.
         (exec-user-autocmds :LeapSelectPre))
       (case (get-input)
         input
-        (let [switch-group? (or (= input spec-keys.next_group)
+        (let [switch-group? (or (contains? spec-keys.next_group input)
                                 (and (= input spec-keys.prev_group)
                                      (not first-invoc?)))]
           (if (and switch-group? (> |groups| 1))
-              (let [shift (if (= input spec-keys.next_group) 1 -1)
+              (let [shift (if (contains? spec-keys.next_group input) 1 -1)
                     max-offset (dec |groups|)]
                 (set st.group-offset (clamp (+ st.group-offset shift)
                                             0
