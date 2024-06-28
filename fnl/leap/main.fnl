@@ -796,8 +796,8 @@ char separately.
   (fn set-concealed-label []
     (set opts.concealed_label  ; undocumented, might be exposed in the future
          (if (and (= (vim.fn.has "nvim-0.9.1") 1)
-                  (or (. (api.nvim_get_hl 0 {:name "LeapLabelPrimary"}) :bg)  ; deprecated
-                      (. (api.nvim_get_hl 0 {:name "LeapLabel"}) :bg)))
+                  (or (. (api.nvim_get_hl 0 {:name "LeapLabelPrimary" :link false}) :bg)  ; deprecated
+                      (. (api.nvim_get_hl 0 {:name "LeapLabel" :link false}) :bg)))
              " "
              "\u{00b7}")))  ; middle dot (·)
 
