@@ -236,7 +236,8 @@ All the while using **as few keystrokes as possible**, and getting distracted by
 It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but in our opinion Leap comes pretty close, occupying
 a sweet spot in the design space. (The worst remaining offender might be visual
-noise.)
+noise, but clever filtering in the preview phase can help - see `:h
+leap.opts.preview_filter`.)
 
 The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with previewing labels can
@@ -470,7 +471,7 @@ Leap waits for keymapped sequences as needed and searches for the keymapped
 result as expected.
 
 Also check out `opts.equivalence_classes`, that lets you group certain
-characters together as aliases, e.g.:
+characters together as mutual aliases, e.g.:
 
 ```lua
 {
@@ -498,13 +499,12 @@ the modal paradigm is a fundamental difference in our approach.
 ## Extending Leap
 
 There are lots of ways you can extend the plugin and bend it to your will - see
-`:h leap.leap()` and `:h leap-events`. Besides tweaking the basic parameters
-(search scope, jump offset, etc.) of the function, you can:
+`:h leap.leap()` and `:h leap-events`. Besides tweaking the basic parameters of
+the function (search scope, jump offset, etc.), you can:
 
 * give it a custom **action** to perform, instead of jumping
-* feed it with custom **targets**, aquired by arbitrary means, and only use it
-  as labeler/selector
-* customize the behavior on a per-call basis via **autocommands**
+* feed it with custom **targets**, and only use it as labeler/selector
+* customize its behavior on a per-call basis via **autocommands**
 
 Some practical examples:
 
@@ -580,8 +580,11 @@ local api = vim.api
 local ts = vim.treesitter
 
 local function get_ts_nodes()
-  if not pcall(ts.get_parser) then return end
+  if not pcall(ts.get_parser) then
+    return
+  end
   local wininfo = vim.fn.getwininfo(api.nvim_get_current_win())[1]
+
   -- Get current node, and then its parent nodes recursively.
   local cur_node = ts.get_node()
   if not cur_node then return end
@@ -591,6 +594,7 @@ local function get_ts_nodes()
     table.insert(nodes, parent)
     parent = parent:parent()
   end
+
   -- Create Leap targets from TS nodes.
   local targets = {}
   local startline, startcol
@@ -606,7 +610,10 @@ local function get_ts_nodes()
       table.insert(targets, { pos = endpos, altpos = startpos })
     end
   end
-  if #targets >= 1 then return targets end
+
+  if #targets >= 1 then
+    return targets
+  end
 end
 
 local function select_node_range(target)

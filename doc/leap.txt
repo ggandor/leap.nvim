@@ -169,8 +169,8 @@ right in front of you will be the first ones.
 
 Suggested arrangements ~
 
-Default:
->lua
+Default: >lua
+
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
@@ -361,10 +361,9 @@ LeapBackdrop
     uniform grey foreground color, to make labels easier to see. This group is
     not set by default.
 
-In order to preserve your custom settings after changing the colorscheme, you
-might want to wrap them in a function, and define an autocommand like below.
-(Leap does the same, but with |:hi-default|, so it will not overwrite yours.)
->lua
+To preserve your custom settings, wrap them in a function, and define an
+autocommand for |ColorScheme| change: >lua
+
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
         if vim.g.colors_name == "this_colorscheme_needs_tweaking" then
@@ -403,26 +402,23 @@ Example - turning off |hlsearch| while leaping: >lua
       })
     end
 
-The argument table passed to |leap.leap()| can be accessed at runtime via the
-`state` table: `require('leap').state.args`.
+The argument table passed to |leap.leap()| can be accessed at runtime via
+`require('leap').state.args`. This lets you customize anything on a per-call
+basis - just set a special flag when calling |leap.leap()|: >lua
 
-Using `state.args`, you can customize practically anything on a per-call
-basis. Keep in mind that nothing prevents you from passing arbitrary flags
-when calling |leap.leap()|: >lua
-
-    function custom_leap_func()
+    local function my_leap_func()
       require('leap').leap {
-        is_custom_leap_func = true,
-          -- ...
+        my_leap_func = true,
+        -- other arguments...
       }
     end
 
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function (event)
-        if require('leap').state.args.is_custom_leap_func then
+        if require('leap').state.args.my_leap_func then
           -- Implement some special logic here, that will only apply to
-          -- custom_leap_func(), and restore the state (if needed) in an
+          -- my_leap_func(), and restore the state (if needed) in an
           -- analogous `LeapLeave` autocommand.
         end
       end
