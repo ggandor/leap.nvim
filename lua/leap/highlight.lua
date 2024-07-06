@@ -19,9 +19,8 @@ end
 setmetatable(M.group, {__index = _2_})
 M.cleanup = function(self, affected_windows)
   for _, _5_ in ipairs(self.extmarks) do
-    local _each_6_ = _5_
-    local bufnr = _each_6_[1]
-    local id = _each_6_[2]
+    local bufnr = _5_[1]
+    local id = _5_[2]
     if api.nvim_buf_is_valid(bufnr) then
       api.nvim_buf_del_extmark(bufnr, self.ns, id)
     else
@@ -50,20 +49,20 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
       end
       return nil
     else
-      local _let_10_ = map(dec, get_cursor_pos())
-      local curline = _let_10_[1]
-      local curcol = _let_10_[2]
-      local _let_11_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
-      local win_top = _let_11_[1]
-      local win_bot = _let_11_[2]
-      local function _13_()
+      local _let_9_ = map(dec, get_cursor_pos())
+      local curline = _let_9_[1]
+      local curcol = _let_9_[2]
+      local _let_10_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
+      local win_top = _let_10_[1]
+      local win_bot = _let_10_[2]
+      local function _11_()
         if backward_3f then
           return {{win_top, 0}, {curline, curcol}}
         else
           return {{curline, inc(curcol)}, {win_bot, -1}}
         end
       end
-      local _let_12_ = _13_()
+      local _let_12_ = _11_()
       local start = _let_12_[1]
       local finish = _let_12_[2]
       return vim.highlight.range(0, self.ns, self.group.backdrop, start, finish, {priority = self.priority.backdrop})
@@ -73,17 +72,17 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   end
 end
 M["highlight-cursor"] = function(self)
-  local _let_16_ = get_cursor_pos()
-  local line = _let_16_[1]
-  local col = _let_16_[2]
+  local _let_15_ = get_cursor_pos()
+  local line = _let_15_[1]
+  local col = _let_15_[2]
   local line_str = vim.fn.getline(line)
   local ch_at_curpos
   do
-    local _17_ = vim.fn.strpart(line_str, dec(col), 1, true)
-    if (_17_ == "") then
+    local _16_ = vim.fn.strpart(line_str, dec(col), 1, true)
+    if (_16_ == "") then
       ch_at_curpos = " "
-    elseif (nil ~= _17_) then
-      local ch = _17_
+    elseif (nil ~= _16_) then
+      local ch = _16_
       ch_at_curpos = ch
     else
       ch_at_curpos = nil
@@ -96,23 +95,23 @@ M["init-highlight"] = function(self, force_3f)
   local name = vim.g.colors_name
   local bg = vim.o.background
   local defaults
-  local _19_
+  local _18_
   if ((name == "default") and (bg == "light")) then
-    _19_ = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}
+    _18_ = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}
   elseif ((name == "default") and (bg == "dark")) then
-    _19_ = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}
+    _18_ = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}
   else
-    _19_ = {link = "IncSearch"}
+    _18_ = {link = "IncSearch"}
   end
-  local _21_
+  local _20_
   if ((name == "default") and (bg == "light")) then
-    _21_ = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}
+    _20_ = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}
   elseif ((name == "default") and (bg == "dark")) then
-    _21_ = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}
+    _20_ = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}
   else
-    _21_ = {link = "Search"}
+    _20_ = {link = "Search"}
   end
-  defaults = {[self.group.label] = _19_, [self.group.match] = _21_}
+  defaults = {[self.group.label] = _18_, [self.group.match] = _20_}
   if (force_3f or (vim.fn.has("nvim-0.9.1") == 0) or vim.tbl_isempty(api.nvim_get_hl(0, {name = "LeapLabelPrimary"}))) then
     for group_name, def_map in pairs(defaults) do
       if not force_3f then
