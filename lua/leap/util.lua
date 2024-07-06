@@ -34,6 +34,9 @@ local function get_enterable_windows()
   end
   return filter(_2_, wins)
 end
+local function get_focusable_windows()
+  return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}
+end
 local function get_eq_class_of(ch)
   if opts.case_sensitive then
     return opts.eq_class_of[ch]
@@ -43,15 +46,16 @@ local function get_eq_class_of(ch)
 end
 local function __3erepresentative_char(ch)
   local ch_2a
-  local function _4_(...)
-    local t_5_ = get_eq_class_of(ch)
-    if (nil ~= t_5_) then
-      t_5_ = t_5_[1]
+  local _5_
+  do
+    local t_4_ = get_eq_class_of(ch)
+    if (nil ~= t_4_) then
+      t_4_ = t_4_[1]
     else
     end
-    return t_5_
+    _5_ = t_4_
   end
-  ch_2a = (_4_() or ch)
+  ch_2a = (_5_ or ch)
   if opts.case_sensitive then
     return ch_2a
   else
@@ -132,4 +136,4 @@ local function get_input_by_keymap(prompt)
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

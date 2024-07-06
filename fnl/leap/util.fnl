@@ -34,6 +34,10 @@
             wins)))
 
 
+(fn get-focusable-windows []
+  [(vim.api.nvim_get_current_win) (unpack (get-enterable-windows))])
+
+
 ; NOTE: Lua's string.lower/upper are only for ASCII,
 ; use vim.fn.tolower/toupper everywhere.
 
@@ -108,6 +112,7 @@
  : replace-keycodes
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
+ :get_focusable_windows get-focusable-windows
  : get-eq-class-of
  : ->representative-char
  : get-input
