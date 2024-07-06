@@ -156,6 +156,88 @@ require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 </details>
 
 <details>
+<summary>Remote operations a.k.a. spooky actions at a distance (experimental)</summary>
+
+Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
+and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature. The
+API is not final.
+
+This function allows you to perform any operation in a remote location: it
+forgets the current mode or pending operator, lets you leap with the cursor (to
+anywhere on the tab page), then continues where it left off (when coming from
+Normal mode, it starts Visual mode). Once an operation is finished, it moves
+the cursor back to the original position, as if you had operated from the
+distance.
+
+```lua
+-- If using the default mappings (`gs` for multi-window mode), you can
+-- map e.g. `gS` here.
+vim.keymap.set({'n', 'o'}, 'gs', function ()
+  require('leap.remote').action()
+end)
+```
+
+Example: `gs{leap}apy` yanks the paragraph at the position specified by
+`{leap}`. The Normal-mode command is recommended over Operator-pending mode
+(`ygs{leap}ap`), since it requires the same number of keystrokes, but you can
+visually select a region before operating on it, that is, more complex motions
+are possible, and mistakes can be corrected. It might be more intuitive too,
+since the jump does not tear the operator and the selection command apart.
+
+Swapping regions becomes pretty simple, without needing a custom plugin:
+`d{region1}gs{leap}{region2}pP`. Example (swapping two words):
+`diwgs{leap}iwpP`.
+
+Icing on the cake, no. 1: Automatic paste after yanking. With this, you can
+clone text objects or regions in the blink of an eye, even from another window.
+
+```lua
+vim.api.nvim_create_augroup('LeapRemote', {})
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'RemoteOperationDone',
+  group = 'LeapRemote',
+  callback = function (event)
+    -- Do not paste if some special register was in use.
+    if vim.v.operator == 'y' and event.data.register == '"' then
+      vim.cmd('normal! p')
+    end
+  end,
+})
+```
+
+Icing on the cake, no. 2: The `input` parameter lets you create remote text
+objects, for a more intuitive workflow (e.g., to yank a paragraph, you just
+type `yarp` in one go, and then leap - combined with the above autocommand, it
+is almost like magic).
+
+```lua
+local default_text_objects = {
+  'iw', 'iW', 'is', 'ip', 'i[', 'i]', 'i(', 'i)', 'ib',
+  'i>', 'i<', 'it', 'i{', 'i}', 'iB', 'i"', 'i\'', 'i`',
+  'aw', 'aW', 'as', 'ap', 'a[', 'a]', 'a(', 'a)', 'ab',
+  'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
+}
+-- Create remote versions of all native text objects by inserting `r`
+-- into the middle (`iw` becomes `irw`, etc.):
+for _, tobj in ipairs(default_text_objects) do
+  vim.keymap.set({'x', 'o'}, tobj:sub(1,1)..'r'..tobj:sub(2), function ()
+    require('leap.remote').action { input = tobj }
+  end)
+end
+```
+
+You can also use it to create a forced linewise version of the command, by
+feeding `V`:
+
+```lua
+vim.keymap.set({'n', 'o'}, 'gS', function ()
+  require('leap.remote').action { input = 'V' }
+end)
+```
+
+</details>
+
+<details>
 <summary>Workaround for the duplicate cursor bug when autojumping</summary>
 
 For Neovim versions < 0.10 (https://github.com/neovim/neovim/issues/20793):
@@ -372,13 +454,6 @@ end
 ```
 
 See [Extending Leap](#extending-leap) for more.
-
-</details>
-
-<details>
-<summary>Other supernatural powers besides clairvoyance?</summary>
-
-You might be interested in [telekinesis](https://github.com/ggandor/leap-spooky.nvim).
 
 </details>
 
@@ -649,13 +724,6 @@ require('telescope').setup {
   }
 }
 ```
-
-</details>
-
-<details>
-<summary>Remote text objects</summary>
-
-See [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
 
 </details>
 
