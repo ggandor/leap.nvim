@@ -323,7 +323,8 @@ right-hand keys to get a better balance for the whole sequence on average.
       prev_group = '<tab>',
     }
 
-Meta-keys accepted at runtime:
+Meta-keys accepted at runtime. Each one can be a table too, with a list of
+alternatives.
 
 *leap.opts.special_keys.next_target*
 Jump to the next available target (use the previous search pattern if no input
@@ -404,7 +405,7 @@ Example - turning off |hlsearch| while leaping: >lua
 
 The argument table passed to |leap.leap()| can be accessed at runtime via
 `require('leap').state.args`. This lets you customize anything on a per-call
-basis - just set a special flag when calling |leap.leap()|: >lua
+basis - just set a flag when calling |leap.leap()|: >lua
 
     local function my_leap_func()
       require('leap').leap {

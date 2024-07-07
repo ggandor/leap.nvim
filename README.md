@@ -262,36 +262,6 @@ unique in that it
 
 * feels natural to use for both distant _and_ close targets
 
-### Auxiliary principles
-
-<details>
-<summary>Optimize for the common case</summary>
-
-A good example is using strictly one-character labels and switching between
-groups, which can become awkward beyond, say, 200 targets, but makes a whole
-bunch of edge cases and UI problems nonexistent.
-
-</details>
-
-<details>
-<summary>Sharpen the saw</summary>
-
-Build on Vim's native features, aim for synergy, and don't reinvent the wheel
-(dot-repeat (`.`), inclusive/exclusive toggle (`v`),
-[keymap](https://neovim.io/doc/user/mbyte.html#mbyte-keymap) support,
-autocommands via `User` events, `<Plug>` keys, etc.).
-(http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/)
-
-</details>
-
-<details>
-<summary>Mechanisms instead of policies</summary>
-
-Complement the small and opinionated core by [extension
-points](#extending-leap), keeping the plugin flexible and future-proof.
-
-</details>
-
 ## FAQ
 
 ### Bugs
@@ -692,6 +662,7 @@ See [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim).
 <details>
 <summary>Enhanced f/t motions</summary>
 
-See [flit.nvim](https://github.com/ggandor/flit.nvim).
+See [flit.nvim](https://github.com/ggandor/flit.nvim). Note that this is not a
+proper extension plugin, as it uses undocumented API too.
 
 </details>
