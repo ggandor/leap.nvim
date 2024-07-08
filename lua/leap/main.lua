@@ -533,7 +533,7 @@ local function leap(kwargs)
       local _77_ = get_input()
       if (nil ~= _77_) then
         local input = _77_
-        local switch_group_3f = (contains_3f(spec_keys.next_group, input) or ((input == spec_keys.prev_group) and not first_invoc_3f))
+        local switch_group_3f = (contains_3f(spec_keys.next_group, input) or (contains_3f(spec_keys.prev_group, input) and not first_invoc_3f))
         if (switch_group_3f and (_7cgroups_7c > 1)) then
           local shift
           if contains_3f(spec_keys.next_group, input) then

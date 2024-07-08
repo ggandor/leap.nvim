@@ -566,7 +566,7 @@ char separately.
       (case (get-input)
         input
         (let [switch-group? (or (contains? spec-keys.next_group input)
-                                (and (= input spec-keys.prev_group)
+                                (and (contains? spec-keys.prev_group input)
                                      (not first-invoc?)))]
           (if (and switch-group? (> |groups| 1))
               (let [shift (if (contains? spec-keys.next_group input) 1 -1)
