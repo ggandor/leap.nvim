@@ -94,19 +94,20 @@ end
 M["init-highlight"] = function(self, force_3f)
   local name = vim.g.colors_name
   local bg = vim.o.background
+  local default_3f = ((name == "default") or vim.g.vscode)
   local defaults
   local _18_
-  if ((name == "default") and (bg == "light")) then
+  if (default_3f and (bg == "light")) then
     _18_ = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}
-  elseif ((name == "default") and (bg == "dark")) then
+  elseif (default_3f and (bg == "dark")) then
     _18_ = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}
   else
     _18_ = {link = "IncSearch"}
   end
   local _20_
-  if ((name == "default") and (bg == "light")) then
+  if (default_3f and (bg == "light")) then
     _20_ = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}
-  elseif ((name == "default") and (bg == "dark")) then
+  elseif (default_3f and (bg == "dark")) then
     _20_ = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}
   else
     _20_ = {link = "Search"}

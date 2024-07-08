@@ -91,15 +91,17 @@ so we set a temporary highlight on it to see where we are."
 (fn M.init-highlight [self force?]
   (let [name vim.g.colors_name
         bg vim.o.background
+        ; vscode-neovim has a problem with linking to built-in groups.
+        default? (or (= name "default") vim.g.vscode)
         defaults {self.group.label
-                  (if (and (= name "default") (= bg "light"))
+                  (if (and default? (= bg "light"))
                       {:fg "#eef1f0"  ; NvimLightGrey1
                        :bg "#5588aa"
                        :bold true
                        :nocombine true
                        :ctermfg "red"}
 
-                      (and (= name "default") (= bg "dark"))
+                      (and default? (= bg "dark"))
                       {:fg "black"
                        :bg "#ccff88"
                        :nocombine true
@@ -109,12 +111,12 @@ so we set a temporary highlight on it to see where we are."
                       {:link "IncSearch"})
 
                   self.group.match
-                  (if (and (= name "default") (= bg "light"))
+                  (if (and default? (= bg "light"))
                       {:bg "#eef1f0"  ; NvimLightGrey1
                        :ctermfg "black"
                        :ctermbg "red"}
 
-                      (and (= name "default") (= bg "dark"))
+                      (and default? (= bg "dark"))
                       {:fg "#ccff88"
                        :underline true
                        :nocombine true
