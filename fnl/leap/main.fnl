@@ -802,11 +802,11 @@ char separately.
   (hl:init-highlight)
   (set-concealed-label)
   (api.nvim_create_autocmd "ColorScheme"
-                           {:callback (fn [_]
+                           {:group "LeapDefault"
+                            :callback (fn [_]
                                         (hl:init-highlight
                                           (= vim.g.colors_name "default"))  ; force?
-                                        (set-concealed-label))
-                            :group "LeapDefault"})
+                                        (set-concealed-label))})
 
   (do
     (var saved-editor-opts {})
@@ -850,15 +850,15 @@ char separately.
 
     (api.nvim_create_autocmd "User"
                              {:pattern "LeapEnter"
+                              :group "LeapDefault"
                               :callback (fn [_]
                                           (set-editor-opts
-                                            temporary-editor-opts))
-                              :group "LeapDefault"})
+                                            temporary-editor-opts))})
 
     (api.nvim_create_autocmd "User"
                              {:pattern "LeapLeave"
-                              :callback (fn [_] (restore-editor-opts))
-                              :group "LeapDefault"})))
+                              :group "LeapDefault"
+                              :callback (fn [_] (restore-editor-opts))})))
 
 
 (init)

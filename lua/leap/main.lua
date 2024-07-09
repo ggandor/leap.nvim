@@ -831,7 +831,7 @@ local function init()
     hl["init-highlight"](hl, (vim.g.colors_name == "default"))
     return set_concealed_label()
   end
-  api.nvim_create_autocmd("ColorScheme", {callback = _123_, group = "LeapDefault"})
+  api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = _123_})
   local saved_editor_opts = {}
   local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
   local function set_editor_opts(t)
@@ -890,11 +890,11 @@ local function init()
   local function _129_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _129_, group = "LeapDefault"})
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _129_})
   local function _130_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _130_, group = "LeapDefault"})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _130_})
 end
 init()
 return {state = state, leap = leap}
