@@ -796,19 +796,16 @@ char separately.
              " "
              "\u{00b7}")))  ; middle dot (·)
 
-  (api.nvim_create_autocmd "User"
-                           {:pattern "LeapEnter"
-                            :callback (fn [_] (set-concealed-label))
-                            :group "LeapDefault"})
-
-  (hl:init-highlight)
   ; Colorscheme plugins might clear out our highlight definitions,
   ; without defining their own, so we re-init the highlight on every
   ; change.
+  (hl:init-highlight)
+  (set-concealed-label)
   (api.nvim_create_autocmd "ColorScheme"
                            {:callback (fn [_]
                                         (hl:init-highlight
-                                          (= vim.g.colors_name "default")))  ; force?
+                                          (= vim.g.colors_name "default"))  ; force?
+                                        (set-concealed-label))
                             :group "LeapDefault"})
 
   (do

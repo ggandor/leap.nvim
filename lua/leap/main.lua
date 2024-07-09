@@ -825,24 +825,22 @@ local function init()
     end
     return nil
   end
+  hl["init-highlight"](hl)
+  set_concealed_label()
   local function _123_(_)
+    hl["init-highlight"](hl, (vim.g.colors_name == "default"))
     return set_concealed_label()
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _123_, group = "LeapDefault"})
-  hl["init-highlight"](hl)
-  local function _124_(_)
-    return hl["init-highlight"](hl, (vim.g.colors_name == "default"))
-  end
-  api.nvim_create_autocmd("ColorScheme", {callback = _124_, group = "LeapDefault"})
+  api.nvim_create_autocmd("ColorScheme", {callback = _123_, group = "LeapDefault"})
   local saved_editor_opts = {}
   local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
   local function set_editor_opts(t)
     saved_editor_opts = {}
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
     for opt, val in pairs(t) do
-      local _let_125_ = vim.split(opt, ".", {plain = true})
-      local scope = _let_125_[1]
-      local name = _let_125_[2]
+      local _let_124_ = vim.split(opt, ".", {plain = true})
+      local scope = _let_124_[1]
+      local name = _let_124_[2]
       if (scope == "w") then
         for _, win in ipairs(wins) do
           local saved_val = api.nvim_win_get_option(win, name)
@@ -889,14 +887,14 @@ local function init()
     end
     return nil
   end
-  local function _130_(_)
+  local function _129_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _130_, group = "LeapDefault"})
-  local function _131_(_)
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", callback = _129_, group = "LeapDefault"})
+  local function _130_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _131_, group = "LeapDefault"})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", callback = _130_, group = "LeapDefault"})
 end
 init()
 return {state = state, leap = leap}
