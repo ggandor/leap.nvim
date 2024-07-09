@@ -226,16 +226,14 @@ char separately.
                        ; (for "outside" use only).
                        :backward nil
                        :inclusive_op nil
-                       :offset nil
-                       :match_same_char_seq_at_end nil}
+                       :offset nil}
               :dot_repeat {:callback nil
                            :in1 nil
                            :in2 nil
                            :target_idx nil
                            :backward nil
                            :inclusive_op nil
-                           :offset nil
-                           :match_same_char_seq_at_end nil}
+                           :offset nil}
 
               ; We also use this table to reach the argument table
               ; passed to `leap()` in autocommands (using event data
@@ -258,8 +256,7 @@ char separately.
          (if invoked-dot-repeat? state.dot_repeat
              kwargs))
   (local {:inclusive_op inclusive-op?
-          : offset
-          :match_same_char_seq_at_end match-same-char-seq-at-end?}
+          : offset}
          (if invoked-dot-repeat? state.dot_repeat
              invoked-repeat? state.repeat
              kwargs))
@@ -462,8 +459,7 @@ char separately.
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
           pattern (search.prepare-pattern in1 ?in2)
-          kwargs {: backward? : match-same-char-seq-at-end?
-                  :target-windows ?target-windows}
+          kwargs {: backward? :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
@@ -493,7 +489,6 @@ char separately.
 
   (local from-kwargs {: offset
                       ; Mind the naming conventions.
-                      :match_same_char_seq_at_end match-same-char-seq-at-end?
                       :backward backward?
                       :inclusive_op inclusive-op?})
 

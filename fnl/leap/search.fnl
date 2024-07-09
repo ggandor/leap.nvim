@@ -105,6 +105,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
 
   (var line-str nil)
   (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
+  (var prev-triplet? nil)
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= col curcol)))
       (when (not= line prev-match.line)
@@ -112,7 +113,16 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
       ; Extracting the actual characters from the buffer at the match
       ; position.
       (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-      (if (not= ch1 "")
+      (if (= ch1 "")
+          ; On EOL - in this case, we're adding another, virtual \n after the
+          ; real one, so that these can be targeted by pressing a newline alias
+          ; twice. (See also `prepare-pattern`.)
+          (table.insert targets
+                        {: wininfo
+                         : pos
+                         :chars ["\n" "\n"]
+                         :previewable? (or (not opts.preview_filter)
+                                           (opts.preview_filter "" "\n" "\n"))})
           (do
             (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
             (when (= ch2 "") (set ch2 "\n"))  ; before EOL
@@ -127,34 +137,25 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
                   triplet? (and overlap?
                                 ; Same pair? (Eq-classes & ignorecase considered.)
                                 (= (->representative-char ch2)
-                                   (->representative-char prev-match.ch2)))
-                  skip-match? (and triplet?
-                                   (if backward?
-                                       match-same-char-seq-at-end?
-                                       (not match-same-char-seq-at-end?)))]
+                                   (->representative-char prev-match.ch2)))]
               (set prev-match {: line : col : ch1 : ch2})
-              (when (not skip-match?)
-                (when triplet? (table.remove targets))  ; delete the previous one
-                (table.insert targets
-                              {: wininfo
-                               : pos
-                               :chars [ch1 ch2]
-                               :edge-pos? (. edge-pos-idx? i)
-                               :previewable?
-                               (or (not opts.preview_filter)
-                                   (opts.preview_filter
-                                     (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
-                                     ch1
-                                     ch2))}))))
-          ; On EOL - in this case, we're adding another, virtual \n after the
-          ; real one, so that these can be targeted by pressing a newline alias
-          ; twice. (See also `prepare-pattern`.)
-          (table.insert targets
-                        {: wininfo
-                         : pos
-                         :chars ["\n" "\n"]
-                         :previewable? (or (not opts.preview_filter)
-                                           (opts.preview_filter "" "\n" "\n"))})))))
+              ; We would like to keep the first and _last_ match from a
+              ; `ccc...` sequence, so only remove the previous one if we
+              ; are still having a triplet.
+              (when (and prev-triplet? triplet?)
+                (table.remove targets))
+              (set prev-triplet? triplet?)
+              (table.insert targets
+                            {: wininfo
+                             : pos
+                             :chars [ch1 ch2]
+                             :edge-pos? (. edge-pos-idx? i)
+                             :previewable?
+                             (or (not opts.preview_filter)
+                                 (opts.preview_filter
+                                   (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
+                                   ch1
+                                   ch2))})))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]

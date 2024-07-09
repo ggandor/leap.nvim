@@ -170,7 +170,7 @@ do
   end
   prepare_labeled_targets = _21_
 end
-local state = {["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, dot_repeat = {callback = nil, in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil, match_same_char_seq_at_end = nil}, args = nil}
+local state = {["repeat"] = {in1 = nil, in2 = nil, backward = nil, inclusive_op = nil, offset = nil}, dot_repeat = {callback = nil, in1 = nil, in2 = nil, target_idx = nil, backward = nil, inclusive_op = nil, offset = nil}, args = nil}
 local function leap(kwargs)
   local invoked_repeat_3f = kwargs["repeat"]
   local invoked_dot_repeat_3f = kwargs["dot_repeat"]
@@ -199,7 +199,6 @@ local function leap(kwargs)
   local _local_26_ = _25_()
   local inclusive_op_3f = _local_26_["inclusive_op"]
   local offset = _local_26_["offset"]
-  local match_same_char_seq_at_end_3f = _local_26_["match_same_char_seq_at_end"]
   state.args = kwargs
   opts.current_call = (user_given_opts or {})
   do
@@ -440,7 +439,7 @@ local function leap(kwargs)
   local function get_targets(in1, _3fin2)
     local search = require("leap.search")
     local pattern = search["prepare-pattern"](in1, _3fin2)
-    local kwargs0 = {["backward?"] = backward_3f, ["match-same-char-seq-at-end?"] = match_same_char_seq_at_end_3f, ["target-windows"] = _3ftarget_windows}
+    local kwargs0 = {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local or_67_ = targets
     if not or_67_ then
@@ -474,7 +473,7 @@ local function leap(kwargs)
     local force_noautojump_3f = (user_given_action or (op_mode_3f and (#targets > 1)))
     return prepare_labeled_targets(targets, force_noautojump_3f, multi_window_search_3f)
   end
-  local from_kwargs = {offset = offset, match_same_char_seq_at_end = match_same_char_seq_at_end_3f, backward = backward_3f, inclusive_op = inclusive_op_3f}
+  local from_kwargs = {offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f}
   local function update_repeat_state(in1, in2)
     if keyboard_input_3f then
       state["repeat"] = vim.tbl_extend("error", from_kwargs, {in1 = in1, in2 = in2})

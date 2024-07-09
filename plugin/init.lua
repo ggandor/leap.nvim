@@ -38,11 +38,7 @@ local plug_mappings = {
   {
     { 'x', 'o' },
     '<Plug>(leap-forward-to)',
-    function ()
-      require('leap').leap {
-        offset = 1, inclusive_op = true, match_same_char_seq_at_end = true
-      }
-    end
+    function () require('leap').leap { offset = 1, inclusive_op = true } end
   },
   {
     { 'n', 'x', 'o' },
@@ -57,11 +53,7 @@ local plug_mappings = {
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-backward-till)',
-    function ()
-      require('leap').leap {
-        backward = true, offset = 2, match_same_char_seq_at_end = true
-      }
-    end
+    function () require('leap').leap { backward = true, offset = 2 } end
   },
 
   -- Deprecated
