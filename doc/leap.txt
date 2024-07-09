@@ -100,21 +100,25 @@ Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed.
 
                                                          *leap-concealed-labels*
-In |leap-preview| phase, some labels might be concealed with an empty block or
-a middle dot, depending on the colorscheme. Those mark that there is some kind
-of conflict or potential source of confusion, that will only be resolved after
-entering the second input character:
+Labels in subsequent groups are concealed with an empty block or a middle dot,
+depending on the color scheme. In |leap-preview| phase, some labels in the
+first group might be concealed too, marking that there is a conflict or
+potential source of confusion, that can only be resolved after entering the
+second input character.
 
-    A. The label is on top of another label.
-    B. The label is on top of an unlabeled match.
-    C. The label immediately follows an unlabeled match.
-    D. The label is not active yet (the match is in a subsequent group). In
-       this case we still need to signal that this a labeled match (do not
-       expect |leap-autojump|).
-
-Case A and C are possible when the match is right next to EOL or the window
-edge, and the label is shifted left, displayed over the second character.
-
+    The label is on top of an unlabeled match: >
+          xxy   text
+          ---
+          xxL   labeled match
+           xy   unlabeled match
+<
+    The label immediately follows an unlabeled match, or is on top of another
+    label (possible when the label has to be shifted left): >
+          xxy|  text at window edge, or y=end-of-line
+          ----
+           xL|  labeled match
+          xx?|  unlabeled or labeled match
+<
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
 
