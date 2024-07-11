@@ -83,9 +83,8 @@ window area.
 
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
-                                   {: targets : backward? : whole-window?
-                                    : match-same-char-seq-at-end?
-                                    : skip-curpos?}]
+                                   {: targets : backward?
+                                    : whole-window? : skip-curpos?}]
   "Fill a table that will store the positions and other metadata of all
 in-window pairs that match `pattern`, in the order of discovery. The following
 attributes are set here for the target elements:
@@ -247,8 +246,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
 
-(fn get-targets [pattern
-                 {: backward? : match-same-char-seq-at-end? : target-windows}]
+(fn get-targets [pattern {: backward? : target-windows}]
   (let [whole-window? target-windows
         source-winid (api.nvim_get_current_win)
         target-windows (or target-windows [source-winid])
@@ -263,7 +261,6 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern
                                      {: targets : backward? : whole-window?
-                                      : match-same-char-seq-at-end?
                                       :skip-curpos? (= winid source-winid)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))
