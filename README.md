@@ -162,12 +162,11 @@ Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
 and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature. The
 API is not final.
 
-This function allows you to perform any operation in a remote location: it
-forgets the current mode or pending operator, lets you leap with the cursor (to
-anywhere on the tab page), then continues where it left off (when coming from
-Normal mode, it starts Visual mode). Once an operation is finished, it moves
-the cursor back to the original position, as if you had operated from the
-distance.
+This function allows you to perform an action in a remote location: it
+forgets the current mode or pending operator, lets you leap with the
+cursor (to anywhere on the tab page), then continues where it left off.
+Once an operation or insertion is finished, it moves the cursor back to
+the original position, as if you had operated from the distance.
 
 ```lua
 -- If using the default mappings (`gs` for multi-window mode), you can
@@ -177,19 +176,29 @@ vim.keymap.set({'n', 'o'}, 'gs', function ()
 end)
 ```
 
-Example: `gs{leap}apy` yanks the paragraph at the position specified by
-`{leap}`. The Normal-mode command is recommended over Operator-pending mode
-(`ygs{leap}ap`), since it requires the same number of keystrokes, but you can
-visually select a region before operating on it, that is, more complex motions
-are possible, and mistakes can be corrected. It might be more intuitive too,
-since the jump does not tear the operator and the selection command apart.
+Example: `gs{leap}yap` yanks the paragraph at the position specified by
+`{leap}`. Getting used to the Normal-mode command is recommended over
+Operator-pending mode (`ygs{leap}ap`), since the former requires the
+same number of keystrokes, but it is much more flexible, as it allows
+you to move around freely, or to visually select a region before
+operating on it (that is, mistakes can be corrected, and more complex
+selections are possible). It might be more intuitive too, since the jump
+does not tear the operator and the selection command apart.
 
-Swapping regions becomes pretty simple, without needing a custom plugin:
-`d{region1}gs{leap}{region2}pP`. Example (swapping two words):
-`diwgs{leap}iwpP`.
+**Tips**
 
-Icing on the cake, no. 1: Automatic paste after yanking. With this, you can
-clone text objects or regions in the blink of an eye, even from another window.
+* Swapping regions becomes moderately simple, without needing a custom
+  plugin: `d{region1}gs{leap}v{region2}pP`. Example (swapping two
+  words): `diwgs{leap}viwpP`.
+
+* As the remote mode is active until returning to Normal mode again (by
+  any means), `<ctrl-o>` becomes your friend in Insert mode, or when
+  doing change operations.
+
+**Icing on the cake, no. 1 - automatic paste after yanking**
+
+With this, you can clone text objects or regions in the blink of an eye,
+even from another window.
 
 ```lua
 vim.api.nvim_create_augroup('LeapRemote', {})
@@ -205,10 +214,20 @@ vim.api.nvim_create_autocmd('User', {
 })
 ```
 
-Icing on the cake, no. 2: The `input` parameter lets you create remote text
-objects, for a more intuitive workflow (e.g., to yank a paragraph, you just
-type `yarp` in one go, and then leap - combined with the above autocommand, it
-is almost like magic).
+**Icing on the cake, no. 2 - giving input ahead of time**
+
+The `input` parameter lets you feed keystrokes ahead of time, e.g. to
+automatically trigger visual selection (`v`) (so you can `gs{leap}apy`),
+or create a forced linewise version of the command (`V`):
+
+```lua
+vim.keymap.set({'n', 'o'}, 'gS', function ()
+  require('leap.remote').action { input = 'V' }
+end)
+```
+
+This also lets you create **remote text objects**, for an even more
+intuitive workflow (`yarp{leap}`):
 
 ```lua
 local default_text_objects = {
@@ -224,15 +243,6 @@ for _, tobj in ipairs(default_text_objects) do
     require('leap.remote').action { input = tobj }
   end)
 end
-```
-
-You can also use it to create a forced linewise version of the command, by
-feeding `V`:
-
-```lua
-vim.keymap.set({'n', 'o'}, 'gS', function ()
-  require('leap.remote').action { input = 'V' }
-end)
 ```
 
 </details>
