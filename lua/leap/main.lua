@@ -178,6 +178,7 @@ local function leap(kwargs)
   local user_given_opts = kwargs["opts"]
   local user_given_targets = kwargs["targets"]
   local user_given_action = kwargs["action"]
+  local action_can_traverse_3f = kwargs["traversal"]
   local function _23_()
     if invoked_dot_repeat_3f then
       return state.dot_repeat
@@ -318,7 +319,7 @@ local function leap(kwargs)
     return vim.cmd("redraw")
   end
   local function can_traverse_3f(targets)
-    return (directional_3f and not (count or op_mode_3f or user_given_action) and (#targets >= 2))
+    return (action_can_traverse_3f or (directional_3f and not (count or op_mode_3f or user_given_action) and (#targets >= 2)))
   end
   local function get_number_of_highlighted_traversal_targets()
     local _45_ = opts.max_highlighted_traversal_targets
@@ -474,7 +475,7 @@ local function leap(kwargs)
     end
   end
   local function prepare_labeled_targets_2a(targets)
-    local force_noautojump_3f = (user_given_action or (op_mode_3f and (#targets > 1)))
+    local force_noautojump_3f = (not action_can_traverse_3f and (user_given_action or (op_mode_3f and (#targets > 1))))
     return prepare_labeled_targets(targets, force_noautojump_3f, multi_window_search_3f)
   end
   local from_kwargs = {offset = offset, backward = backward_3f, inclusive_op = inclusive_op_3f}
@@ -511,6 +512,7 @@ local function leap(kwargs)
     end
     jump_to_21 = _73_
   end
+  local do_action = (user_given_action or jump_to_21)
   local function post_pattern_input_loop(targets)
     local _7cgroups_7c
     if not targets["label-set"] then
@@ -609,14 +611,14 @@ local function leap(kwargs)
           local _87_ = get_new_idx(idx, _in)
           if (nil ~= _87_) then
             local new_idx = _87_
-            jump_to_21(targets[new_idx])
+            do_action(targets[new_idx])
             return loop(new_idx, false)
           else
             local _ = _87_
             local _88_ = get_target_with_active_label(targets, _in)
             if (nil ~= _88_) then
               local target = _88_
-              return jump_to_21(target)
+              return do_action(target)
             else
               local _0 = _88_
               return vim.fn.feedkeys(_in, "i")
@@ -629,7 +631,6 @@ local function leap(kwargs)
     end
     return loop(start_idx, true)
   end
-  local do_action = (user_given_action or jump_to_21)
   exec_user_autocmds("LeapEnter")
   local in1, _3fin2 = nil, nil
   if keyboard_input_3f then

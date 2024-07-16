@@ -250,7 +250,8 @@ char separately.
           :target_windows target-windows
           :opts user-given-opts
           :targets user-given-targets
-          :action user-given-action}
+          :action user-given-action
+          :traversal action-can-traverse?}
          kwargs)
   (local {:backward backward?}
          (if invoked-dot-repeat? state.dot_repeat
@@ -377,9 +378,10 @@ char separately.
     (vim.cmd :redraw))
 
   (fn can-traverse? [targets]
-    (and directional?
-         (not (or count op-mode? user-given-action))
-         (>= (length targets) 2)))
+    (or action-can-traverse?
+        (and directional?
+             (not (or count op-mode? user-given-action))
+             (>= (length targets) 2))))
 
   ; When traversing without labels, keep highlighting the same one group
   ; of targets, and do not shift until reaching the end of the group - it
@@ -483,11 +485,12 @@ char separately.
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.
   (fn prepare-labeled-targets* [targets]
-    (local force-noautojump? (or
-                               ; No jump, doing sg else.
-                               user-given-action
-                               ; Should be able to select our target.
-                               (and op-mode? (> (length targets) 1))))
+    (local force-noautojump? (and (not action-can-traverse?)
+                                  (or
+                                    ; No jump, doing sg else.
+                                    user-given-action
+                                    ; Should be able to select our target.
+                                    (and op-mode? (> (length targets) 1)))))
     (prepare-labeled-targets targets force-noautojump? multi-window-search?))
 
   ; Repeat
@@ -541,6 +544,8 @@ char separately.
                         : backward?
                         : inclusive-op?})
         (set first-jump? false))))
+
+  (local do-action (or user-given-action jump-to!))
 
   ; Target-selection loops
 
@@ -617,19 +622,17 @@ char separately.
             (vim.fn.feedkeys in :i)
             (case (get-new-idx idx in)
               new-idx (do
-                        (jump-to! (. targets new-idx))
+                        (do-action (. targets new-idx))
                         (loop new-idx false))
                 ; We still want the labels (if there are) to function.
               _ (case (get-target-with-active-label targets in)
-                  target (jump-to! target)
+                  target (do-action target)
                   _ (vim.fn.feedkeys in :i))))))
 
     (loop start-idx true))
 
   ; //> Helper functions END
 
-
-  (local do-action (or user-given-action jump-to!))
 
   ; After all the stage-setting, here comes the main action you've all been
   ; waiting for:

@@ -159,20 +159,27 @@ local function resolve_conflicts(targets)
   end
   return nil
 end
+local function light_up_beacon(target, endpos_3f)
+  local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
+  local lnum = _let_24_[1]
+  local col = _let_24_[2]
+  local bufnr = target.wininfo.bufnr
+  local offset = target.beacon[1]
+  local virttext = target.beacon[2]
+  local opts0 = {virt_text = virttext, virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label}
+  local id = api.nvim_buf_set_extmark(bufnr, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
+  return table.insert(hl.extmarks, {bufnr, id})
+end
 local function light_up_beacons(targets, _3fstart, _3fend)
   if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then
     for i = (_3fstart or 1), (_3fend or #targets) do
       local target = targets[i]
-      local _24_ = target.beacon
-      if ((_G.type(_24_) == "table") and (nil ~= _24_[1]) and (nil ~= _24_[2])) then
-        local offset = _24_[1]
-        local virttext = _24_[2]
-        local bufnr = target.wininfo.bufnr
-        local _let_25_ = map(dec, target.pos)
-        local lnum = _let_25_[1]
-        local col = _let_25_[2]
-        local id = api.nvim_buf_set_extmark(bufnr, hl.ns, lnum, (col + offset), {virt_text = virttext, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.label})
-        table.insert(hl.extmarks, {bufnr, id})
+      if target.beacon then
+        light_up_beacon(target)
+        if target.endpos then
+          light_up_beacon(target, true)
+        else
+        end
       else
       end
     end
