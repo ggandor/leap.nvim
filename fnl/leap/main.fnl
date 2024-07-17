@@ -585,6 +585,15 @@ char separately.
     (loop true))
 
 
+  (fn traversal-get-new-idx [idx in targets]
+    (if (contains? spec-keys.next_target in)
+        (min (inc idx) (length targets))
+
+        (contains? spec-keys.prev_target in)
+        ; Wrap around backwards.
+        (if (<= idx 1) (length targets) (dec idx))))
+
+
   (fn traversal-loop [targets start-idx {: use-no-labels?}]
 
     (fn on-first-invoc []
@@ -607,27 +616,20 @@ char separately.
       (with-highlight-chores
         #(light-up-beacons targets start end)))
 
-    (fn get-new-idx [idx in]
-      (if (contains? spec-keys.next_target in) (min (inc idx) (length targets))
-          (contains? spec-keys.prev_target in) (max (dec idx) 1)))
-
     (fn loop [idx first-invoc?]
       (when first-invoc? (on-first-invoc))
       (set st.curr-idx idx)  ; `display` depends on it!
       (display)
       (case (get-input)
         in
-        (if (and (= idx 1) (contains? spec-keys.prev_target in))
-            ; Handy if repeat keys are set.
-            (vim.fn.feedkeys in :i)
-            (case (get-new-idx idx in)
-              new-idx (do
-                        (do-action (. targets new-idx))
-                        (loop new-idx false))
-                ; We still want the labels (if there are) to function.
-              _ (case (get-target-with-active-label targets in)
-                  target (do-action target)
-                  _ (vim.fn.feedkeys in :i))))))
+        (case (traversal-get-new-idx idx in targets)
+          new-idx (do
+                    (do-action (. targets new-idx))
+                    (loop new-idx false))
+          ; We still want the labels (if there are) to function.
+          _ (case (get-target-with-active-label targets in)
+              target (do-action target)
+              _ (vim.fn.feedkeys in :i)))))
 
     (loop start-idx true))
 
@@ -750,33 +752,34 @@ char separately.
           (set st.curr-idx 1))))
 
   (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
-  (when-not in-final
-    (exit-early))
+  (if (not in-final)
+      (exit-early)
 
-  ; Jump to the first target on the [rest of the] target list?
-  (when (contains? spec-keys.next_target in-final)
-    (if (can-traverse? targets*)
-        (let [new-idx (inc st.curr-idx)]
-          (do-action (. targets* new-idx))
-          (traversal-loop targets*                     ; REDRAW (LOOP)
-                          new-idx
-                          {:use-no-labels? (or no-labels-to-use?
-                                               st.repeating-partial-pattern?
-                                               (not targets*.autojump?))})
-          (exit))
+      ; Traversal - `prev_target` can also start it, wrapping backwards.
+      (and (can-traverse? targets*)
+           (or (contains? spec-keys.next_target in-final)
+               (contains? spec-keys.prev_target in-final)))
+      (let [use-no-labels? (or no-labels-to-use?
+                               st.repeating-partial-pattern?
+                               (not targets*.autojump?))
+            ; Note: `traversal-loop` will set `st.curr-idx` to `new-idx`.
+            new-idx (traversal-get-new-idx st.curr-idx in-final targets*)]
+        (do-action (. targets* new-idx))
+        (traversal-loop targets* new-idx {: use-no-labels?})  ; REDRAW (LOOP)
+        (exit))
 
-        (= st.curr-idx 0)  ; the cursor hasn't moved yet
-        (exit-with-action-on 1)
+      ; `next_target` accepts the first match if the cursor hasn't moved
+      ; yet (no autojump).
+      (and (contains? spec-keys.next_target in-final)
+           (= st.curr-idx 0))
+      (exit-with-action-on 1)
 
-        (= st.curr-idx 1)  ; already on the first target (after autojump)
-        (do (vim.fn.feedkeys in-final :i)
-            (exit))))
-
-  (local (_ idx) (get-target-with-active-label targets* in-final))
-  (if idx
-      (exit-with-action-on idx)
-      (do (vim.fn.feedkeys in-final :i)
-          (exit)))
+      ; Otherwise try to get a labeled target, and feed the key to
+      ; Normal mode if no success.
+      (case (get-target-with-active-label targets* in-final)
+        (target idx) (exit-with-action-on idx)
+        _ (do (vim.fn.feedkeys in-final :i)
+              (exit))))
 
   ; Do return something here, otherwise Fennel automatically inserts
   ; return statements into the tail-positioned if branches above,

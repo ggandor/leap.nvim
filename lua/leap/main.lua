@@ -558,8 +558,21 @@ local function leap(kwargs)
     end
     return loop(true)
   end
-  local function traversal_loop(targets, start_idx, _81_)
-    local use_no_labels_3f = _81_["use-no-labels?"]
+  local function traversal_get_new_idx(idx, _in, targets)
+    if contains_3f(spec_keys.next_target, _in) then
+      return min(inc(idx), #targets)
+    elseif contains_3f(spec_keys.prev_target, _in) then
+      if (idx <= 1) then
+        return #targets
+      else
+        return dec(idx)
+      end
+    else
+      return nil
+    end
+  end
+  local function traversal_loop(targets, start_idx, _83_)
+    local use_no_labels_3f = _83_["use-no-labels?"]
     local function on_first_invoc()
       if use_no_labels_3f then
         for _, t in ipairs(targets) do
@@ -581,19 +594,10 @@ local function leap(kwargs)
     local function display()
       set_beacons(targets, {["group-offset"] = st["group-offset"], phase = st.phase, ["use-no-labels?"] = use_no_labels_3f})
       local start, _end = get_highlighted_idx_range(targets, use_no_labels_3f)
-      local function _83_()
+      local function _85_()
         return light_up_beacons(targets, start, _end)
       end
-      return with_highlight_chores(_83_)
-    end
-    local function get_new_idx(idx, _in)
-      if contains_3f(spec_keys.next_target, _in) then
-        return min(inc(idx), #targets)
-      elseif contains_3f(spec_keys.prev_target, _in) then
-        return max(dec(idx), 1)
-      else
-        return nil
-      end
+      return with_highlight_chores(_85_)
     end
     local function loop(idx, first_invoc_3f)
       if first_invoc_3f then
@@ -602,27 +606,23 @@ local function leap(kwargs)
       end
       st["curr-idx"] = idx
       display()
-      local _86_ = get_input()
-      if (nil ~= _86_) then
-        local _in = _86_
-        if ((idx == 1) and contains_3f(spec_keys.prev_target, _in)) then
-          return vim.fn.feedkeys(_in, "i")
+      local _87_ = get_input()
+      if (nil ~= _87_) then
+        local _in = _87_
+        local _88_ = traversal_get_new_idx(idx, _in, targets)
+        if (nil ~= _88_) then
+          local new_idx = _88_
+          do_action(targets[new_idx])
+          return loop(new_idx, false)
         else
-          local _87_ = get_new_idx(idx, _in)
-          if (nil ~= _87_) then
-            local new_idx = _87_
-            do_action(targets[new_idx])
-            return loop(new_idx, false)
+          local _ = _88_
+          local _89_ = get_target_with_active_label(targets, _in)
+          if (nil ~= _89_) then
+            local target = _89_
+            return do_action(target)
           else
-            local _ = _87_
-            local _88_ = get_target_with_active_label(targets, _in)
-            if (nil ~= _88_) then
-              local target = _88_
-              return do_action(target)
-            else
-              local _0 = _88_
-              return vim.fn.feedkeys(_in, "i")
-            end
+            local _0 = _89_
+            return vim.fn.feedkeys(_in, "i")
           end
         end
       else
@@ -781,34 +781,29 @@ local function leap(kwargs)
   if not in_final then
     exit_early_2a()
     return
+  elseif (can_traverse_3f(targets_2a) and (contains_3f(spec_keys.next_target, in_final) or contains_3f(spec_keys.prev_target, in_final))) then
+    local use_no_labels_3f = (no_labels_to_use_3f or st["repeating-partial-pattern?"] or not targets_2a["autojump?"])
+    local new_idx = traversal_get_new_idx(st["curr-idx"], in_final, targets_2a)
+    do_action(targets_2a[new_idx])
+    traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = use_no_labels_3f})
+    exit_2a()
+    return
+  elseif (contains_3f(spec_keys.next_target, in_final) and (st["curr-idx"] == 0)) then
+    exit_with_action_on_2a(1)
+    return
   else
-  end
-  if contains_3f(spec_keys.next_target, in_final) then
-    if can_traverse_3f(targets_2a) then
-      local new_idx = inc(st["curr-idx"])
-      do_action(targets_2a[new_idx])
-      traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = (no_labels_to_use_3f or st["repeating-partial-pattern?"] or not targets_2a["autojump?"])})
-      exit_2a()
+    local _117_, _118_ = get_target_with_active_label(targets_2a, in_final)
+    if ((nil ~= _117_) and (nil ~= _118_)) then
+      local target = _117_
+      local idx = _118_
+      exit_with_action_on_2a(idx)
       return
-    elseif (st["curr-idx"] == 0) then
-      exit_with_action_on_2a(1)
-      return
-    elseif (st["curr-idx"] == 1) then
+    else
+      local _ = _117_
       vim.fn.feedkeys(in_final, "i")
       exit_2a()
       return
-    else
     end
-  else
-  end
-  local _, idx = get_target_with_active_label(targets_2a, in_final)
-  if idx then
-    exit_with_action_on_2a(idx)
-    return
-  else
-    vim.fn.feedkeys(in_final, "i")
-    exit_2a()
-    return
   end
   return nil
 end
