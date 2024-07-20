@@ -464,16 +464,21 @@ char separately.
       (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
   (fn get-user-given-targets [targets]
-    (local targets* (if (= (type targets) :function) (targets) targets))
-    (if (and targets* (> (length targets*) 0))
+    (local default-errmsg "no targets")
+    (local (targets* errmsg) (if (= (type targets) :function) (targets) targets))
+    (if (not targets*)
+        (set st.errmsg (or errmsg default-errmsg))
+
+        (= (length targets*) 0)
+        (set st.errmsg default-errmsg)
+
         (do
           ; Fill wininfo-s when not provided.
-          (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
           (when-not (. targets* 1 :wininfo)
+            (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
             (each [_ t (ipairs targets*)]
               (set t.wininfo wininfo)))
-          targets*)
-        (set st.errmsg "no targets")))
+          targets*)))
 
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.

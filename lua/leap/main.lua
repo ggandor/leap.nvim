@@ -449,24 +449,28 @@ local function leap(kwargs)
     return or_67_
   end
   local function get_user_given_targets(targets)
-    local targets_2a
+    local default_errmsg = "no targets"
+    local targets_2a, errmsg = nil, nil
     if (type(targets) == "function") then
-      targets_2a = targets()
+      targets_2a, errmsg = targets()
     else
-      targets_2a = targets
+      targets_2a, errmsg = targets
     end
-    if (targets_2a and (#targets_2a > 0)) then
-      local wininfo = vim.fn.getwininfo(curr_winid)[1]
+    if not targets_2a then
+      st.errmsg = (errmsg or default_errmsg)
+      return nil
+    elseif (#targets_2a == 0) then
+      st.errmsg = default_errmsg
+      return nil
+    else
       if not targets_2a[1].wininfo then
+        local wininfo = vim.fn.getwininfo(curr_winid)[1]
         for _, t in ipairs(targets_2a) do
           t.wininfo = wininfo
         end
       else
       end
       return targets_2a
-    else
-      st.errmsg = "no targets"
-      return nil
     end
   end
   local function prepare_labeled_targets_2a(targets)
