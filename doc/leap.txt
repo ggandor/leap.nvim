@@ -46,7 +46,7 @@ USAGE                                                               *leap-usage*
   keypress (|leap.opts.safe_labels|). *leap-autojump*
 
 • Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<tab>`.
+  labels, you can switch between groups, using `<space>` and `<backspace>`.
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
@@ -77,7 +77,7 @@ be used as a multiline substitute for `fFtT` motions.
 
 If the search is directional, `<enter>` can also traverse through the rest of
 the targets, moving on to the next one on each subsequent keypress
-(`s<enter><enter>...`). If you overshoot, `<tab>`
+(`s<enter><enter>...`). If you overshoot, `<backspace>`
 (|leap.opts.special_keys.prev_target|) can revert the jump(s).
 
 There is a convenience function in the `user` module to set keys that behave
@@ -316,9 +316,9 @@ right-hand keys to get a better balance for the whole sequence on average.
 `special_keys =` >
     {
       next_target = '<enter>',
-      prev_target = '<tab>',
+      prev_target = { '<backspace>', '<tab>' },
       next_group = '<space>',
-      prev_group = '<tab>',
+      prev_group = { '<backspace>', '<tab>' },
     }
 
 Meta-keys accepted at runtime. Each one can be a table too, with a list of

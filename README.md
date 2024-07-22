@@ -31,7 +31,7 @@ need to do that.
   those are guaranteed non-conflicting letters, disappearing on the next
   keypress.
 - Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<tab>`.
+  labels, you can switch between groups, using `<space>` and `<backspace>`.
 
 Character pairs give you full coverage of the screen:
 
@@ -39,7 +39,7 @@ Character pairs give you full coverage of the screen:
 - `s<space><space>` jumps to any EOL position, including empty lines.
 
 At any stage, `<enter>` consistently jumps to the next available target
-(`<tab>` steps back):
+(`<backspace>` steps back):
 
 - `s<enter>...` repeats the previous search.
 - `s{char}<enter>...` can be used as a multiline substitute for `fFtT` motions.
@@ -143,10 +143,6 @@ See `:h leap-custom-mappings` for more.
 -- Define equivalence classes for brackets and quotes, in addition to
 -- the default whitespace group.
 require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
-
--- Override some old defaults - use backspace instead of tab (see issue #165).
-require('leap').opts.special_keys.prev_target = '<backspace>'
-require('leap').opts.special_keys.prev_group = '<backspace>'
 
 -- Use the traversal keys to repeat the previous motion without explicitly
 -- invoking Leap.
