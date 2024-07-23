@@ -148,21 +148,31 @@ local function select(kwargs)
   local sk = vim.deepcopy(leap.opts.special_keys)
   sk.next_target = vim.fn.flatten(vim.list_extend({";"}, {sk.next_target}))
   sk.prev_target = vim.fn.flatten(vim.list_extend({","}, {sk.prev_target}))
-  local _21_
-  if inc_select_3f then
-    _21_ = ""
+  local ok_3f, context = pcall(require, "treesitter-context")
+  local context_3f = (ok_3f and context.enabled())
+  if context_3f then
+    context.disable()
   else
-    _21_ = nil
   end
-  local _23_
+  local _22_
   if inc_select_3f then
-    _23_ = fill_cursor_pos
+    _22_ = ""
   else
-    _23_ = nil
+    _22_ = nil
   end
-  leap.leap({target_windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _21_, on_beacons = _23_, virt_text_pos = "inline", special_keys = sk})})
+  local _24_
   if inc_select_3f then
-    return clear_fill()
+    _24_ = fill_cursor_pos
+  else
+    _24_ = nil
+  end
+  leap.leap({target_windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline", special_keys = sk})})
+  if inc_select_3f then
+    clear_fill()
+  else
+  end
+  if context_3f then
+    return context.enable()
   else
     return nil
   end
