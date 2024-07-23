@@ -21,7 +21,7 @@ Leap is a motion plugin that allows you to jump to any position in the visible
 editor area by entering a 2-character search pattern, and then potentially a
 label character to pick your target from multiple matches, similar to
 vim-sneak (https://github.com/justinmk/vim-sneak). The main novel idea in Leap
-is that you get a preview of the target labels - Leap shows you which key you
+is that you get a preview of the target labels - you can see which key you
 will need to press before you actually need to do that, resulting in a
 smoother overall experience.
 
@@ -34,27 +34,25 @@ USAGE                                                               *leap-usage*
 • Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`). (For different arrangements, see
   |leap-custom-mappings|.)
-
 • Start typing a 2-character pattern (`{char1}{char2}`).
-
 • After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot use the labels yet. *leap-preview*
-
+  the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
+  after finishing the pattern. *leap-preview*
 • Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. You can safely ignore the remaining labels, and continue editing -
   those are guaranteed non-conflicting letters, disappearing on the next
   keypress (|leap.opts.safe_labels|). *leap-autojump*
-
-• Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<backspace>`.
+• Else: type the label character, that is now active. If there are more
+  matches than available labels, you can switch between groups, using
+  `<space>` and `<backspace>`.
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
 
                                                            *leap-to-end-of-line*
 A character at the end of a line can be targeted by pressing `<space>` after
-it. Note that there is no special mechanism behind this: `<space>` is simply
-an alias for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
+it. There is no special mechanism behind this: `<space>` is simply an alias
+for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
 
 A slightly more magical feature is that you can target actual EOL positions,
 including empty lines, by pressing the newline alias twice (`<space><space>`).

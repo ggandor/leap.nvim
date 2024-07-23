@@ -15,28 +15,30 @@ a jump.
 
 Leap's default motions allow you to jump to any position in the visible editor
 area by entering a 2-character search pattern, and then potentially a label
-character to pick your target from multiple matches, in a manner similar to
-Sneak. The main novel idea in Leap is that **you get a preview of the target
-labels** - Leap shows you which key you will need to press before you actually
-need to do that.
+character to pick your target from multiple matches, similar to Sneak. The main
+novel idea in Leap is that **you get a preview of the target labels** - you can
+see which key you will need to press before you actually need to do that.
 
 - Initiate the search in the forward (`s`) or backward (`S`) direction, or in
   the other windows (`gs`). (Note: you can use a single key for the current
   window or even the whole tab page, if you are okay with the trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot _use_ the labels yet.
+  the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
+  after finishing the pattern.
 - Enter `{char2}`. If the pair was not labeled, then voilà, you're already
   there. You can safely ignore the remaining labels, and continue editing -
   those are guaranteed non-conflicting letters, disappearing on the next
   keypress.
-- Else: type the label character. If there are more matches than available
-  labels, you can switch between groups, using `<space>` and `<backspace>`.
+- Else: type the label character, that is now active. If there are more matches
+  than available labels, you can switch between groups, using `<space>` and
+  `<backspace>`.
 
 Character pairs give you full coverage of the screen:
 
-- `s{char}<space>` jumps to a character before the end of the line.
-- `s<space><space>` jumps to any EOL position, including empty lines.
+- `s{char}<space>` jumps to the last character on a line.
+- `s<space><space>` jumps to actual end-of-line characters, including empty
+  lines.
 
 At any stage, `<enter>` consistently jumps to the next available target
 (`<backspace>` steps back):
@@ -229,12 +231,8 @@ operate on the current selection right away (`ga;;y`).
   -- "clever-a"
   vim.keymap.set({'n', 'x', 'o'}, 'ga',  function ()
     local sk = vim.deepcopy(require('leap').opts.special_keys)
-    -- If you just want to overwrite the keys, and only use a/A:
-    sk.next_target = 'a'
-    sk.prev_target = 'A'
-    -- If you want to add them as extra keys, keep in mind that the items
-    -- in `special_keys` can be both strings or tables (the shortest
-    -- workaround might be the below one):
+    -- The items in `special_keys` can be both strings or tables - the
+    -- shortest workaround might be the below one:
     sk.next_target = vim.fn.flatten(vim.list_extend({'a'}, {sk.next_target}))
     sk.prev_target = vim.fn.flatten(vim.list_extend({'A'}, {sk.prev_target}))
 
@@ -356,7 +354,7 @@ required by the latter.
 That is, **you do not want to think about**
 
 - **the command**: we need one fundamental targeting method that can bring you
-  anywhere: a "jetpack on the back", instead of "airline routes" (↔
+  anywhere: a jetpack on the back, instead of airline routes (↔
   [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
   derivatives)
 - **the context**: it should be enough to look at the target, and nothing else
