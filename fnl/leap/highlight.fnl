@@ -8,21 +8,22 @@
 (local empty? vim.tbl_isempty)
 
 
+(fn has-hl-group? [name]
+  (not (empty? (api.nvim_get_hl 0 {: name}))))
+
+
 (local M {:ns (api.nvim_create_namespace "")
           :extmarks []
-          :group {:match "LeapMatch"
-                  :backdrop "LeapBackdrop"}
+          :group (setmetatable
+                   {:match "LeapMatch"
+                    :backdrop "LeapBackdrop"}
+                   {:__index (fn [_ key]
+                               (when (= key :label)
+                                 (if (has-hl-group? "LeapLabel") "LeapLabel"
+                                     "LeapLabelPrimary")))})
           :priority {:label 65535
                      :cursor 65534
                      :backdrop 65533}})
-
-
-(setmetatable M.group
-  {:__index (fn [_ key]
-              (when (= key :label)
-                (if (empty? (api.nvim_get_hl 0 {:name "LeapLabel"}))
-                    "LeapLabelPrimary"
-                    "LeapLabel")))})
 
 
 (fn M.cleanup [self affected-windows]
@@ -32,7 +33,7 @@
       (api.nvim_buf_del_extmark bufnr self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
-  (when (not (empty? (api.nvim_get_hl 0 {:name self.group.backdrop})))
+  (when (has-hl-group? self.group.backdrop)
     (each [_ winid (ipairs affected-windows)]
       ; TODO: Edge case: what if the window has become invalid, but the
       ;       buffer is still there?
@@ -47,7 +48,7 @@
 
 
 (fn M.apply-backdrop [self backward? ?target-windows]
-  (when (not (empty? (api.nvim_get_hl 0 {:name self.group.backdrop})))
+  (when (has-hl-group? self.group.backdrop)
     (if ?target-windows
         (each [_ winid (ipairs ?target-windows)]
           (local wininfo (. (vim.fn.getwininfo winid) 1))
@@ -118,10 +119,12 @@ so we set a temporary highlight on it to see where we are."
 
                       {:link "Search"})}]
     (when (or force?
-              (empty? (api.nvim_get_hl 0 {:name "LeapLabelPrimary"})))
+              ; Otherwise LeapLabel would take priority, and override
+              ; the legacy group, `default` does not help in this case.
+              (not (has-hl-group? "LeapLabelPrimary")))
       (each [group-name def-map (pairs defaults)]
-          (when (not force?) (tset def-map :default true))
-          (api.nvim_set_hl 0 group-name def-map)))))
+        (when (not force?) (tset def-map :default true))
+        (api.nvim_set_hl 0 group-name def-map)))))
 
 
 M
