@@ -5,6 +5,7 @@
 
 (local api vim.api)
 (local map vim.tbl_map)
+(local empty? vim.tbl_isempty)
 
 
 (local M {:ns (api.nvim_create_namespace "")
@@ -19,15 +20,9 @@
 (setmetatable M.group
   {:__index (fn [_ key]
               (when (= key :label)
-                ; NOTE: `nvim_get_hl_by_name` is deprecated.
-                (if (pcall api.nvim_get_hl_by_name "LeapLabel" false)
-                    "LeapLabel"
+                (if (empty? (api.nvim_get_hl 0 {:name "LeapLabel"}))
                     "LeapLabelPrimary"
-
-                ; (if (vim.tbl_isempty (api.nvim_get_hl 0 {:name "LeapLabel"}))  ; 0.9+
-                ;     "LeapLabelPrimary"
-                ;     "LeapLabel"
-                  )))})
+                    "LeapLabel")))})
 
 
 (fn M.cleanup [self affected-windows]
@@ -37,8 +32,7 @@
       (api.nvim_buf_del_extmark bufnr self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
-  ; NOTE: `nvim_get_hl_by_name` is deprecated.
-  (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
+  (when (not (empty? (api.nvim_get_hl 0 {:name self.group.backdrop})))
     (each [_ winid (ipairs affected-windows)]
       ; TODO: Edge case: what if the window has become invalid, but the
       ;       buffer is still there?
@@ -53,7 +47,7 @@
 
 
 (fn M.apply-backdrop [self backward? ?target-windows]
-  (when (pcall api.nvim_get_hl_by_name self.group.backdrop false)  ; group exists?
+  (when (not (empty? (api.nvim_get_hl 0 {:name self.group.backdrop})))
     (if ?target-windows
         (each [_ winid (ipairs ?target-windows)]
           (local wininfo (. (vim.fn.getwininfo winid) 1))
@@ -124,8 +118,7 @@ so we set a temporary highlight on it to see where we are."
 
                       {:link "Search"})}]
     (when (or force?
-              (= (vim.fn.has "nvim-0.9.1") 0)
-              (vim.tbl_isempty (api.nvim_get_hl 0 {:name "LeapLabelPrimary"})))
+              (empty? (api.nvim_get_hl 0 {:name "LeapLabelPrimary"})))
       (each [group-name def-map (pairs defaults)]
           (when (not force?) (tset def-map :default true))
           (api.nvim_set_hl 0 group-name def-map)))))

@@ -80,7 +80,7 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Requirements
 
-* Neovim >= 0.7.0 stable, or latest nightly
+* Neovim >= 0.9.0 stable, or latest nightly
 
 ### Dependencies
 

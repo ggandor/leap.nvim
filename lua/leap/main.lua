@@ -818,7 +818,7 @@ local function init()
     end
   end
   local function set_concealed_label()
-    if ((vim.fn.has("nvim-0.9.1") == 1) and (api.nvim_get_hl(0, {name = "LeapLabelPrimary", link = false}).bg or api.nvim_get_hl(0, {name = "LeapLabel", link = false}).bg)) then
+    if (api.nvim_get_hl(0, {name = "LeapLabelPrimary", link = false}).bg or api.nvim_get_hl(0, {name = "LeapLabel", link = false}).bg) then
       opts.concealed_label = " "
     else
       opts.concealed_label = "\194\183"

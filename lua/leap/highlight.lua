@@ -4,13 +4,14 @@ local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local api = vim.api
 local map = vim.tbl_map
+local empty_3f = vim.tbl_isempty
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
 local function _2_(_, key)
   if (key == "label") then
-    if pcall(api.nvim_get_hl_by_name, "LeapLabel", false) then
-      return "LeapLabel"
-    else
+    if empty_3f(api.nvim_get_hl(0, {name = "LeapLabel"})) then
       return "LeapLabelPrimary"
+    else
+      return "LeapLabel"
     end
   else
     return nil
@@ -27,7 +28,7 @@ M.cleanup = function(self, affected_windows)
     end
   end
   self.extmarks = {}
-  if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
+  if not empty_3f(api.nvim_get_hl(0, {name = self.group.backdrop})) then
     for _, winid in ipairs(affected_windows) do
       if api.nvim_win_is_valid(winid) then
         local wininfo = vim.fn.getwininfo(winid)[1]
@@ -41,7 +42,7 @@ M.cleanup = function(self, affected_windows)
   end
 end
 M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
-  if pcall(api.nvim_get_hl_by_name, self.group.backdrop, false) then
+  if not empty_3f(api.nvim_get_hl(0, {name = self.group.backdrop})) then
     if _3ftarget_windows then
       for _, winid in ipairs(_3ftarget_windows) do
         local wininfo = vim.fn.getwininfo(winid)[1]
@@ -113,7 +114,7 @@ M["init-highlight"] = function(self, force_3f)
     _20_ = {link = "Search"}
   end
   defaults = {[self.group.label] = _18_, [self.group.match] = _20_}
-  if (force_3f or (vim.fn.has("nvim-0.9.1") == 0) or vim.tbl_isempty(api.nvim_get_hl(0, {name = "LeapLabelPrimary"}))) then
+  if (force_3f or empty_3f(api.nvim_get_hl(0, {name = "LeapLabelPrimary"}))) then
     for group_name, def_map in pairs(defaults) do
       if not force_3f then
         def_map["default"] = true

@@ -1,6 +1,6 @@
 *leap.txt*	Neovim's answer to the mouse
 
-For Neovim version 0.7.0
+For Neovim version 0.9.0
 
 ==============================================================================
 CONTENTS                                                         *leap-contents*
