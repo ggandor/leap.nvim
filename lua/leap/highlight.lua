@@ -11,10 +11,10 @@ end
 local M
 local function _2_(_, key)
   if (key == "label") then
-    if has_hl_group_3f("LeapLabel") then
-      return "LeapLabel"
-    else
+    if has_hl_group_3f("LeapLabelPrimary") then
       return "LeapLabelPrimary"
+    else
+      return "LeapLabel"
     end
   else
     return nil

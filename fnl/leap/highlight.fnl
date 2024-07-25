@@ -19,8 +19,9 @@
                     :backdrop "LeapBackdrop"}
                    {:__index (fn [_ key]
                                (when (= key :label)
-                                 (if (has-hl-group? "LeapLabel") "LeapLabel"
-                                     "LeapLabelPrimary")))})
+                                 (if (has-hl-group? "LeapLabelPrimary")
+                                     "LeapLabelPrimary"
+                                     "LeapLabel")))})
           :priority {:label 65535
                      :cursor 65534
                      :backdrop 65533}})
