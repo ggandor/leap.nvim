@@ -43,9 +43,9 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   if (relative_group == 1) then
     virttext = {{(label .. pad), hl.group.label}}
   elseif (relative_group == 2) then
-    virttext = {{(opts.concealed_label .. pad), hl.group.label}}
+    virttext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
   elseif ((relative_group > 2) and show_all_3f) then
-    virttext = {{(opts.concealed_label .. pad), hl.group.label}}
+    virttext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
   else
     virttext = nil
   end

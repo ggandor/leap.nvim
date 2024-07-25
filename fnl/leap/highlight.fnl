@@ -18,10 +18,14 @@
                    {:match "LeapMatch"
                     :backdrop "LeapBackdrop"}
                    {:__index (fn [_ key]
-                               (when (= key :label)
-                                 (if (has-hl-group? "LeapLabelPrimary")
-                                     "LeapLabelPrimary"
-                                     "LeapLabel")))})
+                               (if (= key :label)
+                                   (if (has-hl-group? "LeapLabelPrimary")
+                                       "LeapLabelPrimary"
+                                       "LeapLabel")
+                                   (= key :label-dimmed)
+                                   (if (has-hl-group? "LeapLabelSecondary")
+                                       "LeapLabelSecondary"
+                                       "LeapLabelDimmed")))})
           :priority {:label 65535
                      :cursor 65534
                      :backdrop 65533}})
@@ -84,6 +88,22 @@ so we set a temporary highlight on it to see where we are."
     (table.insert self.extmarks [(api.nvim_get_current_buf) id])))
 
 
+(fn blend [color1 color2 weight]
+  ; n = (r + g + b), as returned by `nvim_get_hl`
+  (fn ->rgb [n]
+    (let [r (math.floor (/ n 0x10000))
+          g (math.floor (% (/ n 0x100) 0x100))
+          b (% n 0x100)]
+      (values r g b)))
+
+  (let [(r1 g1 b1) (->rgb color1)
+        (r2 g2 b2) (->rgb color2)
+        r (+ (* r1 (- 1 weight)) (* r2 weight))
+        g (+ (* g1 (- 1 weight)) (* g2 weight))
+        b (+ (* b1 (- 1 weight)) (* b2 weight))]
+    (string.format "#%02x%02x%02x" r g b)))
+
+
 (fn M.init-highlight [self force?]
   (let [name vim.g.colors_name
         bg vim.o.background
@@ -124,8 +144,17 @@ so we set a temporary highlight on it to see where we are."
               ; the legacy group, `default` does not help in this case.
               (not (has-hl-group? "LeapLabelPrimary")))
       (each [group-name def-map (pairs defaults)]
-        (when (not force?) (tset def-map :default true))
-        (api.nvim_set_hl 0 group-name def-map)))))
+        (when (not force?) (set def-map.default true))
+        (api.nvim_set_hl 0 group-name def-map)))
+    ; Define LeapLabelDimmed.
+    (let [normal (vim.api.nvim_get_hl 0 {:name "Normal" :link false})
+          label* (vim.api.nvim_get_hl 0 {:name self.group.label :link false})]
+      ; E.g., the old default color scheme (`vim`) does not define Normal at all.
+      (when (and label*.bg normal.bg)
+        (set label*.bg (blend label*.bg normal.bg 0.7)))
+      (when (and label*.fg normal.fg)
+        (set label*.fg (blend label*.fg normal.bg 0.5)))
+      (vim.api.nvim_set_hl 0 self.group.label-dimmed label*))))
 
 
 M
