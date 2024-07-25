@@ -1,22 +1,20 @@
 local hl = require("leap.highlight")
 local opts = require("leap.opts")
-local _local_1_ = require("leap.util")
-local dec = _local_1_["dec"]
 local api = vim.api
 local map = vim.tbl_map
 local function set_beacon_to_match_hl(target)
   local virttext
-  local function _2_(_241)
+  local function _1_(_241)
     return (opts.substitute_chars[_241] or _241)
   end
-  virttext = table.concat(map(_2_, target.chars))
+  virttext = table.concat(map(_1_, target.chars))
   target.beacon = {0, {{virttext, hl.group.match}}}
   return nil
 end
 local function get_label_offset(target)
-  local _let_3_ = target["chars"]
-  local ch1 = _let_3_[1]
-  local ch2 = _let_3_[2]
+  local _let_2_ = target["chars"]
+  local ch1 = _let_2_[1]
+  local ch2 = _let_2_[2]
   if (ch1 == "\n") then
     return 0
   elseif (target["edge-pos?"] or (ch2 == "\n")) then
@@ -58,10 +56,10 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   end
   return nil
 end
-local function set_beacons(targets, _9_)
-  local group_offset = _9_["group-offset"]
-  local use_no_labels_3f = _9_["use-no-labels?"]
-  local phase = _9_["phase"]
+local function set_beacons(targets, _8_)
+  local group_offset = _8_["group-offset"]
+  local use_no_labels_3f = _8_["use-no-labels?"]
+  local phase = _8_["phase"]
   if use_no_labels_3f then
     if targets[1].chars then
       for _, target in ipairs(targets) do
@@ -111,21 +109,21 @@ local function resolve_conflicts(targets)
         local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _15_
-          local or_16_ = label_positions[(key_prefix .. col_label)]
-          if not or_16_ then
+          local _14_
+          local or_15_ = label_positions[(key_prefix .. col_label)]
+          if not or_15_ then
             if shifted_label_3f then
-              or_16_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
+              or_15_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
             else
-              or_16_ = nil
+              or_15_ = nil
             end
           end
-          if not or_16_ then
-            or_16_ = unlabeled_match_positions[(key_prefix .. col_label)]
+          if not or_15_ then
+            or_15_ = unlabeled_match_positions[(key_prefix .. col_label)]
           end
-          _15_ = or_16_
-          if (nil ~= _15_) then
-            local other = _15_
+          _14_ = or_15_
+          if (nil ~= _14_) then
+            local other = _14_
             other.beacon = nil
             set_beacon_to_empty_label(target)
           else
@@ -135,17 +133,17 @@ local function resolve_conflicts(targets)
       else
         local col_ch3 = (col_ch2 + string.len(target.chars[2]))
         do
-          local _19_
-          local or_20_ = label_positions[(key_prefix .. col_ch1)]
-          if not or_20_ then
-            or_20_ = label_positions[(key_prefix .. col_ch2)]
+          local _18_
+          local or_19_ = label_positions[(key_prefix .. col_ch1)]
+          if not or_19_ then
+            or_19_ = label_positions[(key_prefix .. col_ch2)]
           end
-          if not or_20_ then
-            or_20_ = label_positions[(key_prefix .. col_ch3)]
+          if not or_19_ then
+            or_19_ = label_positions[(key_prefix .. col_ch3)]
           end
-          _19_ = or_20_
-          if (nil ~= _19_) then
-            local other = _19_
+          _18_ = or_19_
+          if (nil ~= _18_) then
+            local other = _18_
             target.beacon = nil
             set_beacon_to_empty_label(other)
           else
@@ -160,9 +158,9 @@ local function resolve_conflicts(targets)
   return nil
 end
 local function light_up_beacon(target, endpos_3f)
-  local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
-  local lnum = _let_24_[1]
-  local col = _let_24_[2]
+  local _let_23_ = ((endpos_3f and target.endpos) or target.pos)
+  local lnum = _let_23_[1]
+  local col = _let_23_[2]
   local bufnr = target.wininfo.bufnr
   local offset = target.beacon[1]
   local virttext = target.beacon[2]

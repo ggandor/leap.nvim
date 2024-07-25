@@ -1,6 +1,5 @@
 (local hl (require "leap.highlight"))
 (local opts (require "leap.opts"))
-(local {: dec} (require "leap.util"))
 
 (local api vim.api)
 (local map vim.tbl_map)
