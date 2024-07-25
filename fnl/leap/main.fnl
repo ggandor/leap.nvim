@@ -461,7 +461,7 @@ char separately.
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
           pattern (search.prepare-pattern in1 ?in2)
-          kwargs {: backward? :target-windows ?target-windows}
+          kwargs {: backward? : offset :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 

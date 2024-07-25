@@ -83,7 +83,7 @@ window area.
 
 
 (fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
-                                   {: targets : backward?
+                                   {: targets : backward? : offset
                                     : whole-window? : skip-curpos?}]
   "Fill a table that will store the positions and other metadata of all
 in-window pairs that match `pattern`, in the order of discovery. The following
@@ -97,14 +97,26 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
-  (tset bounds 2 (dec (. bounds 2)))    ; the whole 2-char match should be visible
+  ; The whole 2-char match should be visible.
+  (tset bounds 2 (dec (. bounds 2)))
 
   (local (match-positions edge-pos-idx?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
 
+  ; It is desirable for a same-character sequence to behave as a chunk,
+  ; so if `offset` is positive, we want to match at the end, to include
+  ; or exclude the whole sequence:
+
+  ; ^ -> match position, | -> cursor with offset
+  ; xxxxxxy
+  ;     ^|     (forward +1)
+  ; xxxxxxy
+  ;     ^ |    (backward +2)
+  (local match-at-end? (> (or offset 0) 0))
+  (local match-at-start? (not match-at-end?))
+
   (var line-str nil)
   (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
-  (var prev-triplet? nil)
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= col curcol)))
       (when (not= line prev-match.line)
@@ -136,25 +148,20 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
                   triplet? (and overlap?
                                 ; Same pair? (Eq-classes & ignorecase considered.)
                                 (= (->representative-char ch2)
-                                   (->representative-char prev-match.ch2)))]
+                                   (->representative-char prev-match.ch2)))
+                  skip? (and triplet? (if backward? match-at-end? match-at-start?))]
               (set prev-match {: line : col : ch1 : ch2})
-              ; We would like to keep the first and _last_ match from a
-              ; `ccc...` sequence, so only remove the previous one if we
-              ; are still having a triplet.
-              (when (and prev-triplet? triplet?)
-                (table.remove targets))
-              (set prev-triplet? triplet?)
-              (table.insert targets
-                            {: wininfo
-                             : pos
-                             :chars [ch1 ch2]
-                             :edge-pos? (. edge-pos-idx? i)
-                             :previewable?
-                             (or (not opts.preview_filter)
-                                 (opts.preview_filter
-                                   (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
-                                   ch1
-                                   ch2))})))))))
+              (when (not skip?)
+                (when triplet? (table.remove targets))
+                (table.insert targets
+                              {: wininfo : pos :chars [ch1 ch2]
+                               :edge-pos? (. edge-pos-idx? i)
+                               :previewable?
+                               (or (not opts.preview_filter)
+                                   (opts.preview_filter
+                                     (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
+                                     ch1
+                                     ch2))}))))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
@@ -246,7 +253,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
 
-(fn get-targets [pattern {: backward? : target-windows}]
+(fn get-targets [pattern {: backward? : offset : target-windows}]
   (let [whole-window? target-windows
         source-winid (api.nvim_get_current_win)
         target-windows (or target-windows [source-winid])
@@ -260,7 +267,8 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
         (tset cursor-positions winid (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern
-                                     {: targets : backward? : whole-window?
+                                     {: targets : backward?
+                                      : offset : whole-window?
                                       :skip-curpos? (= winid source-winid)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))

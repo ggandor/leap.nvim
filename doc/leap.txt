@@ -204,6 +204,12 @@ Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
     vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
+Note: Same-character sequences (`xxxx...`) are matched at one position only -
+by default, at the beginning, but `<Plug>(leap-forward-to)` and
+`<Plug>(leap-backward-till)` matches at the end instead, so that in Visual and
+Operator-pending mode the sequence behaves as a chunk, and either the whole or
+none of it will be selected.
+
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
 

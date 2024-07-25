@@ -440,7 +440,7 @@ local function leap(kwargs)
   local function get_targets(in1, _3fin2)
     local search = require("leap.search")
     local pattern = search["prepare-pattern"](in1, _3fin2)
-    local kwargs0 = {["backward?"] = backward_3f, ["target-windows"] = _3ftarget_windows}
+    local kwargs0 = {["backward?"] = backward_3f, offset = offset, ["target-windows"] = _3ftarget_windows}
     local targets = search["get-targets"](pattern, kwargs0)
     local or_67_ = targets
     if not or_67_ then
