@@ -123,30 +123,30 @@
         leap (require "leap")
         op-mode? (: (vim.fn.mode true) :match "o")
         inc-select? (not op-mode?)]
-  ; Add `;` and `,` as traversal keys.
-  (local sk (vim.deepcopy leap.opts.special_keys))
-  (set sk.next_target (vim.fn.flatten
-                        (vim.list_extend [";"] [sk.next_target])))
-  (set sk.prev_target (vim.fn.flatten
-                        (vim.list_extend [","] [sk.prev_target])))
+    ; Add `;` and `,` as traversal keys.
+    (local sk (vim.deepcopy leap.opts.special_keys))
+    (set sk.next_target (vim.fn.flatten
+                          (vim.list_extend [";"] [sk.next_target])))
+    (set sk.prev_target (vim.fn.flatten
+                          (vim.list_extend [","] [sk.prev_target])))
 
-  (local (ok? context) (pcall require "treesitter-context"))
-  (local context? (and ok? (context.enabled)))
-  (when context? (context.disable))
+    (local (ok? context) (pcall require "treesitter-context"))
+    (local context? (and ok? (context.enabled)))
+    (when context? (context.disable))
 
-  (leap.leap {:target_windows [(api.nvim_get_current_win)]
-              :targets get-targets
-              :action select-range
-              :traversal inc-select?  ; allow traversal for the custom action
-              :opts (vim.tbl_extend :keep
-                      (or kwargs.opts {})
-                      {:labels (when inc-select? "")  ; force autojump
-                       :on_beacons (when inc-select? fill-cursor-pos)
-                       :virt_text_pos "inline"
-                       :special_keys sk})})
+    (leap.leap {:target_windows [(api.nvim_get_current_win)]
+                :targets get-targets
+                :action select-range
+                :traversal inc-select?  ; allow traversal for the custom action
+                :opts (vim.tbl_extend :keep
+                        (or kwargs.opts {})
+                        {:labels (when inc-select? "")  ; force autojump
+                         :on_beacons (when inc-select? fill-cursor-pos)
+                         :virt_text_pos "inline"
+                         :special_keys sk})})
 
-  (when inc-select? (clear-fill))
-  (when context? (context.enable))))
+    (when inc-select? (clear-fill))
+    (when context? (context.enable))))
 
 
 {: select}
