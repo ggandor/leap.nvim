@@ -204,6 +204,7 @@ an autojump. (In short: always err on the safe side.)
         [offset virttext] target.beacon
         opts {:virt_text virttext
               :virt_text_pos (or opts.virt_text_pos "overlay")
+              :strict false
               :hl_mode "combine"
               :priority hl.priority.label}]
     (local id (api.nvim_buf_set_extmark

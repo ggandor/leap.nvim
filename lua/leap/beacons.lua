@@ -164,7 +164,7 @@ local function light_up_beacon(target, endpos_3f)
   local bufnr = target.wininfo.bufnr
   local offset = target.beacon[1]
   local virttext = target.beacon[2]
-  local opts0 = {virt_text = virttext, virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label}
+  local opts0 = {virt_text = virttext, virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false}
   local id = api.nvim_buf_set_extmark(bufnr, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
   return table.insert(hl.extmarks, {bufnr, id})
 end
