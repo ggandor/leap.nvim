@@ -75,7 +75,9 @@
   ; Move to the start. This might be more intuitive for incremental
   ; selection, when the whole range is not visible - nodes are usually
   ; harder to identify at their end.
-  (vim.cmd "normal! o"))
+  (vim.cmd "normal! o")
+  ; Force redrawing the selection if the text has been scrolled.
+  (pcall api.nvim__redraw {:flush true}))  ; EXPERIMENTAL
 
 
 (local ns (api.nvim_create_namespace ""))
