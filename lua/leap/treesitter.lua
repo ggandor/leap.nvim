@@ -22,32 +22,29 @@ local function nodes__3etargets(nodes)
   local linewise_3f = vim.fn.mode(true):match("V")
   local targets = {}
   local prev_range = {}
-  local prev_line_range = {}
   for _, node in ipairs(nodes) do
     local startline, startcol, endline, endcol = node:range()
-    local range = {startline, startcol, endline, endcol}
-    local line_range = {startline, endline}
-    local remove_prev_3f
-    if linewise_3f then
-      remove_prev_3f = vim.deep_equal(line_range, prev_line_range)
-    else
-      remove_prev_3f = vim.deep_equal(range, prev_range)
-    end
     if not (linewise_3f and (startline == endline)) then
-      if remove_prev_3f then
-        table.remove(targets)
-      else
-      end
-      prev_range = range
-      prev_line_range = line_range
       local endline_2a = endline
       local endcol_2a = endcol
       if (endcol == 0) then
         endline_2a = (endline - 1)
-        endcol_2a = #vim.fn.getline(endline)
+        endcol_2a = (#vim.fn.getline((endline_2a + 1)) + 1)
       else
       end
-      table.insert(targets, {pos = {(startline + 1), (startcol + 1)}, endpos = {(endline_2a + 1), (endcol_2a + 1)}})
+      local range
+      if linewise_3f then
+        range = {startline, endline_2a}
+      else
+        range = {startline, startcol, endline_2a, endcol_2a}
+      end
+      if vim.deep_equal(range, prev_range) then
+        table.remove(targets)
+      else
+      end
+      prev_range = range
+      local target = {pos = {(startline + 1), (startcol + 1)}, endpos = {(endline_2a + 1), (endcol_2a + 1)}}
+      table.insert(targets, target)
     else
     end
   end
