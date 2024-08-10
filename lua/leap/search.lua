@@ -1,7 +1,5 @@
 local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
-local inc = _local_1_["inc"]
-local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local get_eq_class_of = _local_1_["get-eq-class-of"]
 local __3erepresentative_char = _local_1_["->representative-char"]
@@ -12,10 +10,10 @@ local pow = math["pow"]
 local function get_horizontal_bounds()
   local window_width = api.nvim_win_get_width(0)
   local textoff = vim.fn.getwininfo(api.nvim_get_current_win())[1].textoff
-  local offset_in_win = dec(vim.fn.wincol())
+  local offset_in_win = (vim.fn.wincol() - 1)
   local offset_in_editable_win = (offset_in_win - textoff)
   local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
-  local right_bound = (left_bound + dec((window_width - textoff)))
+  local right_bound = (left_bound + (window_width - textoff - 1))
   return {left_bound, right_bound}
 end
 local function get_match_positions(pattern, _2_, _3_)
@@ -98,7 +96,7 @@ local function get_targets_in_current_window(pattern, _12_)
   local curline = _local_13_[1]
   local curcol = _local_13_[2]
   local bounds = get_horizontal_bounds()
-  bounds[2] = dec(bounds[2])
+  bounds[2] = (bounds[2] - 1)
   local match_positions, edge_pos_idx_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local match_at_end_3f = ((offset or 0) > 0)
   local match_at_start_3f = not match_at_end_3f

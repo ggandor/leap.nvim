@@ -1,8 +1,6 @@
 (local opts (require "leap.opts"))
 
-(local {: inc
-        : dec
-        : get-cursor-pos
+(local {: get-cursor-pos
         : get-eq-class-of
         : ->representative-char}
        (require "leap.util"))
@@ -28,11 +26,11 @@ window area.
 "
   (let [window-width (api.nvim_win_get_width 0)
         textoff (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1 :textoff)
-        offset-in-win (dec (vim.fn.wincol))
+        offset-in-win (- (vim.fn.wincol) 1)
         offset-in-editable-win (- offset-in-win textoff)
         ; Screen column of the first visible column in the editable area.
         left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
-        right-bound (+ left-bound (dec (- window-width textoff)))]
+        right-bound (+ left-bound (- window-width textoff 1))]
     [left-bound right-bound]))
 
 
@@ -98,7 +96,7 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
   ; The whole 2-char match should be visible.
-  (tset bounds 2 (dec (. bounds 2)))
+  (tset bounds 2 (- (. bounds 2) 1))
 
   (local (match-positions edge-pos-idx?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
