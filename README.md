@@ -98,7 +98,7 @@ config (overrides `s`, `S` and `gs` in all modes):
 `lua require('leap').create_default_mappings()` (init.vim)
 
 <details>
-<summary>Alternative key mappings</summary>
+<summary>Alternative key mappings (bidirectional jump, etc.)</summary>
 
 Calling `require('leap').create_default_mappings()` is equivalent to:
 
@@ -150,35 +150,6 @@ require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
 -- invoking Leap.
 require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 ```
-
-</details>
-
-<details>
-<summary>Workaround for the duplicate cursor bug when autojumping</summary>
-
-For Neovim versions < 0.10 (https://github.com/neovim/neovim/issues/20793):
-
-```lua
--- Hide the (real) cursor when leaping, and restore it afterwards.
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=100')
-      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=0')
-      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-```
-
-Caveat: If you experience any problems after using the above snippet, check
-[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
-and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
 
 </details>
 
@@ -332,7 +303,8 @@ for _, tobj in ipairs(default_text_objects) do
 end
 ```
 
-A very handy custom mapping - remote line(s), with optional `count` (`y2aa`):
+A very handy custom mapping - remote line(s), with optional `count`
+(`y2aa{leap}`):
 
 ```lua
 vim.keymap.set({'x', 'o'}, 'aa', function ()
