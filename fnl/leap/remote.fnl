@@ -2,7 +2,8 @@
 
 
 (fn action [kwargs]
-  (local {: jumper : input} (or kwargs {}))
+  (local {: jumper : input :count use-count?} (or kwargs {}))
+  (local use-count? (not= use-count? false))
   (local mode (vim.fn.mode true))
 
   ; We are back in Normal mode when this call is executed, so _we_
@@ -97,7 +98,7 @@
       (if
         ; From Operator-pending: re-trigger the operation.
         (state.mode:match "no")
-        (let [count (if (> state.count 0) state.count "")
+        (let [count (if (and use-count? (> state.count 0)) state.count "")
               reg (.. "\"" state.register)
               force (state.mode:sub 3)]
           (feed (.. count reg vim.v.operator force)))

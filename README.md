@@ -322,6 +322,7 @@ local default_text_objects = {
   'aw', 'aW', 'as', 'ap', 'a[', 'a]', 'a(', 'a)', 'ab',
   'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
 }
+
 -- Create remote versions of all native text objects by inserting `r`
 -- into the middle (`iw` becomes `irw`, etc.):
 for _, tobj in ipairs(default_text_objects) do
@@ -329,6 +330,20 @@ for _, tobj in ipairs(default_text_objects) do
     require('leap.remote').action { input = tobj }
   end)
 end
+```
+
+A very handy custom mapping - remote line(s), with optional `count` (`y2aa`):
+
+```lua
+vim.keymap.set({'x', 'o'}, 'aa', function ()
+  -- Force linewise selection.
+  local V = vim.fn.mode(true):match('V') and '' or 'V'
+  -- In any case, do some movement, to trigger operations in O-p mode.
+  local input = vim.v.count > 1 and (vim.v.count - 1 .. 'j') or 'hl'
+  -- With `count=false` you can skip feeding count to the command
+  -- automatically (we need -1 here, see above).
+  require('leap.remote').action { input = V .. input, count = false }
+end)
 ```
 
 </details>

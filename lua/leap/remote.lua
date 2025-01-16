@@ -3,6 +3,8 @@ local function action(kwargs)
   local _local_1_ = (kwargs or {})
   local jumper = _local_1_["jumper"]
   local input = _local_1_["input"]
+  local use_count_3f = _local_1_["count"]
+  local use_count_3f0 = (use_count_3f ~= false)
   local mode = vim.fn.mode(true)
   local function default_jumper()
     local util = require("leap.util")
@@ -85,7 +87,7 @@ local function action(kwargs)
     vim.cmd("norm! m`")
     if state.mode:match("no") then
       local count
-      if (state.count > 0) then
+      if (use_count_3f0 and (state.count > 0)) then
         count = state.count
       else
         count = ""
