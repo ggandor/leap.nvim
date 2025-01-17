@@ -149,12 +149,15 @@ M["init-highlight"] = function(self, force_3f)
   end
   local normal = vim.api.nvim_get_hl(0, {name = "Normal", link = false})
   local label_2a = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
-  if ((type(label_2a.bg) == "number") and (type(normal.bg) == "number")) then
-    label_2a.bg = blend(label_2a.bg, normal.bg, 0.7)
-  else
-  end
-  if ((type(label_2a.fg) == "number") and (type(normal.fg) == "number")) then
-    label_2a.fg = blend(label_2a.fg, normal.bg, 0.5)
+  if (type(normal.bg) == "number") then
+    if (type(label_2a.bg) == "number") then
+      label_2a.bg = blend(label_2a.bg, normal.bg, 0.7)
+    else
+    end
+    if (type(label_2a.fg) == "number") then
+      label_2a.fg = blend(label_2a.fg, normal.bg, 0.5)
+    else
+    end
   else
   end
   return vim.api.nvim_set_hl(0, self.group["label-dimmed"], label_2a)
