@@ -149,11 +149,11 @@ M["init-highlight"] = function(self, force_3f)
   end
   local normal = vim.api.nvim_get_hl(0, {name = "Normal", link = false})
   local label_2a = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
-  if (label_2a.bg and normal.bg) then
+  if ((type(label_2a.bg) == "number") and (type(normal.bg) == "number")) then
     label_2a.bg = blend(label_2a.bg, normal.bg, 0.7)
   else
   end
-  if (label_2a.fg and normal.fg) then
+  if ((type(label_2a.fg) == "number") and (type(normal.fg) == "number")) then
     label_2a.fg = blend(label_2a.fg, normal.bg, 0.5)
   else
   end
