@@ -98,7 +98,8 @@ config (overrides `s`, `S` and `gs` in all modes):
 `lua require('leap').create_default_mappings()` (init.vim)
 
 <details>
-<summary>Alternative key mappings (bidirectional jump, etc.)</summary>
+<summary>Alternative key mappings and arrangements (bidirectional jump,
+etc.)</summary>
 
 Calling `require('leap').create_default_mappings()` is equivalent to:
 
@@ -108,31 +109,44 @@ vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
 vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 ```
 
-A suggested alternative arrangement (bidirectional `s` for Normal mode):
+Bidirectional `s` for Normal and Visual mode:
 
 ```lua
-vim.keymap.set('n',        's', '<Plug>(leap)')
+vim.keymap.set({'n', 'x'}, 's', '<Plug>(leap)')
 vim.keymap.set('n',        'S', '<Plug>(leap-from-window)')
-vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap-forward)')
-vim.keymap.set({'x', 'o'}, 'S', '<Plug>(leap-backward)')
+vim.keymap.set('o',        's', '<Plug>(leap-forward)')
+vim.keymap.set('o',        'S', '<Plug>(leap-backward)')
 ```
 
-Mapping to `<Plug>(leap)` is not recommended for Visual mode, as autojumping in
-a random direction might be too disorienting with the selection highlight on,
-and neither for Operator-pending mode, as dot-repeat cannot be used if the
-search is non-directional.
+Trade-off: Compared to using separate keys for the two directions, you will
+only get half as many autojumps on average.
 
-Note that compared to using separate keys for the two directions, you will get
-twice as many targets and thus half as many autojumps on average, but not
-needing to press the Shift key for backward motions might compensate for that.
-Another caveat is that you cannot traverse through the matches (`:h
-leap-traversal`), although invoking repeat right away (`:h leap-repeat`) can
-substitute for that.
+Jump to anywhere in Normal mode with one key:
 
-`<Plug>(leap)` sorts matches by euclidean distance from the cursor, with the
-exception that the current line, and on the current line, forward direction is
+```lua
+vim.keymap.set('n', 's', '<Plug>(leap-anywhere)')
+vim.keymap.set('x', 's', '<Plug>(leap)')
+vim.keymap.set('o', 's', '<Plug>(leap-forward)')
+vim.keymap.set('o', 'S', '<Plug>(leap-backward)')
+```
+
+Trade-off: if you have multiple windows open on the tab page, you will almost
+_never_ get an autojump, except if all targets are in the same window. (This is
+an intentional restriction: it would be too disorienting if the cursor could
+jump in/to a different window than your goal, right before selecting the
+target.)
+
+Note that when searching bidirectionally in the current window, Leap sorts
+matches by euclidean (beeline) distance from the cursor, with the exception
+that the current line you're on, and on that line, forward direction is
 prioritized. That is, you can always be sure that the targets right in front of
 you will be the first ones.
+
+Bidirectional search is not recommended for Operator-pending mode, as
+dot-repeat cannot be used if the search is non-directional. Also worth noting
+that in Normal and Visual mode you cannot traverse through the matches anymore
+(`:h leap-traversal`), although invoking repeat right away (`:h leap-repeat`)
+can substitute for that.
 
 See `:h leap-custom-mappings` for more.
 
@@ -445,26 +459,6 @@ If you are not convinced, just head to `:h leap-custom-mappings`.
 </details>
 
 ### Features
-
-<details>
-<summary>Search in all windows</summary>
-
-```lua
-vim.keymap.set('n', 's', function ()
-  require('leap').leap {
-    target_windows = require('leap.user').get_focusable_windows()
-  }
-end)
-```
-
-The additional trade-off here is that if you have multiple windows open on the
-tab page, then you will almost never get an autojump, except if all targets are
-in the same window (it would be too disorienting if the cursor could suddenly
-jump in/to a different window than your goal, right before selecting the
-target, not to mention that we don't want to change the state of a window we're
-not targeting).
-
-</details>
 
 <details>
 <summary>Smart case sensitivity, wildcard characters (one-way

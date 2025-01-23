@@ -31,6 +31,15 @@ local plug_mappings = {
     end
   },
   {
+    { 'n', 'x', 'o' },
+    '<Plug>(leap-anywhere)',
+    function ()
+      require('leap').leap {
+        target_windows = require('leap.util').get_focusable_windows()
+      }
+    end
+  },
+  {
     { 'n' },
     '<Plug>(leap-forward-to)',
     function () require('leap').leap {} end
