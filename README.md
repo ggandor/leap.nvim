@@ -167,6 +167,112 @@ Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
 Experimental features, APIs might be subject to change.
 
 <details>
+<summary>Remote operations ("spooky actions at a distance")</summary>
+
+Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
+and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature.
+
+This function allows you to perform an action in a remote location: it
+forgets the current mode or pending operator, lets you leap with the
+cursor (to anywhere on the tab page), then continues where it left off.
+Once an operation or insertion is finished, it moves the cursor back to
+the original position, as if you had operated from the distance.
+
+```lua
+-- If using the default mappings (`gs` for multi-window mode), you can
+-- map e.g. `gS` here.
+vim.keymap.set({'n', 'o'}, 'gs', function ()
+  require('leap.remote').action()
+end)
+```
+
+Example: `gs{leap}yap` yanks the paragraph at the position specified by
+`{leap}`. Note that this requires the same number of keystrokes as
+`ygs{leap}ap` (Operator-pending mode), but much more flexible, as it allows you
+to move around freely, or to visually select a region before operating on it
+(that is, mistakes can be corrected, and more complex selections are possible).
+It might be more intuitive too, since the jump does not tear the operator and
+the selection command apart.
+
+**Tips**
+
+* Swapping regions becomes moderately simple, without needing a custom
+  plugin: `d{region1}gs{leap}v{region2}pP`. Example (swapping two
+  words): `diwgs{leap}viwpP`.
+
+* As the remote mode is active until returning to Normal mode again (by
+  any means), `<ctrl-o>` becomes your friend in Insert mode, or when
+  doing change operations.
+
+**Icing on the cake, no. 1 - giving input ahead of time**
+
+The `input` parameter lets you feed keystrokes ahead of time, e.g. to
+automatically trigger visual selection (`v`) (so you can `gs{leap}apy`),
+or create a forced linewise version of the command (`V`):
+
+```lua
+vim.keymap.set({'n', 'o'}, 'gS', function ()
+  require('leap.remote').action { input = 'V' }
+end)
+```
+
+This also lets you create **remote text objects**, for an even more
+intuitive workflow (`yarp{leap}`):
+
+```lua
+local default_text_objects = {
+  'iw', 'iW', 'is', 'ip', 'i[', 'i]', 'i(', 'i)', 'ib',
+  'i>', 'i<', 'it', 'i{', 'i}', 'iB', 'i"', 'i\'', 'i`',
+  'aw', 'aW', 'as', 'ap', 'a[', 'a]', 'a(', 'a)', 'ab',
+  'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
+}
+
+-- Create remote versions of all native text objects by inserting `r`
+-- into the middle (`iw` becomes `irw`, etc.):
+for _, tobj in ipairs(default_text_objects) do
+  vim.keymap.set({'x', 'o'}, tobj:sub(1,1)..'r'..tobj:sub(2), function ()
+    require('leap.remote').action { input = tobj }
+  end)
+end
+```
+
+A very handy custom mapping - remote line(s), with optional `count`
+(`yaa{leap}`, `y3aa{leap}`):
+
+```lua
+vim.keymap.set({'x', 'o'}, 'aa', function ()
+  -- Force linewise selection.
+  local V = vim.fn.mode(true):match('V') and '' or 'V'
+  -- In any case, do some movement, to trigger operations in O-p mode.
+  local input = vim.v.count > 1 and (vim.v.count - 1 .. 'j') or 'hl'
+  -- With `count=false` you can skip feeding count to the command
+  -- automatically (we need -1 here, see above).
+  require('leap.remote').action { input = V .. input, count = false }
+end)
+```
+
+**Icing on the cake, no. 2 - automatic paste after yanking**
+
+With this, you can clone text objects or regions in the blink of an eye,
+even from another window.
+
+```lua
+vim.api.nvim_create_augroup('LeapRemote', {})
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'RemoteOperationDone',
+  group = 'LeapRemote',
+  callback = function (event)
+    -- Do not paste if some special register was in use.
+    if vim.v.operator == 'y' and event.data.register == '"' then
+      vim.cmd('normal! p')
+    end
+  end,
+})
+```
+
+</details>
+
+<details>
 <summary>Incremental treesitter node selection</summary>
 
 ```lua
@@ -210,113 +316,6 @@ operate on the current selection right away (`ga;;y`).
     require('leap.treesitter').select { opts = { special_keys = sk } }
   end)
   ```
-
-</details>
-
-<details>
-<summary>Remote operations ("spooky actions at a distance")</summary>
-
-Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
-and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature.
-
-This function allows you to perform an action in a remote location: it
-forgets the current mode or pending operator, lets you leap with the
-cursor (to anywhere on the tab page), then continues where it left off.
-Once an operation or insertion is finished, it moves the cursor back to
-the original position, as if you had operated from the distance.
-
-```lua
--- If using the default mappings (`gs` for multi-window mode), you can
--- map e.g. `gS` here.
-vim.keymap.set({'n', 'o'}, 'gs', function ()
-  require('leap.remote').action()
-end)
-```
-
-Example: `gs{leap}yap` yanks the paragraph at the position specified by
-`{leap}`. Getting used to the Normal-mode command is recommended over
-Operator-pending mode (`ygs{leap}ap`), since the former requires the
-same number of keystrokes, but it is much more flexible, as it allows
-you to move around freely, or to visually select a region before
-operating on it (that is, mistakes can be corrected, and more complex
-selections are possible). It might be more intuitive too, since the jump
-does not tear the operator and the selection command apart.
-
-**Tips**
-
-* Swapping regions becomes moderately simple, without needing a custom
-  plugin: `d{region1}gs{leap}v{region2}pP`. Example (swapping two
-  words): `diwgs{leap}viwpP`.
-
-* As the remote mode is active until returning to Normal mode again (by
-  any means), `<ctrl-o>` becomes your friend in Insert mode, or when
-  doing change operations.
-
-**Icing on the cake, no. 1 - automatic paste after yanking**
-
-With this, you can clone text objects or regions in the blink of an eye,
-even from another window.
-
-```lua
-vim.api.nvim_create_augroup('LeapRemote', {})
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'RemoteOperationDone',
-  group = 'LeapRemote',
-  callback = function (event)
-    -- Do not paste if some special register was in use.
-    if vim.v.operator == 'y' and event.data.register == '"' then
-      vim.cmd('normal! p')
-    end
-  end,
-})
-```
-
-**Icing on the cake, no. 2 - giving input ahead of time**
-
-The `input` parameter lets you feed keystrokes ahead of time, e.g. to
-automatically trigger visual selection (`v`) (so you can `gs{leap}apy`),
-or create a forced linewise version of the command (`V`):
-
-```lua
-vim.keymap.set({'n', 'o'}, 'gS', function ()
-  require('leap.remote').action { input = 'V' }
-end)
-```
-
-This also lets you create **remote text objects**, for an even more
-intuitive workflow (`yarp{leap}`):
-
-```lua
-local default_text_objects = {
-  'iw', 'iW', 'is', 'ip', 'i[', 'i]', 'i(', 'i)', 'ib',
-  'i>', 'i<', 'it', 'i{', 'i}', 'iB', 'i"', 'i\'', 'i`',
-  'aw', 'aW', 'as', 'ap', 'a[', 'a]', 'a(', 'a)', 'ab',
-  'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
-}
-
--- Create remote versions of all native text objects by inserting `r`
--- into the middle (`iw` becomes `irw`, etc.):
-for _, tobj in ipairs(default_text_objects) do
-  vim.keymap.set({'x', 'o'}, tobj:sub(1,1)..'r'..tobj:sub(2), function ()
-    require('leap.remote').action { input = tobj }
-  end)
-end
-```
-
-A very handy custom mapping - remote line(s), with optional `count`
-(`y2aa{leap}`):
-
-```lua
-vim.keymap.set({'x', 'o'}, 'aa', function ()
-  -- Force linewise selection.
-  local V = vim.fn.mode(true):match('V') and '' or 'V'
-  -- In any case, do some movement, to trigger operations in O-p mode.
-  local input = vim.v.count > 1 and (vim.v.count - 1 .. 'j') or 'hl'
-  -- With `count=false` you can skip feeding count to the command
-  -- automatically (we need -1 here, see above).
-  require('leap.remote').action { input = V .. input, count = false }
-end)
-```
 
 </details>
 
