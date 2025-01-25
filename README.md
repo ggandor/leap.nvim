@@ -131,7 +131,7 @@ vim.keymap.set('o', 'S', '<Plug>(leap-backward)')
 ```
 
 Trade-off: if you have multiple windows open on the tab page, you will almost
-_never_ get an autojump, except if all targets are in the same window. (This is
+never get an autojump, except if all targets are in the same window. (This is
 an intentional restriction: it would be too disorienting if the cursor could
 jump in/to a different window than your goal, right before selecting the
 target.)
@@ -157,12 +157,21 @@ See `:h leap-custom-mappings` for more.
 
 ```lua
 -- Define equivalence classes for brackets and quotes, in addition to
--- the default whitespace group.
+-- the default whitespace group:
 require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
 
--- Use the traversal keys to repeat the previous motion without explicitly
--- invoking Leap.
+-- Use the traversal keys to repeat the previous motion without
+-- explicitly invoking Leap:
 require('leap.user').set_repeat_keys('<enter>', '<backspace>')
+
+-- Define a preview filter (skip the middle of alphanumeric words):
+require('leap').opts.preview_filter =
+  function (ch0, ch1, ch2)
+    return not (
+      ch1:match('%s') or
+      ch0:match('%w') and ch1:match('%w') and ch2:match('%w')
+    )
+  end
 ```
 
 </details>
@@ -195,23 +204,18 @@ the original position, as if you had operated from the distance.
 ```lua
 -- If using the default mappings (`gs` for multi-window mode), you can
 -- map e.g. `gS` here.
-vim.keymap.set({'n', 'o'}, 'gs', function ()
+vim.keymap.set({'n', 'x', 'o'}, 'gs', function ()
   require('leap.remote').action()
 end)
 ```
 
-Example: `gs{leap}yap` yanks the paragraph at the position specified by
-`{leap}`. Note that this requires the same number of keystrokes as
-`ygs{leap}ap` (Operator-pending mode), but much more flexible, as it allows you
-to move around freely, or to visually select a region before operating on it
-(that is, mistakes can be corrected, and more complex selections are possible).
-It might be more intuitive too, since the jump does not tear the operator and
-the selection command apart.
+Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
+the position specified by `{leap}`.
 
 **Tips**
 
 * Swapping regions becomes moderately simple, without needing a custom
-  plugin: `d{region1}gs{leap}v{region2}pP`. Example (swapping two
+  plugin: `d{region1} gs{leap} v{region2} pP`. Example (swapping two
   words): `diwgs{leap}viwpP`.
 
 * As the remote mode is active until returning to Normal mode again (by
@@ -221,8 +225,8 @@ the selection command apart.
 **Icing on the cake, no. 1 - giving input ahead of time**
 
 The `input` parameter lets you feed keystrokes ahead of time, e.g. to
-automatically trigger visual selection (`v`) (so you can `gs{leap}apy`),
-or create a forced linewise version of the command (`V`):
+automatically trigger visual selection (`v`) (so you can `gs{leap}apy`), or
+create a forced linewise version of the command (`V`):
 
 ```lua
 vim.keymap.set({'n', 'o'}, 'gS', function ()
@@ -230,10 +234,13 @@ vim.keymap.set({'n', 'o'}, 'gS', function ()
 end)
 ```
 
-This also lets you create **remote text objects**, for an even more
+Consequently, you can create **remote text objects**, for an even more
 intuitive workflow (`yarp{leap}`):
 
 ```lua
+-- Create remote versions of all default text objects by inserting `r`
+-- into the middle (`iw` becomes `irw`, etc.):
+
 local default_text_objects = {
   'iw', 'iW', 'is', 'ip', 'i[', 'i]', 'i(', 'i)', 'ib',
   'i>', 'i<', 'it', 'i{', 'i}', 'iB', 'i"', 'i\'', 'i`',
@@ -241,8 +248,6 @@ local default_text_objects = {
   'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
 }
 
--- Create remote versions of all native text objects by inserting `r`
--- into the middle (`iw` becomes `irw`, etc.):
 for _, tobj in ipairs(default_text_objects) do
   vim.keymap.set({'x', 'o'}, tobj:sub(1,1)..'r'..tobj:sub(2), function ()
     require('leap.remote').action { input = tobj }
