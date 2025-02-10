@@ -256,10 +256,10 @@ Example configuration: >lua
     Note: Wildcard characters (non-mutual aliases) are not possible in Leap,
     for the same reason that supporting |smartcase| is not possible: we cannot
     read your mind, and decide on which label to show for |leap-preview|.
-    (Generally: having a `?` -> `[bc]` mapping, after pressing `a`, we either
-    label an `ab` match as part of the `ab` subset of matches - corresponding
-    to pressing `b` next -, or the potentially bigger `a[bc]` subset -
-    corresponding to pressing `?` next, the wildcard.)
+    (Generally: having any `*` -> `x|y|z` mapping, after pressing `a`, we
+    either label an `ax` match as an item in the `a(x|y|z)` match list -
+    pressing `*` next -, or the potentially smaller `ax` list - pressing `x`
+    next -, and there is no way to know which one to choose.)
 
                                                       *leap.opts.preview_filter*
 `preview_filter = nil`
@@ -414,7 +414,9 @@ Example - turning off |hlsearch| while leaping: >lua
       })
       vim.api.nvim_create_autocmd('User', {
         pattern = 'LeapLeave',
-        callback = function () vim.o.hlsearch = saved_hls end,
+        callback = function ()
+          vim.o.hlsearch = saved_hls
+        end,
       })
     end
 
@@ -422,9 +424,9 @@ The argument table passed to |leap.leap()| can be accessed at runtime via
 `require('leap').state.args`. This lets you customize anything on a per-call
 basis - just set a flag when calling |leap.leap()|: >lua
 
-    local function my_leap_func()
+    local function my_custom_leap_func()
       require('leap').leap {
-        my_leap_func = true,
+        called_my_custom_leap_func = true,
         -- other arguments...
       }
     end
@@ -432,10 +434,10 @@ basis - just set a flag when calling |leap.leap()|: >lua
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function (event)
-        if require('leap').state.args.my_leap_func then
+        if require('leap').state.args.called_my_custom_leap_func then
           -- Implement some special logic here, that will only apply to
-          -- my_leap_func(), and restore the state (if needed) in an
-          -- analogous `LeapLeave` autocommand.
+          -- my_custom_leap_func(), and restore the state (if needed) in
+          -- an analogous `LeapLeave` autocommand.
         end
       end
     })

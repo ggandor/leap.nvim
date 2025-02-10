@@ -224,34 +224,46 @@ the position specified by `{leap}`.
 
 **Icing on the cake, no. 1 - giving input ahead of time**
 
-The `input` parameter lets you feed keystrokes ahead of time, e.g. to
-automatically trigger visual selection (`v`) (so you can `gs{leap}apy`), or
-create a forced linewise version of the command (`V`):
+The `input` parameter lets you feed keystrokes automatically after the jump:
 
 ```lua
+-- Trigger visual selection right away, so that you can `gs{leap}apy`:
+vim.keymap.set({'n', 'o'}, 'gs', function ()
+  require('leap.remote').action { input = 'v' }
+end)
+-- Forced linewise version:
 vim.keymap.set({'n', 'o'}, 'gS', function ()
   require('leap.remote').action { input = 'V' }
 end)
+-- Remote K:
+vim.keymap.set('n', 'gK', function ()
+ require('leap.remote').action { input = 'K' }
+end)
+-- Remote gx:
+vim.keymap.set('n', 'gX', function ()
+ require('leap.remote').action { input = 'gx' }
+end)
 ```
 
-Consequently, you can create **remote text objects**, for an even more
-intuitive workflow (`yarp{leap}`):
+By feeding text objects as `input`, you can create **remote text objects**, for
+an even more intuitive workflow (`yarp{leap}` - "yank a remote paragraph
+at..."):
 
 ```lua
--- Create remote versions of all default text objects by inserting `r`
--- into the middle (`iw` becomes `irw`, etc.):
-
-local default_text_objects = {
-  'iw', 'iW', 'is', 'ip', 'i[', 'i]', 'i(', 'i)', 'ib',
-  'i>', 'i<', 'it', 'i{', 'i}', 'iB', 'i"', 'i\'', 'i`',
-  'aw', 'aW', 'as', 'ap', 'a[', 'a]', 'a(', 'a)', 'ab',
-  'a>', 'a<', 'at', 'a{', 'a}', 'aB', 'a"', 'a\'', 'a`',
-}
-
-for _, tobj in ipairs(default_text_objects) do
-  vim.keymap.set({'x', 'o'}, tobj:sub(1,1)..'r'..tobj:sub(2), function ()
-    require('leap.remote').action { input = tobj }
-  end)
+-- Create remote versions of all a/i text objects by inserting `r`
+-- into the middle (`iw` becomes `irw`, etc.).
+-- A trick to avoid having to create separate hardcoded mappings for
+-- each text object: when entering `ar`/`ir`, consume the next
+-- character, and create the input from that character concatenated to
+-- `a`/`i`.
+do
+  local remote_text_object = function (prefix)
+     local ok, ch = pcall(vim.fn.getcharstr)  -- pcall for handling <C-c>
+     if not ok or ch == vim.keycode('<esc>') then return end
+     require('leap.remote').action { input = prefix .. ch }
+  end
+  vim.keymap.set({'x', 'o'}, 'ar', function () remote_text_object('a') end)
+  vim.keymap.set({'x', 'o'}, 'ir', function () remote_text_object('i') end)
 end
 ```
 
@@ -272,8 +284,9 @@ end)
 
 **Icing on the cake, no. 2 - automatic paste after yanking**
 
-With this, you can clone text objects or regions in the blink of an eye,
-even from another window.
+With this, you can clone text objects or regions in the blink of an eye, even
+from another window (`yarp{leap}`, and voilà, the remote paragraph appears
+there):
 
 ```lua
 vim.api.nvim_create_augroup('LeapRemote', {})
@@ -319,9 +332,11 @@ operate on the current selection right away (`ga;;y`).
   out (only the outermost are kept among the ones that span the same line
   ranges).
 
-* You can set the trigger key (or the suffix of it) and its inverted case to
-  increase/decrease the selection (see
-  [clever-f.vim](https://github.com/rhysd/clever-f.vim)):
+* To increase/decrease the selection in a
+  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`gaaaAA...`
+  instead of `ga;;,,`), set the trigger key (or the suffix of it) and its
+  inverted case as temporary traversal keys for this specific call (`select()`
+  can take an `opts` argument, just like `leap()` - see `:h leap.leap()`):
 
   ```lua
   -- "clever-a"
@@ -527,25 +542,6 @@ require('leap').opts.preview_filter = function () return false end
 -- Or just set to grey directly, e.g. { fg = '#777777' },
 -- if Comment is saturated.
 vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
-```
-
-</details>
-
-<details>
-<summary>Lightspeed-style highlighting</summary>
-
-```lua
--- The below settings make Leap's highlighting closer to what you've been
--- used to in Lightspeed.
-
-vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' }) -- or some grey
-vim.api.nvim_set_hl(0, 'LeapMatch', {
-  -- For light themes, set to 'black' or similar.
-  fg = 'white', bold = true, nocombine = true,
-})
--- Deprecated option. Try it without this setting first, you might find
--- you don't even miss it.
-require('leap').opts.highlight_unlabeled_phase_one_targets = true
 ```
 
 </details>
