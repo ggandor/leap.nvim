@@ -6,19 +6,21 @@
   (local use-count? (not= use-count? false))
   (local mode (vim.fn.mode true))
 
-  ; We are back in Normal mode when this call is executed, so _we_
-  ; should tell Leap whether it is OK to autojump. Visual and
-  ; Operator-pending mode are both problematic, because we could only
-  ; re-trigger them inside the leap() call, with a custom action, and
-  ; that would prevent users from customizing the jumper.
-  ; If `input` is given, all bets are off - before moving on to a
-  ; labeled target, we would have to undo whatever action was taken
-  ; (practically impossible) -, so in that case also disable autojump
-  ; unconditionally.
   (fn default-jumper []
     (let [util (require "leap.util")
           leap (. (require "leap") :leap)]
-      (leap {:opts (and (or input (not= mode "n")) {:safe_labels ""})
+      ; We are back in Normal mode when this call is executed, so _we_
+      ; should tell Leap whether it is OK to autojump.
+      ; If `input` is given, all bets are off - before moving on to a
+      ; labeled target, we would have to undo whatever action was taken
+      ; (practically impossible) -, so in that case we disable autojump
+      ; unconditionally.
+      ; Visual and Operator-pending mode are also problematic, because
+      ; we could only re-trigger them inside the leap() call, with a
+      ; custom action, and that would prevent users from customizing the
+      ; jumper.
+      (leap {:opts (when (or input (not= mode "n"))
+                     {:safe_labels ""})
              :target_windows (util.get_focusable_windows)})))
 
   (local jumper (or jumper default-jumper))
@@ -70,10 +72,10 @@
        :callback (fn []
                    (local mode (vim.fn.mode true))
                    (if (and (mode:match "o") (= vim.v.operator "c"))
-                        (api.nvim_create_autocmd :ModeChanged
-                          {:pattern "i:n" :once true : callback})
-                        (api.nvim_create_autocmd :ModeChanged
-                          {:pattern "*:n" :once true : callback})))}))
+                       (api.nvim_create_autocmd :ModeChanged
+                         {:pattern "i:n" :once true : callback})
+                       (api.nvim_create_autocmd :ModeChanged
+                         {:pattern "*:n" :once true : callback})))}))
 
   (fn feed [seq]
     (when seq (api.nvim_feedkeys seq "n" false))
