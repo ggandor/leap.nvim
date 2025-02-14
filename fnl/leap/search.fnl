@@ -80,26 +80,21 @@ window area.
     (values match-positions edge-pos-idx?)))
 
 
-(fn get-targets-in-current-window [pattern  ; assumed to match 2 logical chars
-                                   {: targets : backward? : offset
+(fn get-targets-in-current-window [pattern targets
+                                   {: backward? : offset
                                     : whole-window? : skip-curpos?}]
   "Fill a table that will store the positions and other metadata of all
-in-window pairs that match `pattern`, in the order of discovery. The following
-attributes are set here for the target elements:
-
-wininfo   : dictionary (see `:h getwininfo()`)
-pos       : [lnum col] (1,1)-indexed tuple
-chars     : list of characters in the match
-edge-pos? : boolean (whether the match touches the right edge of the window)
-"
+in-window pairs that match `pattern`, in the order of discovery."
+  (local offset (or offset 0))
   (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
   ; The whole 2-char match should be visible.
   (tset bounds 2 (- (. bounds 2) 1))
 
-  (local (match-positions edge-pos-idx?)
-         (get-match-positions pattern bounds {: backward? : whole-window?}))
+  (local (match-positions edge-pos-idx?) (get-match-positions
+                                           pattern bounds
+                                           {: backward? : whole-window?}))
 
   ; It is desirable for a same-character sequence to behave as a chunk,
   ; so if `offset` is positive, we want to match at the end, to include
@@ -110,56 +105,67 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
   ;     ^|     (forward +1)
   ; xxxxxxy
   ;     ^ |    (backward +2)
-  (local match-at-end? (> (or offset 0) 0))
+  (local match-at-end? (> offset 0))
   (local match-at-start? (not match-at-end?))
 
   (var line-str nil)
   (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
+  (var add-target? false)
+
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= col curcol)))
       (when (not= line prev-match.line)
         (set line-str (vim.fn.getline line)))
+
       ; Extracting the actual characters from the buffer at the match
       ; position.
-      (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+      (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+      (var ch2 nil)
       (if (= ch1 "")
-          ; On EOL - in this case, we're adding another, virtual \n after the
-          ; real one, so that these can be targeted by pressing a newline alias
-          ; twice. (See also `prepare-pattern`.)
-          (table.insert targets
-                        {: wininfo
-                         : pos
-                         :chars ["\n" "\n"]
-                         :previewable? (or (not opts.preview_filter)
-                                           (opts.preview_filter "" "\n" "\n"))})
           (do
-            (var ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-            (when (= ch2 "") (set ch2 "\n"))  ; before EOL
-            (let [overlap? (and (= line prev-match.line)
-                                (if backward?
-                                    ; c1 c2
-                                    ;    p1 p2
-                                    (= col (- prev-match.col (ch1:len)))
-                                    ;    c1 c2
-                                    ; p1 p2
-                                    (= col (+ prev-match.col (prev-match.ch1:len)))))
-                  triplet? (and overlap?
-                                ; Same pair? (Eq-classes & ignorecase considered.)
-                                (= (->representative-char ch2)
-                                   (->representative-char prev-match.ch2)))
-                  skip? (and triplet? (if backward? match-at-end? match-at-start?))]
-              (set prev-match {: line : col : ch1 : ch2})
-              (when (not skip?)
-                (when triplet? (table.remove targets))
-                (table.insert targets
-                              {: wininfo : pos :chars [ch1 ch2]
-                               :edge-pos? (. edge-pos-idx? i)
-                               :previewable?
-                               (or (not opts.preview_filter)
-                                   (opts.preview_filter
-                                     (vim.fn.strpart line-str (- col 2) 1 true)  ; ch0
-                                     ch1
-                                     ch2))}))))))))
+            ; On EOL - in this case, we're adding another, virtual \n after the
+            ; real one, so that these can be targeted by pressing a newline
+            ; alias twice. (See also `prepare-pattern`.)
+            (set ch1 "\n")
+            (set ch2 "\n")
+            (set add-target? true))
+          (do
+            (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
+            (when (= ch2 "")  ; = ch1 is right before EOL
+              (set ch2 "\n"))
+            (local overlap? (and (= line prev-match.line)
+                                 (if backward?
+                                     ; c1 c2
+                                     ;    p1 p2
+                                     (= col (- prev-match.col (ch1:len)))
+                                     ;    c1 c2
+                                     ; p1 p2
+                                     (= col (+ prev-match.col (prev-match.ch1:len))))))
+            (local triplet? (and overlap?
+                                 ; Same pair? (Eq-classes & ignorecase considered.)
+                                 (= (->representative-char ch2)
+                                    (->representative-char prev-match.ch2))))
+            (set prev-match {: line : col : ch1 : ch2})
+            (local skip? (and triplet? (if backward? match-at-end? match-at-start?)))
+            (if skip?
+                (set add-target? false)
+                (do
+                  (when triplet? (table.remove targets))
+                  (set add-target? true)))))
+
+      (when add-target?
+        (table.insert
+          targets
+          {: wininfo
+           : pos
+           :edge-pos? (. edge-pos-idx? i)
+           :chars [ch1 ch2]
+           :previewable?
+           (or (not opts.preview_filter)
+               (if (= ch1 "\n")
+                   (opts.preview_filter "" ch1 "")
+                   (opts.preview_filter
+                     (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))})))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
@@ -264,9 +270,8 @@ edge-pos? : boolean (whether the match touches the right edge of the window)
       (when whole-window?
         (tset cursor-positions winid (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
-      (get-targets-in-current-window pattern
-                                     {: targets : backward?
-                                      : offset : whole-window?
+      (get-targets-in-current-window pattern targets
+                                     {: backward? : offset : whole-window?
                                       :skip-curpos? (= winid source-winid)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))
