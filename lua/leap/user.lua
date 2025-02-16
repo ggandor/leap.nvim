@@ -1,5 +1,5 @@
-local function create_default_mappings()
-  for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
+local function set_default_mappings()
+  for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap)", "Leap"}, {{"n"}, "S", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local modes = _1_[1]
     local lhs = _1_[2]
     local rhs = _1_[3]
@@ -10,7 +10,7 @@ local function create_default_mappings()
         vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
       else
         if (rhs_2a ~= rhs) then
-          local msg = ("leap.nvim: create_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
+          local msg = ("leap.nvim: set_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
           vim.notify(msg, vim.log.levels.WARN)
         else
         end
@@ -66,12 +66,33 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
   end
   return vim.keymap.set(modes, bwd_key, _11_, {silent = true, desc = _12_})
 end
-local function add_default_mappings(force_3f)
-  for _, _14_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
+local function create_default_mappings()
+  for _, _14_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local modes = _14_[1]
     local lhs = _14_[2]
     local rhs = _14_[3]
     local desc = _14_[4]
+    for _0, mode in ipairs(modes) do
+      local rhs_2a = vim.fn.mapcheck(lhs, mode)
+      if (rhs_2a == "") then
+        vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
+      else
+        if (rhs_2a ~= rhs) then
+          local msg = ("leap.nvim: create_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
+          vim.notify(msg, vim.log.levels.WARN)
+        else
+        end
+      end
+    end
+  end
+  return nil
+end
+local function add_default_mappings(force_3f)
+  for _, _17_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
+    local modes = _17_[1]
+    local lhs = _17_[2]
+    local rhs = _17_[3]
+    local desc = _17_[4]
     for _0, mode in ipairs(modes) do
       if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
         vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
@@ -82,10 +103,10 @@ local function add_default_mappings(force_3f)
   return nil
 end
 local function set_default_keymaps(force_3f)
-  for _, _16_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
-    local mode = _16_[1]
-    local lhs = _16_[2]
-    local rhs = _16_[3]
+  for _, _19_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
+    local mode = _19_[1]
+    local lhs = _19_[2]
+    local rhs = _19_[3]
     if (force_3f or ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0))) then
       vim.keymap.set(mode, lhs, rhs, {silent = true})
     else
@@ -99,10 +120,10 @@ local function setup(user_opts)
   end
   return nil
 end
-local function _18_()
+local function _21_()
   return require("leap.util").get_enterable_windows()
 end
-local function _19_()
+local function _22_()
   return require("leap.util").get_focusable_windows()
 end
-return {create_default_mappings = create_default_mappings, set_repeat_keys = set_repeat_keys, get_enterable_windows = _18_, get_focusable_windows = _19_, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
+return {set_default_mappings = set_default_mappings, set_repeat_keys = set_repeat_keys, get_enterable_windows = _21_, get_focusable_windows = _22_, create_default_mappings = create_default_mappings, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}

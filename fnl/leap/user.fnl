@@ -1,18 +1,17 @@
 ; Convenience functions for users.
 
-(fn create-default-mappings []
+(fn set-default-mappings []
   (each [_ [modes lhs rhs desc]
          (ipairs
-          [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
-           [[:n :x :o] "S"  "<Plug>(leap-backward)" "Leap backward"]
-           [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
+          [[[:n :x :o] "s" "<Plug>(leap)" "Leap"]
+           [[:n]       "S" "<Plug>(leap-from-window)" "Leap from window"]
            ])]
     (each [_ mode (ipairs modes)]
       (local rhs* (vim.fn.mapcheck lhs mode))
       (if (= rhs* "")
           (vim.keymap.set mode lhs rhs {:silent true :desc desc})
           (when (not= rhs* rhs)  ; make the call idempotent
-            (local msg (.. "leap.nvim: create_default_mappings() "
+            (local msg (.. "leap.nvim: set_default_mappings() "
                            "found conflicting mapping for " lhs ": " rhs*))
             (vim.notify msg vim.log.levels.WARN))))))
 
@@ -46,6 +45,24 @@
                    :desc (if relative-directions?
                              "Repeat leap in opposite direction"
                              "Repeat leap backward")}))
+
+
+; Deprecated.
+(fn create-default-mappings []
+  (each [_ [modes lhs rhs desc]
+         (ipairs
+          [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
+           [[:n :x :o] "S"  "<Plug>(leap-backward)" "Leap backward"]
+           [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
+           ])]
+    (each [_ mode (ipairs modes)]
+      (local rhs* (vim.fn.mapcheck lhs mode))
+      (if (= rhs* "")
+          (vim.keymap.set mode lhs rhs {:silent true :desc desc})
+          (when (not= rhs* rhs)  ; make the call idempotent
+            (local msg (.. "leap.nvim: create_default_mappings() "
+                           "found conflicting mapping for " lhs ": " rhs*))
+            (vim.notify msg vim.log.levels.WARN))))))
 
 
 ; Deprecated.
@@ -97,10 +114,12 @@
     (tset (require "leap.opts") :default k v)))
 
 
-{:create_default_mappings create-default-mappings
+{:set_default_mappings set-default-mappings
  :set_repeat_keys set-repeat-keys
  :get_enterable_windows #((. (require "leap.util") :get_enterable_windows))
  :get_focusable_windows #((. (require "leap.util") :get_focusable_windows))
+ ; ---
+ :create_default_mappings create-default-mappings
  :add_repeat_mappings set-repeat-keys
  :add_default_mappings add-default-mappings
  :set_default_keymaps set-default-keymaps

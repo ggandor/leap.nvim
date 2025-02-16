@@ -19,9 +19,9 @@ character to pick your target from multiple matches, similar to Sneak. The main
 novel idea in Leap is that **you get a preview of the target labels** - you can
 see which key you will need to press before you actually need to do that.
 
-- Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`). (Note: you can use a single key for the current
-  window or even the whole tab page, if you are okay with the trade-offs.)
+- Initiate the search in the current window (`s`) or in the other windows
+  (`S`). (Note: you can use a single key for the whole tab page, if you are
+  okay with the trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
   the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
@@ -91,62 +91,42 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
-config (overrides `s`, `S` and `gs` in all modes):
+config (overrides `s` in all modes, and `S` in Normal mode):
 
-`require('leap').create_default_mappings()` (init.lua)
+`require('leap').set_default_mappings()` (init.lua)
 
-`lua require('leap').create_default_mappings()` (init.vim)
+`lua require('leap').set_default_mappings()` (init.vim)
 
 <details>
-<summary>Alternative key mappings and arrangements (bidirectional jump,
-etc.)</summary>
+<summary>Alternative key mappings and arrangements</summary>
 
-Calling `require('leap').create_default_mappings()` is equivalent to:
+Calling `require('leap').set_default_mappings()` is equivalent to:
+
+```lua
+vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
+vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
+```
+
+Jump to anywhere in Normal mode with one key:
+
+```lua
+vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
+vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
+```
+
+Trade-off: if you have multiple windows open on the tab page, you will almost
+never get an automatic jump, except if all targets are in the same window.
+(This is an intentional restriction: it would be too disorienting if the cursor
+could jump in/to a different window than your goal, right before selecting the
+target.)
+
+Sneak-style:
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
 vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
 vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 ```
-
-Bidirectional `s` for Normal and Visual mode:
-
-```lua
-vim.keymap.set({'n', 'x'}, 's', '<Plug>(leap)')
-vim.keymap.set('n',        'S', '<Plug>(leap-from-window)')
-vim.keymap.set('o',        's', '<Plug>(leap-forward)')
-vim.keymap.set('o',        'S', '<Plug>(leap-backward)')
-```
-
-Trade-off: Compared to using separate keys for the two directions, you will
-only get half as many autojumps on average.
-
-Jump to anywhere in Normal mode with one key:
-
-```lua
-vim.keymap.set('n', 's', '<Plug>(leap-anywhere)')
-vim.keymap.set('x', 's', '<Plug>(leap)')
-vim.keymap.set('o', 's', '<Plug>(leap-forward)')
-vim.keymap.set('o', 'S', '<Plug>(leap-backward)')
-```
-
-Trade-off: if you have multiple windows open on the tab page, you will almost
-never get an autojump, except if all targets are in the same window. (This is
-an intentional restriction: it would be too disorienting if the cursor could
-jump in/to a different window than your goal, right before selecting the
-target.)
-
-Note that when searching bidirectionally in the current window, Leap sorts
-matches by euclidean (beeline) distance from the cursor, with the exception
-that the current line you're on, and on that line, forward direction is
-prioritized. That is, you can always be sure that the targets right in front of
-you will be the first ones.
-
-Bidirectional search is not recommended for Operator-pending mode, as
-dot-repeat cannot be used if the search is non-directional. Also worth noting
-that in Normal and Visual mode you cannot traverse through the matches anymore
-(`:h leap-traversal`), although invoking repeat right away (`:h leap-repeat`)
-can substitute for that.
 
 See `:h leap-custom-mappings` for more.
 
@@ -308,44 +288,44 @@ vim.api.nvim_create_autocmd('User', {
 <summary>Incremental treesitter node selection</summary>
 
 ```lua
-vim.keymap.set({'n', 'x', 'o'}, 'ga',  function ()
+vim.keymap.set({'x', 'o'}, 'S',  function ()
   require('leap.treesitter').select()
 end)
 
 -- Linewise.
-vim.keymap.set({'n', 'x', 'o'}, 'gA',
+vim.keymap.set({'x', 'o'}, 'S',
   'V<cmd>lua require("leap.treesitter").select()<cr>'
 )
 ```
 
-Besides choosing a label (`ga{label}`), in Normal/Visual mode you can also use
+Besides choosing a label (`S{label}`), in Normal/Visual mode you can also use
 the traversal keys for incremental selection (`;` and `,` are automatically
 added to the default keys). The labels are forced to be safe, so you can
-operate on the current selection right away (`ga;;y`).
+operate on the current selection right away (`S;;y`).
 
 **Tips**
 
 * The traversal can "wrap around" backwards, so you can select the root node
-  right away (`ga,`), instead of going forward (`ga;;;...`).
+  right away (`S,`), instead of going forward (`S;;;...`).
 
 * Linewise mode skips the current line, and redundant nodes are also filtered
   out (only the outermost are kept among the ones that span the same line
   ranges).
 
 * To increase/decrease the selection in a
-  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`gaaaAA...`
-  instead of `ga;;,,`), set the trigger key (or the suffix of it) and its
+  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`SSSss...`
+  instead of `S;;,,`), set the trigger key (or the suffix of it) and its
   inverted case as temporary traversal keys for this specific call (`select()`
   can take an `opts` argument, just like `leap()` - see `:h leap.leap()`):
 
   ```lua
-  -- "clever-a"
-  vim.keymap.set({'n', 'x', 'o'}, 'ga',  function ()
+  -- "clever-s"
+  vim.keymap.set({'n', 'x', 'o'}, 'S',  function ()
     local sk = vim.deepcopy(require('leap').opts.special_keys)
     -- The items in `special_keys` can be both strings or tables - the
     -- shortest workaround might be the below one:
-    sk.next_target = vim.fn.flatten(vim.list_extend({'a'}, {sk.next_target}))
-    sk.prev_target = vim.fn.flatten(vim.list_extend({'A'}, {sk.prev_target}))
+    sk.next_target = vim.fn.flatten(vim.list_extend({'S'}, {sk.next_target}))
+    sk.prev_target = vim.fn.flatten(vim.list_extend({'s'}, {sk.prev_target}))
 
     require('leap.treesitter').select { opts = { special_keys = sk } }
   end)

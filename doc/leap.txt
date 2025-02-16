@@ -25,15 +25,15 @@ is that you get a preview of the target labels - you can see which key you
 will need to press before you actually need to do that, resulting in a
 smoother overall experience.
 
-Key mappings should be defined explicitly. To start using the plugin with the
-default ones, call `require('leap').create_default_mappings()`.
-
 ==============================================================================
 USAGE                                                               *leap-usage*
 
-• Initiate the search in the forward (`s`) or backward (`S`) direction, or in
-  the other windows (`gs`). (For different arrangements, see
-  |leap-custom-mappings|.)
+Note: Key mappings should be defined explicitly. To start using the plugin
+with the default ones, call `require('leap').set_default_mappings()`. For
+custom mappings and arrangements, see |leap-custom-mappings|.
+
+• Initiate the search in the current window (`s`), or in the other windows
+  (`S`).
 • Start typing a 2-character pattern (`{char1}{char2}`).
 • After typing the first character, you see "labels" appearing next to some of
   the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
@@ -120,96 +120,81 @@ confusion (to be resolved in the next step):
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
 
-To set the defaults, call `require('leap').create_default_mappings()`.
+To set the defaults, call `require('leap').set_default_mappings()`.
 
-                                                        *leap_s*
-s{char1}{char2}         Jump forward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor is placed on
-                        {char1} |exclusive|.
+                                                        *leap_s* *leap_v_s*
+                                                        *leap_o_s*
+s{char1}{char2}         Jump to a visible occurrence of {char1}{char2} in the
+                        current window. The cursor is placed on {char1}
+                        |exclusive|.
                         To operate till the end of the line, use |o_v|, and
                         finish the pattern with a newline alias, e.g.
                         `yvs{char}<space>`. |leap.opts.equivalence_classes|
 
                                                         *leap_S*
-S{char1}{char2}         Jump backward to a labeled or [count]'th visible
-                        occurrence of {char1}{char2}. The cursor is placed on
-                        {char1} |exclusive|.
-
-                                                        *leap_gs*
-gs{char1}{char2}        Jump to a labeled occurrence of {char1}{char2} in one
+S{char1}{char2}         Jump to a visible occurrence of {char1}{char2} in one
                         of the other windows on the tab page. The cursor is
-                        placed on {char1} |exclusive|.
+                        placed on {char1}. Works only in Normal mode.
 
 ==============================================================================
 CUSTOM MAPPINGS                                            *leap-custom-mappings*
 
 Leap defines <Plug> keys aliasing calls to |leap.leap()|. To create custom
-motions different from the predefined ones, simply call the function with your
-preferred arguments instead. E.g., `<Plug>(leap-backward)` is a synonym for:
->lua
+motions different from the predefined ones, simply call the above function
+with your preferred arguments. E.g., `<Plug>(leap-backward)` is just a synonym
+for: >lua
     function () require('leap').leap { backward = true } end
 
 Available <Plug> keys ~
 
     Key                         |  Search scope   | Offset | |inclusive|
     ----------------------------|-----------------|--------|------------
+    *<Plug>(leap)*                |  Current window |        |
+    *<Plug>(leap-from-window)*    |  Other windows  |        |
+    *<Plug>(leap-anywhere)*       |  All windows    |        |
     *<Plug>(leap-forward)*        |  After cursor   |        |
     *<Plug>(leap-forward-to)*     |  After cursor   | +1 (*) | true
     *<Plug>(leap-forward-till)*   |  After cursor   | -1     | true
     *<Plug>(leap-backward)*       |  Before cursor  |        |
     *<Plug>(leap-backward-to)*    |  Before cursor  |        |
     *<Plug>(leap-backward-till)*  |  Before cursor  | +2     |
-    *<Plug>(leap)*                |  Current window |        |
-    *<Plug>(leap-from-window)*    |  Other windows  |        |
-    *<Plug>(leap-anywhere)*       |  All windows    |        |
 
 (*) Only in Visual and Operator-pending mode.
 
-Note that when searching bidirectionally in the current window
-(`<Plug>(leap)`, `<Plug>(leap-anywhere)`), Leap sorts matches by euclidean
-(beeline) distance from the cursor, with the exception that the current line
-you're on, and on that line, forward direction is prioritized. That is, you
-can always be sure that the targets right in front of you will be the first
-ones.
+Note: When searching bidirectionally in the current window (`<Plug>(leap)`,
+`<Plug>(leap-anywhere)`), Leap sorts matches by euclidean (beeline) distance
+from the cursor, with the exception that the current line you're on, and on
+that line, forward direction is prioritized. That is, you can always be sure
+that the targets right in front of you will be the first ones.
+
+Note: In case of bidirectional search, |leap-traversal| does not work, but
+invoking |leap-repeat| right away can substitute for that.
 
 Suggested arrangements ~
 
-Default: >lua
+1. Default: >lua
+
+    vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
+    vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
+
+2. Jump to anywhere in Normal mode with one key: >lua
+
+    vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
+    vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
+
+Trade-off: if you have multiple windows open on the tab page, you will almost
+never get |leap-autojump|, except if all targets are in the same window.
+(This is an intentional restriction: it would be too disorienting if the
+cursor could jump in/to a different window than your goal, right before
+selecting the target.)
+
+3. Sneak-style: >lua
 
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
-Bidirectional `s` for Normal and Visual mode: >lua
-
-    vim.keymap.set({'n', 'x'}, 's', '<Plug>(leap)')
-    vim.keymap.set({'n', 'x'}, 'S', '<Plug>(leap-from-window)')
-    vim.keymap.set('o',        's', '<Plug>(leap-forward)')
-    vim.keymap.set('o',        'S', '<Plug>(leap-backward)')
-
-Trade-off: Compared to using separate keys for the two directions, you will
-only get half as many |leap-autojump|s on average.
-
-Jump to anywhere in Normal mode with one key: >lua
-
-    vim.keymap.set('n', 's', '<Plug>(leap-anywhere)')
-    vim.keymap.set('x', 's', '<Plug>(leap)')
-    vim.keymap.set('o', 's', '<Plug>(leap-forward)')
-    vim.keymap.set('o', 'S', '<Plug>(leap-backward)')
-
-Trade-off: if you have multiple windows open on the tab page, you will almost
-never get an autojump, except if all targets are in the same window. (This is
-an intentional restriction: it would be too disorienting if the cursor could
-jump in/to a different window than your goal, right before selecting the
-target.)
-
-Bidirectional search is not recommended for Operator-pending mode, as
-|leap-dot-repeat| cannot be used if the search is non-directional. Also worth
-noting that in Normal and Visual mode you cannot traverse through the matches
-anymore (|leap-traversal|), although invoking repeat right away
-(|leap-repeat|) can substitute for that.
-
-Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
+4. Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
 
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward-to)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
