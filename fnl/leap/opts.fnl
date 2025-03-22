@@ -1,6 +1,7 @@
 (local M {:default {:preview_filter nil
                     :max_phase_one_targets nil                    ; deprecated
                     :highlight_unlabeled_phase_one_targets false  ; deprecated
+                    :highlighted_slice_index 0
                     :max_highlighted_traversal_targets 10
                     :case_sensitive false
                     :equivalence_classes [" \t\r\n"]
