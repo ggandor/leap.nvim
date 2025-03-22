@@ -65,7 +65,7 @@
             (when (or (not= phase 1) target.previewable?)
               (set-beacon-for-labeled target group-offset phase))
 
-            (and (= phase 1) target.previewable?
+            (and (= phase 1)
                  opts.highlight_unlabeled_phase_one_targets)
             (set-beacon-to-match-hl target)))))
 
