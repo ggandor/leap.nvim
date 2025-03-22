@@ -12,12 +12,10 @@
 ; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
 ; expects).
 
-
 (fn set-beacon-to-match-hl [target]
-  (local virttext (table.concat
-                    (map #(or (. opts.substitute_chars $) $) target.chars)))
-  (set target.beacon [0 [[virttext hl.group.match]]]))
-
+  (let [virttext (table.concat (map #(or (. opts.substitute_chars $) $)
+                                    target.chars))]
+    (set target.beacon [0 [[virttext hl.group.match]]])))
 
 ; Handling multibyte characters.
 (fn get-label-offset [target]
