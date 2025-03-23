@@ -283,6 +283,14 @@ Example configuration: >lua
     -- Disable preview altogether.
     function () return false end
 <
+                                   *leap.opts.highlight_target_range_for_phase2*
+`highlight_target_range_for_phase2 = 0`
+
+    The slice range of matched texts to be highlighted by `hl-LeapMatch` after
+    phase 1, during phase 2. Set `0` to disable the highlights; set a negative
+    number to slice backwards. For example, inputting "e" will highlight text
+    "eg" only at "g" with `-1`; none with `0`; "e" with `1`; "eg" with `2`.
+
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
 

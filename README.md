@@ -547,6 +547,15 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 </details>
 
 <details>
+<summary>Highlight only the next input candidates</summary>
+
+```lua
+require('leap').opts.highlight_target_range_for_phase2 = -1
+```
+
+</details>
+
+<details>
 <summary>Working with non-English text</summary>
 
 If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
