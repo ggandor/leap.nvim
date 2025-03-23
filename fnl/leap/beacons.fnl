@@ -13,19 +13,19 @@
 ; expects).
 
 (fn should-highlight-matches? []
-  (or (not= 0 opts.highlighted_slice_index)
+  (or (not= 0 opts.highlight_target_range_for_phase2)
       ;; TODO: Drop the compatibility for highlight_unlabeled_phase_one_targets.
       (when opts.highlight_unlabeled_phase_one_targets
-        (set opts.highlighted_slice_index 1)
+        (set opts.highlight_target_range_for_phase2 1)
         true)))
 
 (fn set-beacon-to-match-hl [target]
-  (let [offset (math.max 0 (- opts.highlighted_slice_index))
-        slice (if (< 0 opts.highlighted_slice_index)
-                  (vim.list_slice target.chars 1 opts.highlighted_slice_index)
+  (let [offset (math.max 0 (- opts.highlight_target_range_for_phase2))
+        slice (if (< 0 opts.highlight_target_range_for_phase2)
+                  (vim.list_slice target.chars 1 opts.highlight_target_range_for_phase2)
                   (vim.list_slice target.chars
                                   (- (length target.chars) 1
-                                     opts.highlighted_slice_index)))
+                                     opts.highlight_target_range_for_phase2)))
         virttext (table.concat (map #(or (. opts.substitute_chars $) $) slice))]
     (set target.beacon [offset [[virttext hl.group.match]]])))
 

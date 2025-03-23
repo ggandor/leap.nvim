@@ -3,10 +3,10 @@ local opts = require("leap.opts")
 local api = vim.api
 local map = vim.tbl_map
 local function should_highlight_matches_3f()
-  local or_1_ = (0 ~= opts.highlighted_slice_index)
+  local or_1_ = (0 ~= opts.highlight_target_range_for_phase2)
   if not or_1_ then
     if opts.highlight_unlabeled_phase_one_targets then
-      opts.highlighted_slice_index = 1
+      opts.highlight_target_range_for_phase2 = 1
       or_1_ = true
     else
       or_1_ = nil
@@ -15,12 +15,12 @@ local function should_highlight_matches_3f()
   return or_1_
 end
 local function set_beacon_to_match_hl(target)
-  local offset = math.max(0, ( - opts.highlighted_slice_index))
+  local offset = math.max(0, ( - opts.highlight_target_range_for_phase2))
   local slice
-  if (0 < opts.highlighted_slice_index) then
-    slice = vim.list_slice(target.chars, 1, opts.highlighted_slice_index)
+  if (0 < opts.highlight_target_range_for_phase2) then
+    slice = vim.list_slice(target.chars, 1, opts.highlight_target_range_for_phase2)
   else
-    slice = vim.list_slice(target.chars, (#target.chars - 1 - opts.highlighted_slice_index))
+    slice = vim.list_slice(target.chars, (#target.chars - 1 - opts.highlight_target_range_for_phase2))
   end
   local virttext
   local function _4_(_241)
