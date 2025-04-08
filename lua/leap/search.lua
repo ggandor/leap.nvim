@@ -248,9 +248,9 @@ local function prepare_pattern(in1, _3fin2)
     return ("\\(" .. pattern .. "\\)")
   end
   local function expand_to_equivalence_class(char)
-    local tmp_3_auto = get_eq_class_of(char)
-    if (nil ~= tmp_3_auto) then
-      return char_list_to_branching_regexp(tmp_3_auto)
+    local tmp_3_ = get_eq_class_of(char)
+    if (nil ~= tmp_3_) then
+      return char_list_to_branching_regexp(tmp_3_)
     else
       return nil
     end
@@ -277,6 +277,7 @@ end
 local function get_targets(pattern, _48_)
   local backward_3f = _48_["backward?"]
   local offset = _48_["offset"]
+  local op_mode_3f = _48_["op-mode?"]
   local target_windows = _48_["target-windows"]
   local whole_window_3f = target_windows
   local source_winid = api.nvim_get_current_win()
@@ -306,6 +307,28 @@ local function get_targets(pattern, _48_)
   end
   if not empty_3f(targets) then
     if whole_window_3f then
+      if (op_mode_3f and curr_win_only_3f) then
+        local _local_53_ = cursor_positions[source_winid]
+        local curline = _local_53_[1]
+        local curcol = _local_53_[2]
+        local first_after = (1 + #targets)
+        local stop_3f = false
+        for i, t in ipairs(targets) do
+          if stop_3f then break end
+          if ((t.pos[1] > curline) or ((t.pos[1] == curline) and (t.pos[2] >= curcol))) then
+            first_after = i
+            stop_3f = true
+          else
+          end
+        end
+        for i = 1, (first_after - 1) do
+          targets[i]["idx"] = (i - first_after)
+        end
+        for i = first_after, #targets do
+          targets[i]["idx"] = (i - (first_after - 1))
+        end
+      else
+      end
       sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
     else
     end

@@ -22,7 +22,7 @@
 (local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
-(local {: ceil : floor : max : min} math)
+(local {: abs : ceil : floor : max : min} math)
 
 
 ; Fennel utils ///1
@@ -461,7 +461,8 @@ char separately.
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
           pattern (search.prepare-pattern in1 ?in2)
-          kwargs {: backward? : offset :target-windows ?target-windows}
+          kwargs {: backward? : offset : op-mode?
+                  :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
 
@@ -512,21 +513,46 @@ char separately.
 
     (local dot-repeatable-call? (and dot-repeatable-op?
                                      (not invoked-dot-repeat?)
-                                     directional?
                                      (not= (type user-given-targets) :table)))
 
     (fn update-dot-repeat-state []
-      (set state.dot_repeat (vim.tbl_extend
-                              :error
+      (set state.dot_repeat (vim.tbl_extend :error
                               from-kwargs
                               {:callback user-given-targets
                                :in1 (and (not user-given-targets) in1)
                                :in2 (and (not user-given-targets) in2)
-                               : target_idx})))
+                               : target_idx}))
+      (when (not directional?)
+        (set state.dot_repeat.backward (< target_idx 0))
+        (set state.dot_repeat.target_idx (abs target_idx))))
 
     (when dot-repeatable-call?
       (update-dot-repeat-state)
       (set-dot-repeat*)))
+
+
+  (fn normalize-indexes-for-dot-repeat [targets]
+    "On a filtered sublist, update the directional indexes of the
+    targets, like:
+    -7 -4 -2   1  3  7
+    -->
+    -3 -2 -1   1  2  3
+    "
+    (local bwd [])
+    (local fwd [])
+    (each [_ t (ipairs targets)]
+      (if (< t.idx 0)
+          (table.insert bwd t.idx)
+          (table.insert fwd t.idx)))
+    (table.sort bwd #(> $1 $2))
+    (table.sort fwd)
+    (local new-idx {})
+    (collect [i idx (ipairs bwd) &into new-idx]
+      (values idx (- i)))
+    (collect [i idx (ipairs fwd) &into new-idx]
+      (values idx i))
+    (each [_ t (ipairs targets)]
+      (set t.idx (. new-idx t.idx))))
 
 
   ; Jump
@@ -710,7 +736,7 @@ char separately.
     ; Do this before `do-action`, because it might erase forced motion.
     ; (The `:normal` command in `jump.jump-to!` can change the state of
     ; `mode()`. See vim/vim#9332.)
-    (set-dot-repeat in1 nil n)
+    (set-dot-repeat in1 nil (if target.idx target.idx n))
     (do-action target)
     (when (can-traverse? targets)
       (traversal-loop targets 1 {:use-no-labels? true}))  ; REDRAW (LOOP)
@@ -727,10 +753,13 @@ char separately.
     ; are no sublists, and there _are_ targets.)
     (set st.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
+  (when (and (not= targets* targets) (. targets* 1 :idx))
+    (normalize-indexes-for-dot-repeat targets*))
 
   (fn exit-with-action-on* [idx]
-    (set-dot-repeat in1 ?in2 idx)
-    (do-action (. targets* idx))
+    (local target (. targets* idx))
+    (set-dot-repeat in1 ?in2 (if target.idx target.idx idx))
+    (do-action target)
     (exit*))
 
   (macro exit-with-action-on [idx]

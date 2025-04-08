@@ -257,7 +257,7 @@ in-window pairs that match `pattern`, in the order of discovery."
   (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
 
-(fn get-targets [pattern {: backward? : offset : target-windows}]
+(fn get-targets [pattern {: backward? : offset : op-mode? : target-windows}]
   (let [whole-window? target-windows
         source-winid (api.nvim_get_current_win)
         target-windows (or target-windows [source-winid])
@@ -276,7 +276,23 @@ in-window pairs that match `pattern`, in the order of discovery."
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))
     (when (not (empty? targets))
-      (when whole-window?
+      (when whole-window?  ; = bidirectional
+        ; Preserve directional indexes for dot-repeat...
+        (when (and op-mode? curr-win-only?)
+          (local [curline curcol] (. cursor-positions source-winid))
+          (var first-after (+ 1 (length targets)))  ; first idx after cursor pos
+          (var stop? false)
+          (each [i t (ipairs targets) &until stop?]
+            (when (or (> (. t :pos 1) curline)
+                      (and (= (. t :pos 1) curline)
+                           (>= (. t :pos 2) curcol)))
+              (set first-after i)
+              (set stop? true)))
+          (for [i 1 (- first-after 1)]
+            (set (. targets i :idx) (- i first-after)))
+          (for [i first-after (length targets)]
+            (set (. targets i :idx) (- i (- first-after 1)))))
+        ; ...before sorting.
         (sort-by-distance-from-cursor
           targets cursor-positions source-winid))
       targets)))
