@@ -98,24 +98,24 @@ Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed.
 
                                                          *leap-concealed-labels*
-Labels in subsequent groups are concealed with an empty block or a middle dot,
-depending on the color scheme. In |leap-preview| phase, some labels in the
-first group might be concealed too, marking that there is a conflict or
-potential source of confusion, that can only be resolved after entering the
-second input character.
+Labels in subsequent target groups are concealed with an empty block or a
+middle dot, depending on the color scheme, and also have a dimmed color.
 
-    The label is on top of an unlabeled match: >
-          xxy   text
-          ---
-          xxL   labeled match
-           xy   unlabeled match
-<
-    The label immediately follows an unlabeled match, or is on top of another
-    label (possible when the label has to be shifted left): >
-          xxy|  text at window edge, or y=end-of-line
-          ----
-           xL|  labeled match
-          xx?|  unlabeled or labeled match
+In |leap-preview| phase, certain labels might be concealed in the current
+target group too, marking that there is a conflict or potential source of
+confusion (to be resolved in the next step):
+
+1. Two overlapping matches at window edge or EOL, where at least one of them
+   is labeled. (A label beyond the edge would be shifted left a column, so
+   there is no way to know which match is the owner.)
+2. A label on top of another, unlabeled match. When typing quickly, this is
+   in any case unsafe and unacceptable.
+>
+                    #1            #2
+    text         ...aab|      ...abac...
+    match 1         aa?|         abL          L = label
+    match 2          a?|           ac         ? = potential label
+    preview      ...aa█|      ...ab█c...
 <
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
