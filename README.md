@@ -57,14 +57,14 @@ At the same time, it reduces mental effort to almost zero:
 - You _don't have to weigh alternatives_: a single universal motion type can be
   used in all non-trivial situations.
 
-- You _don't have to compose in your head_: one command achieves one logical
-  movement.
+- You _don't have to compose motions in your head_: one command achieves one
+  logical movement.
 
 - You _don't have to be aware of the context_: the eyes can keep focusing on the
   target the whole time.
 
-- You _don't have to make decisions on the fly_: the sequence you should enter
-  is determined from the very beginning.
+- You _don't have to make decisions on the fly_: the sequence you should type
+  is fixed from the start.
 
 - You _don't have to pause in the middle_: if typing at a moderate speed, at
   each step you already know what the immediate next keypress should be, and
@@ -135,23 +135,33 @@ See `:h leap-custom-mappings` for more.
 <details>
 <summary>Suggested additional tweaks</summary>
 
+Define a preview filter  (`:h leap.opts.preview_filter`):
+
 ```lua
--- Define equivalence classes for brackets and quotes, in addition to
--- the default whitespace group:
-require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
-
--- Use the traversal keys to repeat the previous motion without
--- explicitly invoking Leap:
-require('leap.user').set_repeat_keys('<enter>', '<backspace>')
-
--- Define a preview filter (skip the middle of alphanumeric words):
+-- Skip the middle of alphabetic words:
+--   foobar[quux]
+--   ^----^^^--^^
 require('leap').opts.preview_filter =
   function (ch0, ch1, ch2)
     return not (
       ch1:match('%s') or
-      ch0:match('%w') and ch1:match('%w') and ch2:match('%w')
+      ch0:match('%a') and ch1:match('%a') and ch2:match('%a')
     )
   end
+```
+
+Define equivalence classes for brackets and quotes, in addition to the default
+whitespace group:
+
+```lua
+require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
+```
+
+Use the traversal keys to repeat the previous motion without explicitly
+invoking Leap:
+
+```lua
+require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 ```
 
 </details>
@@ -269,10 +279,9 @@ from another window (`yarp{leap}`, and voilà, the remote paragraph appears
 there):
 
 ```lua
-vim.api.nvim_create_augroup('LeapRemote', {})
 vim.api.nvim_create_autocmd('User', {
   pattern = 'RemoteOperationDone',
-  group = 'LeapRemote',
+  group = vim.api.nvim_create_augroup('LeapRemote', {}),
   callback = function (event)
     -- Do not paste if some special register was in use.
     if vim.v.operator == 'y' and event.data.register == '"' then
@@ -291,11 +300,6 @@ vim.api.nvim_create_autocmd('User', {
 vim.keymap.set({'x', 'o'}, 'S',  function ()
   require('leap.treesitter').select()
 end)
-
--- Linewise.
-vim.keymap.set({'x', 'o'}, 'S',
-  'V<cmd>lua require("leap.treesitter").select()<cr>'
-)
 ```
 
 Besides choosing a label (`S{label}`), in Normal/Visual mode you can also use
@@ -305,29 +309,35 @@ operate on the current selection right away (`S;;y`).
 
 **Tips**
 
-* The traversal can "wrap around" backwards, so you can select the root node
-  right away (`S,`), instead of going forward (`S;;;...`).
+* It is worth using linewise mode (`VS`, `yVS`), as redundant nodes are
+  filtered out (only the outermost are kept in a given line range), making the
+  selection much more efficient.
 
-* Linewise mode skips the current line, and redundant nodes are also filtered
-  out (only the outermost are kept among the ones that span the same line
-  ranges).
+* Traversal can "wrap around" backwards, so you can select the root node right
+  away (`S,`), instead of going forward (`S;;;;;`).
 
 * To increase/decrease the selection in a
-  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`SSSss...`
-  instead of `S;;,,`), set the trigger key (or the suffix of it) and its
+  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`SSSSss`
+  instead of `S;;;,,`), set the trigger key (or the suffix of it) and its
   inverted case as temporary traversal keys for this specific call (`select()`
   can take an `opts` argument, just like `leap()` - see `:h leap.leap()`):
 
   ```lua
-  -- "clever-s"
+  -- "clever-S"
   vim.keymap.set({'n', 'x', 'o'}, 'S',  function ()
     local sk = vim.deepcopy(require('leap').opts.special_keys)
     -- The items in `special_keys` can be both strings or tables - the
     -- shortest workaround might be the below one:
     sk.next_target = vim.fn.flatten(vim.list_extend({'S'}, {sk.next_target}))
     sk.prev_target = vim.fn.flatten(vim.list_extend({'s'}, {sk.prev_target}))
-
-    require('leap.treesitter').select { opts = { special_keys = sk } }
+    -- Remove the temporary traversal keys from `safe_labels`.
+    local sl = {}
+    for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
+      if label ~= 'S' and label ~= 's' then table.insert(sl, label) end
+    end
+    require('leap.treesitter').select {
+      opts = { special_keys = sk, safe_labels = sl }
+    }
   end)
   ```
 
@@ -624,12 +634,11 @@ function leap_line_start(skip_range)
 end
 
 -- For maximum comfort, force linewise selection in the mappings:
-vim.keymap.set('x', '|', function ()
+vim.keymap.set({'x', 'o'}, '|', function ()
   -- Only force V if not already in it (otherwise it would exit Visual mode).
   if vim.fn.mode(1) ~= 'V' then vim.cmd('normal! V') end
   leap_line_start()
 end)
-vim.keymap.set('o', '|', "V<cmd>lua leap_line_start()<cr>")
 ```
 </details>
 
