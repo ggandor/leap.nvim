@@ -576,35 +576,86 @@ Some practical examples:
 <summary>Linewise motions</summary>
 
 ```lua
-local function get_line_starts(winid, skip_range)
-  local wininfo =  vim.fn.getwininfo(winid)[1]
-  local cur_line = vim.fn.line('.')
+-- ref: https://stackoverflow.com/a/6081639/14110650
+local function serialize_table(val, name, skipnewlines, depth)
+  skipnewlines = skipnewlines or false
+  depth = depth or 0
+  local tmp = string.rep(" ", depth)
+  if name then
+    tmp = tmp .. name .. " = "
+  end
+  if type(val) == "table" then
+    tmp = tmp .. "{" .. (not skipnewlines and "\n" or "")
+    for k, v in pairs(val) do
+      tmp = tmp
+        .. serialize_table(v, k, skipnewlines, depth + 1)
+        .. ","
+        .. (not skipnewlines and "\n" or "")
+    end
+    tmp = tmp .. string.rep(" ", depth) .. "}"
+  elseif type(val) == "number" then
+    tmp = tmp .. tostring(val)
+  elseif type(val) == "string" then
+    tmp = tmp .. string.format("%q", val)
+  elseif type(val) == "boolean" then
+    tmp = tmp .. (val and "true" or "false")
+  else
+    tmp = tmp .. '"[inserializeable datatype:' .. type(val) .. ']"'
+  end
+  return tmp
+end
+
+local function get_line_len(bufid, line_number)
+  local line_content =
+    vim.api.nvim_buf_get_lines(bufid, line_number - 1, line_number, false)[1]
+  return string.len(line_content)
+end
+
+local function get_line_targets(winid, skip_range, is_upward, keep_column)
+  local wininfo = vim.fn.getwininfo(winid)[1]
+  local bufid = vim.api.nvim_win_get_buf(winid)
+  local cur_line = vim.fn.line "."
+  local cur_col = vim.fn.col "."
   -- Skip lines close to the cursor.
   local skip_range = skip_range or 2
+  local keep_column = keep_column or false
+  local is_directional = is_upward ~= nil and true or false
 
   -- Get targets.
   local targets = {}
   local lnum = wininfo.topline
+  local cnum = 1
   while lnum <= wininfo.botline do
     local fold_end = vim.fn.foldclosedend(lnum)
     -- Skip folded ranges.
     if fold_end ~= -1 then
       lnum = fold_end + 1
     else
-      if (lnum < cur_line - skip_range) or (lnum > cur_line + skip_range) then
-        table.insert(targets, { pos = { lnum, 1 } })
+      if is_directional then
+        if is_upward and lnum > cur_line - skip_range then
+          break
+        elseif not is_upward and lnum < cur_line + skip_range then
+          goto continue
+        end
       end
+      if keep_column then
+        cnum = math.max(1, math.min(cur_col, get_line_len(bufid, lnum)))
+      end
+      if (lnum < cur_line - skip_range) or (lnum > cur_line + skip_range) then
+        table.insert(targets, { pos = { lnum, cnum } })
+      end
+      ::continue::
       lnum = lnum + 1
     end
   end
 
   -- Sort them by vertical screen distance from cursor.
-  local cur_screen_row = vim.fn.screenpos(winid, cur_line, 1)['row']
+  local cur_screen_row = vim.fn.screenpos(winid, cur_line, 1)["row"]
   local function screen_rows_from_cur(t)
-    local t_screen_row = vim.fn.screenpos(winid, t.pos[1], t.pos[2])['row']
+    local t_screen_row = vim.fn.screenpos(winid, t.pos[1], t.pos[2])["row"]
     return math.abs(cur_screen_row - t_screen_row)
   end
-  table.sort(targets, function (t1, t2)
+  table.sort(targets, function(t1, t2)
     return screen_rows_from_cur(t1) < screen_rows_from_cur(t2)
   end)
 
@@ -613,23 +664,60 @@ local function get_line_starts(winid, skip_range)
   end
 end
 
--- You can pass an argument to specify a range to be skipped
--- before/after the cursor (default is +/-2).
-function leap_line_start(skip_range)
+-- You can pass a table of arguments to specify the jump behavior:
+-- skip_range - range to be skipped before/after the cursor (default is +/-2)
+-- is_upward - set the jump direction, true - up, false - down (default nil - bidirectional)
+-- keep_column - whether to try to keep the column after the jump (default false)
+local function leap_vertically(args)
+  local args = args or {}
+  local skip_range = args.skip_range
+  local is_upward = args.is_upward
+  local keep_column = args.keep_column
   local winid = vim.api.nvim_get_current_win()
-  require('leap').leap {
+  require("leap").leap {
     target_windows = { winid },
-    targets = get_line_starts(winid, skip_range),
+    targets = get_line_targets(winid, skip_range, is_upward, keep_column),
   }
 end
 
 -- For maximum comfort, force linewise selection in the mappings:
-vim.keymap.set('x', '|', function ()
-  -- Only force V if not already in it (otherwise it would exit Visual mode).
-  if vim.fn.mode(1) ~= 'V' then vim.cmd('normal! V') end
-  leap_line_start()
-end)
-vim.keymap.set('o', '|', "V<cmd>lua leap_line_start()<cr>")
+-- Create mappings for "|", "<leader><leader>J", "<leader><leader>K",
+-- "<leader><leader>j", "<leader><leader>k" in normal, visual, and operator-pending modes.
+for key, args in pairs {
+  ["|"] = { { keep_column = true }, { desc = "Leap vertically" } },
+  ["<leader><leader>J"] = {
+    { is_upward = false },
+    { desc = "Leap to line start downwards" },
+  },
+  ["<leader><leader>K"] = {
+    { is_upward = true },
+    { desc = "Leap to line start upwards" },
+  },
+  ["<leader><leader>j"] = {
+    { is_upward = false, keep_column = true },
+    { desc = "Leap downwards" },
+  },
+  ["<leader><leader>k"] = {
+    { is_upward = true, keep_column = true },
+    { desc = "Leap upwards" },
+  },
+} do
+  for mode, rhs_expr in pairs {
+    n = function()
+      leap_vertically(args[1])
+    end,
+    x = function()
+      -- Only force V if not already in it (otherwise it would exit Visual mode).
+      if vim.fn.mode(1) ~= "V" then
+        vim.cmd "normal! V"
+      end
+      leap_vertically(args[1])
+    end,
+    o = "V<Cmd>lua leap_vertically(" .. serialize_table(args[1]):gsub("\n", "") .. ")<CR>",
+  } do
+    vim.keymap.set(mode, key, rhs_expr, args[2])
+  end
+end
 ```
 </details>
 
