@@ -12,12 +12,22 @@
 ; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
 ; expects).
 
+(fn should-highlight-matches? []
+  (or (not= 0 opts.highlight_target_range_for_phase2)
+      ;; TODO: Drop the compatibility for highlight_unlabeled_phase_one_targets.
+      (when opts.highlight_unlabeled_phase_one_targets
+        (set opts.highlight_target_range_for_phase2 1)
+        true)))
 
 (fn set-beacon-to-match-hl [target]
-  (local virttext (table.concat
-                    (map #(or (. opts.substitute_chars $) $) target.chars)))
-  (set target.beacon [0 [[virttext hl.group.match]]]))
-
+  (let [offset (math.max 0 (- opts.highlight_target_range_for_phase2))
+        slice (if (< 0 opts.highlight_target_range_for_phase2)
+                  (vim.list_slice target.chars 1 opts.highlight_target_range_for_phase2)
+                  (vim.list_slice target.chars
+                                  (- (length target.chars) 1
+                                     opts.highlight_target_range_for_phase2)))
+        virttext (table.concat (map #(or (. opts.substitute_chars $) $) slice))]
+    (set target.beacon [offset [[virttext hl.group.match]]])))
 
 ; Handling multibyte characters.
 (fn get-label-offset [target]
@@ -42,7 +52,7 @@
         ; in some way.
         ; (Note: We're keeping this on even after phase one - sudden
         ; visual changes should be avoided as much as possible.)
-        show-all? (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
+        show-all? (and ?phase (not (should-highlight-matches?)))
         virttext (if (= relative-group 1)
                      [[(.. label pad) hl.group.label]]
 
@@ -57,7 +67,9 @@
 
 (fn set-beacons [targets {: group-offset : use-no-labels? : phase}]
   (if use-no-labels?
-      (when (. targets 1 :chars)  ; user-given targets might not have :chars
+      ; user-given targets might not have :chars
+      (when (and (. targets 1 :chars)
+                 (should-highlight-matches?))
         (each [_ target (ipairs targets)]
           (set-beacon-to-match-hl target)))
       (each [_ target (ipairs targets)]
@@ -65,8 +77,8 @@
             (when (or (not= phase 1) target.previewable?)
               (set-beacon-for-labeled target group-offset phase))
 
-            (and (= phase 1) target.previewable?
-                 opts.highlight_unlabeled_phase_one_targets)
+            (and (= phase 1)
+                 (should-highlight-matches?))
             (set-beacon-to-match-hl target)))))
 
 
