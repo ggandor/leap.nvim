@@ -1,24 +1,24 @@
 local api = vim.api
 local function action(kwargs)
-  local _local_1_ = (kwargs or {})
-  local jumper = _local_1_["jumper"]
-  local input = _local_1_["input"]
-  local use_count_3f = _local_1_["count"]
+  local kwargs0 = (kwargs or {})
+  local jumper = kwargs0["jumper"]
+  local input = kwargs0["input"]
+  local use_count_3f = kwargs0["count"]
   local use_count_3f0 = (use_count_3f ~= false)
   local mode = vim.fn.mode(true)
   local function default_jumper()
     local util = require("leap.util")
     local leap = require("leap").leap
-    local _2_
+    local _1_
     if (input or (mode ~= "n")) then
-      _2_ = {safe_labels = ""}
+      _1_ = {safe_labels = ""}
     else
-      _2_ = nil
+      _1_ = nil
     end
-    return leap({opts = _2_, target_windows = util.get_focusable_windows()})
+    return leap({opts = _1_, target_windows = util.get_focusable_windows()})
   end
   local jumper0 = (jumper or default_jumper)
-  local state = {mode = mode, count = vim.v.count, register = vim.v.register}
+  local state = {args = kwargs0, mode = mode, count = vim.v.count, register = vim.v.register}
   local src_win = vim.fn.win_getid()
   local saved_view = vim.fn.winsaveview()
   local anch_ns = api.nvim_create_namespace("")
@@ -40,7 +40,7 @@ local function action(kwargs)
   local function restore_on_finish()
     local op_canceled_3f = false
     local ns_id
-    local function _5_(key, typed)
+    local function _4_(key, typed)
       if cancels_3f(key) then
         op_canceled_3f = true
         return nil
@@ -48,9 +48,9 @@ local function action(kwargs)
         return nil
       end
     end
-    ns_id = vim.on_key(_5_)
+    ns_id = vim.on_key(_4_)
     local callback
-    local function _7_()
+    local function _6_()
       restore()
       vim.on_key(nil, ns_id)
       if not op_canceled_3f then
@@ -59,8 +59,8 @@ local function action(kwargs)
         return nil
       end
     end
-    callback = vim.schedule_wrap(_7_)
-    local function _9_()
+    callback = vim.schedule_wrap(_6_)
+    local function _8_()
       local mode0 = vim.fn.mode(true)
       if (mode0:match("o") and (vim.v.operator == "c")) then
         return api.nvim_create_autocmd("ModeChanged", {pattern = "i:n", once = true, callback = callback})
@@ -68,7 +68,7 @@ local function action(kwargs)
         return api.nvim_create_autocmd("ModeChanged", {pattern = "*:n", once = true, callback = callback})
       end
     end
-    return api.nvim_create_autocmd("ModeChanged", {pattern = "*:*", once = true, callback = _9_})
+    return api.nvim_create_autocmd("ModeChanged", {pattern = "*:*", once = true, callback = _8_})
   end
   local function feed(seq)
     if seq then
@@ -88,7 +88,7 @@ local function action(kwargs)
     api.nvim_feedkeys(state.mode, "n", false)
   else
   end
-  local function _14_()
+  local function _13_()
     jumper0()
     vim.cmd("norm! m`")
     if state.mode:match("no") then
@@ -108,6 +108,6 @@ local function action(kwargs)
     end
     return restore_on_finish()
   end
-  return vim.schedule(_14_)
+  return vim.schedule(_13_)
 end
 return {action = action}

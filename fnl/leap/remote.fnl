@@ -2,7 +2,8 @@
 
 
 (fn action [kwargs]
-  (local {: jumper : input :count use-count?} (or kwargs {}))
+  (local kwargs (or kwargs {}))
+  (local {: jumper : input :count use-count?} kwargs)
   (local use-count? (not= use-count? false))
   (local mode (vim.fn.mode true))
 
@@ -24,8 +25,9 @@
              :target_windows (util.get_focusable_windows)})))
 
   (local jumper (or jumper default-jumper))
-  ; `jumper` can mess with these.
-  (local state {: mode :count vim.v.count :register vim.v.register})
+  (local state {:args kwargs
+                ; `jumper` can mess with these.
+                : mode :count vim.v.count :register vim.v.register})
 
   (local src-win (vim.fn.win_getid))
   (local saved-view (vim.fn.winsaveview))
