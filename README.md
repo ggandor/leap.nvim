@@ -229,10 +229,6 @@ end)
 vim.keymap.set('n', 'gK', function ()
  require('leap.remote').action { input = 'K' }
 end)
--- Remote gx:
-vim.keymap.set('n', 'gX', function ()
- require('leap.remote').action { input = 'gx' }
-end)
 ```
 
 By feeding text objects as `input`, you can create **remote text objects**, for
@@ -264,7 +260,7 @@ A very handy custom mapping - remote line(s), with optional `count`
 vim.keymap.set({'x', 'o'}, 'aa', function ()
   -- Force linewise selection.
   local V = vim.fn.mode(true):match('V') and '' or 'V'
-  -- In any case, do some movement, to trigger operations in O-p mode.
+  -- In any case, move horizontally, to trigger operations.
   local input = vim.v.count > 1 and (vim.v.count - 1 .. 'j') or 'hl'
   -- With `count=false` you can skip feeding count to the command
   -- automatically (we need -1 here, see above).
@@ -297,43 +293,43 @@ vim.api.nvim_create_autocmd('User', {
 <summary>Incremental treesitter node selection</summary>
 
 ```lua
-vim.keymap.set({'x', 'o'}, 'S',  function ()
+vim.keymap.set({'x', 'o'}, 'R',  function ()
   require('leap.treesitter').select()
 end)
 ```
 
-Besides choosing a label (`S{label}`), in Normal/Visual mode you can also use
+Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
 the traversal keys for incremental selection (`;` and `,` are automatically
 added to the default keys). The labels are forced to be safe, so you can
-operate on the current selection right away (`S;;y`).
+operate on the current selection right away (`R;;y`).
 
 **Tips**
 
-* It is worth using linewise mode (`VS`, `yVS`), as redundant nodes are
+* It is worth using linewise mode (`VR`, `yVR`), as redundant nodes are
   filtered out (only the outermost are kept in a given line range), making the
   selection much more efficient.
 
 * Traversal can "wrap around" backwards, so you can select the root node right
-  away (`S,`), instead of going forward (`S;;;;;`).
+  away (`R,`), instead of going forward (`R;;;;;`).
 
 * To increase/decrease the selection in a
-  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`SSSSss`
-  instead of `S;;;,,`), set the trigger key (or the suffix of it) and its
+  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`RRRRrr`
+  instead of `R;;;,,`), set the trigger key (or the suffix of it) and its
   inverted case as temporary traversal keys for this specific call (`select()`
   can take an `opts` argument, just like `leap()` - see `:h leap.leap()`):
 
   ```lua
-  -- "clever-S"
-  vim.keymap.set({'n', 'x', 'o'}, 'S',  function ()
-    local sk = vim.deepcopy(require('leap').opts.special_keys)
+  -- "clever-R"
+  vim.keymap.set({'n', 'x', 'o'}, 'R',  function ()
+    local sk = vim.deepcopy(require'leap'.opts.special_keys)
     -- The items in `special_keys` can be both strings or tables - the
     -- shortest workaround might be the below one:
-    sk.next_target = vim.fn.flatten(vim.list_extend({'S'}, {sk.next_target}))
-    sk.prev_target = vim.fn.flatten(vim.list_extend({'s'}, {sk.prev_target}))
+    sk.next_target = vim.fn.flatten(vim.list_extend({'R'}, {sk.next_target}))
+    sk.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {sk.prev_target}))
     -- Remove the temporary traversal keys from `safe_labels`.
     local sl = {}
     for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
-      if label ~= 'S' and label ~= 's' then table.insert(sl, label) end
+      if label ~= 'R' and label ~= 'r' then table.insert(sl, label) end
     end
     require('leap.treesitter').select {
       opts = { special_keys = sk, safe_labels = sl }

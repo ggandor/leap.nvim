@@ -134,17 +134,16 @@ To set the defaults, call `require('leap').set_default_mappings()`.
 
                                                         *leap_s* *leap_v_s*
                                                         *leap_o_s*
-s{char1}{char2}         Jump to a visible occurrence of {char1}{char2} in the
-                        current window. The cursor is placed on {char1}
-                        |exclusive|.
+s{char1}{char2}         Jump to an occurrence of {char1}{char2} in the current
+                        window. The cursor is placed on {char1} |exclusive|.
                         To operate till the end of the line, use |o_v|, and
                         finish the pattern with a newline alias, e.g.
                         `yvs{char}<space>`. |leap.opts.equivalence_classes|
 
                                                         *leap_S*
-S{char1}{char2}         Jump to a visible occurrence of {char1}{char2} in one
-                        of the other windows on the tab page. The cursor is
-                        placed on {char1}. Works only in Normal mode.
+S{char1}{char2}         Jump to an occurrence of {char1}{char2} in one of the
+                        other windows on the tab page. The cursor is placed on
+                        {char1}. Works only in Normal mode.
 
 ==============================================================================
 CUSTOM MAPPINGS                                            *leap-custom-mappings*
@@ -250,11 +249,13 @@ Example configuration: >lua
                                                       *leap.opts.preview_filter*
 `preview_filter = nil`
 
-    [EXPERIMENTAL]
     A function that only lets through selected matches for |leap-preview|, to
     reduce visual noise. It gets three characters as arguments: the character
     preceding the match (might be an empty string) and the matched pair
     itself. Examples: >lua
+
+    -- Disable preview altogether.
+    function () return false end
 
     -- Skip the middle of alphabetic words:
     --   foobar[quux]
@@ -265,10 +266,11 @@ Example configuration: >lua
         ch0:match('%a') and ch1:match('%a') and ch2:match('%a')
       )
     end
-
-    -- Disable preview altogether.
-    function () return false end
 <
+    You can implement more involved checks here (camel case, keywords, you
+    name it), but keep in mind that this function will be called for every
+    single match, so efficiency is something to consider.
+
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
 
