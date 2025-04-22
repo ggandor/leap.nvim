@@ -4,7 +4,7 @@
                     :max_highlighted_traversal_targets 10
                     :case_sensitive false
                     :equivalence_classes [" \t\r\n"]
-                    :substitute_chars {}
+                    :substitute_chars {}                          ; deprecated
                     :safe_labels ["s" "f" "n" "u" "t" "/"
                                   "S" "F" "N" "L" "H" "M" "U" "G" "T" "Z" "?"]
                     :labels ["s" "f" "n"

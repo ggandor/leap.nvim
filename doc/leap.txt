@@ -217,7 +217,6 @@ their defaults.
 Example configuration: >lua
     local leap = require('leap')
     leap.opts.case_sensitive = true
-    leap.opts.substitute_chars = { ['\r'] = '¬' }
     leap.opts.special_keys.prev_target = '<s-enter>'
 <
                                                       *leap.opts.case_sensitive*
@@ -276,15 +275,6 @@ Example configuration: >lua
 
     Number of targets to be highlighted after the cursor in |leap-traversal|
     mode, if there are no labels used.
-
-                                                    *leap.opts.substitute_chars*
-`substitute_chars = {}`
-
-    The keys in this table will be substituted in labels and highlighted
-    matches by the given characters. This way special (e.g. whitespace)
-    characters can be made visible in matches, or even be used as labels.
-
-    Example: `{ ['\r'] = '¬' }`
 
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`

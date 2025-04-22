@@ -3,18 +3,23 @@ local opts = require("leap.opts")
 local api = vim.api
 local map = vim.tbl_map
 local function set_beacon_to_match_hl(target)
-  local virttext
-  local function _1_(_241)
-    return (opts.substitute_chars[_241] or _241)
+  local _local_1_ = target["chars"]
+  local ch1 = _local_1_[1]
+  local ch2 = _local_1_[2]
+  if (ch1 == "\n") then
+    target.beacon = {0, {virt_text = {{" ", hl.group.match}}}}
+    return nil
+  else
+    local col = target.pos[2]
+    local len = (ch1:len() + ((ch2 and (ch2 ~= "\n") and ch2:len()) or 0))
+    target.beacon = {0, {end_col = (col + len + -1), hl_group = hl.group.match}}
+    return nil
   end
-  virttext = table.concat(map(_1_, target.chars))
-  target.beacon = {0, {{virttext, hl.group.match}}}
-  return nil
 end
 local function get_label_offset(target)
-  local _let_2_ = target["chars"]
-  local ch1 = _let_2_[1]
-  local ch2 = _let_2_[2]
+  local _let_3_ = target["chars"]
+  local ch1 = _let_3_[1]
+  local ch2 = _let_3_[2]
   if (ch1 == "\n") then
     return 0
   elseif (target["edge-pos?"] or (ch2 == "\n")) then
@@ -39,27 +44,27 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   local label = (opts.substitute_chars[target.label] or target.label)
   local relative_group = (target.group - (_3fgroup_offset or 0))
   local show_all_3f = (_3fphase and not opts.highlight_unlabeled_phase_one_targets)
-  local virttext
+  local vtext
   if (relative_group == 1) then
-    virttext = {{(label .. pad), hl.group.label}}
+    vtext = {{(label .. pad), hl.group.label}}
   elseif (relative_group == 2) then
-    virttext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
+    vtext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
   elseif ((relative_group > 2) and show_all_3f) then
-    virttext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
+    vtext = {{(opts.concealed_label .. pad), hl.group["label-dimmed"]}}
   else
-    virttext = nil
+    vtext = nil
   end
-  if virttext then
-    target.beacon = {offset, virttext}
+  if vtext then
+    target.beacon = {offset, {virt_text = vtext}}
   else
     target.beacon = nil
   end
   return nil
 end
-local function set_beacons(targets, _8_)
-  local group_offset = _8_["group-offset"]
-  local use_no_labels_3f = _8_["use-no-labels?"]
-  local phase = _8_["phase"]
+local function set_beacons(targets, _9_)
+  local group_offset = _9_["group-offset"]
+  local use_no_labels_3f = _9_["use-no-labels?"]
+  local phase = _9_["phase"]
   if use_no_labels_3f then
     if targets[1].chars then
       for _, target in ipairs(targets) do
@@ -85,9 +90,10 @@ local function set_beacons(targets, _8_)
   end
 end
 local function resolve_conflicts(targets)
-  local function set_beacon_to_empty_label(target)
-    if target.beacon then
-      target["beacon"][2][1][1] = opts.concealed_label
+  local function set_beacon_to_concealed_label(target)
+    local vtext = target.beacon[2].virt_text
+    if vtext then
+      vtext[1][1] = opts.concealed_label
       return nil
     else
       return nil
@@ -109,23 +115,23 @@ local function resolve_conflicts(targets)
         local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _14_
-          local or_15_ = label_positions[(key_prefix .. col_label)]
-          if not or_15_ then
+          local _15_
+          local or_16_ = label_positions[(key_prefix .. col_label)]
+          if not or_16_ then
             if shifted_label_3f then
-              or_15_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
+              or_16_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
             else
-              or_15_ = nil
+              or_16_ = nil
             end
           end
-          if not or_15_ then
-            or_15_ = unlabeled_match_positions[(key_prefix .. col_label)]
+          if not or_16_ then
+            or_16_ = unlabeled_match_positions[(key_prefix .. col_label)]
           end
-          _14_ = or_15_
-          if (nil ~= _14_) then
-            local other = _14_
+          _15_ = or_16_
+          if (nil ~= _15_) then
+            local other = _15_
             other.beacon = nil
-            set_beacon_to_empty_label(target)
+            set_beacon_to_concealed_label(target)
           else
           end
         end
@@ -133,19 +139,19 @@ local function resolve_conflicts(targets)
       else
         local col_ch3 = (col_ch2 + string.len(target.chars[2]))
         do
-          local _18_
-          local or_19_ = label_positions[(key_prefix .. col_ch1)]
-          if not or_19_ then
-            or_19_ = label_positions[(key_prefix .. col_ch2)]
+          local _19_
+          local or_20_ = label_positions[(key_prefix .. col_ch1)]
+          if not or_20_ then
+            or_20_ = label_positions[(key_prefix .. col_ch2)]
           end
-          if not or_19_ then
-            or_19_ = label_positions[(key_prefix .. col_ch3)]
+          if not or_20_ then
+            or_20_ = label_positions[(key_prefix .. col_ch3)]
           end
-          _18_ = or_19_
-          if (nil ~= _18_) then
-            local other = _18_
+          _19_ = or_20_
+          if (nil ~= _19_) then
+            local other = _19_
             target.beacon = nil
-            set_beacon_to_empty_label(other)
+            set_beacon_to_concealed_label(other)
           else
           end
         end
@@ -158,13 +164,13 @@ local function resolve_conflicts(targets)
   return nil
 end
 local function light_up_beacon(target, endpos_3f)
-  local _let_23_ = ((endpos_3f and target.endpos) or target.pos)
-  local lnum = _let_23_[1]
-  local col = _let_23_[2]
+  local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
+  local lnum = _let_24_[1]
+  local col = _let_24_[2]
   local bufnr = target.wininfo.bufnr
   local offset = target.beacon[1]
-  local virttext = target.beacon[2]
-  local opts0 = {virt_text = virttext, virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false}
+  local opts_2a = target.beacon[2]
+  local opts0 = vim.tbl_extend("keep", opts_2a, {virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false})
   local id = api.nvim_buf_set_extmark(bufnr, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
   return table.insert(hl.extmarks, {bufnr, id})
 end

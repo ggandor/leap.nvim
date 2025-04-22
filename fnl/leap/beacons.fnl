@@ -7,16 +7,22 @@
 
 ; "Beacon" is an umbrella term for any kind of visual overlay tied to
 ; targets - in practice, either a label character, or a highlighting of
-; the match itself. Technically an [offset virtualtext] tuple, where
-; `offset` is counted from the match position, and `virtualtext` is a
-; list of [text hl-group] tuples (the kind that `nvim_buf_set_extmark`
-; expects).
+; the match itself. Technically an [offset extmark-opts] tuple, where
+; `offset` is counted from the match position, and `exmark-opts` is an
+; option table expected by `nvim_buf_set_extmark`.
 
 
 (fn set-beacon-to-match-hl [target]
-  (local virttext (table.concat
-                    (map #(or (. opts.substitute_chars $) $) target.chars)))
-  (set target.beacon [0 [[virttext hl.group.match]]]))
+  (local {:chars [ch1 ch2]} target)
+  (if (= ch1 "\n")
+      (set target.beacon [0 {:virt_text [[" " hl.group.match]]}])
+      (do
+        (local col (. target.pos 2))
+        (local len (+ (ch1:len)
+                      (or (and ch2 (not= ch2 "\n") (ch2:len))
+                          0)))
+        (set target.beacon
+             [0 {:end_col (+ col len -1) :hl_group hl.group.match}]))))
 
 
 ; Handling multibyte characters.
@@ -43,16 +49,16 @@
         ; (Note: We're keeping this on even after phase one - sudden
         ; visual changes should be avoided as much as possible.)
         show-all? (and ?phase (not opts.highlight_unlabeled_phase_one_targets))
-        virttext (if (= relative-group 1)
-                     [[(.. label pad) hl.group.label]]
+        vtext (if (= relative-group 1)
+                  [[(.. label pad) hl.group.label]]
 
-                     (= relative-group 2)
-                     [[(.. opts.concealed_label pad) hl.group.label-dimmed]]
+                  (= relative-group 2)
+                  [[(.. opts.concealed_label pad) hl.group.label-dimmed]]
 
-                     (and (> relative-group 2) show-all?)
-                     [[(.. opts.concealed_label pad) hl.group.label-dimmed]])]
+                  (and (> relative-group 2) show-all?)
+                  [[(.. opts.concealed_label pad) hl.group.label-dimmed]])]
     ; Set nil too (= switching off a beacon).
-    (set target.beacon (when virttext [offset virttext]))))
+    (set target.beacon (when vtext [offset {:virt_text vtext}]))))
 
 
 (fn set-beacons [targets {: group-offset : use-no-labels? : phase}]
@@ -102,9 +108,9 @@ unlabeled targets are set to be highlighted, and remove the match
 highlight instead, for a similar reason - to prevent (falsely) expecting
 an autojump. (In short: always err on the safe side.)
 "
-  (fn set-beacon-to-empty-label [target]
-    (when target.beacon
-      (tset target :beacon 2 1 1 opts.concealed_label)))
+  (fn set-beacon-to-concealed-label [target]
+    (local vtext (. target :beacon 2 :virt_text))  ; = labeled target
+    (when vtext (set (. vtext 1 1) opts.concealed_label)))
 
   ; Tables to help us check potential conflicts (we'll be filling
   ; them as we go):
@@ -163,7 +169,7 @@ an autojump. (In short: always err on the safe side.)
                       ;          ^
                       (. unlabeled-match-positions (->key col-label)))
                 other (do (set other.beacon nil)
-                          (set-beacon-to-empty-label target)))
+                          (set-beacon-to-concealed-label target)))
               ; Register positions.
               ; NOTE: We should NOT register the label position before
               ; checking case A, as we don't want to chase our own tail,
@@ -192,7 +198,7 @@ an autojump. (In short: always err on the safe side.)
                       ;          ^
                       (. label-positions (->key col-ch3)))
                 other (do (set target.beacon nil)
-                          (set-beacon-to-empty-label other)))
+                          (set-beacon-to-concealed-label other)))
                 ; Register positions.
               (tset unlabeled-match-positions (->key col-ch1) target)
               (tset unlabeled-match-positions (->key col-ch2) target)))))))
@@ -201,12 +207,12 @@ an autojump. (In short: always err on the safe side.)
 (fn light-up-beacon [target endpos?]
   (let [[lnum col] (or (and endpos? target.endpos) target.pos)
         bufnr target.wininfo.bufnr
-        [offset virttext] target.beacon
-        opts {:virt_text virttext
-              :virt_text_pos (or opts.virt_text_pos "overlay")
-              :strict false
-              :hl_mode "combine"
-              :priority hl.priority.label}]
+        [offset opts*] target.beacon
+        opts (vim.tbl_extend :keep opts*
+               {:virt_text_pos (or opts.virt_text_pos "overlay")
+                :strict false
+                :hl_mode "combine"
+                :priority hl.priority.label})]
     (local id (api.nvim_buf_set_extmark
                 bufnr hl.ns (- lnum 1) (+ col -1 offset) opts))
     ; Register each newly set extmark in a table, so that we can delete
