@@ -192,8 +192,6 @@ Once an operation or insertion is finished, it moves the cursor back to
 the original position, as if you had operated from the distance.
 
 ```lua
--- If using the default mappings (`gs` for multi-window mode), you can
--- map e.g. `gS` here.
 vim.keymap.set({'n', 'x', 'o'}, 'gs', function ()
   require('leap.remote').action()
 end)
@@ -221,14 +219,8 @@ The `input` parameter lets you feed keystrokes automatically after the jump:
 vim.keymap.set({'n', 'o'}, 'gs', function ()
   require('leap.remote').action { input = 'v' }
 end)
--- Forced linewise version:
-vim.keymap.set({'n', 'o'}, 'gS', function ()
-  require('leap.remote').action { input = 'V' }
-end)
--- Remote K:
-vim.keymap.set('n', 'gK', function ()
- require('leap.remote').action { input = 'K' }
-end)
+
+Other ideas: `V` (forced linewise), `K`, `gx`, etc.
 ```
 
 By feeding text objects as `input`, you can create **remote text objects**, for
@@ -245,7 +237,9 @@ at..."):
 do
   local remote_text_object = function (prefix)
      local ok, ch = pcall(vim.fn.getcharstr)  -- pcall for handling <C-c>
-     if not ok or ch == vim.keycode('<esc>') then return end
+     if not ok or (ch == vim.keycode('<esc>')) then
+       return
+     end
      require('leap.remote').action { input = prefix .. ch }
   end
   vim.keymap.set({'x', 'o'}, 'ar', function () remote_text_object('a') end)
@@ -323,13 +317,15 @@ operate on the current selection right away (`R;;y`).
   vim.keymap.set({'n', 'x', 'o'}, 'R',  function ()
     local sk = vim.deepcopy(require'leap'.opts.special_keys)
     -- The items in `special_keys` can be both strings or tables - the
-    -- shortest workaround might be the below one:
+    -- shortest workaround might be the below one.
     sk.next_target = vim.fn.flatten(vim.list_extend({'R'}, {sk.next_target}))
     sk.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {sk.prev_target}))
-    -- Remove the temporary traversal keys from `safe_labels`.
+    -- Remove these temporary traversal keys from `safe_labels`.
     local sl = {}
     for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
-      if label ~= 'R' and label ~= 'r' then table.insert(sl, label) end
+      if label ~= 'R' and label ~= 'r' then
+        table.insert(sl, label)
+      end
     end
     require('leap.treesitter').select {
       opts = { special_keys = sk, safe_labels = sl }
@@ -409,37 +405,6 @@ unique in that it
 * feels natural to use for both distant _and_ close targets
 
 ## FAQ
-
-### Bugs
-
-<details>
-<summary>Workaround for the duplicate cursor bug when autojumping</summary>
-
-For Neovim versions < 0.10 (https://github.com/neovim/neovim/issues/20793):
-
-```lua
--- Hide the (real) cursor when leaping, and restore it afterwards.
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapEnter',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=100')
-      vim.opt.guicursor:append { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-vim.api.nvim_create_autocmd('User', { pattern = 'LeapLeave',
-    callback = function()
-      vim.cmd.hi('Cursor', 'blend=0')
-      vim.opt.guicursor:remove { 'a:Cursor/lCursor' }
-    end,
-  }
-)
-```
-
-Caveat: If you experience any problems after using the above snippet, check
-[#70](https://github.com/ggandor/leap.nvim/issues/70#issuecomment-1521177534)
-and [#143](https://github.com/ggandor/leap.nvim/pull/143) to tweak it.
-
-</details>
 
 ### Defaults
 
