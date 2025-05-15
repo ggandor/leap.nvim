@@ -220,7 +220,7 @@ vim.keymap.set({'n', 'o'}, 'gs', function ()
   require('leap.remote').action { input = 'v' }
 end)
 
-Other ideas: `V` (forced linewise), `K`, `gx`, etc.
+-- Other ideas: `V` (forced linewise), `K`, `gx`, etc.
 ```
 
 By feeding text objects as `input`, you can create **remote text objects**, for
