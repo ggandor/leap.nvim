@@ -101,13 +101,13 @@ M["highlight-cursor"] = function(self)
   local id = api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
   return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
 end
+local function __3ergb(n)
+  local r = math.floor((n / 65536))
+  local g = math.floor(((n / 256) % 256))
+  local b = (n % 256)
+  return r, g, b
+end
 local function blend(color1, color2, weight)
-  local function __3ergb(n)
-    local r = math.floor((n / 65536))
-    local g = math.floor(((n / 256) % 256))
-    local b = (n % 256)
-    return r, g, b
-  end
   local r1, g1, b1 = __3ergb(color1)
   local r2, g2, b2 = __3ergb(color2)
   local r = ((r1 * (1 - weight)) + (r2 * weight))
@@ -115,28 +115,47 @@ local function blend(color1, color2, weight)
   local b = ((b1 * (1 - weight)) + (b2 * weight))
   return string.format("#%02x%02x%02x", r, g, b)
 end
+local function dimmed(def_map_2a)
+  local def_map = vim.deepcopy(def_map_2a)
+  local normal = vim.api.nvim_get_hl(0, {name = "Normal", link = false})
+  if (type(normal.bg) == "number") then
+    if (type(def_map.bg) == "number") then
+      def_map.bg = blend(def_map.bg, normal.bg, 0.7)
+    else
+    end
+    if (type(def_map.fg) == "number") then
+      def_map.fg = blend(def_map.fg, normal.bg, 0.5)
+    else
+    end
+  else
+  end
+  return def_map
+end
+local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}, ["leap-label-default-dark"] = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}, ["leap-match-default-light"] = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}, ["leap-match-default-dark"] = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}}
 M["init-highlight"] = function(self, force_3f)
-  local name = vim.g.colors_name
-  local bg = vim.o.background
-  local default_3f = ((name == "default") or vim.g.vscode)
+  local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
-  local _19_
-  if (default_3f and (bg == "light")) then
-    _19_ = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}
-  elseif (default_3f and (bg == "dark")) then
-    _19_ = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}
+  local _22_
+  if custom_defaults_3f then
+    if (vim.o.background == "light") then
+      _22_ = custom_def_maps["leap-label-default-light"]
+    else
+      _22_ = custom_def_maps["leap-label-default-dark"]
+    end
   else
-    _19_ = {link = "IncSearch"}
+    _22_ = {link = "IncSearch"}
   end
-  local _21_
-  if (default_3f and (bg == "light")) then
-    _21_ = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}
-  elseif (default_3f and (bg == "dark")) then
-    _21_ = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}
+  local _25_
+  if custom_defaults_3f then
+    if (vim.o.background == "light") then
+      _25_ = custom_def_maps["leap-match-default-light"]
+    else
+      _25_ = custom_def_maps["leap-match-default-dark"]
+    end
   else
-    _21_ = {link = "Search"}
+    _25_ = {link = "Search"}
   end
-  defaults = {[self.group.label] = _19_, [self.group.match] = _21_}
+  defaults = {[self.group.label] = _22_, [self.group.match] = _25_}
   if (force_3f or not has_hl_group_3f("LeapLabelPrimary")) then
     for group_name, def_map in pairs(defaults) do
       if not force_3f then
@@ -147,19 +166,7 @@ M["init-highlight"] = function(self, force_3f)
     end
   else
   end
-  local normal = vim.api.nvim_get_hl(0, {name = "Normal", link = false})
-  local label_2a = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
-  if (type(normal.bg) == "number") then
-    if (type(label_2a.bg) == "number") then
-      label_2a.bg = blend(label_2a.bg, normal.bg, 0.7)
-    else
-    end
-    if (type(label_2a.fg) == "number") then
-      label_2a.fg = blend(label_2a.fg, normal.bg, 0.5)
-    else
-    end
-  else
-  end
-  return vim.api.nvim_set_hl(0, self.group["label-dimmed"], label_2a)
+  local label = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
+  return vim.api.nvim_set_hl(0, self.group["label-dimmed"], dimmed(label))
 end
 return M

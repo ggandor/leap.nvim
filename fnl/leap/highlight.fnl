@@ -88,14 +88,14 @@ so we set a temporary highlight on it to see where we are."
     (table.insert self.extmarks [(api.nvim_get_current_buf) id])))
 
 
-(fn blend [color1 color2 weight]
-  ; n = (r + g + b), as returned by `nvim_get_hl`
-  (fn ->rgb [n]
-    (let [r (math.floor (/ n 0x10000))
-          g (math.floor (% (/ n 0x100) 0x100))
-          b (% n 0x100)]
-      (values r g b)))
+(fn ->rgb [n]  ; n=(r+g+b), as returned by `nvim_get_hl`
+  (let [r (math.floor (/ n 0x10000))
+        g (math.floor (% (/ n 0x100) 0x100))
+        b (% n 0x100)]
+    (values r g b)))
 
+
+(fn blend [color1 color2 weight]
   (let [(r1 g1 b1) (->rgb color1)
         (r2 g2 b2) (->rgb color2)
         r (+ (* r1 (- 1 weight)) (* r2 weight))
@@ -104,61 +104,73 @@ so we set a temporary highlight on it to see where we are."
     (string.format "#%02x%02x%02x" r g b)))
 
 
+(fn dimmed [def-map*]
+  (local def-map (vim.deepcopy def-map*))
+  (local normal (vim.api.nvim_get_hl 0 {:name "Normal" :link false}))
+  ; `bg` can be nil (transparent background), and e.g. the old default
+  ; color scheme (`vim`) does not define Normal at all.
+  ; Also, `nvim_get_hl()` apparently does not guarantee to return
+  ; numeric values in the table (#260).
+  (when (= (type normal.bg) "number")
+    (when (= (type def-map.bg) "number")
+      (set def-map.bg (blend def-map.bg normal.bg 0.7)))
+    (when (= (type def-map.fg) "number")
+      (set def-map.fg (blend def-map.fg normal.bg 0.5))))
+  def-map)
+
+
+
+(local custom-def-maps
+  {:leap-label-default-light {:fg "#eef1f0"  ; NvimLightGrey1
+                              :bg "#5588aa"
+                              :bold true
+                              :nocombine true
+                              :ctermfg "red"}
+   :leap-label-default-dark  {:fg "black"
+                              :bg "#ccff88"
+                              :nocombine true
+                              :ctermfg "black"
+                              :ctermbg "red"}
+   :leap-match-default-light {:bg "#eef1f0"  ; NvimLightGrey1
+                              :ctermfg "black"
+                              :ctermbg "red"}
+   :leap-match-default-dark {:fg "#ccff88"
+                             :underline true
+                             :nocombine true
+                             :ctermfg "red"}})
+
+
 (fn M.init-highlight [self force?]
-  (let [name vim.g.colors_name
-        bg vim.o.background
-        ; vscode-neovim has a problem with linking to built-in groups.
-        default? (or (= name "default") vim.g.vscode)
+  (let [custom-defaults? (or (= vim.g.colors_name "default")
+                             ; vscode-neovim has a problem with
+                             ; linking to built-in groups.
+                             vim.g.vscode)
         defaults {self.group.label
-                  (if (and default? (= bg "light"))
-                      {:fg "#eef1f0"  ; NvimLightGrey1
-                       :bg "#5588aa"
-                       :bold true
-                       :nocombine true
-                       :ctermfg "red"}
-
-                      (and default? (= bg "dark"))
-                      {:fg "black"
-                       :bg "#ccff88"
-                       :nocombine true
-                       :ctermfg "black"
-                       :ctermbg "red"}
-
+                  (if custom-defaults?
+                      (if (= vim.o.background "light")
+                          custom-def-maps.leap-label-default-light
+                          custom-def-maps.leap-label-default-dark)
                       {:link "IncSearch"})
 
                   self.group.match
-                  (if (and default? (= bg "light"))
-                      {:bg "#eef1f0"  ; NvimLightGrey1
-                       :ctermfg "black"
-                       :ctermbg "red"}
-
-                      (and default? (= bg "dark"))
-                      {:fg "#ccff88"
-                       :underline true
-                       :nocombine true
-                       :ctermfg "red"}
-
+                  (if custom-defaults?
+                      (if (= vim.o.background "light")
+                          custom-def-maps.leap-match-default-light
+                          custom-def-maps.leap-match-default-dark)
                       {:link "Search"})}]
     (when (or force?
               ; Otherwise LeapLabel would take priority, and override
-              ; the legacy group, `default` does not help in this case.
+              ; the legacy group, `:hi default` does not help in this
+              ; case.
               (not (has-hl-group? "LeapLabelPrimary")))
       (each [group-name def-map (pairs defaults)]
-        (when (not force?) (set def-map.default true))
+        (when (not force?)
+          (set def-map.default true))
         (api.nvim_set_hl 0 group-name def-map)))
-    ; Define LeapLabelDimmed.
-    (let [normal (vim.api.nvim_get_hl 0 {:name "Normal" :link false})
-          label* (vim.api.nvim_get_hl 0 {:name self.group.label :link false})]
-      ; `bg` can be nil (transparent background), and e.g. the old default
-      ; color scheme (`vim`) does not define Normal at all.
-      ; Also, `nvim_get_hl()` apparently does not guarantee to return numeric
-      ; values in the table (#260).
-      (when (= (type normal.bg) "number")
-        (when (= (type label*.bg) "number")
-          (set label*.bg (blend label*.bg normal.bg 0.7)))
-        (when (= (type label*.fg) "number")
-          (set label*.fg (blend label*.fg normal.bg 0.5))))
-      (vim.api.nvim_set_hl 0 self.group.label-dimmed label*))))
+    ; Define LeapLabelDimmed, based on the actual group definition
+    ; (always necessary).
+    (local label (vim.api.nvim_get_hl 0 {:name self.group.label :link false}))
+    (vim.api.nvim_set_hl 0 self.group.label-dimmed (dimmed label))))
 
 
 M
