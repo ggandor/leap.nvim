@@ -156,17 +156,17 @@ for: >lua
 
 Available <Plug> keys ~
 
-    Key                         |  Search scope   | Offset | |inclusive|
-    ----------------------------|-----------------|--------|------------
-    *<Plug>(leap)*                |  Current window |        |
-    *<Plug>(leap-from-window)*    |  Other windows  |        |
-    *<Plug>(leap-anywhere)*       |  All windows    |        |
-    *<Plug>(leap-forward)*        |  After cursor   |        |
-    *<Plug>(leap-forward-to)*     |  After cursor   | +1 (*) | true
-    *<Plug>(leap-forward-till)*   |  After cursor   | -1     | true
-    *<Plug>(leap-backward)*       |  Before cursor  |        |
-    *<Plug>(leap-backward-to)*    |  Before cursor  |        |
-    *<Plug>(leap-backward-till)*  |  Before cursor  | +2     |
+    Key                         |  Search scope    |  Offset  |  |inclusive|
+    ----------------------------|------------------|----------|-------------
+    *<Plug>(leap)*                |  Current window  |          |
+    *<Plug>(leap-from-window)*    |  Other windows   |          |
+    *<Plug>(leap-anywhere)*       |  All windows     |          |
+    *<Plug>(leap-forward)*        |  After cursor    |          |
+    *<Plug>(leap-forward-to)*     |  After cursor    |  +1 (*)  |  true
+    *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  true
+    *<Plug>(leap-backward)*       |  Before cursor   |          |
+    *<Plug>(leap-backward-to)*    |  Before cursor   |          |
+    *<Plug>(leap-backward-till)*  |  Before cursor   |  +2      |
 
 (*) Offset only in Visual and Operator-pending mode.
 
@@ -256,9 +256,9 @@ Example configuration: >lua
     -- Disable preview altogether.
     function () return false end
 
-    -- Skip the middle of alphabetic words:
-    --   foobar[quux]
-    --   ^----^^^--^^
+    -- Exclude whitespace and the middle of alphabetic words from preview:
+    --   foobar[baaz] = quux
+    --   ^----^^^--^^-^-^--^
     function (ch0, ch1, ch2)
       return not (
         ch1:match('%s') or
@@ -273,8 +273,8 @@ Example configuration: >lua
                                    *leap.opts.max_highlighted_traversal_targets*
 `max_highlighted_traversal_targets = 10`
 
-    Number of targets to be highlighted after the cursor in |leap-traversal|
-    mode, if there are no labels used.
+    Number of targets to be highlighted after the cursor when doing
+    |leap-traversal| without labels.
 
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`

@@ -93,9 +93,7 @@ Use your preferred method or plugin manager. No extra steps needed besides
 defining keybindings - to use the default ones, put the following into your
 config (overrides `s` in all modes, and `S` in Normal mode):
 
-`require('leap').set_default_mappings()` (init.lua)
-
-`lua require('leap').set_default_mappings()` (init.vim)
+`require('leap').set_default_mappings()`
 
 <details>
 <summary>Alternative key mappings and arrangements</summary>
@@ -135,12 +133,15 @@ See `:h leap-custom-mappings` for more.
 <details>
 <summary>Suggested additional tweaks</summary>
 
-Define a preview filter  (`:h leap.opts.preview_filter`):
+Highly recommended: define a preview filter to reduce visual noise and the
+blinking effect after the first keypress (`:h leap.opts.preview_filter`). You
+can still target any visible positions if needed, but you can define what is
+considered an exceptional case ("don't bother me with preview for them").
 
 ```lua
--- Skip the middle of alphabetic words:
---   foobar[quux]
---   ^----^^^--^^
+-- Exclude whitespace and the middle of alphabetic words from preview:
+--   foobar[baaz] = quux
+--   ^----^^^--^^-^-^--^
 require('leap').opts.preview_filter =
   function (ch0, ch1, ch2)
     return not (
@@ -200,15 +201,22 @@ end)
 Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
 the position specified by `{leap}`.
 
-**Tips**
+Tip: As the remote mode is active until returning to Normal mode again (by any
+means), `<ctrl-o>` becomes your friend in Insert mode, or when doing change
+operations.
 
-* Swapping regions becomes moderately simple, without needing a custom
-  plugin: `d{region1} gs{leap} v{region2} pP`. Example (swapping two
-  words): `diwgs{leap}viwpP`.
+**Swapping regions**
 
-* As the remote mode is active until returning to Normal mode again (by
-  any means), `<ctrl-o>` becomes your friend in Insert mode, or when
-  doing change operations.
+Exchanging two regions of text becomes moderately simple, without needing a
+custom plugin: `d{region1} gs{leap}v{region2}p P`. Example (swapping two
+words): `diw gs{leap}viwp P`.
+
+With remote text objects (see below), the swap is even simpler, almost on par
+with [vim-exchange](https://github.com/tommcdo/vim-exchange): `diw virw{leap}p
+P`.
+
+Using remote text objects _and_ combining them with an exchange operator is
+pretty much text editing at the speed of thought: `cxiw cxirw{leap}`.
 
 **Icing on the cake, no. 1 - giving input ahead of time**
 
@@ -314,7 +322,7 @@ operate on the current selection right away (`R;;y`).
 
   ```lua
   -- "clever-R"
-  vim.keymap.set({'n', 'x', 'o'}, 'R',  function ()
+  vim.keymap.set({'x', 'o'}, 'R',  function ()
     local sk = vim.deepcopy(require'leap'.opts.special_keys)
     -- The items in `special_keys` can be both strings or tables - the
     -- shortest workaround might be the below one.
