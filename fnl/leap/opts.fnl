@@ -14,9 +14,9 @@
                              "J" "K" "L" "H" "O" "D" "W" "E" "I" "M" "B" "U"
                              "Y" "V" "R" "G" "T" "A" "Q" "P" "C" "X" "Z" "?"]
                     :special_keys {:next_target "<enter>"
-                                   :prev_target ["<backspace>" "<tab>"]
+                                   :prev_target "<backspace>"
                                    :next_group "<space>"
-                                   :prev_group ["<backspace>" "<tab>"]}}
+                                   :prev_group "<backspace>"}}
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
