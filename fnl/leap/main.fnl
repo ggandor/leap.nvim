@@ -832,19 +832,10 @@ char separately.
             eq-classes->membership-lookup))
 
   (fn set-concealed-label []
-    (local leap-label (api.nvim_get_hl 0 {:name "LeapLabel" :link false}))
-    ; Undocumented, might be exposed in the future.
-    (set opts.concealed_label
-         ; If LeapLabel exist, that means that either the color scheme
-         ; defined it explicitly, or we defined it with `hi default` -
-         ; both cases imply that the legacy group should not exist, and
-         ; if does - probably not cleared out properly -, then we should
-         ; _ignore_ it.
-         (if (not (empty? leap-label))
-             (if leap-label.bg " " "\u{00b7}")  ; middle dot (·)
-             (if (. (api.nvim_get_hl 0 {:name "LeapLabelPrimary" :link false}) :bg)
-                 " "
-                 "\u{00b7}"))))
+    (let [leap-label (api.nvim_get_hl 0 {:name hl.group.label :link false})
+          middle-dot "\u{00b7}"]
+      ; Undocumented option, might be exposed in the future.
+      (set opts.concealed_label (if leap-label.bg " " middle-dot))))
 
   ; Colorscheme plugins might clear out our highlight definitions,
   ; without defining their own, so we re-init the highlight on every

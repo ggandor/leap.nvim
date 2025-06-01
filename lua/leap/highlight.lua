@@ -8,29 +8,11 @@ local empty_3f = vim.tbl_isempty
 local function has_hl_group_3f(name)
   return not empty_3f(api.nvim_get_hl(0, {name = name}))
 end
-local M
-local function _2_(_, key)
-  if (key == "label") then
-    if has_hl_group_3f("LeapLabelPrimary") then
-      return "LeapLabelPrimary"
-    else
-      return "LeapLabel"
-    end
-  elseif (key == "label-dimmed") then
-    if has_hl_group_3f("LeapLabelSecondary") then
-      return "LeapLabelSecondary"
-    else
-      return "LeapLabelDimmed"
-    end
-  else
-    return nil
-  end
-end
-M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = setmetatable({match = "LeapMatch", backdrop = "LeapBackdrop"}, {__index = _2_}), priority = {label = 65535, cursor = 65534, backdrop = 65533}}
+local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
 M.cleanup = function(self, affected_windows)
-  for _, _6_ in ipairs(self.extmarks) do
-    local bufnr = _6_[1]
-    local id = _6_[2]
+  for _, _2_ in ipairs(self.extmarks) do
+    local bufnr = _2_[1]
+    local id = _2_[2]
     if api.nvim_buf_is_valid(bufnr) then
       api.nvim_buf_del_extmark(bufnr, self.ns, id)
     else
@@ -59,22 +41,22 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
       end
       return nil
     else
-      local _let_10_ = map(dec, get_cursor_pos())
-      local curline = _let_10_[1]
-      local curcol = _let_10_[2]
-      local _let_11_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
-      local win_top = _let_11_[1]
-      local win_bot = _let_11_[2]
-      local function _12_()
+      local _let_6_ = map(dec, get_cursor_pos())
+      local curline = _let_6_[1]
+      local curcol = _let_6_[2]
+      local _let_7_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
+      local win_top = _let_7_[1]
+      local win_bot = _let_7_[2]
+      local function _8_()
         if backward_3f then
           return {{win_top, 0}, {curline, curcol}}
         else
           return {{curline, inc(curcol)}, {win_bot, -1}}
         end
       end
-      local _let_13_ = _12_()
-      local start = _let_13_[1]
-      local finish = _let_13_[2]
+      local _let_9_ = _8_()
+      local start = _let_9_[1]
+      local finish = _let_9_[2]
       return vim.highlight.range(0, self.ns, self.group.backdrop, start, finish, {priority = self.priority.backdrop})
     end
   else
@@ -82,17 +64,17 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   end
 end
 M["highlight-cursor"] = function(self)
-  local _let_16_ = get_cursor_pos()
-  local line = _let_16_[1]
-  local col = _let_16_[2]
+  local _let_12_ = get_cursor_pos()
+  local line = _let_12_[1]
+  local col = _let_12_[2]
   local line_str = vim.fn.getline(line)
   local ch_at_curpos
   do
-    local _17_ = vim.fn.strpart(line_str, dec(col), 1, true)
-    if (_17_ == "") then
+    local _13_ = vim.fn.strpart(line_str, dec(col), 1, true)
+    if (_13_ == "") then
       ch_at_curpos = " "
-    elseif (nil ~= _17_) then
-      local ch = _17_
+    elseif (nil ~= _13_) then
+      local ch = _13_
       ch_at_curpos = ch
     else
       ch_at_curpos = nil
@@ -135,36 +117,33 @@ local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#
 M["init-highlight"] = function(self, force_3f)
   local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
-  local _22_
+  local _18_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _22_ = custom_def_maps["leap-label-default-light"]
+      _18_ = custom_def_maps["leap-label-default-light"]
     else
-      _22_ = custom_def_maps["leap-label-default-dark"]
+      _18_ = custom_def_maps["leap-label-default-dark"]
     end
   else
-    _22_ = {link = "IncSearch"}
+    _18_ = {link = "IncSearch"}
   end
-  local _25_
+  local _21_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _25_ = custom_def_maps["leap-match-default-light"]
+      _21_ = custom_def_maps["leap-match-default-light"]
     else
-      _25_ = custom_def_maps["leap-match-default-dark"]
+      _21_ = custom_def_maps["leap-match-default-dark"]
     end
   else
-    _25_ = {link = "Search"}
+    _21_ = {link = "Search"}
   end
-  defaults = {[self.group.label] = _22_, [self.group.match] = _25_}
-  if (force_3f or not has_hl_group_3f("LeapLabelPrimary")) then
-    for group_name, def_map in pairs(defaults) do
-      if not force_3f then
-        def_map.default = true
-      else
-      end
-      api.nvim_set_hl(0, group_name, def_map)
+  defaults = {[self.group.label] = _18_, [self.group.match] = _21_}
+  for group_name, def_map in pairs(defaults) do
+    if not force_3f then
+      def_map.default = true
+    else
     end
-  else
+    api.nvim_set_hl(0, group_name, def_map)
   end
   local label = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
   return vim.api.nvim_set_hl(0, self.group["label-dimmed"], dimmed(label))

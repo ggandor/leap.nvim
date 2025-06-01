@@ -14,18 +14,10 @@
 
 (local M {:ns (api.nvim_create_namespace "")
           :extmarks []
-          :group (setmetatable
-                   {:match "LeapMatch"
-                    :backdrop "LeapBackdrop"}
-                   {:__index (fn [_ key]
-                               (if (= key :label)
-                                   (if (has-hl-group? "LeapLabelPrimary")
-                                       "LeapLabelPrimary"
-                                       "LeapLabel")
-                                   (= key :label-dimmed)
-                                   (if (has-hl-group? "LeapLabelSecondary")
-                                       "LeapLabelSecondary"
-                                       "LeapLabelDimmed")))})
+          :group {:label "LeapLabel"
+                  :label-dimmed "LeapLabelDimmed"
+                  :match "LeapMatch"
+                  :backdrop "LeapBackdrop"}
           :priority {:label 65535
                      :cursor 65534
                      :backdrop 65533}})
@@ -158,15 +150,10 @@ so we set a temporary highlight on it to see where we are."
                           custom-def-maps.leap-match-default-light
                           custom-def-maps.leap-match-default-dark)
                       {:link "Search"})}]
-    (when (or force?
-              ; Otherwise LeapLabel would take priority, and override
-              ; the legacy group, `:hi default` does not help in this
-              ; case.
-              (not (has-hl-group? "LeapLabelPrimary")))
-      (each [group-name def-map (pairs defaults)]
-        (when (not force?)
-          (set def-map.default true))
-        (api.nvim_set_hl 0 group-name def-map)))
+    (each [group-name def-map (pairs defaults)]
+      (when (not force?)
+        (set def-map.default true))
+      (api.nvim_set_hl 0 group-name def-map))
     ; Define LeapLabelDimmed, based on the actual group definition
     ; (always necessary).
     (local label (vim.api.nvim_get_hl 0 {:name self.group.label :link false}))
