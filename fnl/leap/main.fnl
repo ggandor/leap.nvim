@@ -822,46 +822,42 @@ char separately.
 ; Init ///1
 
 
-(fn init []
-  (api.nvim_create_augroup "LeapDefault" {})
+(fn get-concealed-label []
+  (let [leap-label (api.nvim_get_hl 0 {:name hl.group.label :link false})
+        middle-dot "\u{00b7}"]
+    (if leap-label.bg " " middle-dot)))
 
-  ; The equivalence class table can be potentially huge - let's do this
-  ; here, and not each time `leap` is called, at least for the defaults.
-  (set opts.default.eq_class_of
-       (-?> opts.default.equivalence_classes
-            eq-classes->membership-lookup))
 
-  (fn set-concealed-label []
-    (let [leap-label (api.nvim_get_hl 0 {:name hl.group.label :link false})
-          middle-dot "\u{00b7}"]
-      ; Undocumented option, might be exposed in the future.
-      (set opts.concealed_label (if leap-label.bg " " middle-dot))))
+(fn init-highlight* []
+  (hl:init-highlight)
+  ; Undocumented option, might be exposed in the future.
+  (set opts.concealed_label (get-concealed-label)))
 
+
+(fn init-highlight []
+  (init-highlight*)
   ; Colorscheme plugins might clear out our highlight definitions,
   ; without defining their own, so we re-init the highlight on every
   ; change.
-  (hl:init-highlight)
-  (set-concealed-label)
   (api.nvim_create_autocmd "ColorScheme"
-                           {:group "LeapDefault"
-                            :callback (fn [_]
-                                        (hl:init-highlight
-                                          (= vim.g.colors_name "default"))  ; force?
-                                        (set-concealed-label))})
+    {:group "LeapDefault"
+     :callback init-highlight*}))
 
-  (do
-    (var saved-editor-opts {})
-    (local temporary-editor-opts {:w.conceallevel 0
-                                  :g.scrolloff 0
-                                  :w.scrolloff 0
-                                  :g.sidescrolloff 0
-                                  :w.sidescrolloff 0
-                                  :b.modeline false})  ; lightspeed#81
 
-    (fn set-editor-opts [t]
+(fn manage-editor-opts []
+  (local temporary-editor-opts
+    {:w.conceallevel 0
+     :g.scrolloff 0
+     :w.scrolloff 0
+     :g.sidescrolloff 0
+     :w.sidescrolloff 0
+     :b.modeline false})  ; lightspeed#81
+
+  (var saved-editor-opts {})
+
+  (fn set-editor-opts [t]
+    (let [wins (or (. state.args :target_windows) [(api.nvim_get_current_win)])]
       (set saved-editor-opts {})
-      (local wins (or (. state.args :target_windows)
-                      [(api.nvim_get_current_win)]))
       (each [opt val (pairs t)]
         (let [[scope name] (vim.split opt "." {:plain true})]
           (case scope
@@ -869,37 +865,43 @@ char separately.
                  (local saved-val (api.nvim_win_get_option win name))
                  (tset saved-editor-opts [:w win name] saved-val)
                  (api.nvim_win_set_option win name val))
-
             :b (each [_ win (ipairs wins)]
                  (local buf (api.nvim_win_get_buf win))
                  (local saved-val (api.nvim_buf_get_option buf name))
                  (tset saved-editor-opts [:b buf name] saved-val)
                  (api.nvim_buf_set_option buf name val))
-
             _ (do (local saved-val (api.nvim_get_option name))
                   (tset saved-editor-opts name saved-val)
-                  (api.nvim_set_option name val))))))
+                  (api.nvim_set_option name val)))))))
 
-    (fn restore-editor-opts []
-      (each [key val (pairs saved-editor-opts)]
-        (case key
-          [:w win name] (when (api.nvim_win_is_valid win)
-                          (api.nvim_win_set_option win name val))
-          [:b buf name] (when (api.nvim_buf_is_valid buf)
-                          (api.nvim_buf_set_option buf name val))
-          name (api.nvim_set_option name val))))
+  (fn restore-editor-opts []
+    (each [key val (pairs saved-editor-opts)]
+      (case key
+        [:w win name] (when (api.nvim_win_is_valid win)
+                        (api.nvim_win_set_option win name val))
+        [:b buf name] (when (api.nvim_buf_is_valid buf)
+                        (api.nvim_buf_set_option buf name val))
+        name (api.nvim_set_option name val))))
 
-    (api.nvim_create_autocmd "User"
-                             {:pattern "LeapEnter"
-                              :group "LeapDefault"
-                              :callback (fn [_]
-                                          (set-editor-opts
-                                            temporary-editor-opts))})
+  (api.nvim_create_autocmd "User"
+    {:pattern "LeapEnter"
+     :group "LeapDefault"
+     :callback (fn [_] (set-editor-opts temporary-editor-opts))})
 
-    (api.nvim_create_autocmd "User"
-                             {:pattern "LeapLeave"
-                              :group "LeapDefault"
-                              :callback (fn [_] (restore-editor-opts))})))
+  (api.nvim_create_autocmd "User"
+    {:pattern "LeapLeave"
+     :group "LeapDefault"
+     :callback (fn [_] (restore-editor-opts))}))
+
+
+(fn init []
+  ; The equivalence class table can be potentially huge - let's do this
+  ; here, and not each time `leap` is called, at least for the defaults.
+  (set opts.default.eq_class_of (-?> opts.default.equivalence_classes
+                                     eq-classes->membership-lookup))
+  (api.nvim_create_augroup "LeapDefault" {})
+  (init-highlight)
+  (manage-editor-opts))
 
 
 (init)

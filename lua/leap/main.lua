@@ -871,42 +871,34 @@ local function leap(kwargs)
   end
   return nil
 end
-local function init()
-  api.nvim_create_augroup("LeapDefault", {})
-  do
-    local tmp_3_ = opts.default.equivalence_classes
-    if (nil ~= tmp_3_) then
-      opts.default.eq_class_of = eq_classes__3emembership_lookup(tmp_3_)
-    else
-      opts.default.eq_class_of = nil
-    end
+local function get_concealed_label()
+  local leap_label = api.nvim_get_hl(0, {name = hl.group.label, link = false})
+  local middle_dot = "\194\183"
+  if leap_label.bg then
+    return " "
+  else
+    return middle_dot
   end
-  local function set_concealed_label()
-    local leap_label = api.nvim_get_hl(0, {name = hl.group.label, link = false})
-    local middle_dot = "\194\183"
-    if leap_label.bg then
-      opts.concealed_label = " "
-    else
-      opts.concealed_label = middle_dot
-    end
-    return nil
-  end
+end
+local function init_highlight_2a()
   hl["init-highlight"](hl)
-  set_concealed_label()
-  local function _131_(_)
-    hl["init-highlight"](hl, (vim.g.colors_name == "default"))
-    return set_concealed_label()
-  end
-  api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = _131_})
-  local saved_editor_opts = {}
+  opts.concealed_label = get_concealed_label()
+  return nil
+end
+local function init_highlight()
+  init_highlight_2a()
+  return api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = init_highlight_2a})
+end
+local function manage_editor_opts()
   local temporary_editor_opts = {["w.conceallevel"] = 0, ["g.scrolloff"] = 0, ["w.scrolloff"] = 0, ["g.sidescrolloff"] = 0, ["w.sidescrolloff"] = 0, ["b.modeline"] = false}
+  local saved_editor_opts = {}
   local function set_editor_opts(t)
-    saved_editor_opts = {}
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
+    saved_editor_opts = {}
     for opt, val in pairs(t) do
-      local _let_132_ = vim.split(opt, ".", {plain = true})
-      local scope = _let_132_[1]
-      local name = _let_132_[2]
+      local _let_130_ = vim.split(opt, ".", {plain = true})
+      local scope = _let_130_[1]
+      local name = _let_130_[2]
       if (scope == "w") then
         for _, win in ipairs(wins) do
           local saved_val = api.nvim_win_get_option(win, name)
@@ -953,14 +945,27 @@ local function init()
     end
     return nil
   end
-  local function _137_(_)
+  local function _135_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _137_})
-  local function _138_(_)
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _135_})
+  local function _136_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _138_})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _136_})
+end
+local function init()
+  do
+    local tmp_3_ = opts.default.equivalence_classes
+    if (nil ~= tmp_3_) then
+      opts.default.eq_class_of = eq_classes__3emembership_lookup(tmp_3_)
+    else
+      opts.default.eq_class_of = nil
+    end
+  end
+  api.nvim_create_augroup("LeapDefault", {})
+  init_highlight()
+  return manage_editor_opts()
 end
 init()
 return {state = state, leap = leap}
