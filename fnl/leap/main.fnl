@@ -133,7 +133,7 @@ char separately.
     ; afterwards would be overcomplicated, not to mention that the jump
     ; itself is disorienting in the first place, especially an A->B->C
     ; version (autojumping to B from A, before moving on to C).
-    (fn sharing-the-same-window? [targets]
+    (fn all-in-the-same-window? [targets]
       (var same-win? true)
       (local winid (. targets 1 :wininfo :winid))
       (each [_ target (ipairs targets) &until (= same-win? false)]
@@ -210,7 +210,7 @@ char separately.
                `leap`)."
       (when-not (or force-noautojump?
                     (and multi-window-search?
-                         (not (sharing-the-same-window? targets)))
+                         (not (all-in-the-same-window? targets)))
                     (first-target-covers-label-of-second? targets))
         (set-autojump targets))
       (attach-label-set targets)

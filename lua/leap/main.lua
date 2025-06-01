@@ -85,7 +85,7 @@ local function populate_sublists(targets)
 end
 local prepare_labeled_targets
 do
-  local function sharing_the_same_window_3f(targets)
+  local function all_in_the_same_window_3f(targets)
     local same_win_3f = true
     local winid = targets[1].wininfo.winid
     for _, target in ipairs(targets) do
@@ -162,7 +162,7 @@ do
     end
   end
   local function _21_(targets, force_noautojump_3f, multi_window_search_3f)
-    if not (force_noautojump_3f or (multi_window_search_3f and not sharing_the_same_window_3f(targets)) or first_target_covers_label_of_second_3f(targets)) then
+    if not (force_noautojump_3f or (multi_window_search_3f and not all_in_the_same_window_3f(targets)) or first_target_covers_label_of_second_3f(targets)) then
       set_autojump(targets)
     else
     end
