@@ -20,7 +20,6 @@ local map = vim.tbl_map
 local abs = math["abs"]
 local ceil = math["ceil"]
 local floor = math["floor"]
-local max = math["max"]
 local min = math["min"]
 local function handle_interrupted_change_op_21()
   local _3_

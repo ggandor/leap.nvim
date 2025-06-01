@@ -22,7 +22,7 @@
 (local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
-(local {: abs : ceil : floor : max : min} math)
+(local {: abs : ceil : floor : min} math)
 
 
 ; Fennel utils ///1
