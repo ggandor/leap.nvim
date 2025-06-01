@@ -36,9 +36,12 @@
 (fn handle-interrupted-change-op! []
   "Return to Normal mode and restore the cursor position after an
 interrupted change operation."
-  (let [seq (.. "<C-\\><C-G>"  ; :h CTRL-\_CTRL-G
-                (if (> (vim.fn.col ".") 1) "<RIGHT>" ""))]
-    (api.nvim_feedkeys (replace-keycodes seq) :n true)))
+  (api.nvim_feedkeys
+    (replace-keycodes
+      (.. "<C-\\><C-N>"  ; :h CTRL-\_CTRL-N
+          (if (> (vim.fn.col ".") 1) "<RIGHT>" "")))
+    :n
+    true))
 
 
 ; repeat.vim support

@@ -23,15 +23,13 @@ local floor = math["floor"]
 local max = math["max"]
 local min = math["min"]
 local function handle_interrupted_change_op_21()
-  local seq
   local _3_
   if (vim.fn.col(".") > 1) then
     _3_ = "<RIGHT>"
   else
     _3_ = ""
   end
-  seq = ("<C-\\><C-G>" .. _3_)
-  return api.nvim_feedkeys(replace_keycodes(seq), "n", true)
+  return api.nvim_feedkeys(replace_keycodes(("<C-\\><C-N>" .. _3_)), "n", true)
 end
 local function set_dot_repeat_2a()
   local op = vim.v.operator
