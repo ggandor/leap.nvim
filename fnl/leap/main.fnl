@@ -12,7 +12,6 @@
         : dec
         : clamp
         : echo
-        : replace-keycodes
         : ->representative-char
         : get-input
         : get-input-by-keymap}
@@ -37,7 +36,7 @@
   "Return to Normal mode and restore the cursor position after an
 interrupted change operation."
   (api.nvim_feedkeys
-    (replace-keycodes
+    (vim.keycode
       (.. "<C-\\><C-N>"  ; :h CTRL-\_CTRL-N
           (if (> (vim.fn.col ".") 1) "<RIGHT>" "")))
     :n
@@ -52,11 +51,10 @@ interrupted change operation."
   ; repeated (see `set-dot-repeat` in `leap()`).
   (let [op vim.v.operator
         force (string.sub (vim.fn.mode true) 3)
-        cmd (replace-keycodes
-              "<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
+        cmd (vim.keycode "<cmd>lua require'leap'.leap { dot_repeat = true }<cr>")
         ; We cannot getreg('.') at this point, since the change has not
         ; happened yet - therefore the below hack (thx Sneak).
-        change (when (= op :c) (replace-keycodes "<c-r>.<esc>"))
+        change (when (= op :c) (vim.keycode "<c-r>.<esc>"))
         seq (.. op force cmd (or change ""))]
     ; Using pcall, since vim-repeat might not be installed.
     ; Use the same register for the repeated operation.
@@ -296,14 +294,7 @@ char separately.
                                    (> (length ?target-windows) 1)))
 
   (local curr-winid (api.nvim_get_current_win))
-
-  (local hl-affected-windows (if (= (vim.fn.has "nvim-0.10") 0)
-                                 ; For pre-0.10, a fake cursor is shown in the
-                                 ; source window, since the real one disappears.
-                                 ; (See `with-highlight-chores`.)
-                                 (vim.list_extend
-                                   [curr-winid] (or ?target-windows []))
-                                 (or ?target-windows [curr-winid])))
+  (local hl-affected-windows (or ?target-windows [curr-winid]))
 
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
@@ -327,7 +318,7 @@ char separately.
   (local spec-keys (setmetatable {}
                      {:__index (fn [_ k]
                                  (case (. opts.special_keys k)
-                                   v (map replace-keycodes
+                                   v (map vim.keycode
                                           ; Force them into a table.
                                           (if (= (type v) :string) [v] v))))}))
 
@@ -377,7 +368,6 @@ char separately.
     (hl:cleanup hl-affected-windows)
     (when-not count (hl:apply-backdrop backward? ?target-windows))
     (when f (f))
-    (when (= (vim.fn.has "nvim-0.10") 0) (hl:highlight-cursor))
     (vim.cmd :redraw))
 
   (fn can-traverse? [targets]
@@ -845,13 +835,15 @@ char separately.
 
 
 (fn manage-editor-opts []
+  (local get-opt api.nvim_get_option_value)
+  (local set-opt api.nvim_set_option_value)
+
   (local temporary-editor-opts
-    {:w.conceallevel 0
-     :g.scrolloff 0
-     :w.scrolloff 0
-     :g.sidescrolloff 0
+    {:w.scrolloff 0
      :w.sidescrolloff 0
-     :b.modeline false})  ; lightspeed#81
+     :w.conceallevel 0
+     :b.modeline false  ; lightspeed#81
+     })
 
   (var saved-editor-opts {})
 
@@ -862,26 +854,27 @@ char separately.
         (let [[scope name] (vim.split opt "." {:plain true})]
           (case scope
             :w (each [_ win (ipairs wins)]
-                 (local saved-val (api.nvim_win_get_option win name))
+                 (local saved-val (get-opt name {:scope "local" :win win}))
                  (tset saved-editor-opts [:w win name] saved-val)
-                 (api.nvim_win_set_option win name val))
+                 (set-opt name val {:scope "local" :win win}))
             :b (each [_ win (ipairs wins)]
                  (local buf (api.nvim_win_get_buf win))
-                 (local saved-val (api.nvim_buf_get_option buf name))
+                 (local saved-val (get-opt name {:buf buf}))
                  (tset saved-editor-opts [:b buf name] saved-val)
-                 (api.nvim_buf_set_option buf name val))
-            _ (do (local saved-val (api.nvim_get_option name))
-                  (tset saved-editor-opts name saved-val)
-                  (api.nvim_set_option name val)))))))
+                 (set-opt name val {:buf buf}))
+            :g (do
+                 (local saved-val (get-opt name {:scope "global"}))
+                 (tset saved-editor-opts name saved-val)
+                 (set-opt name val {:scope "global"})))))))
 
   (fn restore-editor-opts []
     (each [key val (pairs saved-editor-opts)]
       (case key
         [:w win name] (when (api.nvim_win_is_valid win)
-                        (api.nvim_win_set_option win name val))
+                        (set-opt name val {:scope "local" :win win}))
         [:b buf name] (when (api.nvim_buf_is_valid buf)
-                        (api.nvim_buf_set_option buf name val))
-        name (api.nvim_set_option name val))))
+                        (set-opt name val {:buf buf}))
+        name (set-opt name val {:scope "global"}))))
 
   (api.nvim_create_autocmd "User"
     {:pattern "LeapEnter"

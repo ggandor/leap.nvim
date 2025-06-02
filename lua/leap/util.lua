@@ -19,9 +19,6 @@ end
 local function echo(msg)
   return api.nvim_echo({{msg}}, false, {})
 end
-local function replace_keycodes(s)
-  return api.nvim_replace_termcodes(s, true, false, true)
-end
 local function get_cursor_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
@@ -62,9 +59,9 @@ local function __3erepresentative_char(ch)
     return vim.fn.tolower(ch_2a)
   end
 end
-local _3cbs_3e = replace_keycodes("<bs>")
-local _3ccr_3e = replace_keycodes("<cr>")
-local _3cesc_3e = replace_keycodes("<esc>")
+local _3cbs_3e = vim.keycode("<bs>")
+local _3ccr_3e = vim.keycode("<cr>")
+local _3cesc_3e = vim.keycode("<esc>")
 local function get_input()
   local ok_3f, ch = pcall(vim.fn.getcharstr)
   if (ok_3f and (ch ~= _3cesc_3e)) then
@@ -136,4 +133,4 @@ local function get_input_by_keymap(prompt)
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["replace-keycodes"] = replace_keycodes, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

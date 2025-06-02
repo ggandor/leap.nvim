@@ -19,12 +19,11 @@
                   :match "LeapMatch"
                   :backdrop "LeapBackdrop"}
           :priority {:label 65535
-                     :cursor 65534
-                     :backdrop 65533}})
+                     :backdrop 65534}})
 
 
 (fn M.cleanup [self affected-windows]
-  ; Clear beacons & cursor.
+  ; Clear beacons.
   (each [_ [bufnr id] (ipairs self.extmarks)]
     (when (api.nvim_buf_is_valid bufnr)
       (api.nvim_buf_del_extmark bufnr self.ns id)))
@@ -61,23 +60,6 @@
           ; Expects 0,0-indexed args; `finish` is exclusive.
           (vim.highlight.range 0 self.ns self.group.backdrop start finish
                                {:priority self.priority.backdrop})))))
-
-
-; NOTE: Can be removed once minimal required nvim version is >= 0.10. (#70)
-(fn M.highlight-cursor [self]
-  "The cursor is down on the command line during `getchar`,
-so we set a temporary highlight on it to see where we are."
-  (let [[line col] (get-cursor-pos)
-        line-str (vim.fn.getline line)
-        ch-at-curpos (case (vim.fn.strpart line-str (dec col) 1 true)
-                       "" " "  ; on an emtpy line
-                       ch ch)
-        id (api.nvim_buf_set_extmark 0 self.ns (dec line) (dec col)
-                                     {:virt_text [[ch-at-curpos :Cursor]]
-                                      :virt_text_pos "overlay"
-                                      :hl_mode "combine"
-                                      :priority self.priority.cursor})]
-    (table.insert self.extmarks [(api.nvim_get_current_buf) id])))
 
 
 (fn ->rgb [n]  ; n=(r+g+b), as returned by `nvim_get_hl`

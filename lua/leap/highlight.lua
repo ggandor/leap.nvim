@@ -8,7 +8,7 @@ local empty_3f = vim.tbl_isempty
 local function has_hl_group_3f(name)
   return not empty_3f(api.nvim_get_hl(0, {name = name}))
 end
-local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, cursor = 65534, backdrop = 65533}}
+local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
 M.cleanup = function(self, affected_windows)
   for _, _2_ in ipairs(self.extmarks) do
     local bufnr = _2_[1]
@@ -63,26 +63,6 @@ M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
     return nil
   end
 end
-M["highlight-cursor"] = function(self)
-  local _let_12_ = get_cursor_pos()
-  local line = _let_12_[1]
-  local col = _let_12_[2]
-  local line_str = vim.fn.getline(line)
-  local ch_at_curpos
-  do
-    local _13_ = vim.fn.strpart(line_str, dec(col), 1, true)
-    if (_13_ == "") then
-      ch_at_curpos = " "
-    elseif (nil ~= _13_) then
-      local ch = _13_
-      ch_at_curpos = ch
-    else
-      ch_at_curpos = nil
-    end
-  end
-  local id = api.nvim_buf_set_extmark(0, self.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, "Cursor"}}, virt_text_pos = "overlay", hl_mode = "combine", priority = self.priority.cursor})
-  return table.insert(self.extmarks, {api.nvim_get_current_buf(), id})
-end
 local function __3ergb(n)
   local r = math.floor((n / 65536))
   local g = math.floor(((n / 256) % 256))
@@ -117,27 +97,27 @@ local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#
 M["init-highlight"] = function(self, force_3f)
   local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
+  local _15_
+  if custom_defaults_3f then
+    if (vim.o.background == "light") then
+      _15_ = custom_def_maps["leap-label-default-light"]
+    else
+      _15_ = custom_def_maps["leap-label-default-dark"]
+    end
+  else
+    _15_ = {link = "IncSearch"}
+  end
   local _18_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _18_ = custom_def_maps["leap-label-default-light"]
+      _18_ = custom_def_maps["leap-match-default-light"]
     else
-      _18_ = custom_def_maps["leap-label-default-dark"]
+      _18_ = custom_def_maps["leap-match-default-dark"]
     end
   else
-    _18_ = {link = "IncSearch"}
+    _18_ = {link = "Search"}
   end
-  local _21_
-  if custom_defaults_3f then
-    if (vim.o.background == "light") then
-      _21_ = custom_def_maps["leap-match-default-light"]
-    else
-      _21_ = custom_def_maps["leap-match-default-dark"]
-    end
-  else
-    _21_ = {link = "Search"}
-  end
-  defaults = {[self.group.label] = _18_, [self.group.match] = _21_}
+  defaults = {[self.group.label] = _15_, [self.group.match] = _18_}
   for group_name, def_map in pairs(vim.deepcopy(defaults)) do
     if not force_3f then
       def_map.default = true

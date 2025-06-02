@@ -16,9 +16,6 @@
 (fn echo [msg]
   (api.nvim_echo [[msg]] false []))
 
-(fn replace-keycodes [s]
-  (api.nvim_replace_termcodes s true false true))
-
 (fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
 
@@ -56,9 +53,9 @@
 
 ; Input
 
-(local <bs> (replace-keycodes "<bs>"))
-(local <cr> (replace-keycodes "<cr>"))
-(local <esc> (replace-keycodes "<esc>"))
+(local <bs> (vim.keycode "<bs>"))
+(local <cr> (vim.keycode "<cr>"))
+(local <esc> (vim.keycode "<esc>"))
 
 
 (fn get-input []
@@ -109,7 +106,6 @@
  : dec
  : clamp
  : echo
- : replace-keycodes
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
