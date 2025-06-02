@@ -138,7 +138,7 @@ M["init-highlight"] = function(self, force_3f)
     _21_ = {link = "Search"}
   end
   defaults = {[self.group.label] = _18_, [self.group.match] = _21_}
-  for group_name, def_map in pairs(defaults) do
+  for group_name, def_map in pairs(vim.deepcopy(defaults)) do
     if not force_3f then
       def_map.default = true
     else

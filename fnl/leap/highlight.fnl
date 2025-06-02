@@ -150,7 +150,7 @@ so we set a temporary highlight on it to see where we are."
                           custom-def-maps.leap-match-default-light
                           custom-def-maps.leap-match-default-dark)
                       {:link "Search"})}]
-    (each [group-name def-map (pairs defaults)]
+    (each [group-name def-map (pairs (vim.deepcopy defaults))]
       (when (not force?)
         (set def-map.default true))
       (api.nvim_set_hl 0 group-name def-map))
