@@ -246,7 +246,6 @@ local function leap(kwargs)
   else
     count = vim.v.count
   end
-  local max_phase_one_targets = (opts.max_phase_one_targets or math.huge)
   local user_given_targets_3f = user_given_targets
   local keyboard_input_3f = not (invoked_repeat_3f or invoked_dot_repeat_3f or user_given_targets)
   local prompt = {str = ">"}
@@ -270,7 +269,7 @@ local function leap(kwargs)
   spec_keys = setmetatable({}, {__index = _33_})
   local st
   local _37_
-  if (keyboard_input_3f and (max_phase_one_targets ~= 0) and not no_labels_to_use_3f) then
+  if (keyboard_input_3f and not no_labels_to_use_3f) then
     _37_ = 1
   else
     _37_ = nil
@@ -397,7 +396,7 @@ local function leap(kwargs)
     end
   end
   local function get_second_pattern_input(targets)
-    if ((#targets <= max_phase_one_targets) and not count) then
+    if not count then
       local function _58_()
         return light_up_beacons(targets)
       end
@@ -720,10 +719,6 @@ local function leap(kwargs)
       prepare_labeled_targets_2a(targets)
     end
   else
-    if (#targets > max_phase_one_targets) then
-      st.phase = nil
-    else
-    end
     populate_sublists(targets)
     for _, sublist in pairs(targets.sublists) do
       prepare_labeled_targets_2a(sublist)
@@ -745,14 +740,14 @@ local function leap(kwargs)
   else
   end
   local partial_pattern_3f = (st["repeating-partial-pattern?"] or contains_3f(spec_keys.next_target, _3fin20))
-  local function _110_()
+  local function _109_()
     if not partial_pattern_3f then
       return _3fin20
     else
       return nil
     end
   end
-  update_repeat_state(in1, _110_())
+  update_repeat_state(in1, _109_())
   if partial_pattern_3f then
     local n = (count or 1)
     local target = targets[n]
@@ -761,14 +756,14 @@ local function leap(kwargs)
       return
     else
     end
-    local function _112_()
+    local function _111_()
       if target.idx then
         return target.idx
       else
         return n
       end
     end
-    set_dot_repeat(in1, nil, _112_())
+    set_dot_repeat(in1, nil, _111_())
     do_action(target)
     if can_traverse_3f(targets) then
       traversal_loop(targets, 1, {["use-no-labels?"] = true})
@@ -797,14 +792,14 @@ local function leap(kwargs)
   end
   local function exit_with_action_on_2a(idx)
     local target = targets_2a[idx]
-    local function _118_()
+    local function _117_()
       if target.idx then
         return target.idx
       else
         return idx
       end
     end
-    set_dot_repeat(in1, _3fin20, _118_())
+    set_dot_repeat(in1, _3fin20, _117_())
     do_action(target)
     return exit_2a()
   end
@@ -846,14 +841,14 @@ local function leap(kwargs)
     exit_with_action_on_2a(1)
     return
   else
-    local _123_, _124_ = get_target_with_active_label(targets_2a, in_final)
-    if ((nil ~= _123_) and (nil ~= _124_)) then
-      local target = _123_
-      local idx = _124_
+    local _122_, _123_ = get_target_with_active_label(targets_2a, in_final)
+    if ((nil ~= _122_) and (nil ~= _123_)) then
+      local target = _122_
+      local idx = _123_
       exit_with_action_on_2a(idx)
       return
     else
-      local _ = _123_
+      local _ = _122_
       vim.fn.feedkeys(in_final, "i")
       exit_2a()
       return
@@ -888,9 +883,9 @@ local function manage_editor_opts()
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
     saved_editor_opts = {}
     for opt, val in pairs(t) do
-      local _let_128_ = vim.split(opt, ".", {plain = true})
-      local scope = _let_128_[1]
-      local name = _let_128_[2]
+      local _let_127_ = vim.split(opt, ".", {plain = true})
+      local scope = _let_127_[1]
+      local name = _let_127_[2]
       if (scope == "w") then
         for _, win in ipairs(wins) do
           local saved_val = get_opt(name, {scope = "local", win = win})
@@ -937,14 +932,14 @@ local function manage_editor_opts()
     end
     return nil
   end
-  local function _133_(_)
+  local function _132_(_)
     return set_editor_opts(temporary_editor_opts)
   end
-  api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _133_})
-  local function _134_(_)
+  api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _132_})
+  local function _133_(_)
     return restore_editor_opts()
   end
-  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _134_})
+  return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _133_})
 end
 local function init()
   do

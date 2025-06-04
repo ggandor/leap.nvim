@@ -306,7 +306,6 @@ char separately.
                    (= vim.v.count 0) (if (and op-mode? no-labels-to-use?) 1 nil)
                    vim.v.count))
 
-  (local max-phase-one-targets (or opts.max_phase_one_targets math.huge))
   (local user-given-targets? user-given-targets)
 
   (local keyboard-input? (not (or invoked-repeat?
@@ -326,9 +325,7 @@ char separately.
   ; the outside world.
   (local st {; Multi-phase processing (show beacons ahead of time,
              ; right after the first input)?
-             :phase (when (and keyboard-input?
-                               (not= max-phase-one-targets 0)
-                               (not no-labels-to-use?))
+             :phase (when (and keyboard-input? (not no-labels-to-use?))
                       1)
              ; When repeating a `{char}<enter>` search (started to
              ; traverse after the first input).
@@ -436,12 +433,10 @@ char separately.
               in1)))
 
   (fn get-second-pattern-input [targets]
-    (when (and (<= (length targets) max-phase-one-targets)
-               ; Note: `count` does _not_ automatically disable
-               ; two-phase processing, as we might want to give
-               ; char<enter> partial input (but it implies not needing
-               ; to show beacons).
-               (not count))
+    ; Note: `count` does _not_ automatically disable two-phase
+    ; processing altogether, as we might want to give char<enter>
+    ; partial input, but it implies not needing to show beacons.
+    (when-not count
       (with-highlight-chores #(light-up-beacons targets)))
     (get-input-by-keymap prompt))
 
@@ -697,8 +692,6 @@ char separately.
           (set targets.autojump? true)
           (prepare-labeled-targets* targets))
       (do
-        (when (> (length targets) max-phase-one-targets)
-          (set st.phase nil))
         (populate-sublists targets)
         (each [_ sublist (pairs targets.sublists)]
           (prepare-labeled-targets* sublist)
