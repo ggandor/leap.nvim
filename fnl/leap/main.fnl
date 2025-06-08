@@ -835,12 +835,11 @@ char separately.
   (var saved-editor-opts {})
 
   (fn get-temporary-editor-opts []
-    (let [editor-opts {:w.scrolloff 0
-                       :w.sidescrolloff 0
-                       :w.conceallevel (or (and (not opts.keep_conceallevel) 0) nil)
-                       :b.modeline false  ; lightspeed#81
-                       }]
-      editor-opts))
+    {:w.scrolloff 0
+     :w.sidescrolloff 0
+     :w.conceallevel (or (and (not opts.keep_conceallevel) 0) nil)
+     :b.modeline false  ; lightspeed#81
+     })
 
   (fn set-editor-opts [t]
     (let [wins (or (. state.args :target_windows) [(api.nvim_get_current_win)])]

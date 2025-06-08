@@ -879,8 +879,7 @@ local function manage_editor_opts()
   local set_opt = api.nvim_set_option_value
   local saved_editor_opts = {}
   local function get_temporary_editor_opts()
-    local editor_opts = {["w.scrolloff"] = 0, ["w.sidescrolloff"] = 0, ["w.conceallevel"] = ((not opts.keep_conceallevel and 0) or nil), ["b.modeline"] = false}
-    return editor_opts
+    return {["w.scrolloff"] = 0, ["w.sidescrolloff"] = 0, ["w.conceallevel"] = ((not opts.keep_conceallevel and 0) or nil), ["b.modeline"] = false}
   end
   local function set_editor_opts(t)
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
