@@ -2,6 +2,7 @@
                     :highlight_unlabeled_phase_one_targets false  ; deprecated
                     :max_highlighted_traversal_targets 10
                     :case_sensitive false
+                    :keep_conceallevel false
                     :equivalence_classes [" \t\r\n"]
                     :substitute_chars {}                          ; deprecated
                     :safe_labels ["s" "f" "n" "u" "t" "/"

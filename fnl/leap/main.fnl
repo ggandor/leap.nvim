@@ -831,14 +831,16 @@ char separately.
   (local get-opt api.nvim_get_option_value)
   (local set-opt api.nvim_set_option_value)
 
-  (local temporary-editor-opts
-    {:w.scrolloff 0
-     :w.sidescrolloff 0
-     :w.conceallevel 0
-     :b.modeline false  ; lightspeed#81
-     })
 
   (var saved-editor-opts {})
+
+  (fn get-temporary-editor-opts []
+    (let [editor-opts {:w.scrolloff 0
+                       :w.sidescrolloff 0
+                       :w.conceallevel (or (and (not opts.keep_conceallevel) 0) nil)
+                       :b.modeline false  ; lightspeed#81
+                       }]
+      editor-opts))
 
   (fn set-editor-opts [t]
     (let [wins (or (. state.args :target_windows) [(api.nvim_get_current_win)])]
@@ -872,7 +874,7 @@ char separately.
   (api.nvim_create_autocmd "User"
     {:pattern "LeapEnter"
      :group "LeapDefault"
-     :callback (fn [_] (set-editor-opts temporary-editor-opts))})
+     :callback (fn [_] (set-editor-opts (get-temporary-editor-opts)))})
 
   (api.nvim_create_autocmd "User"
     {:pattern "LeapLeave"

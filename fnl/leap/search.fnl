@@ -11,7 +11,7 @@
 
 
 (fn get-horizontal-bounds []
-  "Return the first an last visible virtual column of the editable
+  "Return the first and last visible virtual column of the editable
 window area.
 
 +----------------------+

@@ -224,6 +224,15 @@ Example configuration: >lua
 
     Consider case in search patterns.
 
+                                                      *leap.opts.keep_conceallevel*
+`keep_conceallevel = false`
+
+    Do not change the |conceallevel|. This setting ensures that text containing
+    concealed characters does not shift when the search is started.
+<
+    Note: If you activate this setting leap is unable to guarantee that all 
+    targets are reachable!
+
                                                  *leap.opts.equivalence_classes*
 `equivalence_classes = { ' \t\r\n' }`
 
