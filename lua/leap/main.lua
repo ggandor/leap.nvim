@@ -874,50 +874,49 @@ local function init_highlight()
   init_highlight_2a()
   return api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = init_highlight_2a})
 end
-local function manage_editor_opts()
+local function manage_vim_opts()
   local get_opt = api.nvim_get_option_value
   local set_opt = api.nvim_set_option_value
-  local temporary_editor_opts = {["w.scrolloff"] = 0, ["w.sidescrolloff"] = 0, ["w.conceallevel"] = 0, ["b.modeline"] = false}
-  local saved_editor_opts = {}
-  local function set_editor_opts(t)
+  local saved_vim_opts = {}
+  local function set_vim_opts(t)
     local wins = (state.args.target_windows or {api.nvim_get_current_win()})
-    saved_editor_opts = {}
+    saved_vim_opts = {}
     for opt, val in pairs(t) do
       local _let_127_ = vim.split(opt, ".", {plain = true})
       local scope = _let_127_[1]
       local name = _let_127_[2]
-      if (scope == "w") then
+      if (scope == "wo") then
         for _, win in ipairs(wins) do
           local saved_val = get_opt(name, {scope = "local", win = win})
-          saved_editor_opts[{"w", win, name}] = saved_val
+          saved_vim_opts[{"wo", win, name}] = saved_val
           set_opt(name, val, {scope = "local", win = win})
         end
-      elseif (scope == "b") then
+      elseif (scope == "bo") then
         for _, win in ipairs(wins) do
           local buf = api.nvim_win_get_buf(win)
           local saved_val = get_opt(name, {buf = buf})
-          saved_editor_opts[{"b", buf, name}] = saved_val
+          saved_vim_opts[{"bo", buf, name}] = saved_val
           set_opt(name, val, {buf = buf})
         end
-      elseif (scope == "g") then
+      elseif (scope == "go") then
         local saved_val = get_opt(name, {scope = "global"})
-        saved_editor_opts[name] = saved_val
+        saved_vim_opts[name] = saved_val
         set_opt(name, val, {scope = "global"})
       else
       end
     end
     return nil
   end
-  local function restore_editor_opts()
-    for key, val in pairs(saved_editor_opts) do
-      if ((_G.type(key) == "table") and (key[1] == "w") and (nil ~= key[2]) and (nil ~= key[3])) then
+  local function restore_vim_opts()
+    for key, val in pairs(saved_vim_opts) do
+      if ((_G.type(key) == "table") and (key[1] == "wo") and (nil ~= key[2]) and (nil ~= key[3])) then
         local win = key[2]
         local name = key[3]
         if api.nvim_win_is_valid(win) then
           set_opt(name, val, {scope = "local", win = win})
         else
         end
-      elseif ((_G.type(key) == "table") and (key[1] == "b") and (nil ~= key[2]) and (nil ~= key[3])) then
+      elseif ((_G.type(key) == "table") and (key[1] == "bo") and (nil ~= key[2]) and (nil ~= key[3])) then
         local buf = key[2]
         local name = key[3]
         if api.nvim_buf_is_valid(buf) then
@@ -933,11 +932,11 @@ local function manage_editor_opts()
     return nil
   end
   local function _132_(_)
-    return set_editor_opts(temporary_editor_opts)
+    return set_vim_opts(opts.vim_opts)
   end
   api.nvim_create_autocmd("User", {pattern = "LeapEnter", group = "LeapDefault", callback = _132_})
   local function _133_(_)
-    return restore_editor_opts()
+    return restore_vim_opts()
   end
   return api.nvim_create_autocmd("User", {pattern = "LeapLeave", group = "LeapDefault", callback = _133_})
 end
@@ -952,7 +951,7 @@ local function init()
   end
   api.nvim_create_augroup("LeapDefault", {})
   init_highlight()
-  return manage_editor_opts()
+  return manage_vim_opts()
 end
 init()
 return {state = state, leap = leap}

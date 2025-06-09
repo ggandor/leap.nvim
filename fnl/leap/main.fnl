@@ -827,57 +827,49 @@ char separately.
      :callback init-highlight*}))
 
 
-(fn manage-editor-opts []
+(fn manage-vim-opts []
   (local get-opt api.nvim_get_option_value)
   (local set-opt api.nvim_set_option_value)
+  (var saved-vim-opts {})
 
-  (local temporary-editor-opts
-    {:w.scrolloff 0
-     :w.sidescrolloff 0
-     :w.conceallevel 0
-     :b.modeline false  ; lightspeed#81
-     })
-
-  (var saved-editor-opts {})
-
-  (fn set-editor-opts [t]
+  (fn set-vim-opts [t]
     (let [wins (or (. state.args :target_windows) [(api.nvim_get_current_win)])]
-      (set saved-editor-opts {})
+      (set saved-vim-opts {})
       (each [opt val (pairs t)]
         (let [[scope name] (vim.split opt "." {:plain true})]
           (case scope
-            :w (each [_ win (ipairs wins)]
-                 (local saved-val (get-opt name {:scope "local" :win win}))
-                 (tset saved-editor-opts [:w win name] saved-val)
-                 (set-opt name val {:scope "local" :win win}))
-            :b (each [_ win (ipairs wins)]
-                 (local buf (api.nvim_win_get_buf win))
-                 (local saved-val (get-opt name {:buf buf}))
-                 (tset saved-editor-opts [:b buf name] saved-val)
-                 (set-opt name val {:buf buf}))
-            :g (do
-                 (local saved-val (get-opt name {:scope "global"}))
-                 (tset saved-editor-opts name saved-val)
-                 (set-opt name val {:scope "global"})))))))
+            :wo (each [_ win (ipairs wins)]
+                  (local saved-val (get-opt name {:scope "local" :win win}))
+                  (tset saved-vim-opts [:wo win name] saved-val)
+                  (set-opt name val {:scope "local" :win win}))
+            :bo (each [_ win (ipairs wins)]
+                  (local buf (api.nvim_win_get_buf win))
+                  (local saved-val (get-opt name {:buf buf}))
+                  (tset saved-vim-opts [:bo buf name] saved-val)
+                  (set-opt name val {:buf buf}))
+            :go (do
+                  (local saved-val (get-opt name {:scope "global"}))
+                  (tset saved-vim-opts name saved-val)
+                  (set-opt name val {:scope "global"})))))))
 
-  (fn restore-editor-opts []
-    (each [key val (pairs saved-editor-opts)]
+  (fn restore-vim-opts []
+    (each [key val (pairs saved-vim-opts)]
       (case key
-        [:w win name] (when (api.nvim_win_is_valid win)
-                        (set-opt name val {:scope "local" :win win}))
-        [:b buf name] (when (api.nvim_buf_is_valid buf)
-                        (set-opt name val {:buf buf}))
+        [:wo win name] (when (api.nvim_win_is_valid win)
+                         (set-opt name val {:scope "local" :win win}))
+        [:bo buf name] (when (api.nvim_buf_is_valid buf)
+                         (set-opt name val {:buf buf}))
         name (set-opt name val {:scope "global"}))))
 
   (api.nvim_create_autocmd "User"
     {:pattern "LeapEnter"
      :group "LeapDefault"
-     :callback (fn [_] (set-editor-opts temporary-editor-opts))})
+     :callback (fn [_] (set-vim-opts opts.vim_opts))})
 
   (api.nvim_create_autocmd "User"
     {:pattern "LeapLeave"
      :group "LeapDefault"
-     :callback (fn [_] (restore-editor-opts))}))
+     :callback (fn [_] (restore-vim-opts))}))
 
 
 (fn init []
@@ -887,7 +879,7 @@ char separately.
                                      eq-classes->membership-lookup))
   (api.nvim_create_augroup "LeapDefault" {})
   (init-highlight)
-  (manage-editor-opts))
+  (manage-vim-opts))
 
 
 (init)

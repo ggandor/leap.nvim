@@ -334,6 +334,23 @@ Shift to the previous group of labeled targets (revert `next_group`).
 
 Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
 
+                                                            *leap.opts.vim_opts*
+`vim_opts =` >
+    {
+      ['wo.scrolloff'] = 0,
+      ['wo.sidescrolloff'] = 0,
+      ['wo.conceallevel'] = 0,
+      ['bo.modeline'] = false,
+    }
+
+Temporary |options| to be set on |LeapEnter|, and restored to their original
+value upon |LeapLeave|. The keys should follow the above pattern, the prefix
+corresponding to |vim.wo|, |vim.bo|, or |vim.go|.
+
+Example - turning off |hlsearch| while leaping: >lua
+
+    require('leap').opts.vim_opts['go.hlsearch'] = false
+
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*
 
@@ -380,32 +397,13 @@ Leap:
 *LeapEnter*
 *LeapLeave*
 
-Example - turning off |hlsearch| while leaping: >lua
-
-    do
-      local saved_hls
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'LeapEnter',
-        callback = function ()
-          saved_hls = vim.o.hlsearch
-          vim.o.hlsearch = false
-        end,
-      })
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'LeapLeave',
-        callback = function ()
-          vim.o.hlsearch = saved_hls
-        end,
-      })
-    end
-
 The argument table passed to |leap.leap()| can be accessed at runtime via
 `require('leap').state.args`. This lets you customize anything on a per-call
 basis - just set a flag when calling |leap.leap()|: >lua
 
-    local function my_custom_leap_func()
+    local function leap2 ()
       require('leap').leap {
-        called_my_custom_leap_func = true,
+        called_leap2 = true,
         -- other arguments...
       }
     end
@@ -413,12 +411,19 @@ basis - just set a flag when calling |leap.leap()|: >lua
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
       callback = function (event)
-        if require('leap').state.args.called_my_custom_leap_func then
-          -- Implement some special logic here, that will only apply to
-          -- my_custom_leap_func(), and restore the state (if needed) in
-          -- an analogous `LeapLeave` autocommand.
+        if require('leap').state.args.called_leap2 then
+          -- Put some special logic here, that will only apply to leap2().
         end
       end
+    })
+
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'LeapLeave',
+      callback = function ()
+        if require('leap').state.args.called_leap2 then
+          -- Restore the state here, if necessary.
+        end
+      end,
     })
 
 ==============================================================================

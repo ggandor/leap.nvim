@@ -15,7 +15,11 @@
                     :special_keys {:next_target "<enter>"
                                    :prev_target "<backspace>"
                                    :next_group "<space>"
-                                   :prev_group "<backspace>"}}
+                                   :prev_group "<backspace>"}
+                    :vim_opts {:wo.scrolloff 0  ; keep the view when auto-jumping
+                               :wo.sidescrolloff 0
+                               :wo.conceallevel 0
+                               :bo.modeline false}}  ; lightspeed#81
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
