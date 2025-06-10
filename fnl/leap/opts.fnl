@@ -17,6 +17,7 @@
                                :wo.sidescrolloff 0
                                :wo.conceallevel 0
                                :bo.modeline false}  ; lightspeed#81
+                    :show_label_on_start_of_match false
                     ; Deprecated options.
                     :highlight_unlabeled_phase_one_targets false
                     :max_highlighted_traversal_targets 10

@@ -1,7 +1,6 @@
 local hl = require("leap.highlight")
 local opts = require("leap.opts")
 local api = vim.api
-local map = vim.tbl_map
 local function set_beacon_to_match_hl(target)
   local _local_1_ = target["chars"]
   local ch1 = _local_1_[1]
@@ -20,7 +19,7 @@ local function get_label_offset(target)
   local _let_3_ = target["chars"]
   local ch1 = _let_3_[1]
   local ch2 = _let_3_[2]
-  if (ch1 == "\n") then
+  if (opts.show_label_on_start_of_match or (ch1 == "\n")) then
     return 0
   elseif (target["edge-pos?"] or (ch2 == "\n")) then
     return ch1:len()

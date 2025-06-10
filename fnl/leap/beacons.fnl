@@ -2,7 +2,6 @@
 (local opts (require "leap.opts"))
 
 (local api vim.api)
-(local map vim.tbl_map)
 
 
 ; "Beacon" is an umbrella term for any kind of visual overlay tied to
@@ -28,7 +27,7 @@
 ; Handling multibyte characters.
 (fn get-label-offset [target]
   (let [{:chars [ch1 ch2]} target]
-    (if (= ch1 "\n") 0  ; on EOL
+    (if (or opts.show_label_on_start_of_match (= ch1 "\n")) 0  ; user option or on EOL
         (or target.edge-pos? (= ch2 "\n")) (ch1:len)  ; window edge (right) or before EOL
         (+ (ch1:len) (ch2:len)))))
 
