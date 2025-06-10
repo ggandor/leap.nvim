@@ -23,11 +23,28 @@
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
-; First try to look up everything in the `current_call` table,
-; so that we can override settings on a per-call basis.
 (setmetatable M
-              {:__index (fn [self key]
-                          (case (. self.current_call key)
-                            nil (. self.default key)
-                            val val  ; `false` should be returned too
-                            ))})
+  {:__index (fn [self key]
+              ; Try to look up everything in the `current_call` table
+              ; first, so that we can override settings on a per-call
+              ; basis.
+              (case (. self.current_call key)
+                ; Checking for `nil`, as `false` should be returned too.
+                nil (. self.default key)
+                val (if (and (= (type val) :table)
+                             (not (vim.isarray val))
+                             (not= (?. (getmetatable val) :merge) false))
+                        ; On the first access, we automatically merge
+                        ; map-like nested tables with the defaults.
+                        ; This way users can set the relevant values
+                        ; only, without having to deepcopy the whole
+                        ; subtable from `default`, and then modify it.
+                        (do
+                          (each [k v (pairs (. self.default key))]
+                            (when (= (. val k) nil)
+                              (set (. val k) v)))
+                          ; The metatable is used as a convenient flag.
+                          ; It can also be used by users to prevent
+                          ; merging in the first place.
+                          (setmetatable val {:merge false}))
+                        val)))})

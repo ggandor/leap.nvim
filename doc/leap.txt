@@ -455,8 +455,32 @@ leap({opts})                                                       *leap.leap()*
                  behave as |inclusive|.
                • opts: A table just like |leap.opts|, to override any default
                  setting for the specific call. Example: >lua
-
-                    require('leap').leap { opts = { safe_labels = '' } }
+                    require('leap').leap {
+                      opts = { safe_labels = '' }
+                    }
+<
+                 For map-like subtables it is also enough to specify only the
+                 values to be overridden: >lua
+                    require('leap').leap {
+                      opts = {
+                        special_keys = {
+                          next_group = '<tab>',
+                          prev_group = '<s-tab>',
+                        }
+                      }
+                    }
+<
+                 If you want to completely remove a field from such subtables,
+                 copy the defaults, and pass the modified table along with a
+                 |metatable| containing a `merge = false` flag (this tells
+                 Leap to treat it as the only source of truth): >lua
+                    local vim_opts = vim.deepcopy(require'leap'.opts.vim_opts)
+                    vim_opts['wo.conceallevel'] = nil
+                    require('leap').leap {
+                      opts = {
+                        vim_opts = setmetatable(vim_opts, { merge = false })
+                      }
+                    }
 <
                                                             *leap-custom-action*
                • action: A Lua function that will be executed by Leap in place

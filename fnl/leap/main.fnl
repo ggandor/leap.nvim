@@ -270,7 +270,10 @@ char separately.
 
   (set opts.current_call.eq_class_of
        (-?> opts.current_call.equivalence_classes
-            eq-classes->membership-lookup))
+            eq-classes->membership-lookup
+            ; Prevent merging with the defaults, as this is derived
+            ; programmatically from a list-like option (see opts.fnl).
+            (setmetatable {:merge false})))
   ; Force the label lists into tables.
   (each [_ t (ipairs [:default :current_call])]
     (each [_ k (ipairs [:labels :safe_labels])]
