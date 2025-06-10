@@ -224,7 +224,7 @@ Example configuration: >lua
 
     Consider case in search patterns.
 
-                                                      *leap.opts.keep_conceallevel*
+                                                   *leap.opts.keep_conceallevel*
 `keep_conceallevel = false`
 
     Do not change the |conceallevel|. This setting ensures that text containing
