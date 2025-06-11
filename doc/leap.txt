@@ -270,12 +270,6 @@ Example configuration: >lua
     name it), but keep in mind that this function will be called for every
     single match, so efficiency is something to consider.
 
-                                   *leap.opts.max_highlighted_traversal_targets*
-`max_highlighted_traversal_targets = 10`
-
-    Number of targets to be highlighted after the cursor when doing
-    |leap-traversal| without labels.
-
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`
 
@@ -364,8 +358,9 @@ LeapLabel
                                                                   *hl-LeapMatch*
 LeapMatch
     Search matches when doing |leap-traversal| without labels. Linked to
-    |hl-Search| by default.
-
+    |hl-Search| by default. To disable match highlights: >vim
+       vim.cmd 'highlight! link LeapMatch None'
+<
                                                                *hl-LeapBackdrop*
 LeapBackdrop
     In some cases it might be useful to apply certain settings on the whole

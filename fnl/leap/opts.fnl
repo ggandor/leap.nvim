@@ -1,9 +1,6 @@
-(local M {:default {:preview_filter nil
-                    :highlight_unlabeled_phase_one_targets false  ; deprecated
-                    :max_highlighted_traversal_targets 10
-                    :case_sensitive false
+(local M {:default {:case_sensitive false
                     :equivalence_classes [" \t\r\n"]
-                    :substitute_chars {}                          ; deprecated
+                    :preview_filter nil
                     :safe_labels ["s" "f" "n" "u" "t" "/"
                                   "S" "F" "N" "L" "H" "M" "U" "G" "T" "Z" "?"]
                     :labels ["s" "f" "n"
@@ -19,7 +16,11 @@
                     :vim_opts {:wo.scrolloff 0  ; keep the view when auto-jumping
                                :wo.sidescrolloff 0
                                :wo.conceallevel 0
-                               :bo.modeline false}}  ; lightspeed#81
+                               :bo.modeline false}  ; lightspeed#81
+                    ; Deprecated options.
+                    :highlight_unlabeled_phase_one_targets false
+                    :max_highlighted_traversal_targets 10
+                    :substitute_chars {}}
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
