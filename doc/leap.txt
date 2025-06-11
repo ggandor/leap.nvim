@@ -49,36 +49,41 @@ custom mappings and arrangements, see |leap-custom-mappings|.
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
 
-                                                           *leap-to-end-of-line*
+Special positions
+
 A character at the end of a line can be targeted by pressing `<space>` after
 it. There is no special mechanism behind this: `<space>` is simply an alias
 for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
+*leap-till-eol*
 
 A slightly more magical feature is that you can target actual EOL positions,
 including empty lines, by pressing the newline alias twice (`<space><space>`).
 This fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too.
+cursor should be reachable by Leap too. *leap-to-eol* *leap-to-empty-line*
 
-                                                           *leap-smart-autojump*
+Target ordering                                           *leap-target-ordering*
+
+When searching bidirectionally, Leap sorts matches by Euclidean (beeline)
+distance from the cursor, with the exception that the current line you're on,
+and on that line, forward direction is prioritized. That is, you can always be
+sure that the targets right in front of you will be the first ones.
+
+Smart autojump                                             *leap-smart-autojump*
+
 Leap only jumps to the first match if the remaining matches can be covered by
 a limited set of "safe" target labels (keys you would not use right after a
 jump), but stays in place, and switches to an extended label set otherwise.
 For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
 
-                                                      *leap-bidirectional-search*
-When searching bidirectionally, Leap sorts matches by Euclidean (beeline)
-distance from the cursor, with the exception that the current line you're on,
-and on that line, forward direction is prioritized. That is, you can always be
-sure that the targets right in front of you will be the first ones.
-
-                                                    *leap-repeat* *leap-traversal*
+Repeat and traversal
+                                                                   *leap-repeat*
 At any stage (after 0, 1, or 2 input characters), `<enter>`
 (|leap.opts.special_keys.next_target|) consistently jumps to the first
 available target. Pressing it right after invocation (`s<enter>`) repeats the
 previous search. Pressing it after one input character (`s{char}<enter>`) can
 be used as a multiline substitute for `fFtT` motions.
-
+                                                                *leap-traversal*
 If the search is directional, `<enter>` can also traverse through the rest of
 the targets, moving on to the next one on each subsequent keypress
 (`s<enter><enter>...`). If you overshoot, `<backspace>`
@@ -89,7 +94,6 @@ like |;| and |,|, that is, repeat the last motion without explicitly invoking
 Leap (after that, they enter traversal mode, and behave as you would expect).
 It makes sense to use `next_target` and `prev_target`, for maximum
 consistency: >lua
-
     require('leap.user').set_repeat_keys('<enter>', '<backspace>', {
       -- If set to true, the keys will work like the native
       -- semicolon/comma, i.e., forward/backward is understood in
@@ -101,13 +105,15 @@ consistency: >lua
 Note: In case of bidirectional search, invoking repeat right away like above
 might substitute for the lack of direct traversal ability.
 
-                                                               *leap-dot-repeat*
+Dot-repeat                                                     *leap-dot-repeat*
+
 Operations can be repeated with |.|, if repeat.vim
 (https://github.com/tpope/vim-repeat) is installed. Dot-repeat works as you
 would expect, e.g., if you aimed for the 2nd target backwards, `.` will do the
-same (the "beeline" ordering of |leap-bidirectional-search| is ignored).
+same (the "beeline" |leap-target-ordering| is ignored).
 
-                                                         *leap-concealed-labels*
+Concealed labels                                         *leap-concealed-labels*
+
 Labels in subsequent target groups are concealed with an empty block or a
 middle dot, depending on the color scheme, and also have a dimmed color.
 
@@ -202,11 +208,8 @@ selecting the target.)
     vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
     vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
 
-Note: Same-character sequences (`xxxx...`) are matched at one position only -
-by default, at the beginning, but `<Plug>(leap-forward-to)` and
-`<Plug>(leap-backward-till)` matches at the end instead, so that in Visual and
-Operator-pending mode the sequence behaves as a chunk, and either the whole or
-none of it will be selected.
+Note: Same-character sequences (`aaa...`) are matched at one position only: if
+`offset` in |leap.leap()| is positive, at the end, otherwise at the start.
 
 ==============================================================================
 CONFIGURATION                                            *leap-config* *leap.opts*
@@ -233,9 +236,8 @@ Example configuration: >lua
     Example - whitespace, brackets, and quotes: >lua
         { ' \t\r\n', '([{', ')]}', '\'"`' }
 <
-    Note: If you want to be able to target empty lines, and characters at the
-    end of a line, make sure to keep an alias for `\n` and `\r`.
-    |leap-to-end-of-line|
+    Note: If you want to be able to target empty lines and characters at the
+    end of a line, keep an alias for `\n` and `\r`. |leap-till-eol|
 
     Note: Wildcard characters (non-mutual aliases) are not possible in Leap,
     for the same reason that supporting |smartcase| is not possible: we cannot
@@ -342,43 +344,44 @@ value upon |LeapLeave|. The keys should follow the above pattern, the prefix
 corresponding to |vim.wo|, |vim.bo|, or |vim.go|.
 
 Example - turning off |hlsearch| while leaping: >lua
-
     require('leap').opts.vim_opts['go.hlsearch'] = false
-
+<
 ==============================================================================
 HIGHLIGHTING                                                    *leap-highlight*
 
 Leap uses the following highlight groups that you can configure to your own
 liking (using |:hi| or |nvim_set_hl()|):
-
                                                                   *hl-LeapLabel*
-LeapLabel
-    Target labels. Linked to |hl-IncSearch| by default.
+LeapLabel		Target labels. Linked to |hl-IncSearch| by default.
 
                                                                   *hl-LeapMatch*
-LeapMatch
-    Search matches when doing |leap-traversal| without labels. Linked to
-    |hl-Search| by default. To disable match highlights: >vim
-       vim.cmd 'highlight! link LeapMatch None'
+LeapMatch		Search matches when doing |leap-traversal| without
+                        labels. Linked to |hl-Search| by default. To disable
+                        match highlights: >lua
+                            vim.cmd 'highlight! link LeapMatch None'
 <
                                                                *hl-LeapBackdrop*
-LeapBackdrop
-    In some cases it might be useful to apply certain settings on the whole
-    search area, like disabling certain |attr-list| attributes, or linking to
-    |hl-Normal|, to make labels easier to see. This group is not set by
-    default.
+LeapBackdrop		In some cases it might be useful to apply certain
+                        settings on the whole search area, like disabling
+                        certain |attr-list| attributes, or linking to
+                        |hl-Normal|, to make labels easier to see. This group
+                        is not set by default.
 
 To preserve your custom settings, wrap them in a function, and define an
 autocommand for |ColorScheme| change: >lua
 
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
-        if vim.g.colors_name == "this_colorscheme_needs_tweaking" then
+        -- General
+        vim.cmd 'hi! link LeapMatch None'
+        -- Color-scheme-specific
+        if vim.g.colors_name == 'foo' then
           -- Force using the defaults of Leap:
           require('leap').init_highlight(true)
+        elseif vim.g.colors_name == 'bar' then
           -- And/or make your own tweaks:
-          vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
-          -- etc.
+          vim.cmd 'hi! link LeapBackdrop Comment'
+          vim.cmd 'hi! link LeapLabel Substitute'
         end
       end
     })
@@ -408,17 +411,9 @@ basis - just set a flag when calling |leap.leap()|: >lua
       callback = function (event)
         if require('leap').state.args.called_leap2 then
           -- Put some special logic here, that will only apply to leap2().
+          -- You can do cleanup in an analogous LeapLeave autocommand.
         end
       end
-    })
-
-    vim.api.nvim_create_autocmd('User', {
-      pattern = 'LeapLeave',
-      callback = function ()
-        if require('leap').state.args.called_leap2 then
-          -- Restore the state here, if necessary.
-        end
-      end,
     })
 
 ==============================================================================
@@ -457,24 +452,7 @@ leap({opts})                                                       *leap.leap()*
                  For map-like subtables it is also enough to specify only the
                  values to be overridden: >lua
                     require('leap').leap {
-                      opts = {
-                        special_keys = {
-                          next_group = '<tab>',
-                          prev_group = '<s-tab>',
-                        }
-                      }
-                    }
-<
-                 If you want to completely remove a field from such subtables,
-                 copy the defaults, and pass the modified table along with a
-                 |metatable| containing a `merge = false` flag (this tells
-                 Leap to treat it as the only source of truth): >lua
-                    local vim_opts = vim.deepcopy(require'leap'.opts.vim_opts)
-                    vim_opts['wo.conceallevel'] = nil
-                    require('leap').leap {
-                      opts = {
-                        vim_opts = setmetatable(vim_opts, { merge = false })
-                      }
+                      opts = { vim_opts = { ['go.hlsearch'] = false } }
                     }
 <
                                                             *leap-custom-action*
