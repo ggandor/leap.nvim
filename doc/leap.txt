@@ -227,6 +227,12 @@ Example configuration: >lua
 
     Consider case in search patterns.
 
+                                        *leap.opts.show_label_on_start_of_match*
+`show_label_on_start_of_match = false`
+
+    Display the target label on the first character of the match.
+    |leap-preview|
+
                                                  *leap.opts.equivalence_classes*
 `equivalence_classes = { ' \t\r\n' }`
 
