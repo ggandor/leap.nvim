@@ -254,9 +254,9 @@ local function leap(kwargs)
   local user_given_targets_3f = user_given_targets
   local keyboard_input_3f = not (invoked_repeat_3f or invoked_dot_repeat_3f or user_given_targets)
   local prompt = {str = ">"}
-  local spec_keys
+  local keys
   local function _34_(_, k)
-    local _35_ = opts.special_keys[k]
+    local _35_ = opts.keys[k]
     if (nil ~= _35_) then
       local v = _35_
       local function _36_()
@@ -271,7 +271,7 @@ local function leap(kwargs)
       return nil
     end
   end
-  spec_keys = setmetatable({}, {__index = _34_})
+  keys = setmetatable({}, {__index = _34_})
   local st
   local _38_
   if (keyboard_input_3f and not no_labels_to_use_3f) then
@@ -390,7 +390,7 @@ local function leap(kwargs)
     local _56_ = get_input_by_keymap(prompt)
     if (nil ~= _56_) then
       local in1 = _56_
-      if contains_3f(spec_keys.next_target, in1) then
+      if contains_3f(keys.next_target, in1) then
         st.phase = nil
         return get_repeat_input()
       else
@@ -577,10 +577,10 @@ local function leap(kwargs)
       local _81_ = get_input()
       if (nil ~= _81_) then
         local input = _81_
-        local switch_group_3f = (contains_3f(spec_keys.next_group, input) or (contains_3f(spec_keys.prev_group, input) and not first_invoc_3f))
+        local switch_group_3f = (contains_3f(keys.next_group, input) or (contains_3f(keys.prev_group, input) and not first_invoc_3f))
         if (switch_group_3f and (_7cgroups_7c > 1)) then
           local shift
-          if contains_3f(spec_keys.next_group, input) then
+          if contains_3f(keys.next_group, input) then
             shift = 1
           else
             shift = -1
@@ -598,9 +598,9 @@ local function leap(kwargs)
     return loop(true)
   end
   local function traversal_get_new_idx(idx, _in, targets)
-    if contains_3f(spec_keys.next_target, _in) then
+    if contains_3f(keys.next_target, _in) then
       return min(inc(idx), #targets)
-    elseif contains_3f(spec_keys.prev_target, _in) then
+    elseif contains_3f(keys.prev_target, _in) then
       if (idx <= 1) then
         return #targets
       else
@@ -744,7 +744,7 @@ local function leap(kwargs)
     st.phase = 2
   else
   end
-  local partial_pattern_3f = (st["repeating-partial-pattern?"] or contains_3f(spec_keys.next_target, _3fin20))
+  local partial_pattern_3f = (st["repeating-partial-pattern?"] or contains_3f(keys.next_target, _3fin20))
   local function _110_()
     if not partial_pattern_3f then
       return _3fin20
@@ -835,14 +835,14 @@ local function leap(kwargs)
   if not in_final then
     exit_early_2a()
     return
-  elseif (can_traverse_3f(targets_2a) and (contains_3f(spec_keys.next_target, in_final) or contains_3f(spec_keys.prev_target, in_final))) then
+  elseif (can_traverse_3f(targets_2a) and (contains_3f(keys.next_target, in_final) or contains_3f(keys.prev_target, in_final))) then
     local use_no_labels_3f = (no_labels_to_use_3f or st["repeating-partial-pattern?"] or not targets_2a["autojump?"])
     local new_idx = traversal_get_new_idx(st["curr-idx"], in_final, targets_2a)
     do_action(targets_2a[new_idx])
     traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = use_no_labels_3f})
     exit_2a()
     return
-  elseif (contains_3f(spec_keys.next_target, in_final) and (st["curr-idx"] == 0)) then
+  elseif (contains_3f(keys.next_target, in_final) and (st["curr-idx"] == 0)) then
     exit_with_action_on_2a(1)
     return
   else

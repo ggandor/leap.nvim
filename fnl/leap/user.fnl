@@ -23,13 +23,11 @@
 
   (fn leap-repeat [backward-invoc?]  ; = started with `bdw-key` (rel. or abs.)
     (let [leap (require "leap")
-          opts {:special_keys
-                (vim.tbl_extend "force"
-                  leap.opts.special_keys
-                  ; Just overwrite the fields, one wouldn't want to
-                  ; switch to another key after starting with one.
-                  {:next_target (if backward-invoc? bwd-key fwd-key)
-                   :prev_target (if backward-invoc? fwd-key bwd-key)})}
+          opts {:keys (vim.tbl_extend "force" leap.opts.keys
+                        ; Just overwrite the fields, one wouldn't want to
+                        ; switch to another key after starting with one.
+                        {:next_target (if backward-invoc? bwd-key fwd-key)
+                         :prev_target (if backward-invoc? fwd-key bwd-key)})}
           backward (if relative-directions?
                        (if backward-invoc?
                            (not leap.state.repeat.backward)

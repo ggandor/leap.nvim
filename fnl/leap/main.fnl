@@ -317,12 +317,14 @@ char separately.
 
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
-  (local spec-keys (setmetatable {}
-                     {:__index (fn [_ k]
-                                 (case (. opts.special_keys k)
-                                   v (map vim.keycode
-                                          ; Force them into a table.
-                                          (if (= (type v) :string) [v] v))))}))
+  ; Force the values into a table, and translate keycodes.
+  ; Using a metatable instead of deepcopy, in case one would modify the
+  ; entries on `LeapEnter` (or even later).
+  (local keys (setmetatable {}
+                {:__index (fn [_ k]
+                            (case (. opts.keys k)
+                              v (map vim.keycode
+                                     (if (= (type v) :string) [v] v))))}))
 
   ; Ephemeral state (of the current call) that is not interesting for
   ; the outside world.
@@ -430,7 +432,7 @@ char separately.
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      in1 (if (contains? spec-keys.next_target in1)
+      in1 (if (contains? keys.next_target in1)
               (do (set st.phase nil)
                   (get-repeat-input))
               in1)))
@@ -574,7 +576,7 @@ char separately.
     (fn display []
       (local use-no-labels? (or no-labels-to-use? st.repeating-partial-pattern?))
       ; Do _not_ skip this on initial invocation - we might have skipped
-      ; setting the initial label states if using `spec-keys.next_target`.
+      ; setting the initial label states if using `keys.next_target`.
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
                             : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
@@ -587,11 +589,11 @@ char separately.
         (exec-user-autocmds :LeapSelectPre))
       (case (get-input)
         input
-        (let [switch-group? (or (contains? spec-keys.next_group input)
-                                (and (contains? spec-keys.prev_group input)
+        (let [switch-group? (or (contains? keys.next_group input)
+                                (and (contains? keys.prev_group input)
                                      (not first-invoc?)))]
           (if (and switch-group? (> |groups| 1))
-              (let [shift (if (contains? spec-keys.next_group input) 1 -1)
+              (let [shift (if (contains? keys.next_group input) 1 -1)
                     max-offset (dec |groups|)]
                 (set st.group-offset (clamp (+ st.group-offset shift)
                                             0
@@ -603,10 +605,10 @@ char separately.
 
 
   (fn traversal-get-new-idx [idx in targets]
-    (if (contains? spec-keys.next_target in)
+    (if (contains? keys.next_target in)
         (min (inc idx) (length targets))
 
-        (contains? spec-keys.prev_target in)
+        (contains? keys.prev_target in)
         ; Wrap around backwards.
         (if (<= idx 1) (length targets) (dec idx))))
 
@@ -712,7 +714,7 @@ char separately.
 
   ; Jump eagerly to the first/count-th match on the whole target list?
   (local partial-pattern? (or st.repeating-partial-pattern?
-                              (contains? spec-keys.next_target ?in2)))
+                              (contains? keys.next_target ?in2)))
 
   ; Do this now - repeat can succeed, even if we fail this time.
   (update-repeat-state in1 (when-not partial-pattern? ?in2))
@@ -775,8 +777,8 @@ char separately.
 
       ; Traversal - `prev_target` can also start it, wrapping backwards.
       (and (can-traverse? targets*)
-           (or (contains? spec-keys.next_target in-final)
-               (contains? spec-keys.prev_target in-final)))
+           (or (contains? keys.next_target in-final)
+               (contains? keys.prev_target in-final)))
       (let [use-no-labels? (or no-labels-to-use?
                                st.repeating-partial-pattern?
                                (not targets*.autojump?))
@@ -788,7 +790,7 @@ char separately.
 
       ; `next_target` accepts the first match if the cursor hasn't moved
       ; yet (no autojump).
-      (and (contains? spec-keys.next_target in-final)
+      (and (contains? keys.next_target in-final)
            (= st.curr-idx 0))
       (exit-with-action-on 1)
 

@@ -79,15 +79,15 @@ For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 Repeat and traversal
                                                                    *leap-repeat*
 At any stage (after 0, 1, or 2 input characters), `<enter>`
-(|leap.opts.special_keys.next_target|) consistently jumps to the first
-available target. Pressing it right after invocation (`s<enter>`) repeats the
-previous search. Pressing it after one input character (`s{char}<enter>`) can
-be used as a multiline substitute for `fFtT` motions.
+(|leap.opts.keys.next_target|) consistently jumps to the first available
+target. Pressing it right after invocation (`s<enter>`) repeats the previous
+search. Pressing it after one input character (`s{char}<enter>`) can be used
+as a multiline substitute for `fFtT` motions.
                                                                 *leap-traversal*
 If the search is directional, `<enter>` can also traverse through the rest of
 the targets, moving on to the next one on each subsequent keypress
 (`s<enter><enter>...`). If you overshoot, `<backspace>`
-(|leap.opts.special_keys.prev_target|) can revert the jump(s).
+(|leap.opts.keys.prev_target|) can revert the jump(s).
 
 There is a convenience function in the `user` module to set keys that behave
 like |;| and |,|, that is, repeat the last motion without explicitly invoking
@@ -220,7 +220,7 @@ their defaults.
 Example configuration: >lua
     local leap = require('leap')
     leap.opts.case_sensitive = true
-    leap.opts.special_keys.prev_target = '<s-enter>'
+    leap.opts.keys.prev_target = '<s-enter>'
 <
                                                       *leap.opts.case_sensitive*
 `case_sensitive = false`
@@ -297,14 +297,14 @@ Example configuration: >lua
     The list can either be defined as a string or a table. Setting it to `{}`
     or `''` forces |leap-autojump| to always be on (except for
     Operator-pending mode, where it makes no sense). In this case, do not
-    forget to set |leap.opts.special_keys.next_group| to something "safe" too.
+    forget to set |leap.opts.keys.next_group| to something "safe" too.
 
 A heuristic behind the default label lists: since the commands invoking the
 motions are mapped to left-hand keys by default, we tend to prioritize
 right-hand keys to get a better balance for the whole sequence on average.
 
-                                                        *leap.opts.special_keys*
-`special_keys =` >
+                                                                *leap.opts.keys*
+`keys =` >
     {
       next_target = '<enter>',
       prev_target = '<backspace>',
@@ -315,17 +315,17 @@ right-hand keys to get a better balance for the whole sequence on average.
 Meta-keys accepted at runtime. Each one can be a table too, with a list of
 alternatives.
 
-*leap.opts.special_keys.next_target*
+*leap.opts.keys.next_target*
 Jump to the next available target (use the previous search pattern if no input
 has been given). |leap-traversal|
 
-*leap.opts.special_keys.prev_target*
+*leap.opts.keys.prev_target*
 Jump to the previous target (revert `next_target`).
 
-*leap.opts.special_keys.next_group*
+*leap.opts.keys.next_group*
 Shift to the next group of labeled targets.
 
-*leap.opts.special_keys.prev_group*
+*leap.opts.keys.prev_group*
 Shift to the previous group of labeled targets (revert `next_group`).
 
 Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.

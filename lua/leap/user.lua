@@ -38,7 +38,7 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
     else
       _6_ = bwd_key
     end
-    opts = {special_keys = vim.tbl_extend("force", leap.opts.special_keys, {next_target = _4_, prev_target = _6_})}
+    opts = {keys = vim.tbl_extend("force", leap.opts.keys, {next_target = _4_, prev_target = _6_})}
     local backward
     if relative_directions_3f then
       if backward_invoc_3f then

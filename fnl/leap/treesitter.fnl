@@ -130,11 +130,11 @@
         op-mode? (: (vim.fn.mode true) :match "o")
         inc-select? (not op-mode?)]
     ; Add `;` and `,` as traversal keys.
-    (local sk (vim.deepcopy leap.opts.special_keys))
-    (set sk.next_target (vim.fn.flatten
-                          (vim.list_extend [";"] [sk.next_target])))
-    (set sk.prev_target (vim.fn.flatten
-                          (vim.list_extend [","] [sk.prev_target])))
+    (local keys (vim.deepcopy leap.opts.keys))
+    (set keys.next_target (vim.fn.flatten
+                            (vim.list_extend [";"] [keys.next_target])))
+    (set keys.prev_target (vim.fn.flatten
+                            (vim.list_extend [","] [keys.prev_target])))
 
     (local (ok? context) (pcall require "treesitter-context"))
     (local context? (and ok? (context.enabled)))
@@ -149,7 +149,7 @@
                         {:labels (when inc-select? "")  ; force autojump
                          :on_beacons (when inc-select? fill-cursor-pos)
                          :virt_text_pos "inline"
-                         :special_keys sk})})
+                         :keys keys})})
 
     (when inc-select? (clear-fill))
     (when context? (context.enable))))

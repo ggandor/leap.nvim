@@ -9,10 +9,10 @@
                              "S" "F" "N"
                              "J" "K" "L" "H" "O" "D" "W" "E" "I" "M" "B" "U"
                              "Y" "V" "R" "G" "T" "A" "Q" "P" "C" "X" "Z" "?"]
-                    :special_keys {:next_target "<enter>"
-                                   :prev_target "<backspace>"
-                                   :next_group "<space>"
-                                   :prev_group "<backspace>"}
+                    :keys {:next_target "<enter>"
+                           :prev_target "<backspace>"
+                           :next_group "<space>"
+                           :prev_group "<backspace>"}
                     :vim_opts {:wo.scrolloff 0  ; keep the view when auto-jumping
                                :wo.sidescrolloff 0
                                :wo.conceallevel 0
@@ -24,14 +24,22 @@
           ; Will be updated by `leap` on invocation.
           :current_call {}})
 
+; `default` might be accessed directly (see `init.fnl`), need to handle
+; the deprecated name here too.
+(setmetatable M.default
+  {:__index (fn [self key*]
+              (local key (case key* :special_keys :keys _ key*))
+              (. self key))})
+
 (setmetatable M
-  {:__index (fn [self key]
+  {:__index (fn [self key*]
+              (local key (case key* :special_keys :keys _ key*))
               ; Try to look up everything in the `current_call` table
               ; first, so that we can override settings on a per-call
               ; basis.
               (case (. self.current_call key)
                 ; Checking for `nil`, as `false` should be returned too.
-                nil (. self.default key)
+                nil (rawget self.default key)
                 val (if (and (= (type val) :table)
                              (not (vim.isarray val))
                              (not= (?. (getmetatable val) :merge) false))

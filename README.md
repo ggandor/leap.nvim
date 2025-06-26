@@ -323,11 +323,11 @@ operate on the current selection right away (`R;;y`).
   ```lua
   -- "clever-R"
   vim.keymap.set({'x', 'o'}, 'R',  function ()
-    local sk = vim.deepcopy(require'leap'.opts.special_keys)
-    -- The items in `special_keys` can be both strings or tables - the
+    local keys = vim.deepcopy(require'leap'.opts.keys)
+    -- The items in `keys` can be both strings or tables - the
     -- shortest workaround might be the below one.
-    sk.next_target = vim.fn.flatten(vim.list_extend({'R'}, {sk.next_target}))
-    sk.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {sk.prev_target}))
+    keys.next_target = vim.fn.flatten(vim.list_extend({'R'}, {keys.next_target}))
+    keys.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {keys.prev_target}))
     -- Remove these temporary traversal keys from `safe_labels`.
     local sl = {}
     for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
@@ -336,7 +336,7 @@ operate on the current selection right away (`R;;y`).
       end
     end
     require('leap.treesitter').select {
-      opts = { special_keys = sk, safe_labels = sl }
+      opts = { keys = keys, safe_labels = sl }
     }
   end)
   ```
