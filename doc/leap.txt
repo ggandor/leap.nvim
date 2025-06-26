@@ -76,12 +76,12 @@ jump), but stays in place, and switches to an extended label set otherwise.
 For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
 
-Repeat and traversal
-                                                                   *leap-repeat*
+Repeat and traversal                                     *leap-repeat-traversal*
+
 At any stage, `<enter>` (|leap.opts.keys.next_target|) jumps to the
 next/closest available target: `s<enter>` repeats the previous search;
 `s{char}<enter>` can be used as a multiline substitute for `fFtT` motions.
-                                                                *leap-traversal*
+
 In case of directional search, `<enter>` can continue traversing through the
 rest of the targets (`s<enter><enter>...`). If you overshoot, `<backspace>`
 (|leap.opts.keys.prev_target|) steps back.
@@ -308,12 +308,9 @@ right-hand keys to get a better balance for the whole sequence on average.
       prev_group = '<backspace>',
     }
 
-Meta-keys accepted at runtime. Each one can be a table too, with a list of
-alternatives.
-
 *leap.opts.keys.next_target*
 Jump to the next available target (use the previous search pattern if no input
-has been given). |leap-traversal|
+has been given). |leap-repeat-traversal|
 
 *leap.opts.keys.prev_target*
 Jump to the previous target (revert `next_target`).
@@ -324,6 +321,14 @@ Shift to the next group of labeled targets.
 *leap.opts.keys.prev_group*
 Shift to the previous group of labeled targets (revert `next_group`).
 
+Each value can be a list too, with alternatives. In `next_target` and
+`prev_target`, subsequent keys only get active once we have the full search
+pattern (no more input characters are needed). Example ("clever-s"):
+>lua
+    local keys = require('leap').opts.keys
+    keys.next_target = { '<enter>', 's' }
+    keys.prev_target = { '<backspace>', 'S' }
+<
 Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
 
                                                             *leap.opts.vim_opts*

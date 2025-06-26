@@ -19,7 +19,6 @@
        (require "leap.util"))
 
 (local api vim.api)
-(local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
 (local {: abs : ceil : floor : min} math)
@@ -329,6 +328,10 @@ char separately.
                             (case (. opts.keys k)
                               v (map vim.keycode
                                      (if (= (type v) :string) [v] v))))}))
+  ; The first key on a `keys` list is considered "safe" (not to be used
+  ; as search input).
+  (local contains? vim.list_contains)
+  (local contains-safe? (fn [t v] (= (. t 1) v)))
 
   ; Ephemeral state (of the current call) that is not interesting for
   ; the outside world.
@@ -440,7 +443,7 @@ char separately.
     (case (get-input-by-keymap prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      in1 (if (contains? keys.next_target in1)
+      in1 (if (contains-safe? keys.next_target in1)
               (do (set st.phase nil)
                   (get-repeat-input))
               in1)))
@@ -776,7 +779,7 @@ char separately.
 
   ; Jump eagerly to the first/count-th match on the whole target list?
   (local partial-pattern? (or st.repeating-partial-pattern?
-                              (contains? keys.next_target ?in2)))
+                              (contains-safe? keys.next_target ?in2)))
 
   ; Do this now - repeat can succeed, even if we fail this time.
   (update-repeat-state in1 (when-not partial-pattern? ?in2))
