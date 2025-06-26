@@ -34,13 +34,13 @@ see which key you will need to press before you actually need to do that.
   than available labels, you can switch between groups, using `<space>` and
   `<backspace>`.
 
-Character pairs give you full coverage of the screen:
+Every visible position is targetable:
 
 - `s{char}<space>` jumps to the last character on a line.
 - `s<space><space>` jumps to actual end-of-line characters, including empty
   lines.
 
-At any stage, `<enter>` consistently jumps to the next available target
+At any stage, `<enter>` consistently jumps to the next/closest available target
 (`<backspace>` steps back):
 
 - `s<enter>...` repeats the previous search.
@@ -329,14 +329,14 @@ operate on the current selection right away (`R;;y`).
     keys.next_target = vim.fn.flatten(vim.list_extend({'R'}, {keys.next_target}))
     keys.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {keys.prev_target}))
     -- Remove these temporary traversal keys from `safe_labels`.
-    local sl = {}
+    local safe_labels = {}
     for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
       if label ~= 'R' and label ~= 'r' then
-        table.insert(sl, label)
+        table.insert(safe_labels, label)
       end
     end
     require('leap.treesitter').select {
-      opts = { keys = keys, safe_labels = sl }
+      opts = { keys = keys, safe_labels = safe_labels }
     }
   end)
   ```
@@ -532,10 +532,9 @@ characters together as mutual aliases, e.g.:
 
 To paraphrase Steve Jobs about their logo and Turing's poison apple, I wish it
 were, but it is a coincidence. "Leap" is just another synonym for "jump", that
-happens to rhyme with Sneak. That said, in some respects you can indeed think
-of leap.nvim as a spiritual successor to Raskin's work, and thus the name as a
+happens to rhyme with Sneak. That said, you can think of the name as a
 little tribute to the great pioneer of interface design, even though embracing
-the modal paradigm is a fundamental difference in our approach.
+the modal paradigm is a fundamental difference in Vim's approach.
 
 </details>
 

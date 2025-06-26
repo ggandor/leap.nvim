@@ -58,15 +58,15 @@ for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
 
 A slightly more magical feature is that you can target actual EOL positions,
 including empty lines, by pressing the newline alias twice (`<space><space>`).
-This fulfills the principle that any visible position you can move to with the
-cursor should be reachable by Leap too. *leap-to-eol* *leap-to-empty-line*
+This ensures that any visible position you can otherwise move to is reachable
+by Leap too. *leap-to-eol* *leap-to-empty-line*
 
 Target ordering                                           *leap-target-ordering*
 
 When searching bidirectionally, Leap sorts matches by Euclidean (beeline)
-distance from the cursor, with the exception that the current line you're on,
-and on that line, forward direction is prioritized. That is, you can always be
-sure that the targets right in front of you will be the first ones.
+distance from the cursor, but the current line you're on, and on that line,
+forward direction is prioritized. That is, you can be sure that the targets
+right in front of you will be the first ones.
 
 Smart autojump                                             *leap-smart-autojump*
 
@@ -78,21 +78,17 @@ For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 
 Repeat and traversal
                                                                    *leap-repeat*
-At any stage (after 0, 1, or 2 input characters), `<enter>`
-(|leap.opts.keys.next_target|) consistently jumps to the first available
-target. Pressing it right after invocation (`s<enter>`) repeats the previous
-search. Pressing it after one input character (`s{char}<enter>`) can be used
-as a multiline substitute for `fFtT` motions.
+At any stage, `<enter>` (|leap.opts.keys.next_target|) jumps to the
+next/closest available target: `s<enter>` repeats the previous search;
+`s{char}<enter>` can be used as a multiline substitute for `fFtT` motions.
                                                                 *leap-traversal*
-If the search is directional, `<enter>` can also traverse through the rest of
-the targets, moving on to the next one on each subsequent keypress
-(`s<enter><enter>...`). If you overshoot, `<backspace>`
-(|leap.opts.keys.prev_target|) can revert the jump(s).
+In case of directional search, `<enter>` can continue traversing through the
+rest of the targets (`s<enter><enter>...`). If you overshoot, `<backspace>`
+(|leap.opts.keys.prev_target|) steps back.
 
-There is a convenience function in the `user` module to set keys that behave
-like |;| and |,|, that is, repeat the last motion without explicitly invoking
-Leap (after that, they enter traversal mode, and behave as you would expect).
-It makes sense to use `next_target` and `prev_target`, for maximum
+There is a convenience function in the `user` module to set keys to repeat the
+previous search without explicitly invoking Leap (similar to using |;| or
+|,|). It makes sense to use `next_target` and `prev_target`, for maximum
 consistency: >lua
     require('leap.user').set_repeat_keys('<enter>', '<backspace>', {
       -- If set to true, the keys will work like the native
@@ -102,8 +98,8 @@ consistency: >lua
       modes = {'n', 'x', 'o'},
     })
 <
-Note: In case of bidirectional search, invoking repeat right away like above
-might substitute for the lack of direct traversal ability.
+In case of bidirectional search, invoking repeat right away like above might
+substitute for the lack of direct traversal ability.
 
 Dot-repeat                                                     *leap-dot-repeat*
 
@@ -296,7 +292,7 @@ Example configuration: >lua
 
     The list can either be defined as a string or a table. Setting it to `{}`
     or `''` forces |leap-autojump| to always be on (except for
-    Operator-pending mode, where it makes no sense). In this case, do not
+    Operator-pending mode, where it makes no sense). In that case, do not
     forget to set |leap.opts.keys.next_group| to something "safe" too.
 
 A heuristic behind the default label lists: since the commands invoking the
@@ -352,12 +348,12 @@ HIGHLIGHTING                                                    *leap-highlight*
 Leap uses the following highlight groups that you can configure to your own
 liking (using |:hi| or |nvim_set_hl()|):
                                                                   *hl-LeapLabel*
-LeapLabel		Target labels. Linked to |hl-IncSearch| by default.
+LeapLabel		Target labels. |hi-link|ed to |hl-IncSearch| by default.
 
                                                                   *hl-LeapMatch*
 LeapMatch		Search matches when doing |leap-traversal| without
-                        labels. Linked to |hl-Search| by default. To disable
-                        match highlights: >lua
+                        labels. Linked to |hl-Search| by default.
+                        To disable match highlights: >lua
                             vim.cmd 'highlight! link LeapMatch None'
 <
                                                                *hl-LeapBackdrop*
