@@ -1,7 +1,6 @@
 (local opts (require "leap.opts"))
 
 (local {: get-cursor-pos
-        : get-eq-class-of
         : ->representative-char}
        (require "leap.util"))
 
@@ -81,7 +80,7 @@ window area.
 
 
 (fn get-targets-in-current-window [pattern targets
-                                   {: backward? : offset
+                                   {: backward? : offset : inputlen
                                     : whole-window? : skip-curpos?}]
   "Fill a table that will store the positions and other metadata of all
 in-window pairs that match `pattern`, in the order of discovery."
@@ -90,7 +89,8 @@ in-window pairs that match `pattern`, in the order of discovery."
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
   ; The whole 2-char match should be visible.
-  (tset bounds 2 (- (. bounds 2) 1))
+  (when (not= inputlen 1)
+    (tset bounds 2 (- (. bounds 2) 1)))
 
   (local (match-positions edge-pos-idx?) (get-match-positions
                                            pattern bounds
@@ -125,10 +125,15 @@ in-window pairs that match `pattern`, in the order of discovery."
           (do
             ; On EOL - in this case, we're adding another, virtual \n after the
             ; real one, so that these can be targeted by pressing a newline
-            ; alias twice. (See also `prepare-pattern`.)
+            ; alias twice. (See also `prepare-pattern` in `main.fnl`.)
             (set ch1 "\n")
-            (set ch2 "\n")
+            (when (not= inputlen 1)
+              (set ch2 "\n"))
             (set add-target? true))
+
+          (= inputlen 1)
+          (set add-target? true)
+
           (do
             (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
             (when (= ch2 "")  ; = ch1 is right before EOL
@@ -158,10 +163,11 @@ in-window pairs that match `pattern`, in the order of discovery."
           targets
           {: wininfo
            : pos
-           :edge-pos? (. edge-pos-idx? i)
            :chars [ch1 ch2]
+           :edge-pos? (. edge-pos-idx? i)
            :previewable?
-           (or (not opts.preview_filter)
+           (or (= inputlen 1)
+               (not opts.preview_filter)
                (if (= ch1 "\n")
                    (opts.preview_filter "" ch1 "")
                    (opts.preview_filter
@@ -212,52 +218,7 @@ in-window pairs that match `pattern`, in the order of discovery."
     (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
 
 
-; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
-; input mapping (case-insensitivity, character classes, etc.) we need to
-; tweak things in two different places:
-;   1. For the first input, we modify the search pattern itself (here).
-;   2. For the second input, we play with the sublist keys (see
-;   `populate-sublists` in `main.fnl`).
-(fn prepare-pattern [in1 ?in2]
-  "Transform user input to the appropriate search pattern."
-
-  (fn char-list-to-branching-regexp [chars]
-    ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
-    ; 2. `\` itself might appear in the class, needs to be escaped.
-    (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
-    (local pattern (table.concat branches "\\|"))
-    (.. "\\(" pattern "\\)"))
-
-  (fn expand-to-equivalence-class [char]    ; <-- 'a'
-    (-?> (get-eq-class-of char)             ; --> {'a','á','ä'}
-         (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
-
-  (local pat1 (or (expand-to-equivalence-class in1)
-                  ; Sole '\' needs to be escaped even for \V.
-                  (in1:gsub "\\" "\\\\")))
-  (local pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
-                  ?in2
-                  "\\_."))  ; match anything, including EOL
-
-  ; If `\n\n` is a possible sequence to appear, add `\n` as a separate
-  ; branch to the pattern, to make our convenience feature - targeting
-  ; EOL positions (including empty lines) by typing the newline alias
-  ; twice - work (see `get-targets-in-current-window`).
-  ; This hack is always necessary for single-step processing, when we
-  ; already have the full pattern (this includes repeating the previous
-  ; search), but also for two-step processing, in the special case of
-  ; targeting EOF (normally, `get-targets` takes care of this situation,
-  ; but the pattern `\n\_.` does not match `\n$` if it's on the last
-  ; line of the file).
-  ; Note: The condition should be checked after the input patterns are
-  ; expanded to include their whole equivalence classes.
-  (local potential-nl-nl? (and (pat1:match "\\n")
-                               (or (pat2:match "\\n") (not ?in2))))
-  (local pattern (.. pat1 pat2 (if potential-nl-nl? "\\|\\n" "")))
-  (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
-
-
-(fn get-targets [pattern {: backward? : offset : op-mode? : target-windows}]
+(fn get-targets [pattern {: backward? : offset : op-mode? : target-windows : inputlen}]
   (let [whole-window? target-windows
         source-winid (api.nvim_get_current_win)
         target-windows (or target-windows [source-winid])
@@ -271,7 +232,7 @@ in-window pairs that match `pattern`, in the order of discovery."
         (tset cursor-positions winid (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern targets
-                                     {: backward? : offset : whole-window?
+                                     {: backward? : offset : whole-window? : inputlen
                                       :skip-curpos? (= winid source-winid)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win source-winid))
@@ -300,5 +261,4 @@ in-window pairs that match `pattern`, in the order of discovery."
 
 {: get-horizontal-bounds
  : get-match-positions
- : prepare-pattern
  : get-targets}

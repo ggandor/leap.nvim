@@ -12,6 +12,7 @@
         : dec
         : clamp
         : echo
+        : get-eq-class-of
         : ->representative-char
         : get-input
         : get-input-by-keymap}
@@ -100,7 +101,7 @@ char separately.
   ; of input mapping (case-insensitivity, character classes, etc.) we
   ; need to tweak things in two different places:
   ;   1. For the first input, we modify the search pattern itself (see
-  ;   `prepare-pattern` in `search.fnl`).
+  ;   `prepare-pattern`).
   ;   2. For the second input, we play with the sublist keys (here).
 
   ; Setting a metatable to handle case insensitivity and equivalence
@@ -227,14 +228,16 @@ char separately.
                        ; (for "outside" use only).
                        :backward nil
                        :inclusive_op nil
-                       :offset nil}
+                       :offset nil
+                       :inputlen nil}
               :dot_repeat {:callback nil
                            :in1 nil
                            :in2 nil
                            :target_idx nil
                            :backward nil
                            :inclusive_op nil
-                           :offset nil}
+                           :offset nil
+                           :inputlen nil}
 
               ; We also use this table to reach the argument table
               ; passed to `leap()` in autocommands (using event data
@@ -258,7 +261,8 @@ char separately.
          (if invoked-dot-repeat? state.dot_repeat
              kwargs))
   (local {:inclusive_op inclusive-op?
-          : offset}
+          : offset
+          : inputlen}
          (if invoked-dot-repeat? state.dot_repeat
              invoked-repeat? state.repeat
              kwargs))
@@ -330,7 +334,9 @@ char separately.
   ; the outside world.
   (local st {; Multi-phase processing (show beacons ahead of time,
              ; right after the first input)?
-             :phase (when (and keyboard-input? (not no-labels-to-use?))
+             :phase (when (and keyboard-input?
+                               (not= inputlen 1)
+                               (not no-labels-to-use?))
                       1)
              ; When repeating a `{char}<enter>` search (started to
              ; traverse after the first input).
@@ -418,13 +424,15 @@ char separately.
                                    (set idx* idx)))))
     (values target* idx*))
 
-  ; Getting targets
+  ; Get inputs
 
   (fn get-repeat-input []
     (if state.repeat.in1
         (do (when-not state.repeat.in2
-              (set st.repeating-partial-pattern? true))
-            (values state.repeat.in1 state.repeat.in2))
+              (when (not= inputlen 1)
+                (set st.repeating-partial-pattern? true)))
+            (values state.repeat.in1
+                    (and (not= inputlen 1) state.repeat.in2)))
         (set st.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
@@ -448,13 +456,60 @@ char separately.
   (fn get-full-pattern-input []
     (case (get-first-pattern-input)
       (in1 in2) (values in1 in2)
-      (in1 nil) (case (get-input-by-keymap prompt)
-                  in2 (values in1 in2))))
+      (in1 nil) (if (= inputlen 1)
+                    in1
+                    (case (get-input-by-keymap prompt)
+                      in2 (values in1 in2)))))
+
+  ; Get targets
+
+  (fn char-list-to-branching-regexp [chars]
+    ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
+    ; 2. `\` itself might appear in the class, needs to be escaped.
+    (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
+    (local pattern (table.concat branches "\\|"))
+    (.. "\\(" pattern "\\)"))
+
+  (fn expand-to-equivalence-class [char]    ; <-- 'a'
+    (-?> (get-eq-class-of char)             ; --> {'a','á','ä'}
+         (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
+
+  ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
+  ; input mapping (case-insensitivity, character classes, etc.) we need to
+  ; tweak things in two different places:
+  ;   1. For the first input, we modify the search pattern itself (here).
+  ;   2. For the second input, we play with the sublist keys (see
+  ;   `populate-sublists`).
+  (fn prepare-pattern [in1 ?in2]
+    "Transform user input to the appropriate search pattern."
+    (local pat1 (or (expand-to-equivalence-class in1)
+                    ; Sole '\' needs to be escaped even for \V.
+                    (in1:gsub "\\" "\\\\")))
+    (local pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
+                    ?in2
+                    (or (and (= inputlen 1) "")
+                        "\\_.")))  ; match anything, including EOL
+    ; If `\n\n` is a possible sequence to appear, add `\n` as a separate
+    ; branch to the pattern, to make our convenience feature - targeting
+    ; EOL positions (including empty lines) by typing the newline alias
+    ; twice - work (see `get-targets-in-current-window`).
+    ; This hack is always necessary for single-step processing, when we
+    ; already have the full pattern (this includes repeating the previous
+    ; search), but also for two-step processing, in the special case of
+    ; targeting EOF (normally, `get-targets` takes care of this situation,
+    ; but the pattern `\n\_.` does not match `\n$` if it's on the last
+    ; line of the file).
+    ; Note: The condition should be checked after the input patterns are
+    ; expanded to include their whole equivalence classes.
+    (local potential-nl-nl? (and (pat1:match "\\n")
+                                 (or (pat2:match "\\n") (not ?in2))))
+    (local pattern (.. pat1 pat2 (if potential-nl-nl? "\\|\\n" "")))
+    (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
   (fn get-targets [in1 ?in2]
     (let [search (require :leap.search)
-          pattern (search.prepare-pattern in1 ?in2)
-          kwargs {: backward? : offset : op-mode?
+          pattern (prepare-pattern in1 ?in2)
+          kwargs {: backward? : offset : op-mode? : inputlen
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
       (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
@@ -490,6 +545,7 @@ char separately.
   ; Repeat
 
   (local from-kwargs {: offset
+                      : inputlen
                       ; Mind the naming conventions.
                       :backward backward?
                       :inclusive_op inclusive-op?})
@@ -692,22 +748,28 @@ char separately.
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (if (or ?in2 st.repeating-partial-pattern?)
-      (if (or no-labels-to-use? st.repeating-partial-pattern?)
-          (set targets.autojump? true)
-          (prepare-labeled-targets* targets))
-      (do
-        (populate-sublists targets)
-        (each [_ sublist (pairs targets.sublists)]
-          (prepare-labeled-targets* sublist)
-          (set-beacons targets {:phase st.phase}))
-        (when (= st.phase 1)
-          (resolve-conflicts targets))))
+  (local need-in2? (not (or ?in2
+                            st.repeating-partial-pattern?
+                            (= inputlen 1))))
+
+  (do
+    (local preview? need-in2?)
+    (local use-no-labels? (or no-labels-to-use? st.repeating-partial-pattern?))
+    (if preview?
+        (do
+          (populate-sublists targets)
+          (each [_ sublist (pairs targets.sublists)]
+            (prepare-labeled-targets* sublist)
+            (set-beacons targets {:phase st.phase}))
+          (when (= st.phase 1)
+            (resolve-conflicts targets)))
+        (if use-no-labels?
+            (set targets.autojump? true)
+            (prepare-labeled-targets* targets))))
 
   (local ?in2 (or ?in2
-                  (and (not st.repeating-partial-pattern?)
-                       (get-second-pattern-input targets))))  ; REDRAW
-  (when-not (or st.repeating-partial-pattern? ?in2)
+                  (and need-in2? (get-second-pattern-input targets))))  ; REDRAW
+  (when (and need-in2? (not ?in2))
     (exit-early))
 
   (when st.phase (set st.phase 2))
