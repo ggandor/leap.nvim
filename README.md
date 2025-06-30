@@ -525,6 +525,58 @@ the function (search scope, jump offset, etc.), you can:
 Some practical examples:
 
 <details>
+<summary>1-character search (enhanced f/t motions)</summary>
+
+Note: `inpulen` is an experimental feature at the moment, subject to change or
+removal.
+
+```lua
+do
+  local function ft_args (key_specific_args)
+    local common_args = {
+      inputlen = 1,
+      inclusive_op = true,
+      opts = {
+        case_sensitive = true,
+        labels = {},
+        -- Match the modes here for which you don't want to use labels.
+        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
+      },
+    }
+    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
+  end
+
+  local leap = require('leap').leap
+  -- This helper function makes it easier to set "clever-f"-like
+  -- functionality (https://github.com/rhysd/clever-f.vim), returning
+  -- an `opts` table, where:
+  -- * the given keys are set as `next_target` and `prev_target`
+  -- * `prev_target` is removed from `safe_labels` (if appears there)
+  -- * `next_target` is used as the first label
+  local with_traversal_keys = require('leap.user').with_traversal_keys
+  local f_opts = with_traversal_keys('f', 'F')
+  local t_opts = with_traversal_keys('t', 'T')
+  -- You can of course set ;/, for both instead:
+  -- local ft_opts = with_traversal_keys(';', ',')
+
+  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
+    leap(ft_args({ opts = f_opts, }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
+    leap(ft_args({ opts = f_opts, backward = true }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
+    leap(ft_args({ opts = t_opts, offset = -1 }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
+    leap(ft_args({ opts = t_opts, backward = true, offset = -1 }))
+  end)
+end
+```
+
+</details>
+
+<details>
 <summary>Linewise motions</summary>
 
 ```lua
@@ -624,13 +676,5 @@ require('telescope').setup {
   }
 }
 ```
-
-</details>
-
-<details>
-<summary>Enhanced f/t motions</summary>
-
-See [flit.nvim](https://github.com/ggandor/flit.nvim). Note that this is not a
-proper extension plugin, as it uses undocumented API too.
 
 </details>

@@ -456,6 +456,11 @@ leap({opts})                                                       *leap.leap()*
                       opts = { vim_opts = { ['go.hlsearch'] = false } }
                     }
 <
+                                                                       *leap-ft*
+               • inputlen: Set to 1 for |f|-like motions. See an example of a
+                 full setup in the README.
+                 Note: This feature is experimental, subject to change or
+                 removal.
                                                             *leap-custom-action*
                • action: A Lua function that will be executed by Leap in place
                  of the jump, taking the selected target as its argument. (You
