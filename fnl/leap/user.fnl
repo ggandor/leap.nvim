@@ -16,6 +16,36 @@
             (vim.notify msg vim.log.levels.WARN))))))
 
 
+(fn with-traversal-keys [fwd-key bwd-key]
+  "Returns a table can be used as or merged with `opts`, with
+`keys.next_target`, `keys.prev_target`, and `safe_labels` set
+appropriately."
+  (local leap (require "leap"))
+  (local keys (vim.deepcopy leap.opts.keys))
+
+  (fn with-key [t key]
+    (local t (case (type t) :table t _ [t]))
+    (table.insert t key)
+    t)
+
+  (local keys* {:next_target (with-key keys.next_target fwd-key)
+                :prev_target (with-key keys.prev_target bwd-key)})
+
+  ; Remove the "prev" key from `safe_labels`, and use the "next" key as
+  ; the first label.
+  (var safe-labels (vim.deepcopy leap.opts.safe_labels))
+  (when (= (type safe-labels) :string)
+    (set safe-labels (vim.fn.split safe-labels "\\zs")))
+
+  (local safe-labels*
+         (icollect [_ l (ipairs safe-labels) :into [fwd-key]]
+           (when (and (not= l fwd-key) (not= l bwd-key))
+             l)))
+
+  {:keys keys*
+   :safe_labels safe-labels*})
+
+
 (fn set-repeat-keys [fwd-key bwd-key opts*]
   (local opts* (or opts* {}))
   (local modes (or opts*.modes [:n :x :o]))
@@ -113,6 +143,7 @@
 
 
 {:set_default_mappings set-default-mappings
+ :with_traversal_keys with-traversal-keys
  :set_repeat_keys set-repeat-keys
  :get_enterable_windows #((. (require "leap.util") :get_enterable_windows))
  :get_focusable_windows #((. (require "leap.util") :get_focusable_windows))

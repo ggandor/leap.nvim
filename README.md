@@ -294,52 +294,26 @@ vim.api.nvim_create_autocmd('User', {
 <details>
 <summary>Incremental treesitter node selection</summary>
 
+Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
+the traversal keys for incremental selection. The labels are forced to be safe,
+so you can operate on the current selection right away (`Rrry`). Traversal can
+also "wrap around" backwards, so you can select the root node right away
+(`RR`), instead of going forward (`Rrrrrr`).
+
 ```lua
 vim.keymap.set({'x', 'o'}, 'R',  function ()
-  require('leap.treesitter').select()
+  require('leap.treesitter').select {
+    -- To increase/decrease the selection in a clever-f-like manner,
+    -- with the trigger key itself (vRrrrrRR...). The default keys
+    -- (<enter>/<backspace>) also work, so feel free to skip this.
+    opts = require('leap.user').with_traversal_keys('r', 'R')
+  }
 end)
 ```
 
-Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
-the traversal keys for incremental selection (`;` and `,` are automatically
-added to the default keys). The labels are forced to be safe, so you can
-operate on the current selection right away (`R;;y`).
-
-**Tips**
-
-* It is worth using linewise mode (`VR`, `yVR`), as redundant nodes are
-  filtered out (only the outermost are kept in a given line range), making the
-  selection much more efficient.
-
-* Traversal can "wrap around" backwards, so you can select the root node right
-  away (`R,`), instead of going forward (`R;;;;;`).
-
-* To increase/decrease the selection in a
-  [clever-f](https://github.com/rhysd/clever-f.vim)-like manner (`RRRRrr`
-  instead of `R;;;,,`), set the trigger key (or the suffix of it) and its
-  inverted case as temporary traversal keys for this specific call (`select()`
-  can take an `opts` argument, just like `leap()` - see `:h leap.leap()`):
-
-  ```lua
-  -- "clever-R"
-  vim.keymap.set({'x', 'o'}, 'R',  function ()
-    local keys = vim.deepcopy(require'leap'.opts.keys)
-    -- The items in `keys` can be both strings or tables - the
-    -- shortest workaround might be the below one.
-    keys.next_target = vim.fn.flatten(vim.list_extend({'R'}, {keys.next_target}))
-    keys.prev_target = vim.fn.flatten(vim.list_extend({'r'}, {keys.prev_target}))
-    -- Remove these temporary traversal keys from `safe_labels`.
-    local safe_labels = {}
-    for _, label in ipairs(vim.deepcopy(require'leap'.opts.safe_labels)) do
-      if label ~= 'R' and label ~= 'r' then
-        table.insert(safe_labels, label)
-      end
-    end
-    require('leap.treesitter').select {
-      opts = { keys = keys, safe_labels = safe_labels }
-    }
-  end)
-  ```
+Note that it is worth using (forced) linewise mode (`VRrr...`, `yVR`), as
+redundant nodes are filtered out (only the outermost are kept in a given line
+range), making the selection much more efficient.
 
 </details>
 
