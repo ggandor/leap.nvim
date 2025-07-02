@@ -24,12 +24,11 @@ see which key you will need to press before you actually need to do that.
   okay with the trade-offs.)
 - Start typing a 2-character pattern (`{char1}{char2}`).
 - After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
-  after finishing the pattern.
-- Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. You can safely ignore the remaining labels, and continue editing -
-  those are guaranteed non-conflicting letters, disappearing on the next
-  keypress.
+  the `{char1}{?}` pairs. You cannot use them yet - they only get active after
+  finishing the pattern.
+- Enter `{char2}`. If the pair was not labeled, you automatically jump there.
+  You can safely ignore the remaining labels, and continue editing - those are
+  guaranteed non-conflicting letters, disappearing on the next keypress.
 - Else: type the label character, that is now active. If there are more matches
   than available labels, you can switch between groups, using `<space>` and
   `<backspace>`.
@@ -37,8 +36,7 @@ see which key you will need to press before you actually need to do that.
 Every visible position is targetable:
 
 - `s{char}<space>` jumps to the last character on a line.
-- `s<space><space>` jumps to actual end-of-line characters, including empty
-  lines.
+- `s<space><space>` jumps to end-of-line characters, including empty lines.
 
 At any stage, `<enter>` consistently jumps to the next/closest available target
 (`<backspace>` steps back):
@@ -178,10 +176,10 @@ Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
 
 ### Extras
 
-Experimental features, APIs might be subject to change.
+Experimental modules, might be moved out, and APIs are subject to change.
 
 <details>
-<summary>Remote operations ("spooky actions at a distance")</summary>
+<summary>Remote actions</summary>
 
 Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
 and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature.
@@ -296,9 +294,8 @@ vim.api.nvim_create_autocmd('User', {
 
 Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
 the traversal keys for incremental selection. The labels are forced to be safe,
-so you can operate on the current selection right away (`Rrry`). Traversal can
-also "wrap around" backwards, so you can select the root node right away
-(`RR`), instead of going forward (`Rrrrrr`).
+so you can operate on the selection right away (`Rrry`). Traversal can also
+"wrap around" backwards (`RR` selects the root node).
 
 ```lua
 vim.keymap.set({'x', 'o'}, 'R',  function ()
@@ -480,7 +477,7 @@ on implementation details.
 -- responsible for displaying stuff.
 require('leap').opts.on_beacons = function (targets, _, _)
   for _, t in ipairs(targets) do
-    -- Overwrite the `offset` value in all targets.
+    -- Overwrite the `offset` value in all beacons.
     -- target.beacon looks like: { <offset>, <extmark_opts> }
     if t.label and t.beacon then t.beacon[1] = 0 end
   end
@@ -601,7 +598,7 @@ end
 </details>
 
 <details>
-<summary>Linewise motions</summary>
+<summary>Jump to lines</summary>
 
 ```lua
 local function get_line_starts(winid, skip_range)

@@ -36,30 +36,28 @@ custom mappings and arrangements, see |leap-custom-mappings|.
   (`S`).
 • Start typing a 2-character pattern (`{char1}{char2}`).
 • After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot use the labels yet - they only get active
-  after finishing the pattern. *leap-preview*
-• Enter `{char2}`. If the pair was not labeled, then voilà, you're already
-  there. You can safely ignore the remaining labels, and continue editing -
-  those are guaranteed non-conflicting letters, disappearing on the next
-  keypress (|leap.opts.safe_labels|). *leap-autojump*
+  the `{char1}{?}` pairs. You cannot use them yet - they only get active after
+  finishing the pattern. *leap-preview*
+• Enter `{char2}`. If the pair was not labeled, you automatically jump there.
+  You can safely ignore the remaining labels, and continue editing - those are
+  guaranteed non-conflicting letters, disappearing on the next keypress
+  (|leap.opts.safe_labels|). *leap-autojump*
 • Else: type the label character, that is now active. If there are more
   matches than available labels, you can switch between groups, using
-  `<space>` and `<backspace>`.
+  `<space>` and `<backspace>` (|leap.opts.keys|).
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
 
 Special positions
 
-A character at the end of a line can be targeted by pressing `<space>` after
-it. There is no special mechanism behind this: `<space>` is simply an alias
-for `\n` and `\r`, set in |leap.opts.equivalence_classes| by default.
-*leap-till-eol*
+The last character on a line can be targeted by pressing `<space>` after it.
+There is nothing special going on here: `<space>` is simply an alias for `\n`
+and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
 
-A slightly more magical feature is that you can target actual EOL positions,
-including empty lines, by pressing the newline alias twice (`<space><space>`).
-This ensures that any visible position you can otherwise move to is reachable
-by Leap too. *leap-to-eol* *leap-to-empty-line*
+To target actual EOL positions, including empty lines, press the newline alias
+twice (pretend that each newline character is duplicated).
+*leap-to-eol* *leap-to-empty-line*
 
 Target ordering                                           *leap-target-ordering*
 
@@ -70,8 +68,8 @@ right in front of you will be the first ones.
 
 Smart autojump                                             *leap-smart-autojump*
 
-Leap only jumps to the first match if the remaining matches can be covered by
-a limited set of "safe" target labels (keys you would not use right after a
+|leap-autojump| is only triggered if the remaining matches can be covered by a
+limited set of "safe" target labels (keys you would not use right after a
 jump), but stays in place, and switches to an extended label set otherwise.
 For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
 |leap.opts.safe_labels|.
@@ -228,7 +226,6 @@ Example configuration: >lua
 
     A character in search patterns will match any other in its equivalence
     class. The sets can either be defined as strings or tables.
-
     Example - whitespace, brackets, and quotes: >lua
         { ' \t\r\n', '([{', ')]}', '\'"`' }
 <
