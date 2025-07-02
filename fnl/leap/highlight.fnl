@@ -1,3 +1,5 @@
+(local opts (require "leap.opts"))
+
 (local {: inc
         : dec
         : get-cursor-pos}
@@ -5,11 +7,10 @@
 
 (local api vim.api)
 (local map vim.tbl_map)
-(local empty? vim.tbl_isempty)
 
 
 (fn has-hl-group? [name]
-  (not (empty? (api.nvim_get_hl 0 {: name}))))
+  (not (vim.tbl_isempty (api.nvim_get_hl 0 {: name}))))
 
 
 (local M {:ns (api.nvim_create_namespace "")
@@ -93,6 +94,18 @@
   def-map)
 
 
+(fn set-label-dimmed []
+  (let [label (vim.api.nvim_get_hl 0 {:name M.group.label :link false})
+        label-dimmed (dimmed label)]
+    (vim.api.nvim_set_hl 0 M.group.label-dimmed label-dimmed)))
+
+
+(fn set-concealed-label-char []
+  (let [label (api.nvim_get_hl 0 {:name M.group.label :link false})
+        middle-dot "\u{00b7}"]
+    ; Undocumented option, might be exposed in the future.
+    (set opts.concealed_label (or (and label.bg " ") middle-dot))))
+
 
 (local custom-def-maps
   {:leap-label-default-light {:fg "#eef1f0"  ; NvimLightGrey1
@@ -114,7 +127,7 @@
                              :ctermfg "red"}})
 
 
-(fn M.init-highlight [self force?]
+(fn M.init [self force?]
   (let [custom-defaults? (or (= vim.g.colors_name "default")
                              ; vscode-neovim has a problem with
                              ; linking to built-in groups.
@@ -134,12 +147,15 @@
                       {:link "Search"})}]
     (each [group-name def-map (pairs (vim.deepcopy defaults))]
       (when (not force?)
+        ; Set only as the default (fallback). (:h hi-default)
         (set def-map.default true))
       (api.nvim_set_hl 0 group-name def-map))
-    ; Define LeapLabelDimmed, based on the actual group definition
-    ; (always necessary).
-    (local label (vim.api.nvim_get_hl 0 {:name self.group.label :link false}))
-    (vim.api.nvim_set_hl 0 self.group.label-dimmed (dimmed label))))
+    (when force?
+      ; Remove LeapBackdrop, if set.
+      (vim.api.nvim_set_hl 0 self.group.backdrop {:link "None"}))
+    ; These should be done last, based on the actual group definitions.
+    (set-label-dimmed)
+    (set-concealed-label-char)))
 
 
 M

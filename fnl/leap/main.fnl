@@ -877,26 +877,15 @@ char separately.
 ; Init ///1
 
 
-(fn get-concealed-label []
-  (let [leap-label (api.nvim_get_hl 0 {:name hl.group.label :link false})
-        middle-dot "\u{00b7}"]
-    (if leap-label.bg " " middle-dot)))
-
-
-(fn init-highlight* []
-  (hl:init-highlight)
-  ; Undocumented option, might be exposed in the future.
-  (set opts.concealed_label (get-concealed-label)))
-
-
 (fn init-highlight []
-  (init-highlight*)
+  (hl:init)
   ; Colorscheme plugins might clear out our highlight definitions,
   ; without defining their own, so we re-init the highlight on every
   ; change.
   (api.nvim_create_autocmd "ColorScheme"
     {:group "LeapDefault"
-     :callback init-highlight*}))
+     ; Wrap it - do not pass on event data as argument.
+     :callback (fn [_] (hl:init))}))
 
 
 (fn manage-vim-opts []

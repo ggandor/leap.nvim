@@ -349,8 +349,13 @@ HIGHLIGHTING                                                    *leap-highlight*
 
 Leap uses the following highlight groups that you can configure to your own
 liking (using |:hi| or |nvim_set_hl()|):
+
                                                                   *hl-LeapLabel*
 LeapLabel		Target labels. |hi-link|ed to |hl-IncSearch| by default.
+                        Note: When set manually (not loaded as part of a color
+                        scheme), you should call |leap.init_highlight()|
+                        afterwards, to update the look of
+                        |leap-concealed-labels|, derived from this group.
 
                                                                   *hl-LeapMatch*
 LeapMatch		Search matches when doing |leap-traversal| without
@@ -366,23 +371,33 @@ LeapBackdrop		In some cases it might be useful to apply certain
                         is not set by default.
 
 To preserve your custom settings, wrap them in a function, and define an
-autocommand for |ColorScheme| change: >lua
+autocommand for |ColorScheme|: >lua
 
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
-        -- General
-        vim.cmd 'hi! link LeapMatch None'
-        -- Color-scheme-specific
+        -- Color-scheme-specific settings
         if vim.g.colors_name == 'foo' then
-          -- Force using the defaults of Leap:
+          -- Force using the defaults.
           require('leap').init_highlight(true)
         elseif vim.g.colors_name == 'bar' then
-          -- And/or make your own tweaks:
-          vim.cmd 'hi! link LeapBackdrop Comment'
           vim.cmd 'hi! link LeapLabel Substitute'
+          require('leap').init_highlight()
         end
+
+        -- General settings
+        vim.cmd 'hi! link LeapMatch None'
       end
     })
+<
+leap.init_highlight({force})                             *leap.init_highlight()*
+    Sets the highlight groups to their defaults (without `force`, only as
+    fallback). It also updates the look of |leap-concealed-labels|, based on
+    the actual settings of |hl-LeapLabel|. Automatically called the first time
+    Leap is loaded, and then on |ColorScheme| events.
+
+    Parameters: ~
+      • {force}  (boolean) optional: defaults to false. Set the groups without
+                 |hi-default|.
 
 ==============================================================================
 EVENTS                                                             *leap-events*

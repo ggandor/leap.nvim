@@ -926,23 +926,12 @@ local function leap(kwargs)
   end
   return nil
 end
-local function get_concealed_label()
-  local leap_label = api.nvim_get_hl(0, {name = hl.group.label, link = false})
-  local middle_dot = "\194\183"
-  if leap_label.bg then
-    return " "
-  else
-    return middle_dot
-  end
-end
-local function init_highlight_2a()
-  hl["init-highlight"](hl)
-  opts.concealed_label = get_concealed_label()
-  return nil
-end
 local function init_highlight()
-  init_highlight_2a()
-  return api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = init_highlight_2a})
+  hl:init()
+  local function _137_(_)
+    return hl:init()
+  end
+  return api.nvim_create_autocmd("ColorScheme", {group = "LeapDefault", callback = _137_})
 end
 local function manage_vim_opts()
   local get_opt = api.nvim_get_option_value

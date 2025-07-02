@@ -9,9 +9,10 @@
        :opts (. (require "leap.opts") :default)
        :leap (. (require "leap.main") :leap)
        :state (. (require "leap.main") :state)
+       :init_highlight (fn [...]
+                         (: (require "leap.highlight") :init ...))
        :setup (. (require "leap.user") :setup)
        :set_default_mappings (. (require "leap.user") :set_default_mappings)
-       :init_highlight (fn [...] (: (require "leap.highlight") :init-highlight ...))
        ; deprecated ones
        :create_default_mappings (. (require "leap.user") :create_default_mappings)
        :add_repeat_mappings (. (require "leap.user") :add_repeat_mappings)

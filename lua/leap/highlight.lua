@@ -1,12 +1,12 @@
+local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
 local inc = _local_1_["inc"]
 local dec = _local_1_["dec"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local api = vim.api
 local map = vim.tbl_map
-local empty_3f = vim.tbl_isempty
 local function has_hl_group_3f(name)
-  return not empty_3f(api.nvim_get_hl(0, {name = name}))
+  return not vim.tbl_isempty(api.nvim_get_hl(0, {name = name}))
 end
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
 M.cleanup = function(self, affected_windows)
@@ -93,8 +93,19 @@ local function dimmed(def_map_2a)
   end
   return def_map
 end
+local function set_label_dimmed()
+  local label = vim.api.nvim_get_hl(0, {name = M.group.label, link = false})
+  local label_dimmed = dimmed(label)
+  return vim.api.nvim_set_hl(0, M.group["label-dimmed"], label_dimmed)
+end
+local function set_concealed_label_char()
+  local label = api.nvim_get_hl(0, {name = M.group.label, link = false})
+  local middle_dot = "\194\183"
+  opts.concealed_label = ((label.bg and " ") or middle_dot)
+  return nil
+end
 local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#5588aa", bold = true, nocombine = true, ctermfg = "red"}, ["leap-label-default-dark"] = {fg = "black", bg = "#ccff88", nocombine = true, ctermfg = "black", ctermbg = "red"}, ["leap-match-default-light"] = {bg = "#eef1f0", ctermfg = "black", ctermbg = "red"}, ["leap-match-default-dark"] = {fg = "#ccff88", underline = true, nocombine = true, ctermfg = "red"}}
-M["init-highlight"] = function(self, force_3f)
+M.init = function(self, force_3f)
   local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
   local _15_
@@ -125,7 +136,11 @@ M["init-highlight"] = function(self, force_3f)
     end
     api.nvim_set_hl(0, group_name, def_map)
   end
-  local label = vim.api.nvim_get_hl(0, {name = self.group.label, link = false})
-  return vim.api.nvim_set_hl(0, self.group["label-dimmed"], dimmed(label))
+  if force_3f then
+    vim.api.nvim_set_hl(0, self.group.backdrop, {link = "None"})
+  else
+  end
+  set_label_dimmed()
+  return set_concealed_label_char()
 end
 return M
