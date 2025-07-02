@@ -468,6 +468,30 @@ require('leap').opts.preview_filter = function () return false end
 
 </details>
 
+
+<details>
+<summary>Position preview labels at the beginning of the match</summary>
+
+Note: `on_beacons` is an experimental escape hatch, and this workaround depends
+on implementation details.
+
+```lua
+-- `on_beacons` hooks into `beacons.light_up_beacons`, the function
+-- responsible for displaying stuff.
+require('leap').opts.on_beacons = function (targets, _, _)
+  for _, t in ipairs(targets) do
+    -- Overwrite the `offset` value in all targets.
+    -- target.beacon looks like: { <offset>, <extmark_opts> }
+    if t.label and t.beacon then t.beacon[1] = 0 end
+  end
+  -- Returning `true` tells `light_up_beacons` to continue as usual
+  -- (`false` would short-circuit).
+  return true
+end
+```
+
+</details>
+
 <details>
 <summary>Greying out the search area</summary>
 
