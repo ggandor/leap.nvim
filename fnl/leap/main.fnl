@@ -68,6 +68,8 @@ interrupted change operation."
   (let [res {}]
     (each [_ eqcl (ipairs eqcls)]
       (let [eqcl* (if (= (type eqcl) :string)
+                      ; Do not use `vim.split`, it doesn't handle
+                      ; multibyte chars.
                       (vim.fn.split eqcl "\\zs")
                       eqcl)]
         (each [_ ch (ipairs eqcl*)]
