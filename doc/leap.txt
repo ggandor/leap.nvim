@@ -353,9 +353,9 @@ liking (using |:hi| or |nvim_set_hl()|):
                                                                   *hl-LeapLabel*
 LeapLabel		Target labels. |hi-link|ed to |hl-IncSearch| by default.
                         Note: When set manually (not loaded as part of a color
-                        scheme), you should call |leap.init_highlight()|
-                        afterwards, to update the look of
-                        |leap-concealed-labels|, derived from this group.
+                        scheme), you should call |leap.init_hl()| afterwards,
+                        to update the look of |leap-concealed-labels|, derived
+                        from this group.
 
                                                                   *hl-LeapMatch*
 LeapMatch		Search matches when doing |leap-traversal| without
@@ -378,10 +378,10 @@ autocommand for |ColorScheme|: >lua
         -- Color-scheme-specific settings
         if vim.g.colors_name == 'foo' then
           -- Force using the defaults.
-          require('leap').init_highlight(true)
+          require('leap').init_hl(true)
         elseif vim.g.colors_name == 'bar' then
           vim.cmd 'hi! link LeapLabel Substitute'
-          require('leap').init_highlight()
+          require('leap').init_hl()
         end
 
         -- General settings
@@ -389,7 +389,7 @@ autocommand for |ColorScheme|: >lua
       end
     })
 <
-leap.init_highlight({force})                             *leap.init_highlight()*
+leap.init_hl({force})                                           *leap.init_hl()*
     Sets the highlight groups to their defaults (without `force`, only as
     fallback). It also updates the look of |leap-concealed-labels|, based on
     the actual settings of |hl-LeapLabel|. Automatically called the first time

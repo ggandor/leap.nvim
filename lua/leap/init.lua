@@ -5,7 +5,7 @@ local function _1_(_, k)
     return require("leap.main").leap
   elseif (k == "state") then
     return require("leap.main").state
-  elseif (k == "init_highlight") then
+  elseif (k == "init_hl") then
     local function _2_(...)
       return require("leap.highlight"):init(...)
     end
@@ -14,6 +14,11 @@ local function _1_(_, k)
     return require("leap.user").setup
   elseif (k == "set_default_mappings") then
     return require("leap.user").set_default_mappings
+  elseif (k == "init_highlight") then
+    local function _3_(...)
+      return require("leap.highlight"):init(...)
+    end
+    return _3_
   elseif (k == "create_default_mappings") then
     return require("leap.user").create_default_mappings
   elseif (k == "add_repeat_mappings") then
