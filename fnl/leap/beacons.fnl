@@ -29,7 +29,7 @@
 (fn get-label-offset [target]
   (let [{:chars [ch1 ch2]} target]
     (if (= ch1 "\n") 0  ; on EOL
-        (or target.edge-pos? (= ch2 "\n")) (ch1:len)  ; window edge (right) or before EOL
+        (or (= ch2 "\n") target.win-edge?) (ch1:len)
         (+ (ch1:len) (ch2:len)))))
 
 

@@ -51,7 +51,7 @@ local function get_match_positions(pattern, _2_, _3_)
   else
   end
   local match_positions = {}
-  local edge_pos_idx_3f = {}
+  local win_edge_3f = {}
   local idx = 0
   local function loop()
     local flags0 = ((match_at_curpos_3f and (flags .. "c")) or flags)
@@ -75,14 +75,14 @@ local function get_match_positions(pattern, _2_, _3_)
       table.insert(match_positions, pos)
       idx = (idx + 1)
       if (vim.fn.virtcol(".") == right_bound) then
-        edge_pos_idx_3f[idx] = true
+        win_edge_3f[idx] = true
       else
       end
       return loop()
     end
   end
   loop()
-  return match_positions, edge_pos_idx_3f
+  return match_positions, win_edge_3f
 end
 local function get_targets_in_current_window(pattern, targets, _12_)
   local backward_3f = _12_["backward?"]
@@ -100,7 +100,7 @@ local function get_targets_in_current_window(pattern, targets, _12_)
     bounds[2] = (bounds[2] - 1)
   else
   end
-  local match_positions, edge_pos_idx_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
+  local match_positions, win_edge_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local match_at_end_3f = (offset0 > 0)
   local match_at_start_3f = not match_at_end_3f
   local line_str = nil
@@ -173,7 +173,7 @@ local function get_targets_in_current_window(pattern, targets, _12_)
             or_26_ = opts.preview_filter(vim.fn.strpart(line_str, (col - 2), 1, true), ch1, ch2)
           end
         end
-        table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["edge-pos?"] = edge_pos_idx_3f[i], ["previewable?"] = or_26_})
+        table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["win-edge?"] = win_edge_3f[i], ["previewable?"] = or_26_})
       else
       end
     else

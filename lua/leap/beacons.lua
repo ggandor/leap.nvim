@@ -22,7 +22,7 @@ local function get_label_offset(target)
   local ch2 = _let_3_[2]
   if (ch1 == "\n") then
     return 0
-  elseif (target["edge-pos?"] or (ch2 == "\n")) then
+  elseif ((ch2 == "\n") or target["win-edge?"]) then
     return ch1:len()
   else
     return (ch1:len() + ch2:len())

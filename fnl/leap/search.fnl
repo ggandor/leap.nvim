@@ -52,7 +52,7 @@ window area.
       (vim.fn.cursor [(vim.fn.line "w0") 1]))
 
     (local match-positions [])
-    (local edge-pos-idx? {})  ; set of indexes (in `match-positions`)
+    (local win-edge? {})  ; set of indexes (in `match-positions`)
     (var idx 0)  ; ~ match count
 
     ((fn loop []
@@ -73,10 +73,10 @@ window area.
            (do (table.insert match-positions pos)
                (set idx (+ idx 1))
                (when (= (vim.fn.virtcol ".") right-bound)
-                 (tset edge-pos-idx? idx true))
+                 (tset win-edge? idx true))
                (loop)))))
 
-    (values match-positions edge-pos-idx?)))
+    (values match-positions win-edge?)))
 
 
 (fn get-targets-in-current-window [pattern targets
@@ -92,9 +92,8 @@ in-window pairs that match `pattern`, in the order of discovery."
   (when (not= inputlen 1)
     (tset bounds 2 (- (. bounds 2) 1)))
 
-  (local (match-positions edge-pos-idx?) (get-match-positions
-                                           pattern bounds
-                                           {: backward? : whole-window?}))
+  (local (match-positions win-edge?)
+         (get-match-positions pattern bounds {: backward? : whole-window?}))
 
   ; It is desirable for a same-character sequence to behave as a chunk,
   ; so if `offset` is positive, we want to match at the end, to include
@@ -164,7 +163,7 @@ in-window pairs that match `pattern`, in the order of discovery."
           {: wininfo
            : pos
            :chars [ch1 ch2]
-           :edge-pos? (. edge-pos-idx? i)
+           :win-edge? (. win-edge? i)
            :previewable?
            (or (= inputlen 1)
                (not opts.preview_filter)
