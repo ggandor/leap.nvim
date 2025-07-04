@@ -345,7 +345,7 @@ char separately.
                       1)
              ; When repeating a `{char}<enter>` search (started to
              ; traverse after the first input).
-             :repeating-partial-pattern? false
+             :repeating-partial-input? false
              ; For traversal mode.
              :curr-idx 0
              ; Currently selected label group, 0-indexed
@@ -435,7 +435,7 @@ char separately.
     (if state.repeat.in1
         (do (when-not state.repeat.in2
               (when (not= inputlen 1)
-                (set st.repeating-partial-pattern? true)))
+                (set st.repeating-partial-input? true)))
             (values state.repeat.in1
                     (and (not= inputlen 1) state.repeat.in2)))
         (set st.errmsg "no previous search")))
@@ -635,7 +635,7 @@ char separately.
                         (ceil (/ (length targets) (length targets.label-set)))))
 
     (fn display []
-      (local use-no-labels? (or no-labels-to-use? st.repeating-partial-pattern?))
+      (local use-no-labels? (or no-labels-to-use? st.repeating-partial-input?))
       ; Do _not_ skip this on initial invocation - we might have skipped
       ; setting the initial label states if using `keys.next_target`.
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
@@ -754,12 +754,12 @@ char separately.
       _ (exit-early)))
 
   (local need-in2? (not (or ?in2
-                            st.repeating-partial-pattern?
+                            st.repeating-partial-input?
                             (= inputlen 1))))
 
   (do
     (local preview? need-in2?)
-    (local use-no-labels? (or no-labels-to-use? st.repeating-partial-pattern?))
+    (local use-no-labels? (or no-labels-to-use? st.repeating-partial-input?))
     (if preview?
         (do
           (populate-sublists targets)
@@ -780,13 +780,13 @@ char separately.
   (when st.phase (set st.phase 2))
 
   ; Jump eagerly to the first/count-th match on the whole target list?
-  (local partial-pattern? (or st.repeating-partial-pattern?
-                              (contains-safe? keys.next_target ?in2)))
+  (local partial-input? (or st.repeating-partial-input?
+                            (contains-safe? keys.next_target ?in2)))
 
   ; Do this now - repeat can succeed, even if we fail this time.
-  (update-repeat-state in1 (when-not partial-pattern? ?in2))
+  (update-repeat-state in1 (when-not partial-input? ?in2))
 
-  (when partial-pattern?
+  (when partial-input?
     (local n (or count 1))
     (local target (. targets n))
     (when-not target
@@ -807,7 +807,7 @@ char separately.
   (local targets* (if targets.sublists (. targets.sublists ?in2) targets))
   (when-not targets*
     ; (Note: at this point, ?in2 might only be nil if
-    ; `st.repeating-partial-pattern?` is true; that case implies there
+    ; `st.repeating-partial-input?` is true; that case implies there
     ; are no sublists, and there _are_ targets.)
     (set st.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
@@ -847,7 +847,7 @@ char separately.
            (or (contains? keys.next_target in-final)
                (contains? keys.prev_target in-final)))
       (let [use-no-labels? (or no-labels-to-use?
-                               st.repeating-partial-pattern?
+                               st.repeating-partial-input?
                                (not targets*.autojump?))
             ; Note: `traversal-loop` will set `st.curr-idx` to `new-idx`.
             new-idx (traversal-get-new-idx st.curr-idx in-final targets*)]
