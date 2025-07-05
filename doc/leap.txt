@@ -470,13 +470,41 @@ leap({opts})                                                       *leap.leap()*
 <
                                                                        *leap-ft*
                • inputlen: Set to 1 for |f|-like motions. See an example of a
-                 full setup in the README.
-                 Note: This feature is experimental, subject to change or
-                 removal.
-                                                            *leap-custom-action*
-               • action: A Lua function that will be executed by Leap in place
-                 of the jump, taking the selected target as its argument. (You
-                 could obviously implement some custom jump logic here too.)
+                 full setup in the README. Note: This feature is experimental,
+                 subject to change or removal.
+                                                           *leap-custom-pattern*
+               • pattern: a Vim |regexp| pattern, to be consumed by
+                 |search()|. Keep in mind that you need to escape backslashes
+                 in the Lua string, as you want to pass them literally to the
+                 Vim function! Example: >lua
+
+                    local function leap_linewise ()
+                      local _, l, c = unpack(vim.fn.getpos('.'))
+                      local pattern =
+                        '\\v'
+                        -- Skip 3-3 lines around the cursor.
+                        .. '(%<'..(math.max(1,l-3))..'l|%>'..(l+3)..'l)'
+                        -- Cursor column or the last one (if we're beyond that).
+                        .. '(%'..c..'v|%<'..c..'v$)'
+                      require('leap').leap {
+                        pattern = pattern,
+                        target_windows = { vim.fn.win_getid() },
+                        opts = { safe_labels = '' }
+                      }
+                    end
+                    -- For maximum comfort, force linewise selection in
+                    -- the mappings:
+                    vim.keymap.set({'n', 'x', 'o'}, '|', function ()
+                      -- Only force V if not already in it (otherwise it
+                      -- exits Visual mode).
+                      if not vim.fn.mode(1):match'[nV]' then
+                        vim.cmd('normal! V')
+                      end
+                      leap_linewise()
+                    end)
+<
+                 Note: This feature is experimental, subject to
+                 change or removal.
                                                            *leap-custom-targets*
                • targets: Either a list of targets, or a function returning
                  such a list. The advantage of the latter is that the function
@@ -491,6 +519,10 @@ leap({opts})                                                       *leap.leap()*
                  `wininfo` field for each (|getwininfo()|). Targets can
                  represent anything with a position, like |treesitter| nodes,
                  etc.
+                                                            *leap-custom-action*
+               • action: A Lua function that will be executed by Leap in place
+                 of the jump, taking the selected target as its argument. (You
+                 could obviously implement some custom jump logic here too.)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
