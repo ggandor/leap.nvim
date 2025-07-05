@@ -35,11 +35,7 @@
 
 (fn set-beacon-for-labeled [target ?group-offset ?phase]
   (let [offset (if (and target.chars ?phase) (get-label-offset target) 0)
-        pad (if (and (not= opts.max_phase_one_targets 0)
-                     (not ?phase)
-                     target.chars (. target.chars 2))
-                " "
-                "")
+        pad (if (and (not ?phase) target.chars (. target.chars 2)) " " "")
         label (or (. opts.substitute_chars target.label) target.label)
         relative-group (- target.group (or ?group-offset 0))
         ; In unlabeled matches are not highlighted, then "no highlight"
