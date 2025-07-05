@@ -225,6 +225,7 @@ char separately.
 ; State that is persisted between invocations.
 (local state {:repeat {:in1 nil
                        :in2 nil
+                       :pattern nil
                        ; For when wanting to repeat in relative direction
                        ; (for "outside" use only).
                        :backward nil
@@ -232,6 +233,7 @@ char separately.
                        :offset nil
                        :inputlen nil}
               :dot_repeat {:callback nil
+                           :pattern nil
                            :in1 nil
                            :in2 nil
                            :target_idx nil
@@ -263,7 +265,8 @@ char separately.
              kwargs))
   (local {:inclusive_op inclusive-op?
           : offset
-          : inputlen}
+          : inputlen
+          :pattern user-given-pattern}
          (if invoked-dot-repeat? state.dot_repeat
              invoked-repeat? state.repeat
              kwargs))
@@ -314,11 +317,14 @@ char separately.
                    (= vim.v.count 0) (if (and op-mode? no-labels-to-use?) 1 nil)
                    vim.v.count))
 
-  (local user-given-targets? user-given-targets)
-
   (local keyboard-input? (not (or invoked-repeat?
                                   invoked-dot-repeat?
+                                  user-given-pattern
                                   user-given-targets)))
+
+  (local inputlen (if inputlen inputlen
+                      keyboard-input? 2
+                      0))
 
   (local prompt {:str ">"})  ; pass by reference hack (for input fns)
 
@@ -340,7 +346,7 @@ char separately.
   (local st {; Multi-phase processing (show beacons ahead of time,
              ; right after the first input)?
              :phase (when (and keyboard-input?
-                               (not= inputlen 1)
+                               (= inputlen 2)
                                (not no-labels-to-use?))
                       1)
              ; When repeating a `{char}<enter>` search (started to
@@ -433,11 +439,10 @@ char separately.
 
   (fn get-repeat-input []
     (if state.repeat.in1
-        (do (when-not state.repeat.in2
-              (when (not= inputlen 1)
-                (set st.repeating-partial-input? true)))
-            (values state.repeat.in1
-                    (and (not= inputlen 1) state.repeat.in2)))
+        (if (= inputlen 1) state.repeat.in1
+            (= inputlen 2) (do (when-not state.repeat.in2
+                                 (set st.repeating-partial-input? true))
+                               (values state.repeat.in1 state.repeat.in2)))
         (set st.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
@@ -511,13 +516,13 @@ char separately.
     (local pattern (.. pat1 pat2 (if potential-nl-nl? "\\|\\n" "")))
     (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
 
-  (fn get-targets [in1 ?in2]
-    (let [search (require :leap.search)
-          pattern (prepare-pattern in1 ?in2)
+  (fn get-targets [pattern in1 ?in2]
+    (let [errmsg (if in1 (.. "not found: " in1 (or ?in2 "")) "no targets")
+          search (require :leap.search)
           kwargs {: backward? : offset : op-mode? : inputlen
                   :target-windows ?target-windows}
           targets (search.get-targets pattern kwargs)]
-      (or targets (set st.errmsg (.. "not found: " in1 (or ?in2 ""))))))
+      (or targets (set st.errmsg errmsg))))
 
   (fn get-user-given-targets [targets]
     (local default-errmsg "no targets")
@@ -556,8 +561,12 @@ char separately.
                       :inclusive_op inclusive-op?})
 
   (fn update-repeat-state [in1 in2]
-    (when keyboard-input?
-      (set state.repeat (vim.tbl_extend :error from-kwargs {: in1 : in2}))))
+    (when (or keyboard-input? user-given-pattern)
+      (set state.repeat (vim.tbl_extend :error
+                          from-kwargs
+                          {:pattern user-given-pattern
+                           :in1 (and keyboard-input? in1)
+                           :in2 (and keyboard-input? in2)}))))
 
 
   (fn set-dot-repeat [in1 in2 target_idx]
@@ -572,10 +581,11 @@ char separately.
     (fn update-dot-repeat-state []
       (set state.dot_repeat (vim.tbl_extend :error
                               from-kwargs
-                              {:callback user-given-targets
-                               :in1 (and (not user-given-targets) in1)
-                               :in2 (and (not user-given-targets) in2)
-                               : target_idx}))
+                              {: target_idx
+                               :callback user-given-targets
+                               :pattern user-given-pattern
+                               :in1 (and keyboard-input? in1)
+                               :in2 (and keyboard-input? in2)}))
       (when (not directional?)
         (set state.dot_repeat.backward (< target_idx 0))
         (set state.dot_repeat.target_idx (abs target_idx))))
@@ -721,6 +731,10 @@ char separately.
 
   (exec-user-autocmds :LeapEnter)
 
+  (local need-in1? (or keyboard-input?
+                       (and invoked-repeat? (not state.repeat.pattern))
+                       (and invoked-dot-repeat? (not state.dot_repeat.callback))))
+
   (local (in1 ?in2) (if keyboard-input?
                         (if st.phase
                             ; This might call `get-repeat-input`, and
@@ -728,23 +742,28 @@ char separately.
                             (get-first-pattern-input)  ; REDRAW
                             (get-full-pattern-input))  ; REDRAW
 
-                        invoked-repeat?
+                        (and invoked-repeat? (not state.repeat.pattern))
                         (get-repeat-input)
 
                         (and invoked-dot-repeat? (not state.dot_repeat.callback))
-                        (values state.dot_repeat.in1 state.dot_repeat.in2)
+                        (values state.dot_repeat.in1 state.dot_repeat.in2)))
 
-                        (values true true)))
-  (when-not in1
+  (when (and need-in1? (not in1))
     (exit-early))
 
-  (local targets (if (and invoked-dot-repeat? state.dot_repeat.callback)
-                     (get-user-given-targets state.dot_repeat.callback)
+  (local targets (if (or user-given-targets
+                         (and invoked-dot-repeat? state.dot_repeat.callback))
+                     (get-user-given-targets
+                       (or user-given-targets state.dot_repeat.callback))
 
-                     user-given-targets?
-                     (get-user-given-targets user-given-targets)
-
-                     (get-targets in1 ?in2)))
+                     (get-targets
+                       (or user-given-pattern
+                           (and invoked-repeat? state.repeat.pattern)
+                           (and invoked-dot-repeat? state.dot_repeat.pattern)
+                           (prepare-pattern in1 ?in2))
+                       ; TODO: refactor errmsg-handling
+                       in1
+                       ?in2)))
   (when-not targets
     (exit-early))
 
@@ -753,9 +772,8 @@ char separately.
       target (do (do-action target) (exit))
       _ (exit-early)))
 
-  (local need-in2? (not (or ?in2
-                            st.repeating-partial-input?
-                            (= inputlen 1))))
+  (local need-in2? (and (= inputlen 2)
+                        (not (or ?in2 st.repeating-partial-input?))))
 
   (do
     (local preview? need-in2?)

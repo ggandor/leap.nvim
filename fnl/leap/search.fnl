@@ -88,9 +88,9 @@ in-window pairs that match `pattern`, in the order of discovery."
   (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
-  ; The whole 2-char match should be visible.
-  (when (not= inputlen 1)
-    (tset bounds 2 (- (. bounds 2) 1)))
+  (when (= inputlen 2)
+    ; The whole match should be visible.
+    (set (. bounds 2) (- (. bounds 2) 1)))
 
   (local (match-positions win-edge?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
@@ -111,66 +111,65 @@ in-window pairs that match `pattern`, in the order of discovery."
   (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
   (var add-target? false)
 
+  (fn previewable? [col ch1 ch2]
+    (if (= ch1 "\n")
+        (opts.preview_filter "" ch1 "")
+        (opts.preview_filter (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))
+
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= col curcol)))
-      (when (not= line prev-match.line)
-        (set line-str (vim.fn.getline line)))
-
-      ; Extracting the actual characters from the buffer at the match
-      ; position.
-      (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-      (var ch2 nil)
-      (if (= ch1 "")
+      (if (= inputlen 0) (table.insert targets {: wininfo : pos})
           (do
-            ; On EOL - in this case, we're adding another, virtual \n after the
-            ; real one, so that these can be targeted by pressing a newline
-            ; alias twice. (See also `prepare-pattern` in `main.fnl`.)
-            (set ch1 "\n")
-            (when (not= inputlen 1)
-              (set ch2 "\n"))
-            (set add-target? true))
+            (when (not= line prev-match.line)
+              (set line-str (vim.fn.getline line)))
+            ; Extracting the actual characters from the buffer at the
+            ; match position.
+            (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+            (var ch2 nil)
+            (if (= ch1 "")
+                ; On EOL - in this case, we're adding another, virtual
+                ; \n after the real one, so that these can be targeted
+                ; by pressing a newline alias twice. (See also
+                ; `prepare-pattern` in `main.fnl`.)
+                (do (set ch1 "\n")
+                    (when (= inputlen 2) (set ch2 "\n"))
+                    (set add-target? true))
 
-          (= inputlen 1)
-          (set add-target? true)
+                (= inputlen 1)
+                (set add-target? true)
 
-          (do
-            (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-            (when (= ch2 "")  ; = ch1 is right before EOL
-              (set ch2 "\n"))
-            (local overlap? (and (= line prev-match.line)
-                                 (if backward?
-                                     ; c1 c2
-                                     ;    p1 p2
-                                     (= col (- prev-match.col (ch1:len)))
-                                     ;    c1 c2
-                                     ; p1 p2
-                                     (= col (+ prev-match.col (prev-match.ch1:len))))))
-            (local triplet? (and overlap?
-                                 ; Same pair? (Eq-classes & ignorecase considered.)
-                                 (= (->representative-char ch2)
-                                    (->representative-char prev-match.ch2))))
-            (set prev-match {: line : col : ch1 : ch2})
-            (local skip? (and triplet? (if backward? match-at-end? match-at-start?)))
-            (if skip?
-                (set add-target? false)
                 (do
-                  (when triplet? (table.remove targets))
-                  (set add-target? true)))))
+                  (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
+                  (when (= ch2 "")  ; = ch1 is right before EOL
+                    (set ch2 "\n"))
+                  (local overlap?
+                         (and (= line prev-match.line)
+                              (if backward?
+                                  ; c1 c2
+                                  ;    p1 p2
+                                  (= col (- prev-match.col (ch1:len)))
+                                  ;    c1 c2
+                                  ; p1 p2
+                                  (= col (+ prev-match.col (prev-match.ch1:len))))))
+                  (local triplet?
+                         (and overlap?
+                              ; Same pair? (Eq-classes & ignorecase considered.)
+                              (= (->representative-char ch2)
+                                 (->representative-char prev-match.ch2))))
+                  (local skip? (and triplet?
+                                    (if backward? match-at-end? match-at-start?)))
+                  (set add-target? (not skip?))
+                  (when (and add-target? triplet?)
+                    (table.remove targets))
+                  (set prev-match {: line : col : ch1 : ch2})))
 
-      (when add-target?
-        (table.insert
-          targets
-          {: wininfo
-           : pos
-           :chars [ch1 ch2]
-           :win-edge? (. win-edge? i)
-           :previewable?
-           (or (= inputlen 1)
-               (not opts.preview_filter)
-               (if (= ch1 "\n")
-                   (opts.preview_filter "" ch1 "")
-                   (opts.preview_filter
-                     (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))})))))
+            (when add-target?
+              (table.insert targets
+                            {: wininfo : pos :chars [ch1 ch2]
+                             :win-edge? (. win-edge? i)
+                             :previewable? (or (< inputlen 2)
+                                               (not opts.preview_filter)
+                                               (previewable? col ch1 ch2))})))))))
 
 
 (fn distance [[l1 c1] [l2 c2]]
