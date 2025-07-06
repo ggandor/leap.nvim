@@ -294,21 +294,21 @@ vim.api.nvim_create_autocmd('User', {
 
 Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
 the traversal keys for incremental selection. The labels are forced to be safe,
-so you can operate on the selection right away (`Rrry`). Traversal can also
-"wrap around" backwards (`RR` selects the root node).
+so you can operate on the selection right away (`RRRy`). Traversal can also
+"wrap around" backwards (`Rr` selects the root node).
 
 ```lua
 vim.keymap.set({'x', 'o'}, 'R',  function ()
   require('leap.treesitter').select {
     -- To increase/decrease the selection in a clever-f-like manner,
-    -- with the trigger key itself (vRrrrrRR...). The default keys
+    -- with the trigger key itself (vRRRRrr...). The default keys
     -- (<enter>/<backspace>) also work, so feel free to skip this.
-    opts = require('leap.user').with_traversal_keys('r', 'R')
+    opts = require('leap.user').with_traversal_keys('R', 'r')
   }
 end)
 ```
 
-Note that it is worth using (forced) linewise mode (`VRrr...`, `yVR`), as
+Note that it is worth using (forced) linewise mode (`VRRR...`, `yVR`), as
 redundant nodes are filtered out (only the outermost are kept in a given line
 range), making the selection much more efficient.
 
@@ -467,7 +467,7 @@ require('leap').opts.preview_filter = function () return false end
 
 
 <details>
-<summary>Position preview labels at the beginning of the match</summary>
+<summary>Always show labels at the beginning of the match</summary>
 
 Note: `on_beacons` is an experimental escape hatch, and this workaround depends
 on implementation details.
@@ -621,8 +621,11 @@ end
 -- For maximum comfort, force linewise selection in
 -- the mappings:
 vim.keymap.set({'n', 'x', 'o'}, '|', function ()
+  local mode = vim.fn.mode(1)
   -- Only force V if not already in it (otherwise it exits Visual mode).
-  if not vim.fn.mode(1):match'[nV]' then vim.cmd('normal! V') end
+  if not mode:match('n$') and not mode:match('V') then
+    vim.cmd('normal! V')
+  end
   leap_linewise()
 end)
 ```

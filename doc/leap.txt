@@ -79,6 +79,7 @@ Repeat and traversal                                     *leap-repeat-traversal*
 At any stage, `<enter>` (|leap.opts.keys.next_target|) jumps to the
 next/closest available target: `s<enter>` repeats the previous search;
 `s{char}<enter>` can be used as a multiline substitute for `fFtT` motions.
+*leap-partial-input*
 
 In case of directional search, `<enter>` can continue traversing through the
 rest of the targets (`s<enter><enter>...`). If you overshoot, `<backspace>`
@@ -377,15 +378,15 @@ autocommand for |ColorScheme|: >lua
       callback = function ()
         -- Color-scheme-specific settings
         if vim.g.colors_name == 'foo' then
-          -- Force using the defaults.
+          -- Force using the defaults for this scheme.
           require('leap').init_hl(true)
         elseif vim.g.colors_name == 'bar' then
           vim.cmd 'hi! link LeapLabel Substitute'
-          require('leap').init_hl()
         end
-
         -- General settings
         vim.cmd 'hi! link LeapMatch None'
+        -- Call this last, to ensure updating concealed labels.
+        require('leap').init_hl()
       end
     })
 <
@@ -495,9 +496,10 @@ leap({opts})                                                       *leap.leap()*
                     -- For maximum comfort, force linewise selection in
                     -- the mappings:
                     vim.keymap.set({'n', 'x', 'o'}, '|', function ()
+                      local mode = vim.fn.mode(1)
                       -- Only force V if not already in it (otherwise it
                       -- exits Visual mode).
-                      if not vim.fn.mode(1):match'[nV]' then
+                      if not mode:match('n$') and not mode:match('V') then
                         vim.cmd('normal! V')
                       end
                       leap_linewise()
