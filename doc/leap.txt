@@ -161,13 +161,11 @@ Available <Plug> keys ~
     *<Plug>(leap-from-window)*    |  Other windows   |          |
     *<Plug>(leap-anywhere)*       |  All windows     |          |
     *<Plug>(leap-forward)*        |  After cursor    |          |
-    *<Plug>(leap-forward-to)*     |  After cursor    |  +1 (*)  |  true
+    *<Plug>(leap-forward-to)*     |  After cursor    |          |  true
     *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  true
     *<Plug>(leap-backward)*       |  Before cursor   |          |
     *<Plug>(leap-backward-to)*    |  Before cursor   |          |
-    *<Plug>(leap-backward-till)*  |  Before cursor   |  +2      |
-
-(*) Offset only in Visual and Operator-pending mode.
+    *<Plug>(leap-backward-till)*  |  Before cursor   |  +1      |
 
 Suggested arrangements ~
 
@@ -193,7 +191,7 @@ selecting the target.)
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
-4. Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
+4. F/t-style: >lua
 
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward-to)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
@@ -447,7 +445,7 @@ leap({opts})                                                       *leap.leap()*
                • target_windows: A list of windows (as |winid|s) to be
                  searched.
                • offset: Where to land with the cursor compared to the target
-                 position (-1, 0, 1, 2).
+                 position (-1, 0, 1).
                • inclusive_op: A flag indicating whether an operation should
                  behave as |inclusive|.
                • opts: A table just like |leap.opts|, to override any default
