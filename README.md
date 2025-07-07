@@ -38,7 +38,7 @@ Every visible position is targetable:
 - `s{char}<space>` jumps to the last character on a line.
 - `s<space><space>` jumps to end-of-line characters, including empty lines.
 
-At any stage, `<enter>` consistently jumps to the next/closest available target
+At any stage, `<enter>` jumps to the next/closest available target
 (`<backspace>` steps back):
 
 - `s<enter>...` repeats the previous search.
@@ -121,7 +121,7 @@ Sneak-style:
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
 vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
-vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
+vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 ```
 
 See `:h leap-custom-mappings` for more.
@@ -590,7 +590,7 @@ do
     leap(ft_args({ opts = t_opts, offset = -1 }))
   end)
   vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
-    leap(ft_args({ opts = t_opts, backward = true, offset = -1 }))
+    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
   end)
 end
 ```
@@ -610,8 +610,8 @@ local function leap_linewise ()
     '\\v'
     -- Skip 3-3 lines around the cursor.
     .. '(%<'..(math.max(1,l-3))..'l|%>'..(l+3)..'l)'
-    -- Cursor column or the last one (if we're beyond that).
-    .. '(%'..c..'v|%<'..c..'v$)'
+    -- Cursor column or EOL (if the cursor is beyond that).
+    .. '(%'..c..'v|$%<'..c..'v)'
   require('leap').leap {
     pattern = pattern,
     target_windows = { vim.fn.win_getid() },

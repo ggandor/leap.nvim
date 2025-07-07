@@ -34,25 +34,25 @@ custom mappings and arrangements, see |leap-custom-mappings|.
 
 • Initiate the search in the current window (`s`), or in the other windows
   (`S`).
-• Start typing a 2-character pattern (`{char1}{char2}`).
+• Start typing a 2-character pattern ({char1}{char2}).
 • After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot use them yet - they only get active after
+  the {char1}{?} pairs. You cannot use them yet - they only get active after
   finishing the pattern. *leap-preview*
-• Enter `{char2}`. If the pair was not labeled, you automatically jump there.
+• Enter {char2}. If the pair was not labeled, you automatically jump there.
   You can safely ignore the remaining labels, and continue editing - those are
   guaranteed non-conflicting letters, disappearing on the next keypress
   (|leap.opts.safe_labels|). *leap-autojump*
 • Else: type the label character, that is now active. If there are more
-  matches than available labels, you can switch between groups, using
-  `<space>` and `<backspace>` (|leap.opts.keys|).
+  matches than available labels, you can switch between groups, using <space>
+  and <backspace> (|leap.opts.keys|).
 
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
 
 Special positions
 
-The last character on a line can be targeted by pressing `<space>` after it.
-There is nothing special going on here: `<space>` is simply an alias for `\n`
+The last character on a line can be targeted by pressing <space> after it.
+There is nothing special going on here: <space> is simply an alias for `\n`
 and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
 
 To target actual EOL positions, including empty lines, press the newline alias
@@ -69,20 +69,18 @@ right in front of you will be the first ones.
 Smart autojump                                             *leap-smart-autojump*
 
 |leap-autojump| is only triggered if the remaining matches can be covered by a
-limited set of "safe" target labels (keys you would not use right after a
-jump), but stays in place, and switches to an extended label set otherwise.
-For fine-tuning or disabling this behaviour, see |leap.opts.labels| and
-|leap.opts.safe_labels|.
+set of "safe" target labels (keys never used right after leaping), otherwise
+the cursor stays put, and an extended label set is loaded. To fine-tune or
+disable this behaviour, see |leap.opts.safe_labels| and |leap.opts.labels|.
 
 Repeat and traversal                                     *leap-repeat-traversal*
 
-At any stage, `<enter>` (|leap.opts.keys.next_target|) jumps to the
-next/closest available target: `s<enter>` repeats the previous search;
-`s{char}<enter>` can be used as a multiline substitute for `fFtT` motions.
-*leap-partial-input*
+At any stage, <enter> (|leap.opts.keys.next_target|) jumps to the next/closest
+available target: `s<enter>` repeats the previous search; `s{char}<enter>` can
+be used as a multiline substitute for `fFtT` motions. *leap-partial-input*
 
-In case of directional search, `<enter>` can continue traversing through the
-rest of the targets (`s<enter><enter>...`). If you overshoot, `<backspace>`
+In case of directional search, <enter> can continue traversing through the
+rest of the targets (`s<enter><enter>...`). If you overshoot, <backspace>
 (|leap.opts.keys.prev_target|) steps back.
 
 There is a convenience function in the `user` module to set keys to repeat the
@@ -110,11 +108,12 @@ same (the "beeline" |leap-target-ordering| is ignored).
 Concealed labels                                         *leap-concealed-labels*
 
 Labels in subsequent target groups are concealed with an empty block or a
-middle dot, depending on the color scheme, and also have a dimmed color.
-
-In |leap-preview| phase, certain labels might be concealed in the current
-target group too, marking that there is a conflict or potential source of
-confusion (to be resolved in the next step):
+middle dot, depending on the color scheme, and have a dimmed color.
+(See also: |leap.init_hl()|).
+                                                        *leap-preview-conflicts*
+In |leap-preview| phase, certain labels might be concealed in the first group
+too, marking that there is a conflict or potential source of confusion (to be
+resolved in the next step):
 
 1. Two overlapping matches at window edge or EOL, where at least one of them
    is labeled. (A label beyond the edge would be shifted left a column, so
@@ -122,11 +121,11 @@ confusion (to be resolved in the next step):
 2. A label on top of another, unlabeled match. When typing quickly, this is
    in any case unsafe and unacceptable.
 >
-                    #1            #2
-    text         ...aab|      ...abac...
-    match 1         aa?|         abL          L = label
-    match 2          a?|           ac         ? = potential label
-    preview      ...aa█|      ...ab█c...
+                   #1           #2
+    text        ...aab|     ...abac...
+    match-1        aa?|        abL         L = label
+    match-2         a?|          ac        ? = potential label
+    preview     ...aa█|     ...ab█c...
 <
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
@@ -150,9 +149,8 @@ S{char1}{char2}         Jump to an occurrence of {char1}{char2} in one of the
 CUSTOM MAPPINGS                                            *leap-custom-mappings*
 
 Leap defines <Plug> keys aliasing calls to |leap.leap()|. To create custom
-motions different from the predefined ones, simply call the above function
-with your preferred arguments. E.g., `<Plug>(leap-backward)` is just a synonym
-for: >lua
+motions, simply call that function with your preferred arguments instead.
+E.g., `<Plug>(leap-backward)` is just a synonym for: >lua
     function () require('leap').leap { backward = true } end
 
 Available <Plug> keys ~
@@ -193,7 +191,7 @@ selecting the target.)
 
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
-    vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
+    vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
 4. Evil-snipe-style (https://github.com/hlissner/evil-snipe): >lua
 
@@ -201,7 +199,7 @@ selecting the target.)
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
     vim.keymap.set({'x', 'o'},      'x',  '<Plug>(leap-forward-till)')
     vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
-    vim.keymap.set({'n', 'x', 'o'}, 'gs', '<Plug>(leap-from-window)')
+    vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
 Note: Same-character sequences (`aaa...`) are matched at one position only: if
 `offset` in |leap.leap()| is positive, at the end, otherwise at the start.
@@ -269,18 +267,15 @@ Example configuration: >lua
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`
 
-    These should be keys that you would never use right after a jump, so that
-    the plugin can instantly jump to the first match when this safe list
-    covers the rest. Any other key than these "falls through" to Normal mode.
-    This removes a step in the common case: you don't need to explicitly exit,
-    just type your next command. |leap-autojump|
+    These should be keys that you never use right after leaping (e.g. a search
+    command), so that we can trigger |leap-autojump| whenever this list covers
+    the rest of the matches. Any other key "falls through" to Normal mode.
 
-    The list can either be defined as a string or a table. Setting it to `{}`
-    or `''` effectively disables the autojump feature.
+    Can be a string or a table. Setting it to `''` or `{}` effectively
+    disables the autojump feature.
 
     Note: Operator-pending mode ignores this, and tries to use
-    |leap.opts.labels|, since we need to be able to select the actual target
-    before executing the operation anyway.
+    |leap.opts.labels|, since we should select the final target right away.
 
                                                               *leap.opts.labels*
 `labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'`
@@ -288,10 +283,9 @@ Example configuration: >lua
     Target labels to be used when there are more matches than
     |leap.opts.safe_labels| plus one.
 
-    The list can either be defined as a string or a table. Setting it to `{}`
-    or `''` forces |leap-autojump| to always be on (except for
-    Operator-pending mode, where it makes no sense). In that case, do not
-    forget to set |leap.opts.keys.next_group| to something "safe" too.
+    Can be a string or a table. Setting it to `''` or `{}` forces
+    |leap-autojump| to always be on. In that case, do not forget to set
+    |leap.opts.keys.next_group| to something "safe" too.
 
 A heuristic behind the default label lists: since the commands invoking the
 motions are mapped to left-hand keys by default, we tend to prioritize
@@ -319,7 +313,7 @@ Shift to the next group of labeled targets.
 *leap.opts.keys.prev_group*
 Shift to the previous group of labeled targets (revert `next_group`).
 
-Each value can be a list too, with alternatives. In `next_target` and
+Each value can be a table too, with alternatives. In `next_target` and
 `prev_target`, subsequent keys only get active once we have the full search
 pattern (no more input characters are needed). Example ("clever-s"):
 >lua
@@ -327,7 +321,7 @@ pattern (no more input characters are needed). Example ("clever-s"):
     keys.next_target = { '<enter>', 's' }
     keys.prev_target = { '<backspace>', 'S' }
 <
-Note: `<esc>` is hardcoded to exit Leap at any stage cleanly.
+Note: <esc> is hardcoded to exit Leap at any stage cleanly.
 
                                                             *leap.opts.vim_opts*
 `vim_opts =` >
@@ -368,17 +362,16 @@ LeapMatch		Search matches when doing |leap-traversal| without
 LeapBackdrop		In some cases it might be useful to apply certain
                         settings on the whole search area, like disabling
                         certain |attr-list| attributes, or linking to
-                        |hl-Normal|, to make labels easier to see. This group
-                        is not set by default.
+                        `Comment`, to make labels easier to see. This group is
+                        not set by default.
 
 To preserve your custom settings, wrap them in a function, and define an
 autocommand for |ColorScheme|: >lua
-
     vim.api.nvim_create_autocmd('ColorScheme', {
       callback = function ()
         -- Color-scheme-specific settings
         if vim.g.colors_name == 'foo' then
-          -- Force using the defaults for this scheme.
+          -- Force using the defaults of Leap for this scheme.
           require('leap').init_hl(true)
         elseif vim.g.colors_name == 'bar' then
           vim.cmd 'hi! link LeapLabel Substitute'
@@ -441,8 +434,8 @@ with them.
 There are lots of ways you can extend the plugin and bend it to your will, and
 the combinations of them give you almost infinite possibilities.
 
-Instead of using the provided `<Plug>` keys (|leap-custom-mappings|), you can
-also call the `leap()` function directly:
+Instead of using the provided <Plug> keys (|leap-custom-mappings|), you can
+also call `leap()` directly:
 
 leap({opts})                                                       *leap.leap()*
     Entry point for all |leap.nvim| actions.
@@ -474,39 +467,11 @@ leap({opts})                                                       *leap.leap()*
                  full setup in the README. Note: This feature is experimental,
                  subject to change or removal.
                                                            *leap-custom-pattern*
-               • pattern: a Vim |regexp| pattern, to be consumed by
-                 |search()|. Keep in mind that you need to escape backslashes
-                 in the Lua string, as you want to pass them literally to the
-                 Vim function! Example: >lua
-
-                    local function leap_linewise ()
-                      local _, l, c = unpack(vim.fn.getpos('.'))
-                      local pattern =
-                        '\\v'
-                        -- Skip 3-3 lines around the cursor.
-                        .. '(%<'..(math.max(1,l-3))..'l|%>'..(l+3)..'l)'
-                        -- Cursor column or the last one (if we're beyond that).
-                        .. '(%'..c..'v|%<'..c..'v$)'
-                      require('leap').leap {
-                        pattern = pattern,
-                        target_windows = { vim.fn.win_getid() },
-                        opts = { safe_labels = '' }
-                      }
-                    end
-                    -- For maximum comfort, force linewise selection in
-                    -- the mappings:
-                    vim.keymap.set({'n', 'x', 'o'}, '|', function ()
-                      local mode = vim.fn.mode(1)
-                      -- Only force V if not already in it (otherwise it
-                      -- exits Visual mode).
-                      if not mode:match('n$') and not mode:match('V') then
-                        vim.cmd('normal! V')
-                      end
-                      leap_linewise()
-                    end)
-<
-                 Note: This feature is experimental, subject to
-                 change or removal.
+               • pattern: a |regexp| pattern, to be consumed by |search()|.
+                 Keep in mind that you need to escape backslashes in the Lua
+                 string, as you want to pass them literally to the Vim
+                 function! See an example in the README. Note: This feature is
+                 experimental, subject to change or removal.
                                                            *leap-custom-targets*
                • targets: Either a list of targets, or a function returning
                  such a list. The advantage of the latter is that the function
