@@ -117,7 +117,7 @@ in-window pairs that match `pattern`, in the order of discovery."
         (opts.preview_filter (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))
 
   (each [i [line col &as pos] (ipairs match-positions)]
-    (when (not (and skip-curpos? (= line curline) (= col curcol)))
+    (when (not (and skip-curpos? (= line curline) (= (+ col offset) curcol)))
       (if (= inputlen 0) (table.insert targets {: wininfo : pos})
           (do
             (when (not= line prev-match.line)

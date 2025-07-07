@@ -117,7 +117,7 @@ local function get_targets_in_current_window(pattern, targets, _12_)
     local line = _16_[1]
     local col = _16_[2]
     local pos = _16_
-    if not (skip_curpos_3f and (line == curline) and (col == curcol)) then
+    if not (skip_curpos_3f and (line == curline) and ((col + offset0) == curcol)) then
       if (inputlen == 0) then
         table.insert(targets, {wininfo = wininfo, pos = pos})
       else
