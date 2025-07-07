@@ -46,6 +46,8 @@ custom mappings and arrangements, see |leap-custom-mappings|.
   matches than available labels, you can switch between groups, using <space>
   and <backspace> (|leap.opts.keys|).
 
+|forced-motion|s work, including |o_v| (toggle charwise inclusive/exclusive).
+
 If a |language-mapping| ('keymap') is active, Leap waits for keymapped
 sequences as needed and searches for the keymapped result as expected.
 
@@ -135,10 +137,8 @@ To set the defaults, call `require('leap').set_default_mappings()`.
                                                         *leap_s* *leap_v_s*
                                                         *leap_o_s*
 s{char1}{char2}         Jump to an occurrence of {char1}{char2} in the current
-                        window. The cursor is placed on {char1} |exclusive|.
-                        To operate till the end of the line, use |o_v|, and
-                        finish the pattern with a newline alias, e.g.
-                        `yvs{char}<space>`. |leap.opts.equivalence_classes|
+                        window. The cursor is placed on {char1} (|inclusive|
+                        in the forward direction).
 
                                                         *leap_S*
 S{char1}{char2}         Jump to an occurrence of {char1}{char2} in one of the
@@ -157,25 +157,21 @@ Available <Plug> keys ~
 
     Key                         |  Search scope    |  Offset  |  |inclusive|
     ----------------------------|------------------|----------|-------------
-    *<Plug>(leap)*                |  Current window  |          |
+    *<Plug>(leap)*                |  Current window  |          |  * (forward)
     *<Plug>(leap-from-window)*    |  Other windows   |          |
     *<Plug>(leap-anywhere)*       |  All windows     |          |
-    *<Plug>(leap-forward)*        |  After cursor    |          |
-    *<Plug>(leap-forward-to)*     |  After cursor    |          |  true
-    *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  true
+    *<Plug>(leap-forward)*        |  After cursor    |          |  *
     *<Plug>(leap-backward)*       |  Before cursor   |          |
-    *<Plug>(leap-backward-to)*    |  Before cursor   |          |
+    *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  *
     *<Plug>(leap-backward-till)*  |  Before cursor   |  +1      |
 
 Suggested arrangements ~
 
 1. Default: >lua
-
     vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
     vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
 
 2. Jump to anywhere in Normal mode with one key: >lua
-
     vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
     vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
 
@@ -186,19 +182,14 @@ cursor could jump in/to a different window than your goal, right before
 selecting the target.)
 
 3. Sneak-style: >lua
-
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
-4. F/t-style: >lua
-
-    vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward-to)')
-    vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward-to)')
-    vim.keymap.set({'x', 'o'},      'x',  '<Plug>(leap-forward-till)')
-    vim.keymap.set({'x', 'o'},      'X',  '<Plug>(leap-backward-till)')
-    vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
-
+You might add a pair of keys for exclusive selection to any of the above: >lua
+    vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
+    vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
+<
 Note: Same-character sequences (`aaa...`) are matched at one position only: if
 `offset` in |leap.leap()| is positive, at the end, otherwise at the start.
 

@@ -122,9 +122,15 @@ Sneak-style:
 vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
 vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
 vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
+
+You might add a pair of keys for exclusive selection to any of the above:
+
+```lua
+vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
+vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
 ```
 
-See `:h leap-custom-mappings` for more.
+For more customization, see `:h leap.leap()`.
 
 </details>
 

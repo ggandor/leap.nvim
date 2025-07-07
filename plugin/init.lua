@@ -5,19 +5,10 @@ local plug_mappings = {
     '<Plug>(leap)',
     function ()
       require('leap').leap {
-        target_windows = { vim.api.nvim_get_current_win() }
+        target_windows = { vim.api.nvim_get_current_win() },
+        inclusive_op = true
       }
     end
-  },
-  {
-    { 'n', 'x', 'o' },
-    '<Plug>(leap-forward)',
-    function () require('leap').leap {} end
-  },
-  {
-    { 'n', 'x', 'o' },
-    '<Plug>(leap-backward)',
-    function () require('leap').leap { backward = true } end
   },
   {
     { 'n', 'x', 'o' },
@@ -40,13 +31,8 @@ local plug_mappings = {
     end
   },
   {
-    { 'n' },
-    '<Plug>(leap-forward-to)',
-    function () require('leap').leap {} end
-  },
-  {
-    { 'x', 'o' },
-    '<Plug>(leap-forward-to)',
+    { 'n', 'x', 'o' },
+    '<Plug>(leap-forward)',
     function () require('leap').leap { inclusive_op = true } end
   },
   {
@@ -56,7 +42,7 @@ local plug_mappings = {
   },
   {
     { 'n', 'x', 'o' },
-    '<Plug>(leap-backward-to)',
+    '<Plug>(leap-backward)',
     function () require('leap').leap { backward = true } end
   },
   {
@@ -66,6 +52,16 @@ local plug_mappings = {
   },
 
   -- Deprecated
+  {
+    { 'n', 'x', 'o' },
+    '<Plug>(leap-forward-to)',
+    '<Plug>(leap-forward)',
+  },
+  {
+    { 'n', 'x', 'o' },
+    '<Plug>(leap-backward-to)',
+    '<Plug>(leap-backward)',
+  },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-cross-window)',
