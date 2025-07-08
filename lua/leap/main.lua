@@ -628,7 +628,7 @@ local function leap(kwargs)
     jump_to_21 = _89_
   end
   local do_action = (user_given_action or jump_to_21)
-  local function post_pattern_input_loop(targets)
+  local function select(targets)
     local _7cgroups_7c
     if not targets["label-set"] then
       _7cgroups_7c = 0
@@ -686,7 +686,7 @@ local function leap(kwargs)
       return nil
     end
   end
-  local function traversal_loop(targets, start_idx, _99_)
+  local function traverse(targets, start_idx, _99_)
     local use_no_labels_3f = _99_["use-no-labels?"]
     local function on_first_invoc()
       if use_no_labels_3f then
@@ -851,7 +851,7 @@ local function leap(kwargs)
     set_dot_repeat(in1, nil, _124_())
     do_action(target)
     if can_traverse_3f(targets) then
-      traversal_loop(targets, 1, {["use-no-labels?"] = true})
+      traverse(targets, 1, {["use-no-labels?"] = true})
     else
     end
     exit_2a()
@@ -911,7 +911,7 @@ local function leap(kwargs)
     end
   else
   end
-  local in_final = post_pattern_input_loop(targets_2a)
+  local in_final = select(targets_2a)
   if not in_final then
     exit_early_2a()
     return
@@ -919,7 +919,7 @@ local function leap(kwargs)
     local use_no_labels_3f = (no_labels_to_use_3f or st["repeating-partial-input?"] or not targets_2a["autojump?"])
     local new_idx = traversal_get_new_idx(st["curr-idx"], in_final, targets_2a)
     do_action(targets_2a[new_idx])
-    traversal_loop(targets_2a, new_idx, {["use-no-labels?"] = use_no_labels_3f})
+    traverse(targets_2a, new_idx, {["use-no-labels?"] = use_no_labels_3f})
     exit_2a()
     return
   elseif (contains_3f(keys.next_target, in_final) and (st["curr-idx"] == 0)) then

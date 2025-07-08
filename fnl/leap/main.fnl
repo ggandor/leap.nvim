@@ -618,7 +618,6 @@ char separately.
     (each [_ t (ipairs targets)]
       (set t.idx (. new-idx t.idx))))
 
-
   ; Jump
 
   (local jump-to!
@@ -637,9 +636,9 @@ char separately.
 
   (local do-action (or user-given-action jump-to!))
 
-  ; Target-selection loops
+  ; Post-pattern loops
 
-  (fn post-pattern-input-loop [targets]
+  (fn select [targets]
     (local |groups| (if (not targets.label-set)
                         0
                         (ceil (/ (length targets) (length targets.label-set)))))
@@ -684,7 +683,7 @@ char separately.
         (if (<= idx 1) (length targets) (dec idx))))
 
 
-  (fn traversal-loop [targets start-idx {: use-no-labels?}]
+  (fn traverse [targets start-idx {: use-no-labels?}]
 
     (fn on-first-invoc []
       (if use-no-labels?
@@ -815,7 +814,7 @@ char separately.
     (set-dot-repeat in1 nil (if target.idx target.idx n))
     (do-action target)
     (when (can-traverse? targets)
-      (traversal-loop targets 1 {:use-no-labels? true}))  ; REDRAW (LOOP)
+      (traverse targets 1 {:use-no-labels? true}))  ; REDRAW (LOOP)
     (exit))
 
   (exec-user-autocmds :LeapPatternPost)
@@ -856,7 +855,7 @@ char separately.
           (do-action (. targets* 1))
           (set st.curr-idx 1))))
 
-  (local in-final (post-pattern-input-loop targets*))  ; REDRAW (LOOP)
+  (local in-final (select targets*))  ; REDRAW (LOOP)
   (if (not in-final)
       (exit-early)
 
@@ -867,10 +866,10 @@ char separately.
       (let [use-no-labels? (or no-labels-to-use?
                                st.repeating-partial-input?
                                (not targets*.autojump?))
-            ; Note: `traversal-loop` will set `st.curr-idx` to `new-idx`.
+            ; Note: `traverse` will set `st.curr-idx` to `new-idx`.
             new-idx (traversal-get-new-idx st.curr-idx in-final targets*)]
         (do-action (. targets* new-idx))
-        (traversal-loop targets* new-idx {: use-no-labels?})  ; REDRAW (LOOP)
+        (traverse targets* new-idx {: use-no-labels?})  ; REDRAW (LOOP)
         (exit))
 
       ; `next_target` accepts the first match if the cursor hasn't moved
