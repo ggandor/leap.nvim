@@ -447,7 +447,8 @@ leap({opts})                                                       *leap.leap()*
                • offset: Where to land with the cursor compared to the target
                  position (-1, 0, 1).
                • inclusive_op: A flag indicating whether an operation should
-                 behave as |inclusive|.
+                 behave as |inclusive| in the forward direction (when the
+                 target is after the cursor).
                • opts: A table just like |leap.opts|, to override any default
                  setting for the specific call. Example: >lua
                     require('leap').leap {

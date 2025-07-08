@@ -630,7 +630,8 @@ char separately.
                         :add-to-jumplist? first-jump?
                         : mode
                         : offset
-                        : backward?
+                        :backward? (or backward?
+                                       (and target.idx (< target.idx 0)))
                         : inclusive-op?})
         (set first-jump? false))))
 
