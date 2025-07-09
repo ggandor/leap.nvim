@@ -12,8 +12,8 @@
         : dec
         : clamp
         : echo
-        : get-eq-class-of
-        : ->representative-char
+        : get-eqv-class
+        : get-representative-char
         : get-input
         : get-input-by-keymap}
        (require "leap.util"))
@@ -63,17 +63,14 @@ interrupted change operation."
     (pcall vim.fn.repeat#set seq -1)))
 
 
-; Return a char->eq-class lookup table (the relevant one for us).
-(fn eq-classes->membership-lookup [eqcls]
+; Return a char->equivalence-class lookup table (the relevant one for us).
+(fn eqv-classes->membership-lookup [eqv-classes]
   (let [res {}]
-    (each [_ eqcl (ipairs eqcls)]
-      (let [eqcl* (if (= (type eqcl) :string)
-                      ; Do not use `vim.split`, it doesn't handle
-                      ; multibyte chars.
-                      (vim.fn.split eqcl "\\zs")
-                      eqcl)]
-        (each [_ ch (ipairs eqcl*)]
-          (tset res ch eqcl*))))
+    (each [_ cl (ipairs eqv-classes)]
+      ; Do not use `vim.split`, it doesn't handle multibyte chars.
+      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
+        (each [_ ch (ipairs cl*)]
+          (tset res ch cl*))))
     res))
 
 
@@ -115,9 +112,9 @@ char separately.
   (set targets.sublists
        (setmetatable {}
          {:__index    (fn [self ch]
-                        (rawget self (->representative-char ch)))
+                        (rawget self (get-representative-char ch)))
           :__newindex (fn [self ch sublist]
-                        (rawset self (->representative-char ch) sublist))}))
+                        (rawset self (get-representative-char ch) sublist))}))
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets.sublists ch2)
@@ -138,9 +135,9 @@ char separately.
     ; version (autojumping to B from A, before moving on to C).
     (fn all-in-the-same-window? [targets]
       (var same-win? true)
-      (local winid (. targets 1 :wininfo :winid))
+      (local win (. targets 1 :wininfo :winid))
       (each [_ target (ipairs targets) &until (= same-win? false)]
-        (when (not= target.wininfo.winid winid)
+        (when (not= target.wininfo.winid win)
           (set same-win? false)))
       same-win?)
 
@@ -276,9 +273,9 @@ char separately.
   ; Do this before accessing `opts`.
   (set opts.current_call (or user-given-opts {}))
 
-  (set opts.current_call.eq_class_of
+  (set opts.current_call.eqv_class_of
        (-?> opts.current_call.equivalence_classes
-            eq-classes->membership-lookup
+            eqv-classes->membership-lookup
             ; Prevent merging with the defaults, as this is derived
             ; programmatically from a list-like option (see opts.fnl).
             (setmetatable {:merge false})))
@@ -304,8 +301,8 @@ char separately.
   (local multi-window-search? (and ?target-windows
                                    (> (length ?target-windows) 1)))
 
-  (local curr-winid (api.nvim_get_current_win))
-  (local hl-affected-windows (or ?target-windows [curr-winid]))
+  (local curr-win (api.nvim_get_current_win))
+  (local hl-affected-windows (or ?target-windows [curr-win]))
 
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
@@ -480,8 +477,8 @@ char separately.
     (local pattern (table.concat branches "\\|"))
     (.. "\\(" pattern "\\)"))
 
-  (fn expand-to-equivalence-class [char]    ; <-- 'a'
-    (-?> (get-eq-class-of char)             ; --> {'a','á','ä'}
+  (fn get-eqv-pattern [char]                ; <-- 'a'
+    (-?> (get-eqv-class char)               ; --> {'a','á','ä'}
          (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
 
   ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
@@ -492,10 +489,10 @@ char separately.
   ;   `populate-sublists`).
   (fn prepare-pattern [in1 ?in2]
     "Transform user input to the appropriate search pattern."
-    (local pat1 (or (expand-to-equivalence-class in1)
+    (local pat1 (or (get-eqv-pattern in1)
                     ; Sole '\' needs to be escaped even for \V.
                     (in1:gsub "\\" "\\\\")))
-    (local pat2 (or (and ?in2 (expand-to-equivalence-class ?in2))
+    (local pat2 (or (and ?in2 (get-eqv-pattern ?in2))
                     ?in2
                     (or (and (= inputlen 1) "")
                         "\\_.")))  ; match anything, including EOL
@@ -536,7 +533,7 @@ char separately.
         (do
           ; Fill wininfo-s when not provided.
           (when-not (. targets* 1 :wininfo)
-            (local wininfo (. (vim.fn.getwininfo curr-winid) 1))
+            (local wininfo (. (vim.fn.getwininfo curr-win) 1))
             (each [_ t (ipairs targets*)]
               (set t.wininfo wininfo)))
           targets*)))
@@ -626,7 +623,7 @@ char separately.
       (fn [target]
         (local jump (require "leap.jump"))
         (jump.jump-to! target.pos
-                       {:winid target.wininfo.winid
+                       {:win target.wininfo.winid
                         :add-to-jumplist? first-jump?
                         : mode
                         : offset
@@ -954,8 +951,8 @@ char separately.
 (fn init []
   ; The equivalence class table can be potentially huge - let's do this
   ; here, and not each time `leap` is called, at least for the defaults.
-  (set opts.default.eq_class_of (-?> opts.default.equivalence_classes
-                                     eq-classes->membership-lookup))
+  (set opts.default.eqv_class_of (-?> opts.default.equivalence_classes
+                                      eqv-classes->membership-lookup))
   (api.nvim_create_augroup "LeapDefault" {})
   (init-highlight)
   (manage-vim-opts))

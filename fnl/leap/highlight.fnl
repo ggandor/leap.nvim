@@ -25,17 +25,17 @@
 
 (fn M.cleanup [self affected-windows]
   ; Clear beacons.
-  (each [_ [bufnr id] (ipairs self.extmarks)]
-    (when (api.nvim_buf_is_valid bufnr)
-      (api.nvim_buf_del_extmark bufnr self.ns id)))
+  (each [_ [buf id] (ipairs self.extmarks)]
+    (when (api.nvim_buf_is_valid buf)
+      (api.nvim_buf_del_extmark buf self.ns id)))
   (set self.extmarks [])
   ; Clear backdrop.
   (when (has-hl-group? self.group.backdrop)
-    (each [_ winid (ipairs affected-windows)]
+    (each [_ win (ipairs affected-windows)]
       ; TODO: Edge case: what if the window has become invalid, but the
       ;       buffer is still there?
-      (when (api.nvim_win_is_valid winid)
-        (local wininfo (. (vim.fn.getwininfo winid) 1))
+      (when (api.nvim_win_is_valid win)
+        (local wininfo (. (vim.fn.getwininfo win) 1))
         (api.nvim_buf_clear_namespace
           wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
     ; Safety measure for scrolloff > 0: we always clean up the current view too.
@@ -47,8 +47,8 @@
 (fn M.apply-backdrop [self backward? ?target-windows]
   (when (has-hl-group? self.group.backdrop)
     (if ?target-windows
-        (each [_ winid (ipairs ?target-windows)]
-          (local wininfo (. (vim.fn.getwininfo winid) 1))
+        (each [_ win (ipairs ?target-windows)]
+          (local wininfo (. (vim.fn.getwininfo win) 1))
           (vim.highlight.range wininfo.bufnr self.ns self.group.backdrop
                                [(dec wininfo.topline) 0]
                                [(dec wininfo.botline) -1]

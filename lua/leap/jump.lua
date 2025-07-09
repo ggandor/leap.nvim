@@ -65,7 +65,7 @@ end
 local function jump_to_21(_9_, _10_)
   local lnum = _9_[1]
   local col = _9_[2]
-  local winid = _10_["winid"]
+  local win = _10_["win"]
   local add_to_jumplist_3f = _10_["add-to-jumplist?"]
   local mode = _10_["mode"]
   local offset = _10_["offset"]
@@ -76,8 +76,8 @@ local function jump_to_21(_9_, _10_)
     vim.cmd("norm! m`")
   else
   end
-  if (winid ~= api.nvim_get_current_win()) then
-    api.nvim_set_current_win(winid)
+  if (win ~= api.nvim_get_current_win()) then
+    api.nvim_set_current_win(win)
   else
   end
   api.nvim_win_set_cursor(0, {lnum, (col - 1)})

@@ -38,16 +38,16 @@
 ; NOTE: Lua's string.lower/upper are only for ASCII,
 ; use vim.fn.tolower/toupper everywhere.
 
-(fn get-eq-class-of [ch]
+(fn get-eqv-class [ch]
   (if opts.case_sensitive
-      (. opts.eq_class_of ch)
-      (or (. opts.eq_class_of (vim.fn.tolower ch))
-          (. opts.eq_class_of (vim.fn.toupper ch)))))
+      (. opts.eqv_class_of ch)
+      (or (. opts.eqv_class_of (vim.fn.tolower ch))
+          (. opts.eqv_class_of (vim.fn.toupper ch)))))
 
 
-(fn ->representative-char [ch]
-  ; We choose the first one from an equiv-class (arbitrary).
-  (local ch* (or (?. (get-eq-class-of ch) 1) ch))
+(fn get-representative-char [ch]
+  ; We choose the first one from an equivalence class (arbitrary).
+  (local ch* (or (?. (get-eqv-class ch) 1) ch))
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
 
 
@@ -109,7 +109,7 @@
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
- : get-eq-class-of
- : ->representative-char
+ : get-eqv-class
+ : get-representative-char
  : get-input
  : get-input-by-keymap}

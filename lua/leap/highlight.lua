@@ -11,18 +11,18 @@ end
 local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
 M.cleanup = function(self, affected_windows)
   for _, _2_ in ipairs(self.extmarks) do
-    local bufnr = _2_[1]
+    local buf = _2_[1]
     local id = _2_[2]
-    if api.nvim_buf_is_valid(bufnr) then
-      api.nvim_buf_del_extmark(bufnr, self.ns, id)
+    if api.nvim_buf_is_valid(buf) then
+      api.nvim_buf_del_extmark(buf, self.ns, id)
     else
     end
   end
   self.extmarks = {}
   if has_hl_group_3f(self.group.backdrop) then
-    for _, winid in ipairs(affected_windows) do
-      if api.nvim_win_is_valid(winid) then
-        local wininfo = vim.fn.getwininfo(winid)[1]
+    for _, win in ipairs(affected_windows) do
+      if api.nvim_win_is_valid(win) then
+        local wininfo = vim.fn.getwininfo(win)[1]
         api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
       else
       end
@@ -35,8 +35,8 @@ end
 M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
   if has_hl_group_3f(self.group.backdrop) then
     if _3ftarget_windows then
-      for _, winid in ipairs(_3ftarget_windows) do
-        local wininfo = vim.fn.getwininfo(winid)[1]
+      for _, win in ipairs(_3ftarget_windows) do
+        local wininfo = vim.fn.getwininfo(win)[1]
         vim.highlight.range(wininfo.bufnr, self.ns, self.group.backdrop, {dec(wininfo.topline), 0}, {dec(wininfo.botline), -1}, {priority = self.priority.backdrop})
       end
       return nil

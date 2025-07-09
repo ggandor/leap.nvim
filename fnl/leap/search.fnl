@@ -1,7 +1,7 @@
 (local opts (require "leap.opts"))
 
 (local {: get-cursor-pos
-        : ->representative-char}
+        : get-representative-char}
        (require "leap.util"))
 
 (local api vim.api)
@@ -51,8 +51,8 @@ window area.
     (when whole-window?
       (vim.fn.cursor [(vim.fn.line "w0") 1]))
 
-    (local match-positions [])
-    (local win-edge? {})  ; set of indexes (in `match-positions`)
+    (local positions [])
+    (local win-edge? {})  ; set of indexes (in `positions`)
     (var idx 0)  ; ~ match count
 
     ((fn loop []
@@ -70,13 +70,13 @@ window area.
                        (vim.fn.cursor 0 (vim.fn.col "$"))))
                (loop))
 
-           (do (table.insert match-positions pos)
+           (do (table.insert positions pos)
                (set idx (+ idx 1))
                (when (= (vim.fn.virtcol ".") right-bound)
                  (tset win-edge? idx true))
                (loop)))))
 
-    (values match-positions win-edge?)))
+    (values positions win-edge?)))
 
 
 (fn get-targets-in-current-window [pattern targets
@@ -153,9 +153,9 @@ in-window pairs that match `pattern`, in the order of discovery."
                                   (= col (+ prev-match.col (prev-match.ch1:len))))))
                   (local triplet?
                          (and overlap?
-                              ; Same pair? (Eq-classes & ignorecase considered.)
-                              (= (->representative-char ch2)
-                                 (->representative-char prev-match.ch2))))
+                              ; Same pair? (Eqv-classes & ignorecase considered.)
+                              (= (get-representative-char ch2)
+                                 (get-representative-char prev-match.ch2))))
                   (local skip? (and triplet?
                                     (if backward? match-at-end? match-at-start?)))
                   (set add-target? (not skip?))
@@ -179,7 +179,7 @@ in-window pairs that match `pattern`, in the order of discovery."
     (pow (+ (* dx dx) (* dy dy)) 0.5)))
 
 
-(fn sort-by-distance-from-cursor [targets cursor-positions source-winid]
+(fn sort-by-distance-from-cursor [targets cursor-positions src-win]
   ; TODO: Check vim.wo.wrap for each window, and calculate accordingly.
   ; TODO: (Performance) vim.fn.screenpos is very costly for a large
   ;       number of targets...
@@ -188,28 +188,28 @@ in-window pairs that match `pattern`, in the order of discovery."
   (let [by-screen-pos? (and vim.o.wrap (< (length targets) 200))
         ; Cursor positions are registered in target windows only (the source
         ; window is not necessarily among them).
-        [source-line source-col] (or (. cursor-positions source-winid) [-1 -1])]
+        [src-line src-col] (or (. cursor-positions src-win) [-1 -1])]
 
     (when by-screen-pos?
       ; Update cursor positions to screen positions.
-      (each [winid [line col] (pairs cursor-positions)]
-        (local screenpos (vim.fn.screenpos winid line col))
-        (tset cursor-positions winid [screenpos.row screenpos.col])))
+      (each [win [line col] (pairs cursor-positions)]
+        (local screenpos (vim.fn.screenpos win line col))
+        (tset cursor-positions win [screenpos.row screenpos.col])))
 
     ; Set ranks.
-    (each [_ {:pos [line col] :wininfo {: winid} &as target} (ipairs targets)]
+    (each [_ {:pos [line col] :wininfo {:winid win} &as target} (ipairs targets)]
       (if by-screen-pos?
-          (do (local screenpos (vim.fn.screenpos winid line col))
+          (do (local screenpos (vim.fn.screenpos win line col))
               (set target.rank (distance [screenpos.row screenpos.col]
-                                         (. cursor-positions winid))))
-          (set target.rank (distance target.pos (. cursor-positions winid))))
-      (when (= winid source-winid)
+                                         (. cursor-positions win))))
+          (set target.rank (distance target.pos (. cursor-positions win))))
+      (when (= win src-win)
         ; Prioritize the current window a bit.
         (set target.rank (- target.rank 30))
-        (when (= line source-line)
+        (when (= line src-line)
           ; In the current window, prioritize the current line.
           (set target.rank (- target.rank 999))
-          (when (>= col source-col)
+          (when (>= col src-col)
             ; On the current line, prioritize forward direction.
             (set target.rank (- target.rank 999))))))
 
@@ -218,27 +218,27 @@ in-window pairs that match `pattern`, in the order of discovery."
 
 (fn get-targets [pattern {: backward? : offset : op-mode? : target-windows : inputlen}]
   (let [whole-window? target-windows
-        source-winid (api.nvim_get_current_win)
-        target-windows (or target-windows [source-winid])
-        curr-win-only? (match target-windows [source-winid nil] true)
+        src-win (api.nvim_get_current_win)
+        target-windows (or target-windows [src-win])
+        curr-win-only? (match target-windows [src-win nil] true)
         cursor-positions {}
         targets []]
-    (each [_ winid (ipairs target-windows)]
+    (each [_ win (ipairs target-windows)]
       (when (not curr-win-only?)
-        (api.nvim_set_current_win winid))
+        (api.nvim_set_current_win win))
       (when whole-window?
-        (tset cursor-positions winid (get-cursor-pos)))
+        (tset cursor-positions win (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern targets
                                      {: backward? : offset : whole-window? : inputlen
-                                      :skip-curpos? (= winid source-winid)}))
+                                      :skip-curpos? (= win src-win)}))
     (when (not curr-win-only?)
-      (api.nvim_set_current_win source-winid))
+      (api.nvim_set_current_win src-win))
     (when (not (empty? targets))
       (when whole-window?  ; = bidirectional
         ; Preserve directional indexes for dot-repeat...
         (when (and op-mode? curr-win-only?)
-          (local [curline curcol] (. cursor-positions source-winid))
+          (local [curline curcol] (. cursor-positions src-win))
           (var first-after (+ 1 (length targets)))  ; first idx after cursor pos
           (var stop? false)
           (each [i t (ipairs targets) &until stop?]
@@ -253,7 +253,7 @@ in-window pairs that match `pattern`, in the order of discovery."
             (set (. targets i :idx) (- i (- first-after 1)))))
         ; ...before sorting.
         (sort-by-distance-from-cursor
-          targets cursor-positions source-winid))
+          targets cursor-positions src-win))
       targets)))
 
 

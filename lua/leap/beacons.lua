@@ -104,12 +104,12 @@ local function resolve_conflicts(targets)
   for _, target in ipairs(targets) do
     local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
     if not empty_line_3f then
-      local bufnr = target.wininfo["bufnr"]
-      local winid = target.wininfo["winid"]
+      local buf = target.wininfo["bufnr"]
+      local win = target.wininfo["winid"]
       local lnum = target.pos[1]
       local col_ch1 = target.pos[2]
       local col_ch2 = (col_ch1 + string.len(target.chars[1]))
-      local key_prefix = (bufnr .. " " .. winid .. " " .. lnum .. " ")
+      local key_prefix = (buf .. " " .. win .. " " .. lnum .. " ")
       if (target.label and target.beacon) then
         local label_offset = target.beacon[1]
         local col_label = (col_ch1 + label_offset)
@@ -167,12 +167,12 @@ local function light_up_beacon(target, endpos_3f)
   local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
   local lnum = _let_24_[1]
   local col = _let_24_[2]
-  local bufnr = target.wininfo.bufnr
+  local buf = target.wininfo.bufnr
   local offset = target.beacon[1]
   local opts_2a = target.beacon[2]
   local opts0 = vim.tbl_extend("keep", opts_2a, {virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false})
-  local id = api.nvim_buf_set_extmark(bufnr, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
-  return table.insert(hl.extmarks, {bufnr, id})
+  local id = api.nvim_buf_set_extmark(buf, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
+  return table.insert(hl.extmarks, {buf, id})
 end
 local function light_up_beacons(targets, _3fstart, _3fend)
   if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then

@@ -34,18 +34,18 @@ end
 local function get_focusable_windows()
   return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}
 end
-local function get_eq_class_of(ch)
+local function get_eqv_class(ch)
   if opts.case_sensitive then
-    return opts.eq_class_of[ch]
+    return opts.eqv_class_of[ch]
   else
-    return (opts.eq_class_of[vim.fn.tolower(ch)] or opts.eq_class_of[vim.fn.toupper(ch)])
+    return (opts.eqv_class_of[vim.fn.tolower(ch)] or opts.eqv_class_of[vim.fn.toupper(ch)])
   end
 end
-local function __3erepresentative_char(ch)
+local function get_representative_char(ch)
   local ch_2a
   local _5_
   do
-    local t_4_ = get_eq_class_of(ch)
+    local t_4_ = get_eqv_class(ch)
     if (nil ~= t_4_) then
       t_4_ = t_4_[1]
     else
@@ -133,4 +133,4 @@ local function get_input_by_keymap(prompt)
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eq-class-of"] = get_eq_class_of, ["->representative-char"] = __3erepresentative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-class"] = get_eqv_class, ["get-representative-char"] = get_representative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

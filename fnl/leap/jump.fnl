@@ -71,7 +71,7 @@ the API), make the motion appear to behave as an inclusive one."
 
 
 (fn jump-to! [[lnum col]
-              {: winid
+              {: win
                : add-to-jumplist?
                : mode
                : offset
@@ -81,8 +81,8 @@ the API), make the motion appear to behave as an inclusive one."
   (when add-to-jumplist?
     ; Note: <C-o> will ignore this on the same line (neovim#9874).
     (vim.cmd "norm! m`"))
-  (when (not= winid (api.nvim_get_current_win))
-    (api.nvim_set_current_win winid))
+  (when (not= win (api.nvim_get_current_win))
+    (api.nvim_set_current_win win))
 
   ; Set cursor.
   (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)

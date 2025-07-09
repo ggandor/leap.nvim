@@ -110,7 +110,7 @@ an autojump. (In short: always err on the safe side.)
 
   ; Tables to help us check potential conflicts (we'll be filling
   ; them as we go):
-  ; { "<bufnr> <winid> <lnum> <col>" = <target> }
+  ; { "<buf> <win> <lnum> <col>" = <target> }
   (var unlabeled-match-positions {})
   (var label-positions {})
 
@@ -124,10 +124,10 @@ an autojump. (In short: always err on the safe side.)
     (local empty-line? (and (= (. target.chars 1) "\n")
                             (= (. target.pos 2) 0)))
     (when (not empty-line?)
-      (let [{: bufnr : winid} target.wininfo
+      (let [{:bufnr buf :winid win} target.wininfo
             [lnum col-ch1] target.pos
             col-ch2 (+ col-ch1 (string.len (. target.chars 1)))
-            key-prefix (.. bufnr " " winid " " lnum " ")]
+            key-prefix (.. buf " " win " " lnum " ")]
 
         (macro ->key [col] `(.. key-prefix ,col))
 
@@ -202,7 +202,7 @@ an autojump. (In short: always err on the safe side.)
 
 (fn light-up-beacon [target endpos?]
   (let [[lnum col] (or (and endpos? target.endpos) target.pos)
-        bufnr target.wininfo.bufnr
+        buf target.wininfo.bufnr
         [offset opts*] target.beacon
         opts (vim.tbl_extend :keep opts*
                {:virt_text_pos (or opts.virt_text_pos "overlay")
@@ -210,12 +210,12 @@ an autojump. (In short: always err on the safe side.)
                 :hl_mode "combine"
                 :priority hl.priority.label})]
     (local id (api.nvim_buf_set_extmark
-                bufnr hl.ns (- lnum 1) (+ col -1 offset) opts))
+                buf hl.ns (- lnum 1) (+ col -1 offset) opts))
     ; Register each newly set extmark in a table, so that we can delete
     ; them one by one, without needing any further contextual
     ; information. This is relevant if we process user-given targets and
     ; have no knowledge about the boundaries of the search area.
-    (table.insert hl.extmarks [bufnr id])))
+    (table.insert hl.extmarks [buf id])))
 
 
 (fn light-up-beacons [targets ?start ?end]

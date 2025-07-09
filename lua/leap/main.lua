@@ -9,8 +9,8 @@ local inc = _local_2_["inc"]
 local dec = _local_2_["dec"]
 local clamp = _local_2_["clamp"]
 local echo = _local_2_["echo"]
-local get_eq_class_of = _local_2_["get-eq-class-of"]
-local __3erepresentative_char = _local_2_["->representative-char"]
+local get_eqv_class = _local_2_["get-eqv-class"]
+local get_representative_char = _local_2_["get-representative-char"]
 local get_input = _local_2_["get-input"]
 local get_input_by_keymap = _local_2_["get-input-by-keymap"]
 local api = vim.api
@@ -43,27 +43,27 @@ local function set_dot_repeat_2a()
   pcall(vim.fn["repeat#setreg"], seq, vim.v.register)
   return pcall(vim.fn["repeat#set"], seq, -1)
 end
-local function eq_classes__3emembership_lookup(eqcls)
+local function eqv_classes__3emembership_lookup(eqv_classes)
   local res = {}
-  for _, eqcl in ipairs(eqcls) do
-    local eqcl_2a
-    if (type(eqcl) == "string") then
-      eqcl_2a = vim.fn.split(eqcl, "\\zs")
+  for _, cl in ipairs(eqv_classes) do
+    local cl_2a
+    if (type(cl) == "string") then
+      cl_2a = vim.fn.split(cl, "\\zs")
     else
-      eqcl_2a = eqcl
+      cl_2a = cl
     end
-    for _0, ch in ipairs(eqcl_2a) do
-      res[ch] = eqcl_2a
+    for _0, ch in ipairs(cl_2a) do
+      res[ch] = cl_2a
     end
   end
   return res
 end
 local function populate_sublists(targets)
   local function _7_(self, ch)
-    return rawget(self, __3erepresentative_char(ch))
+    return rawget(self, get_representative_char(ch))
   end
   local function _8_(self, ch, sublist)
-    return rawset(self, __3erepresentative_char(ch), sublist)
+    return rawset(self, get_representative_char(ch), sublist)
   end
   targets.sublists = setmetatable({}, {__index = _7_, __newindex = _8_})
   for _, _9_ in ipairs(targets) do
@@ -83,10 +83,10 @@ local prepare_labeled_targets
 do
   local function all_in_the_same_window_3f(targets)
     local same_win_3f = true
-    local winid = targets[1].wininfo.winid
+    local win = targets[1].wininfo.winid
     for _, target in ipairs(targets) do
       if (same_win_3f == false) then break end
-      if (target.wininfo.winid ~= winid) then
+      if (target.wininfo.winid ~= win) then
         same_win_3f = false
       else
       end
@@ -204,14 +204,14 @@ local function leap(kwargs)
   do
     local tmp_3_ = opts.current_call.equivalence_classes
     if (nil ~= tmp_3_) then
-      local tmp_3_0 = eq_classes__3emembership_lookup(tmp_3_)
+      local tmp_3_0 = eqv_classes__3emembership_lookup(tmp_3_)
       if (nil ~= tmp_3_0) then
-        opts.current_call.eq_class_of = setmetatable(tmp_3_0, {merge = false})
+        opts.current_call.eqv_class_of = setmetatable(tmp_3_0, {merge = false})
       else
-        opts.current_call.eq_class_of = nil
+        opts.current_call.eqv_class_of = nil
       end
     else
-      opts.current_call.eq_class_of = nil
+      opts.current_call.eqv_class_of = nil
     end
   end
   for _, t in ipairs({"default", "current_call"}) do
@@ -236,8 +236,8 @@ local function leap(kwargs)
   end
   local _3ftarget_windows = target_windows
   local multi_window_search_3f = (_3ftarget_windows and (#_3ftarget_windows > 1))
-  local curr_winid = api.nvim_get_current_win()
-  local hl_affected_windows = (_3ftarget_windows or {curr_winid})
+  local curr_win = api.nvim_get_current_win()
+  local hl_affected_windows = (_3ftarget_windows or {curr_win})
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
@@ -472,8 +472,8 @@ local function leap(kwargs)
     local pattern = table.concat(branches, "\\|")
     return ("\\(" .. pattern .. "\\)")
   end
-  local function expand_to_equivalence_class(char)
-    local tmp_3_ = get_eq_class_of(char)
+  local function get_eqv_pattern(char)
+    local tmp_3_ = get_eqv_class(char)
     if (nil ~= tmp_3_) then
       return char_list_to_branching_regexp(tmp_3_)
     else
@@ -481,8 +481,8 @@ local function leap(kwargs)
     end
   end
   local function prepare_pattern(in1, _3fin2)
-    local pat1 = (expand_to_equivalence_class(in1) or in1:gsub("\\", "\\\\"))
-    local pat2 = ((_3fin2 and expand_to_equivalence_class(_3fin2)) or _3fin2 or (((inputlen0 == 1) and "") or "\\_."))
+    local pat1 = (get_eqv_pattern(in1) or in1:gsub("\\", "\\\\"))
+    local pat2 = ((_3fin2 and get_eqv_pattern(_3fin2)) or _3fin2 or (((inputlen0 == 1) and "") or "\\_."))
     local potential_nl_nl_3f = (pat1:match("\\n") and (pat2:match("\\n") or not _3fin2))
     local pattern
     local _73_
@@ -533,7 +533,7 @@ local function leap(kwargs)
       return nil
     else
       if not targets_2a[1].wininfo then
-        local wininfo = vim.fn.getwininfo(curr_winid)[1]
+        local wininfo = vim.fn.getwininfo(curr_win)[1]
         for _, t in ipairs(targets_2a) do
           t.wininfo = wininfo
         end
@@ -621,7 +621,7 @@ local function leap(kwargs)
     local first_jump_3f = true
     local function _89_(target)
       local jump = require("leap.jump")
-      jump["jump-to!"](target.pos, {winid = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = (backward_3f or (target.idx and (target.idx < 0))), ["inclusive-op?"] = inclusive_op_3f})
+      jump["jump-to!"](target.pos, {win = target.wininfo.winid, ["add-to-jumplist?"] = first_jump_3f, mode = mode, offset = offset, ["backward?"] = (backward_3f or (target.idx and (target.idx < 0))), ["inclusive-op?"] = inclusive_op_3f})
       first_jump_3f = false
       return nil
     end
@@ -1018,9 +1018,9 @@ local function init()
   do
     local tmp_3_ = opts.default.equivalence_classes
     if (nil ~= tmp_3_) then
-      opts.default.eq_class_of = eq_classes__3emembership_lookup(tmp_3_)
+      opts.default.eqv_class_of = eqv_classes__3emembership_lookup(tmp_3_)
     else
-      opts.default.eq_class_of = nil
+      opts.default.eqv_class_of = nil
     end
   end
   api.nvim_create_augroup("LeapDefault", {})

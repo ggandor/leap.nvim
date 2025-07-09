@@ -1,7 +1,7 @@
 local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
 local get_cursor_pos = _local_1_["get-cursor-pos"]
-local __3erepresentative_char = _local_1_["->representative-char"]
+local get_representative_char = _local_1_["get-representative-char"]
 local api = vim.api
 local empty_3f = vim.tbl_isempty
 local abs = math["abs"]
@@ -50,7 +50,7 @@ local function get_match_positions(pattern, _2_, _3_)
     vim.fn.cursor({vim.fn.line("w0"), 1})
   else
   end
-  local match_positions = {}
+  local positions = {}
   local win_edge_3f = {}
   local idx = 0
   local function loop()
@@ -72,7 +72,7 @@ local function get_match_positions(pattern, _2_, _3_)
       end
       return loop()
     else
-      table.insert(match_positions, pos)
+      table.insert(positions, pos)
       idx = (idx + 1)
       if (vim.fn.virtcol(".") == right_bound) then
         win_edge_3f[idx] = true
@@ -82,7 +82,7 @@ local function get_match_positions(pattern, _2_, _3_)
     end
   end
   loop()
-  return match_positions, win_edge_3f
+  return positions, win_edge_3f
 end
 local function get_targets_in_current_window(pattern, targets, _12_)
   local backward_3f = _12_["backward?"]
@@ -152,7 +152,7 @@ local function get_targets_in_current_window(pattern, targets, _12_)
             end
           end
           overlap_3f = and_20_
-          local triplet_3f = (overlap_3f and (__3erepresentative_char(ch2) == __3erepresentative_char(prev_match.ch2)))
+          local triplet_3f = (overlap_3f and (get_representative_char(ch2) == get_representative_char(prev_match.ch2)))
           local skip_3f
           local and_22_ = triplet_3f
           if and_22_ then
@@ -190,17 +190,17 @@ local function distance(_29_, _30_)
   local dy = abs((l1 - l2))
   return pow(((dx * dx) + (dy * dy)), 0.5)
 end
-local function sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
+local function sort_by_distance_from_cursor(targets, cursor_positions, src_win)
   local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
-  local _let_31_ = (cursor_positions[source_winid] or {-1, -1})
-  local source_line = _let_31_[1]
-  local source_col = _let_31_[2]
+  local _let_31_ = (cursor_positions[src_win] or {-1, -1})
+  local src_line = _let_31_[1]
+  local src_col = _let_31_[2]
   if by_screen_pos_3f then
-    for winid, _32_ in pairs(cursor_positions) do
+    for win, _32_ in pairs(cursor_positions) do
       local line = _32_[1]
       local col = _32_[2]
-      local screenpos = vim.fn.screenpos(winid, line, col)
-      cursor_positions[winid] = {screenpos.row, screenpos.col}
+      local screenpos = vim.fn.screenpos(win, line, col)
+      cursor_positions[win] = {screenpos.row, screenpos.col}
     end
   else
   end
@@ -209,19 +209,19 @@ local function sort_by_distance_from_cursor(targets, cursor_positions, source_wi
     local line = _each_35_[1]
     local col = _each_35_[2]
     local _each_36_ = _34_["wininfo"]
-    local winid = _each_36_["winid"]
+    local win = _each_36_["winid"]
     local target = _34_
     if by_screen_pos_3f then
-      local screenpos = vim.fn.screenpos(winid, line, col)
-      target.rank = distance({screenpos.row, screenpos.col}, cursor_positions[winid])
+      local screenpos = vim.fn.screenpos(win, line, col)
+      target.rank = distance({screenpos.row, screenpos.col}, cursor_positions[win])
     else
-      target.rank = distance(target.pos, cursor_positions[winid])
+      target.rank = distance(target.pos, cursor_positions[win])
     end
-    if (winid == source_winid) then
+    if (win == src_win) then
       target.rank = (target.rank - 30)
-      if (line == source_line) then
+      if (line == src_line) then
         target.rank = (target.rank - 999)
-        if (col >= source_col) then
+        if (col >= src_col) then
           target.rank = (target.rank - 999)
         else
         end
@@ -242,35 +242,35 @@ local function get_targets(pattern, _42_)
   local target_windows = _42_["target-windows"]
   local inputlen = _42_["inputlen"]
   local whole_window_3f = target_windows
-  local source_winid = api.nvim_get_current_win()
-  local target_windows0 = (target_windows or {source_winid})
+  local src_win = api.nvim_get_current_win()
+  local target_windows0 = (target_windows or {src_win})
   local curr_win_only_3f
-  if ((_G.type(target_windows0) == "table") and (target_windows0[1] == source_winid) and (target_windows0[2] == nil)) then
+  if ((_G.type(target_windows0) == "table") and (target_windows0[1] == src_win) and (target_windows0[2] == nil)) then
     curr_win_only_3f = true
   else
     curr_win_only_3f = nil
   end
   local cursor_positions = {}
   local targets = {}
-  for _, winid in ipairs(target_windows0) do
+  for _, win in ipairs(target_windows0) do
     if not curr_win_only_3f then
-      api.nvim_set_current_win(winid)
+      api.nvim_set_current_win(win)
     else
     end
     if whole_window_3f then
-      cursor_positions[winid] = get_cursor_pos()
+      cursor_positions[win] = get_cursor_pos()
     else
     end
-    get_targets_in_current_window(pattern, targets, {["backward?"] = backward_3f, offset = offset, ["whole-window?"] = whole_window_3f, inputlen = inputlen, ["skip-curpos?"] = (winid == source_winid)})
+    get_targets_in_current_window(pattern, targets, {["backward?"] = backward_3f, offset = offset, ["whole-window?"] = whole_window_3f, inputlen = inputlen, ["skip-curpos?"] = (win == src_win)})
   end
   if not curr_win_only_3f then
-    api.nvim_set_current_win(source_winid)
+    api.nvim_set_current_win(src_win)
   else
   end
   if not empty_3f(targets) then
     if whole_window_3f then
       if (op_mode_3f and curr_win_only_3f) then
-        local _local_47_ = cursor_positions[source_winid]
+        local _local_47_ = cursor_positions[src_win]
         local curline = _local_47_[1]
         local curcol = _local_47_[2]
         local first_after = (1 + #targets)
@@ -291,7 +291,7 @@ local function get_targets(pattern, _42_)
         end
       else
       end
-      sort_by_distance_from_cursor(targets, cursor_positions, source_winid)
+      sort_by_distance_from_cursor(targets, cursor_positions, src_win)
     else
     end
     return targets
