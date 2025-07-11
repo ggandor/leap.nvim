@@ -671,9 +671,8 @@ local function leap(kwargs)
       elseif not empty_3f(opts.safe_labels) then
         local last_labeled = inc(#opts.safe_labels)
         for i = inc(last_labeled), #targets do
-          local tmp_9_ = targets[i]
-          tmp_9_["label"] = nil
-          tmp_9_["beacon"] = nil
+          targets[i]["label"] = nil
+          targets[i]["beacon"] = nil
         end
         return nil
       else

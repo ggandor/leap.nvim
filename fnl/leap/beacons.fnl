@@ -171,7 +171,7 @@ an autojump. (In short: always err on the safe side.)
               ; checking case A, as we don't want to chase our own tail,
               ; that is, getting ourselves as a labeled `other` (false
               ; positive).
-              (tset label-positions (->key col-label) target))
+              (set (. label-positions (->key col-label)) target))
 
             ; No visible label (unlabeled or inactive).
             (let [col-ch3 (+ col-ch2 (string.len (. target.chars 2)))]
@@ -196,8 +196,8 @@ an autojump. (In short: always err on the safe side.)
                 other (do (set target.beacon nil)
                           (set-beacon-to-concealed-label other)))
                 ; Register positions.
-              (tset unlabeled-match-positions (->key col-ch1) target)
-              (tset unlabeled-match-positions (->key col-ch2) target)))))))
+              (set (. unlabeled-match-positions (->key col-ch1)) target)
+              (set (. unlabeled-match-positions (->key col-ch2)) target)))))))
 
 
 (fn light-up-beacon [target endpos?]

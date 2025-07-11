@@ -138,8 +138,9 @@ appropriately."
 
 ; Deprecated.
 (fn setup [user-opts]
+  (local opts (. (require "leap.opts") :default))
   (each [k v (pairs user-opts)]
-    (tset (require "leap.opts") :default k v)))
+    (set (. opts k) v)))
 
 
 {:set_default_mappings set-default-mappings

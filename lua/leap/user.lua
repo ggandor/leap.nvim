@@ -154,8 +154,9 @@ local function set_default_keymaps(force_3f)
   return nil
 end
 local function setup(user_opts)
+  local opts = require("leap.opts").default
   for k, v in pairs(user_opts) do
-    require("leap.opts")["default"][k] = v
+    opts[k] = v
   end
   return nil
 end

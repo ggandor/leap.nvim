@@ -73,7 +73,7 @@ window area.
            (do (table.insert positions pos)
                (set idx (+ idx 1))
                (when (= (vim.fn.virtcol ".") right-bound)
-                 (tset win-edge? idx true))
+                 (set (. win-edge? idx) true))
                (loop)))))
 
     (values positions win-edge?)))
@@ -194,7 +194,7 @@ in-window pairs that match `pattern`, in the order of discovery."
       ; Update cursor positions to screen positions.
       (each [win [line col] (pairs cursor-positions)]
         (local screenpos (vim.fn.screenpos win line col))
-        (tset cursor-positions win [screenpos.row screenpos.col])))
+        (set (. cursor-positions win) [screenpos.row screenpos.col])))
 
     ; Set ranks.
     (each [_ {:pos [line col] :wininfo {:winid win} &as target} (ipairs targets)]
@@ -227,7 +227,7 @@ in-window pairs that match `pattern`, in the order of discovery."
       (when (not curr-win-only?)
         (api.nvim_set_current_win win))
       (when whole-window?
-        (tset cursor-positions win (get-cursor-pos)))
+        (set (. cursor-positions win) (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
       (get-targets-in-current-window pattern targets
                                      {: backward? : offset : whole-window? : inputlen

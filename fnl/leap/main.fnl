@@ -70,7 +70,7 @@ interrupted change operation."
       ; Do not use `vim.split`, it doesn't handle multibyte chars.
       (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
         (each [_ ch (ipairs cl*)]
-          (tset res ch cl*))))
+          (set (. res ch) cl*))))
     res))
 
 
@@ -118,7 +118,7 @@ char separately.
   ; Filling the sublists.
   (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
     (when-not (. targets.sublists ch2)
-      (tset targets.sublists ch2 []))
+      (set (. targets.sublists ch2) []))
     (table.insert (. targets.sublists ch2) target)))
 
 
@@ -283,7 +283,7 @@ char separately.
   (each [_ t (ipairs [:default :current_call])]
     (each [_ k (ipairs [:labels :safe_labels])]
       (when (= (type (. opts t k)) :string)
-        (tset opts t k (vim.fn.split (. opts t k) "\\zs")))))
+        (set (. opts t k) (vim.fn.split (. opts t k) "\\zs")))))
 
   (local directional? (not target-windows))
   (local no-labels-to-use? (and (empty? opts.labels)
@@ -681,9 +681,8 @@ char separately.
           (not (empty? opts.safe_labels))
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
-              (doto (. targets i)
-                (tset :label nil)
-                (tset :beacon nil))))))
+              (set (. targets i :label) nil)
+              (set (. targets i :beacon) nil)))))
 
     (fn display []
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
@@ -905,16 +904,16 @@ char separately.
           (case scope
             :wo (each [_ win (ipairs wins)]
                   (local saved-val (get-opt name {:scope "local" :win win}))
-                  (tset saved-vim-opts [:wo win name] saved-val)
+                  (set (. saved-vim-opts [:wo win name]) saved-val)
                   (set-opt name val {:scope "local" :win win}))
             :bo (each [_ win (ipairs wins)]
                   (local buf (api.nvim_win_get_buf win))
                   (local saved-val (get-opt name {:buf buf}))
-                  (tset saved-vim-opts [:bo buf name] saved-val)
+                  (set (. saved-vim-opts [:bo buf name]) saved-val)
                   (set-opt name val {:buf buf}))
             :go (do
                   (local saved-val (get-opt name {:scope "global"}))
-                  (tset saved-vim-opts name saved-val)
+                  (set (. saved-vim-opts name) saved-val)
                   (set-opt name val {:scope "global"})))))))
 
   (fn restore-vim-opts []
