@@ -55,26 +55,25 @@ window area.
     (local win-edge? {})  ; set of indexes (in `positions`)
     (var idx 0)  ; ~ match count
 
-    ((fn loop []
-       (local flags (or (and match-at-curpos? (.. flags "c")) flags))
-       (set match-at-curpos? false)
-       (local [line &as pos] (vim.fn.searchpos pattern flags stopline))
-       (if (= line 0)   ; no match found
-           (do (vim.fn.winrestview saved-view)
-               (set vim.o.cpo saved-cpo))
+    (while true
+      (local flags (or (and match-at-curpos? (.. flags "c")) flags))
+      (set match-at-curpos? false)
+      (local [line &as pos] (vim.fn.searchpos pattern flags stopline))
+      (if (= line 0)   ; no match found
+          (do (vim.fn.winrestview saved-view)
+              (set vim.o.cpo saved-cpo)
+              (lua :break))
 
-           (not= (vim.fn.foldclosed line) -1)  ; in a closed fold
-           (do (if backward?
-                   (vim.fn.cursor (vim.fn.foldclosed line) 1)
-                   (do (vim.fn.cursor (vim.fn.foldclosedend line) 0)
-                       (vim.fn.cursor 0 (vim.fn.col "$"))))
-               (loop))
+          (not= (vim.fn.foldclosed line) -1)  ; in a closed fold
+          (do (if backward?
+                  (vim.fn.cursor (vim.fn.foldclosed line) 1)
+                  (do (vim.fn.cursor (vim.fn.foldclosedend line) 0)
+                      (vim.fn.cursor 0 (vim.fn.col "$")))))
 
-           (do (table.insert positions pos)
-               (set idx (+ idx 1))
-               (when (= (vim.fn.virtcol ".") right-bound)
-                 (set (. win-edge? idx) true))
-               (loop)))))
+          (do (table.insert positions pos)
+              (set idx (+ idx 1))
+              (when (= (vim.fn.virtcol ".") right-bound)
+                (set (. win-edge? idx) true)))))
 
     (values positions win-edge?)))
 

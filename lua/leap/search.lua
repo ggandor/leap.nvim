@@ -53,7 +53,7 @@ local function get_match_positions(pattern, _2_, _3_)
   local positions = {}
   local win_edge_3f = {}
   local idx = 0
-  local function loop()
+  while true do
     local flags0 = ((match_at_curpos_3f and (flags .. "c")) or flags)
     match_at_curpos_3f = false
     local _local_8_ = vim.fn.searchpos(pattern0, flags0, stopline)
@@ -62,7 +62,7 @@ local function get_match_positions(pattern, _2_, _3_)
     if (line == 0) then
       vim.fn.winrestview(saved_view)
       vim.o.cpo = saved_cpo
-      return nil
+      break
     elseif (vim.fn.foldclosed(line) ~= -1) then
       if backward_3f then
         vim.fn.cursor(vim.fn.foldclosed(line), 1)
@@ -70,7 +70,6 @@ local function get_match_positions(pattern, _2_, _3_)
         vim.fn.cursor(vim.fn.foldclosedend(line), 0)
         vim.fn.cursor(0, vim.fn.col("$"))
       end
-      return loop()
     else
       table.insert(positions, pos)
       idx = (idx + 1)
@@ -78,10 +77,8 @@ local function get_match_positions(pattern, _2_, _3_)
         win_edge_3f[idx] = true
       else
       end
-      return loop()
     end
   end
-  loop()
   return positions, win_edge_3f
 end
 local function get_targets_in_current_window(pattern, targets, _12_)
