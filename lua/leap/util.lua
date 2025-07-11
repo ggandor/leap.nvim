@@ -59,6 +59,32 @@ local function get_representative_char(ch)
     return vim.fn.tolower(ch_2a)
   end
 end
+local function char_list_to_branching_regexp(chars)
+  local branches
+  local function _8_(_241)
+    if (_241 == "\n") then
+      return "\\n"
+    elseif (_241 == "\\") then
+      return "\\\\"
+    elseif (nil ~= _241) then
+      local ch = _241
+      return ch
+    else
+      return nil
+    end
+  end
+  branches = vim.tbl_map(_8_, chars)
+  local pattern = table.concat(branches, "\\|")
+  return ("\\(" .. pattern .. "\\)")
+end
+local function get_eqv_pattern(char)
+  local tmp_3_ = get_eqv_class(char)
+  if (nil ~= tmp_3_) then
+    return char_list_to_branching_regexp(tmp_3_)
+  else
+    return nil
+  end
+end
 local _3cbs_3e = vim.keycode("<bs>")
 local _3ccr_3e = vim.keycode("<cr>")
 local _3cesc_3e = vim.keycode("<esc>")
@@ -90,17 +116,17 @@ local function get_input_by_keymap(prompt)
       elseif (rhs == rhs_candidate) then
         return accept(rhs)
       else
-        local _9_, _10_ = get_input()
-        if (_9_ == _3cbs_3e) then
-          local function _11_()
+        local _12_, _13_ = get_input()
+        if (_12_ == _3cbs_3e) then
+          local function _14_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_11_())
-        elseif (_9_ == _3ccr_3e) then
+          return loop(_14_())
+        elseif (_12_ == _3ccr_3e) then
           if (rhs ~= "") then
             return accept(rhs)
           elseif (_7cseq_7c == 1) then
@@ -108,8 +134,8 @@ local function get_input_by_keymap(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _9_) then
-          local ch = _9_
+        elseif (nil ~= _12_) then
+          local ch = _12_
           return loop((seq .. ch))
         else
           return nil
@@ -123,14 +149,14 @@ local function get_input_by_keymap(prompt)
     return get_input()
   else
     echo_prompt()
-    local _16_ = loop(get_input())
-    if (nil ~= _16_) then
-      local _in = _16_
+    local _19_ = loop(get_input())
+    if (nil ~= _19_) then
+      local _in = _19_
       return _in
     else
-      local _ = _16_
+      local _ = _19_
       return echo("")
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-class"] = get_eqv_class, ["get-representative-char"] = get_representative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-pattern"] = get_eqv_pattern, ["get-representative-char"] = get_representative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}

@@ -12,7 +12,7 @@
         : dec
         : clamp
         : echo
-        : get-eqv-class
+        : get-eqv-pattern
         : get-representative-char
         : get-input
         : get-input-by-keymap}
@@ -469,17 +469,6 @@ char separately.
                       in2 (values in1 in2)))))
 
   ; Get targets
-
-  (fn char-list-to-branching-regexp [chars]
-    ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
-    ; 2. `\` itself might appear in the class, needs to be escaped.
-    (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
-    (local pattern (table.concat branches "\\|"))
-    (.. "\\(" pattern "\\)"))
-
-  (fn get-eqv-pattern [char]                ; <-- 'a'
-    (-?> (get-eqv-class char)               ; --> {'a','á','ä'}
-         (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
 
   ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
   ; input mapping (case-insensitivity, character classes, etc.) we need to

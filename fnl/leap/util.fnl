@@ -35,6 +35,8 @@
   [(vim.api.nvim_get_current_win) (unpack (get-enterable-windows))])
 
 
+; Equivalence classes
+
 ; NOTE: Lua's string.lower/upper are only for ASCII,
 ; use vim.fn.tolower/toupper everywhere.
 
@@ -49,6 +51,19 @@
   ; We choose the first one from an equivalence class (arbitrary).
   (local ch* (or (?. (get-eqv-class ch) 1) ch))
   (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
+
+
+(fn char-list-to-branching-regexp [chars]
+  ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
+  ; 2. `\` itself might appear in the class, needs to be escaped.
+  (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
+  (local pattern (table.concat branches "\\|"))
+  (.. "\\(" pattern "\\)"))
+
+
+(fn get-eqv-pattern [char]                ; <-- 'a'
+  (-?> (get-eqv-class char)               ; --> {'a','á','ä'}
+       (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
 
 
 ; Input
@@ -109,7 +124,7 @@
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
- : get-eqv-class
+ : get-eqv-pattern
  : get-representative-char
  : get-input
  : get-input-by-keymap}
