@@ -177,67 +177,62 @@ local function get_targets_in_current_window(pattern, targets, _12_)
   end
   return nil
 end
-local function distance(_29_, _30_)
-  local l1 = _29_[1]
-  local c1 = _29_[2]
-  local l2 = _30_[1]
-  local c2 = _30_[2]
+local function add_directional_idxs(targets, cursor_positions, src_win)
+  local _local_29_ = cursor_positions[src_win]
+  local curline = _local_29_[1]
+  local curcol = _local_29_[2]
+  local first_after = (1 + #targets)
+  local stop_3f = false
+  for i, t in ipairs(targets) do
+    if stop_3f then break end
+    if ((t.pos[1] > curline) or ((t.pos[1] == curline) and (t.pos[2] >= curcol))) then
+      first_after = i
+      stop_3f = true
+    else
+    end
+  end
+  for i = 1, (first_after - 1) do
+    targets[i]["idx"] = (i - first_after)
+  end
+  for i = first_after, #targets do
+    targets[i]["idx"] = (i - (first_after - 1))
+  end
+  return nil
+end
+local function euclidean_distance(_31_, _32_)
+  local l1 = _31_[1]
+  local c1 = _31_[2]
+  local l2 = _32_[1]
+  local c2 = _32_[2]
   local editor_grid_aspect_ratio = 0.3
   local dx = (abs((c1 - c2)) * editor_grid_aspect_ratio)
   local dy = abs((l1 - l2))
   return pow(((dx * dx) + (dy * dy)), 0.5)
 end
-local function sort_by_distance_from_cursor(targets, cursor_positions, src_win)
-  local by_screen_pos_3f = (vim.o.wrap and (#targets < 200))
-  local _let_31_ = (cursor_positions[src_win] or {-1, -1})
-  local src_line = _let_31_[1]
-  local src_col = _let_31_[2]
-  if by_screen_pos_3f then
-    for win, _32_ in pairs(cursor_positions) do
-      local line = _32_[1]
-      local col = _32_[2]
-      local screenpos = vim.fn.screenpos(win, line, col)
-      cursor_positions[win] = {screenpos.row, screenpos.col}
-    end
-  else
+local function rank(targets, cursor_positions, src_win)
+  for _, target in ipairs(targets) do
+    local win = target.wininfo.winid
+    local line = target.pos[1]
+    local col = target.pos[2]
+    local pos = target.pos
+    local _let_33_ = cursor_positions[win]
+    local cur_line = _let_33_[1]
+    local cur_col = _let_33_[2]
+    local cur_pos = _let_33_
+    local distance = euclidean_distance(pos, cur_pos)
+    local curr_win_bonus = ((win == src_win) and 30)
+    local curr_line_bonus = (curr_win_bonus and (line == cur_line) and 999)
+    local curr_line_fwd_bonus = (curr_line_bonus and (col > cur_col) and 999)
+    target.rank = (distance - (curr_win_bonus or 0) - (curr_line_bonus or 0) - (curr_line_fwd_bonus or 0))
   end
-  for _, _34_ in ipairs(targets) do
-    local _each_35_ = _34_["pos"]
-    local line = _each_35_[1]
-    local col = _each_35_[2]
-    local _each_36_ = _34_["wininfo"]
-    local win = _each_36_["winid"]
-    local target = _34_
-    if by_screen_pos_3f then
-      local screenpos = vim.fn.screenpos(win, line, col)
-      target.rank = distance({screenpos.row, screenpos.col}, cursor_positions[win])
-    else
-      target.rank = distance(target.pos, cursor_positions[win])
-    end
-    if (win == src_win) then
-      target.rank = (target.rank - 30)
-      if (line == src_line) then
-        target.rank = (target.rank - 999)
-        if (col >= src_col) then
-          target.rank = (target.rank - 999)
-        else
-        end
-      else
-      end
-    else
-    end
-  end
-  local function _41_(_241, _242)
-    return (_241.rank < _242.rank)
-  end
-  return table.sort(targets, _41_)
+  return nil
 end
-local function get_targets(pattern, _42_)
-  local backward_3f = _42_["backward?"]
-  local offset = _42_["offset"]
-  local op_mode_3f = _42_["op-mode?"]
-  local target_windows = _42_["target-windows"]
-  local inputlen = _42_["inputlen"]
+local function get_targets(pattern, _34_)
+  local backward_3f = _34_["backward?"]
+  local offset = _34_["offset"]
+  local op_mode_3f = _34_["op-mode?"]
+  local target_windows = _34_["target-windows"]
+  local inputlen = _34_["inputlen"]
   local whole_window_3f = target_windows
   local src_win = api.nvim_get_current_win()
   local target_windows0 = (target_windows or {src_win})
@@ -247,7 +242,7 @@ local function get_targets(pattern, _42_)
   else
     curr_win_only_3f = nil
   end
-  local cursor_positions = {}
+  local cursor_positions = {[src_win] = get_cursor_pos()}
   local targets = {}
   for _, win in ipairs(target_windows0) do
     if not curr_win_only_3f then
@@ -267,28 +262,14 @@ local function get_targets(pattern, _42_)
   if not empty_3f(targets) then
     if whole_window_3f then
       if (op_mode_3f and curr_win_only_3f) then
-        local _local_47_ = cursor_positions[src_win]
-        local curline = _local_47_[1]
-        local curcol = _local_47_[2]
-        local first_after = (1 + #targets)
-        local stop_3f = false
-        for i, t in ipairs(targets) do
-          if stop_3f then break end
-          if ((t.pos[1] > curline) or ((t.pos[1] == curline) and (t.pos[2] >= curcol))) then
-            first_after = i
-            stop_3f = true
-          else
-          end
-        end
-        for i = 1, (first_after - 1) do
-          targets[i]["idx"] = (i - first_after)
-        end
-        for i = first_after, #targets do
-          targets[i]["idx"] = (i - (first_after - 1))
-        end
+        add_directional_idxs(targets, cursor_positions, src_win)
       else
       end
-      sort_by_distance_from_cursor(targets, cursor_positions, src_win)
+      rank(targets, cursor_positions, src_win)
+      local function _40_(_241, _242)
+        return (_241.rank < _242.rank)
+      end
+      table.sort(targets, _40_)
     else
     end
     return targets
