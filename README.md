@@ -20,29 +20,24 @@ novel idea in Leap is that **you get a preview of the target labels** - you can
 see which key you will need to press before you actually need to do that.
 
 - Initiate the search in the current window (`s`) or in the other windows
-  (`S`). (Note: you can use a single key for the whole tab page, if you are
-  okay with the trade-offs.)
+  (`S`).
 - Start typing a 2-character pattern (`{char1}{char2}`).
-- After typing the first character, you see "labels" appearing next to some of
-  the `{char1}{?}` pairs. You cannot use them yet - they only get active after
-  finishing the pattern.
+- After typing `{char1}`, you see "labels" appearing next to some `{char1}{?}`
+  pairs. You cannot use them yet - they only get active after finishing the
+  pattern.
 - Enter `{char2}`. If the pair was not labeled, you automatically jump there.
   You can safely ignore the remaining labels, and continue editing - those are
   guaranteed non-conflicting letters, disappearing on the next keypress.
 - Else: type the label character, that is now active. If there are more matches
-  than available labels, you can switch between groups, using `<space>` and
+  than available labels, you can move between groups with `<space>` and
   `<backspace>`.
 
-Every visible position is targetable:
+To move to the last character on a line, type `s{char}<space>`. To move to an
+empty line, type `s<space><space>`.
 
-- `s{char}<space>` jumps to the last character on a line.
-- `s<space><space>` jumps to end-of-line characters, including empty lines.
-
-At any stage, `<enter>` jumps to the next/closest available target
-(`<backspace>` steps back):
-
-- `s<enter>...` repeats the previous search.
-- `s{char}<enter>...` can be used as a multiline substitute for `fFtT` motions.
+At any stage, `<enter>` jumps to the next/closest available target: `s<enter>`
+repeats the previous search; `s{char}<enter>` accepts the closest `{char}`
+match.
 
 ### Why is this method cool?
 
@@ -88,10 +83,8 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 ### Installation
 
 Use your preferred method or plugin manager. No extra steps needed besides
-defining keybindings - to use the default ones, put the following into your
-config (overrides `s` in all modes, and `S` in Normal mode):
-
-`require('leap').set_default_mappings()`
+defining keybindings - to start using the plugin with the defaults, call
+`require('leap').set_default_mappings()`.
 
 <details>
 <summary>Alternative key mappings and arrangements</summary>
@@ -110,11 +103,10 @@ vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
 vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
 ```
 
-Trade-off: if you have multiple windows open on the tab page, you will almost
-never get an automatic jump, except if all targets are in the same window.
-(This is an intentional restriction: it would be too disorienting if the cursor
-could jump in/to a different window than your goal, right before selecting the
-target.)
+Trade-off: if you have multiple windows open, you will almost never get an
+automatic jump, except if all targets are in the same window. (This is an
+intentional restriction: it would be too disorienting if the cursor could jump
+in/to a different window than your goal, right before selecting the target.)
 
 Sneak-style:
 
@@ -323,9 +315,8 @@ range), making the selection much more efficient.
 ### Next steps
 
 Help files are not exactly page-turners, but I suggest at least skimming
-[`:help leap`](doc/leap.txt), even if you don't have a specific question yet
-(if nothing else: `:h leap-usage`, `:h leap-config`, `:h leap-events`). While
-Leap has deeply thought-through, opinionated defaults, its small(ish) but
+[`:help leap`](doc/leap.txt), even if you don't have a specific question yet.
+While Leap has deeply thought-through, opinionated defaults, its small(ish) but
 comprehensive API makes it pretty flexible.
 
 ## Design considerations in detail
