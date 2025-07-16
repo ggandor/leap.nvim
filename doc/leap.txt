@@ -417,16 +417,16 @@ leap({opts})                                                       *leap.leap()*
 
     Parameters: ~
         {opts} Optional parameters.
-               • backward: (boolean) (defaults to false) Search backward
+               • backward: (`boolean`) (defaults to false) Search backward
                  instead of forward in the current window.
                • target_windows: (table) A list of windows (as |winid|s) to be
                  searched.
-               • offset: (-1|0|1) (defaults to 0) Where to land with the
+               • offset: (`-1|0|1`) (defaults to 0) Where to land with the
                  cursor compared to the target position.
                • inclusive_op: (boolean) (defaults to false) A flag indicating
                  whether an operation should behave as |inclusive| in the
                  forward direction (the target is after the cursor).
-               • opts: (table) A table just like |leap.opts|, to override any
+               • opts: (`table`) A table just like |leap.opts|, to override any
                  default setting for the specific call. Example: >lua
                     require('leap').leap {
                       opts = { safe_labels = '' }
@@ -439,17 +439,17 @@ leap({opts})                                                       *leap.leap()*
                     }
 <
                                                                        *leap-ft*
-               • inputlen: (1|2) (defaults to 2) Set to 1 for |f|-like
+               • inputlen: (`1|2`) (defaults to 2) Set to 1 for |f|-like
                  motions. See an example of a full setup in the README. Note:
                  This feature is experimental, subject to change or removal.
                                                            *leap-custom-pattern*
-               • pattern: (string) A |regexp| pattern, to be consumed by
+               • pattern: (`string`) A |regexp| pattern, to be consumed by
                  |search()|. Keep in mind that you need to escape backslashes
                  in the Lua string, as you want to pass them literally to the
                  Vim function! See an example in the README. Note: This
                  feature is experimental, subject to change or removal.
                                                            *leap-custom-targets*
-               • targets: (table|function) Either a list of targets, or a
+               • targets: (`table|function`) Either a list of targets, or a
                  function returning such a list. The advantage of the latter
                  is that the function will be evaluated after |LeapEnter|
                  (that is, after setting temporary editor options, etc.), so
@@ -463,9 +463,10 @@ leap({opts})                                                       *leap.leap()*
                  Targets can represent anything with a position, like
                  |treesitter| nodes, etc.
                                                             *leap-custom-action*
-               • action: (function) A callback to be executed by Leap in place
-                 of the jump, taking the selected target as its argument. (You
-                 can obviously implement some custom jump logic here too.)
+               • action: (`function`) A callback to be executed by Leap in
+                 place of the jump, taking the selected target as its
+                 argument. (You can obviously implement some custom jump logic
+                 here too.)
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
