@@ -402,7 +402,7 @@ Visual mode
 - `s` = `c`
 - `S` = `Vc`, or `c` if already in linewise mode
 
-If you are not convinced, just head to `:h leap-custom-mappings`.
+If you are not convinced, just head to `:h leap-mappings`.
 
 </details>
 
@@ -616,8 +616,7 @@ local function leap_linewise ()
     opts = { safe_labels = '' }
   }
 end
--- For maximum comfort, force linewise selection in
--- the mappings:
+-- For maximum comfort, force linewise selection in the mappings:
 vim.keymap.set({'n', 'x', 'o'}, '|', function ()
   local mode = vim.fn.mode(1)
   -- Only force V if not already in it (otherwise it exits Visual mode).

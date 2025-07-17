@@ -419,13 +419,13 @@ leap({opts})                                                       *leap.leap()*
         {opts} Optional parameters.
                • backward: (`boolean`) (defaults to false) Search backward
                  instead of forward in the current window.
-               • target_windows: (table) A list of windows (as |winid|s) to be
-                 searched.
+               • target_windows: (`table`) A list of windows (as |winid|s) to
+                 be searched.
                • offset: (`-1|0|1`) (defaults to 0) Where to land with the
                  cursor compared to the target position.
                • inclusive_op: (boolean) (defaults to false) A flag indicating
-                 whether an operation should behave as |inclusive| in the
-                 forward direction (the target is after the cursor).
+                 whether an operation should behave as |inclusive| for forward
+                 jumps.
                • opts: (`table`) A table just like |leap.opts|, to override any
                  default setting for the specific call. Example: >lua
                     require('leap').leap {
