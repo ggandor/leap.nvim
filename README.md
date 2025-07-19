@@ -96,24 +96,24 @@ vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
 vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
 ```
 
-Jump to anywhere in Normal mode with one key:
-
-```lua
-vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
-vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
-```
-
-Trade-off: if you have multiple windows open, you will almost never get an
-automatic jump, except if all targets are in the same window. (This is an
-intentional restriction: it would be too disorienting if the cursor could jump
-in/to a different window than your goal, right before selecting the target.)
-
-Sneak-style:
+Sneak-style (more granular):
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
 vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
 vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
+```
+
+Jump to anywhere in Normal mode with one key (less granular):
+
+```lua
+-- Trade-off: if you have multiple windows open, you will almost never
+-- get automatic jumps, except if all targets are in the same window.
+-- (This is an intentional restriction: it would be too disorienting if
+-- the cursor could jump in/to a different window than your goal, right
+-- before selecting the target.)
+vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
+vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
 ```
 
 You might add a pair of keys for exclusive selection to any of the above:
@@ -598,24 +598,25 @@ end
 <details>
 <summary>Jump to lines</summary>
 
-Note: `pattern` is an experimental feature at the moment, subject to
-removal.
+Note: `pattern` is an experimental feature at the moment.
 
 ```lua
 local function leap_linewise ()
   local _, l, c = unpack(vim.fn.getpos('.'))
+  -- See `:help /\%l`, `:help /\%c`.
   local pattern =
     '\\v'
     -- Skip 3-3 lines around the cursor.
-    .. '(%<'..(math.max(1,l-3))..'l|%>'..(l+3)..'l)'
-    -- Cursor column or EOL (if the cursor is beyond that).
-    .. '(%'..c..'v|$%<'..c..'v)'
+    .. "(%<"..(math.max(1,l-3)).."l" .. '|' .. "%>"..(l+3).."l)"
+    -- Cursor column or EOL before the cursor.
+    .. "(%"..c.."v" .. '|' .. "%<"..c.."v$)"
   require('leap').leap {
     pattern = pattern,
     target_windows = { vim.fn.win_getid() },
     opts = { safe_labels = '' }
   }
 end
+
 -- For maximum comfort, force linewise selection in the mappings:
 vim.keymap.set({'n', 'x', 'o'}, '|', function ()
   local mode = vim.fn.mode(1)
