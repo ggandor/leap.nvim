@@ -3,34 +3,28 @@
 # leap.nvim
 
 Leap is a general-purpose motion plugin for Neovim, building and improving
-primarily on [vim-sneak](https://github.com/justinmk/vim-sneak), with the
-ultimate goal of establishing a new standard interface for moving around in the
-visible area in Vim-like modal editors. It allows you to reach any target in a
-very fast, uniform way, and minimizes the required focus level while executing
-a jump.
+primarily on [vim-sneak](https://github.com/justinmk/vim-sneak). Using some
+clever ideas, it allows you to jump to any position in the visible editor area
+very quickly, with near-zero mental overhead.
 
 ![showcase](../media/showcase.gif?raw=true)
 
 ### How to use it (TL;DR)
 
-Leap's default motions allow you to jump to any position in the visible editor
-area by entering a 2-character search pattern, and then potentially a label
-character to pick your target from multiple matches, similar to Sneak. The main
-novel idea in Leap is that **you get a preview of the target labels** - you can
-see which key you will need to press before you actually need to do that.
+* Initiate the search in the current window (`s`) or in the other windows
+  (`S`), and start typing a 2-character search pattern (`{char1}{char2}`).
 
-- Initiate the search in the current window (`s`) or in the other windows
-  (`S`).
-- Start typing a 2-character pattern (`{char1}{char2}`).
-- After typing `{char1}`, you see "labels" appearing next to some `{char1}{?}`
-  pairs. You cannot use them yet - they only get active after finishing the
-  pattern.
-- Enter `{char2}`. If the pair was not labeled, you automatically jump there.
-  You can safely ignore the remaining labels, and continue editing - those are
-  guaranteed non-conflicting letters, disappearing on the next keypress.
-- Else: type the label character, that is now active. If there are more matches
-  than available labels, you can move between groups with `<space>` and
-  `<backspace>`.
+* After typing `{char1}`, you see "labels" appearing next to some pairs. This
+  is just a **preview** - labels only get active after finishing the pattern.
+
+* Type `{char2}`, which filters out irrelevant matches. If there is an
+  unlabeled pair, you automatically jump there. In case that was your target,
+  you can safely ignore the remaining labels - those will not conflict with any
+  sensible command, and will disappear on the next keypress.
+
+* Else: type the label character to jump to the given position. If there are
+  more matches than available labels, you can move between groups with
+  `<space>` and `<backspace>`.
 
 To move to the last character on a line, type `s{char}<space>`. To move to an
 empty line, type `s<space><space>`.
@@ -39,29 +33,28 @@ At any stage, `<enter>` jumps to the next/closest available target: `s<enter>`
 repeats the previous search; `s{char}<enter>` accepts the closest `{char}`
 match.
 
-### Why is this method cool?
+### Advantages
 
-It is ridiculously fast: not counting the trigger key, leaping to literally
-anywhere on the screen rarely takes more than 3 keystrokes in total, that can be
-typed in one go. Often 2 is enough.
+* **Universal**: the same command can be used for any non-trivial jumps.
 
-At the same time, it reduces mental effort to almost zero:
+* **Reliable**: no blind spots - any position where you can put your cursor is
+  targetable.
 
-- You _don't have to weigh alternatives_: a single universal motion type can be
-  used in all non-trivial situations.
+* **Atomic**: you don't have to compose motions - one command
+  achieves one logical movement (this also means it's repeatable).
 
-- You _don't have to compose motions in your head_: one command achieves one
-  logical movement.
+* **Context-blind**: you don't have to read line numbers or count occurrences -
+  the eyes can keep focusing on the target the whole time.
 
-- You _don't have to be aware of the context_: the eyes can keep focusing on the
-  target the whole time.
+* **Efficient**: you rarely need more than four keystrokes to reach a target -
+  often three is enough.
 
-- You _don't have to make decisions on the fly_: the sequence you should type
-  is fixed from the start.
+* **Consistent**: there are no alternative paths - the rhytm of typing two
+  search characters and a (potential) label becomes muscle memory in no time.
 
-- You _don't have to pause in the middle_: if typing at a moderate speed, at
-  each step you already know what the immediate next keypress should be, and
-  your mind can process the rest in the background.
+* **Smooth**: you don't have to pause in the middle, reacting to a sudden event
+  \- if not typing really fast, your mind can process the preview and prepare
+  for the next step in the background.
 
 ## Getting started
 
@@ -75,57 +68,15 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 * Neovim >= 0.10.0 stable, or latest nightly
 
-### Dependencies
-
 * [repeat.vim](https://github.com/tpope/vim-repeat), for dot-repeats (`.`) to
   work
 
 ### Installation
 
 Use your preferred method or plugin manager. No extra steps needed besides
-defining keybindings - to start using the plugin with the defaults, call
-`require('leap').set_default_mappings()`.
-
-<details>
-<summary>Alternative key mappings and arrangements</summary>
-
-Calling `require('leap').set_default_mappings()` is equivalent to:
-
-```lua
-vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
-vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
-```
-
-Sneak-style (more granular):
-
-```lua
-vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
-vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
-vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
-```
-
-Jump to anywhere in Normal mode with one key (less granular):
-
-```lua
--- Trade-off: if you have multiple windows open, you will almost never
--- get automatic jumps, except if all targets are in the same window.
--- (This is an intentional restriction: it would be too disorienting if
--- the cursor could jump in/to a different window than your goal, right
--- before selecting the target.)
-vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
-vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
-```
-
-You might add a pair of keys for exclusive selection to any of the above:
-
-```lua
-vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
-vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
-```
-
-For more customization, see `:h leap.leap()`.
-
-</details>
+defining keybindings - to use the defaults, call
+`require('leap').set_default_mappings()`. For alternative key mappings and
+arrangements, see `:h leap-mappings`.
 
 <details>
 <summary>Suggested additional tweaks</summary>
@@ -173,9 +124,14 @@ Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
 
 </details>
 
+Help files are not exactly page-turners, but I suggest at least skimming
+[`:help leap`](doc/leap.txt), even if you don't have a specific question yet.
+While Leap has deeply thought-through, opinionated defaults, its small(ish) but
+comprehensive API makes it pretty flexible.
+
 ### Extras
 
-Experimental modules, might be moved out, and APIs are subject to change.
+Experimental features, might be changed or moved out without notice.
 
 <details>
 <summary>Remote actions</summary>
@@ -313,12 +269,56 @@ range), making the selection much more efficient.
 
 </details>
 
-### Next steps
+<details>
+<summary>1-character search (enhanced f/t motions)</summary>
 
-Help files are not exactly page-turners, but I suggest at least skimming
-[`:help leap`](doc/leap.txt), even if you don't have a specific question yet.
-While Leap has deeply thought-through, opinionated defaults, its small(ish) but
-comprehensive API makes it pretty flexible.
+The `inpulen` argument allows you to define `f`/`t`-like motions:
+
+```lua
+do
+  local function ft_args (key_specific_args)
+    local common_args = {
+      inputlen = 1,
+      inclusive_op = true,
+      opts = {
+        case_sensitive = true,
+        labels = {},
+        -- Match the modes here for which you don't want to use labels.
+        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
+      },
+    }
+    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
+  end
+
+  local leap = require('leap').leap
+  -- This helper function makes it easier to set "clever-f"-like
+  -- functionality (https://github.com/rhysd/clever-f.vim), returning
+  -- an `opts` table, where:
+  -- * the given keys are set as `next_target` and `prev_target`
+  -- * `prev_target` is removed from `safe_labels` (if appears there)
+  -- * `next_target` is used as the first label
+  local with_traversal_keys = require('leap.user').with_traversal_keys
+  local f_opts = with_traversal_keys('f', 'F')
+  local t_opts = with_traversal_keys('t', 'T')
+  -- You can of course set ;/, for both instead:
+  -- local ft_opts = with_traversal_keys(';', ',')
+
+  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
+    leap(ft_args({ opts = f_opts, }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
+    leap(ft_args({ opts = f_opts, backward = true }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
+    leap(ft_args({ opts = t_opts, offset = -1 }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
+    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
+  end)
+end
+```
+
+</details>
 
 ## Design considerations in detail
 
@@ -332,14 +332,14 @@ required by the latter.
 
 That is, **you do not want to think about**
 
-- **the command**: we need one fundamental targeting method that can bring you
+* **the command**: we need one fundamental targeting method that can bring you
   anywhere: a jetpack on the back, instead of airline routes (↔
   [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
   derivatives)
-- **the context**: it should be enough to look at the target, and nothing else
+* **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations using relative line numbers and/or
   repeats)
-- **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
+* **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
   you should be able to type the whole sequence in one go, on more or less
   autopilot (↔ any kind of "just-in-time" labeling method; note that the
   "search command on steroids" approach by
@@ -394,13 +394,13 @@ native commands have synonyms:
 
 Normal mode
 
-- `s` = `cl` (or `xi`)
-- `S` = `cc`
+* `s` = `cl` (or `xi`)
+* `S` = `cc`
 
 Visual mode
 
-- `s` = `c`
-- `S` = `Vc`, or `c` if already in linewise mode
+* `s` = `c`
+* `S` = `Vc`, or `c` if already in linewise mode
 
 If you are not convinced, just head to `:h leap-mappings`.
 
@@ -537,63 +537,12 @@ There are lots of ways you can extend the plugin and bend it to your will - see
 `:h leap.leap()` and `:h leap-events`. Besides tweaking the basic parameters of
 the function (search scope, jump offset, etc.), you can:
 
+* feed it with a prepared **search pattern**
+* feed it with prepared **targets**, and only use it as labeler/selector
 * give it a custom **action** to perform, instead of jumping
-* feed it with custom **targets**, and only use it as labeler/selector
-* customize its behavior on a per-call basis via **autocommands**
+* customize the behavior of specific calls via **autocommands**
 
 Some practical examples:
-
-<details>
-<summary>1-character search (enhanced f/t motions)</summary>
-
-Note: `inpulen` is an experimental feature at the moment, subject to change or
-removal.
-
-```lua
-do
-  local function ft_args (key_specific_args)
-    local common_args = {
-      inputlen = 1,
-      inclusive_op = true,
-      opts = {
-        case_sensitive = true,
-        labels = {},
-        -- Match the modes here for which you don't want to use labels.
-        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
-      },
-    }
-    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
-  end
-
-  local leap = require('leap').leap
-  -- This helper function makes it easier to set "clever-f"-like
-  -- functionality (https://github.com/rhysd/clever-f.vim), returning
-  -- an `opts` table, where:
-  -- * the given keys are set as `next_target` and `prev_target`
-  -- * `prev_target` is removed from `safe_labels` (if appears there)
-  -- * `next_target` is used as the first label
-  local with_traversal_keys = require('leap.user').with_traversal_keys
-  local f_opts = with_traversal_keys('f', 'F')
-  local t_opts = with_traversal_keys('t', 'T')
-  -- You can of course set ;/, for both instead:
-  -- local ft_opts = with_traversal_keys(';', ',')
-
-  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
-    leap(ft_args({ opts = f_opts, }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
-    leap(ft_args({ opts = f_opts, backward = true }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
-    leap(ft_args({ opts = t_opts, offset = -1 }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
-    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
-  end)
-end
-```
-
-</details>
 
 <details>
 <summary>Jump to lines</summary>

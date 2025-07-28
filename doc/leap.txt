@@ -17,13 +17,10 @@ CONTENTS                                                         *leap-contents*
 ==============================================================================
 INTRODUCTION                                  *leap* *leap.nvim* *leap-introduction*
 
-Leap is a motion plugin that allows you to jump to any position in the visible
-editor area by entering a 2-character search pattern, and then potentially a
-label character to pick your target from multiple matches, similar to
-vim-sneak (https://github.com/justinmk/vim-sneak). The main novel idea in Leap
-is that you get a preview of the target labels - you can see which key you
-will need to press before you actually need to do that, resulting in a
-smoother overall experience.
+Leap is a general-purpose motion plugin for Neovim, building and improving
+primarily on vim-sneak (https://github.com/justinmk/vim-sneak). Using some
+clever ideas, it allows you to jump to any position in the visible editor area
+very quickly, with near-zero mental overhead.
 
 ==============================================================================
 USAGE                                                               *leap-usage*
@@ -33,18 +30,21 @@ from here on), call `require('leap').set_default_mappings()`. To customize,
 head to |leap-mappings|.
 
 • Initiate the search in the current window (`s`), or in the other windows
-  (`S`).
-• Start typing a 2-character pattern ({char1}{char2}).
-• After typing {char1}, you see "labels" appearing next to some {char1}{?}
-  pairs. You cannot use them yet - they only get active after finishing the
-  pattern. *leap-preview*
-• Enter {char2}. If the pair was not labeled, you automatically jump there.
-  You can safely ignore the remaining labels, and continue editing - those are
-  guaranteed non-conflicting letters, disappearing on the next keypress
+  (`S`), and start typing a 2-character search pattern ({char1}{char2}).
+
+• After typing {char1}, you see "labels" appearing next to some pairs. This is
+  just a preview - labels only get active after finishing the pattern.
+  *leap-preview*
+
+• Type {char2}, which filters out irrelevant matches. If there is an unlabeled
+  pair, you automatically jump there. In case that was your target, you can
+  safely ignore the remaining labels - those will not conflict with any
+  sensible command, and will disappear on the next keypress
   (|leap.opts.safe_labels|). *leap-autojump*
-• Else: type the label character, that is now active. If there are more
-  matches than available labels, you can move between groups with <space> and
-  <backspace> (|leap.opts.keys|).
+
+• Else: type the label character to jump to the given position. If there are
+  more matches than available labels, you can move between groups with <space>
+  and <backspace> (|leap.opts.keys|).
 
 To move to the last character on a line, type `s{char}<space>`. To move to an
 empty line, type `s<space><space>`.
