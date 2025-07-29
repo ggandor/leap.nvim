@@ -59,9 +59,11 @@
 
 (fn set-beacons [targets {: group-offset : use-no-labels? : phase}]
   (if use-no-labels?
-      (when (. targets 1 :chars)  ; user-given targets might not have :chars
-        (each [_ target (ipairs targets)]
-          (set-beacon-to-match-hl target)))
+      (if (. targets 1 :chars)  ; user-given targets might not have :chars
+            (each [_ target (ipairs targets)]
+              (set-beacon-to-match-hl target))
+          (each [_ target (ipairs targets)]
+            (set target.beacon nil)))
       (each [_ target (ipairs targets)]
         (if target.label
             (when (or (not= phase 1) target.previewable?)

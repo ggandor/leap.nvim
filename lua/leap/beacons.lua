@@ -72,6 +72,9 @@ local function set_beacons(targets, _9_)
       end
       return nil
     else
+      for _, target in ipairs(targets) do
+        target.beacon = nil
+      end
       return nil
     end
   else
