@@ -117,50 +117,47 @@ in-window pairs that match `pattern`, in the order of discovery."
 
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= (+ col offset) curcol)))
-      (if (= inputlen 0) (table.insert targets {: wininfo : pos})
+      (when (not= line prev-match.line)
+        (set line-str (vim.fn.getline line)))
+      ; Extracting the actual characters from the buffer at the
+      ; match position.
+      (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+      (var ch2 nil)
+          ; On EOL - in this case, we're adding another, virtual
+          ; \n after the real one, so that these can be targeted
+          ; by pressing a newline alias twice. (See also
+          ; `prepare-pattern` in `main.fnl`.)
+      (if (= ch1 "") (do (set ch1 "\n")
+                         (when (= inputlen 2)
+                           (set ch2 "\n"))
+                         (set add-target? true))
+
+          (< inputlen 2) (set add-target? true)
+
           (do
-            (when (not= line prev-match.line)
-              (set line-str (vim.fn.getline line)))
-            ; Extracting the actual characters from the buffer at the
-            ; match position.
-            (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-            (var ch2 nil)
-            (if (= ch1 "")
-                ; On EOL - in this case, we're adding another, virtual
-                ; \n after the real one, so that these can be targeted
-                ; by pressing a newline alias twice. (See also
-                ; `prepare-pattern` in `main.fnl`.)
-                (do (set ch1 "\n")
-                    (when (= inputlen 2) (set ch2 "\n"))
-                    (set add-target? true))
-
-                (= inputlen 1)
-                (set add-target? true)
-
-                (do
-                  (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-                  (when (= ch2 "")  ; = ch1 is right before EOL
-                    (set ch2 "\n"))
-                  (local overlap?
-                         (and (= line prev-match.line)
-                              (if backward?
-                                  ; c1 c2
-                                  ;    p1 p2
-                                  (= col (- prev-match.col (ch1:len)))
-                                  ;    c1 c2
-                                  ; p1 p2
-                                  (= col (+ prev-match.col (prev-match.ch1:len))))))
-                  (local triplet?
-                         (and overlap?
-                              ; Same pair? (Eqv-classes & ignorecase considered.)
-                              (= (get-representative-char ch2)
-                                 (get-representative-char prev-match.ch2))))
-                  (local skip? (and triplet?
-                                    (if backward? match-at-end? match-at-start?)))
-                  (set add-target? (not skip?))
-                  (when (and add-target? triplet?)
-                    (table.remove targets))
-                  (set prev-match {: line : col : ch1 : ch2})))
+            (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
+            (when (= ch2 "")  ; = ch1 is right before EOL
+              (set ch2 "\n"))
+            (local overlap?
+                   (and (= line prev-match.line)
+                        (if backward?
+                            ; c1 c2
+                            ;    p1 p2
+                            (= col (- prev-match.col (ch1:len)))
+                            ;    c1 c2
+                            ; p1 p2
+                            (= col (+ prev-match.col (prev-match.ch1:len))))))
+            (local triplet?
+                   (and overlap?
+                        ; Same pair? (Eqv-classes & ignorecase considered.)
+                        (= (get-representative-char ch2)
+                           (get-representative-char prev-match.ch2))))
+            (local skip? (and triplet?
+                              (if backward? match-at-end? match-at-start?)))
+            (set add-target? (not skip?))
+            (when (and add-target? triplet?)
+              (table.remove targets))
+            (set prev-match {: line : col : ch1 : ch2})))
 
             (when add-target?
               (table.insert targets
@@ -168,7 +165,7 @@ in-window pairs that match `pattern`, in the order of discovery."
                              :win-edge? (. win-edge? i)
                              :previewable? (or (< inputlen 2)
                                                (not opts.preview_filter)
-                                               (previewable? col ch1 ch2))})))))))
+                                               (previewable? col ch1 ch2))})))))
 
 
 (fn add-directional-idxs [targets cursor-positions src-win]
