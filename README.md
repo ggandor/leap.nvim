@@ -12,14 +12,14 @@ very quickly, with near-zero mental overhead.
 ### How to use it (TL;DR)
 
 * Initiate the search in the current window (`s`) or in the other windows
-  (`S`), and start typing a 2-character search pattern (`{char1}{char2}`).
+  (`S`), and start typing a 2-character pattern (`{char1}{char2}`).
 
 * After typing `{char1}`, you see "labels" appearing next to some pairs. This
   is just a **preview** - labels only get active after finishing the pattern.
 
-* Type `{char2}`, which filters out irrelevant matches. If there is an
-  unlabeled pair, you automatically jump there. In case that was your target,
-  you can safely ignore the remaining labels - those will not conflict with any
+* Type `{char2}`, which filters out some matches. If there is an unlabeled
+  pair, you automatically jump there. In case that was your target, you can
+  safely ignore the remaining labels - those will not conflict with any
   sensible command, and will disappear on the next keypress.
 
 * Else: type the label character to jump to the given position. If there are
@@ -40,21 +40,19 @@ match.
 * **Reliable**: no blind spots - any position where you can put your cursor is
   targetable.
 
-* **Atomic**: you don't have to compose motions - one command
-  achieves one logical movement (this also means it's repeatable).
+* **Atomic**: no need to compose motions - one command achieves one logical
+  movement (this also means it's repeatable).
 
-* **Context-blind**: you don't have to read line numbers or count occurrences -
-  the eyes can keep focusing on the target the whole time.
+* **Context-blind**: no need to read line numbers or count matches - your eyes
+  can focus on the target the whole time.
 
-* **Efficient**: you rarely need more than four keystrokes to reach a target -
-  often three is enough.
+* **Efficient**: three or four keystrokes bring you anywhere.
 
 * **Consistent**: there are no alternative paths - the rhytm of typing two
   search characters and a (potential) label becomes muscle memory in no time.
 
-* **Smooth**: you don't have to pause in the middle, reacting to a sudden event
-  \- if not typing really fast, your mind can process the preview and prepare
-  for the next step in the background.
+* **Smooth**: no annoying pause in the middle - once you need to type the
+  label, your brain will already have processed it in the background.
 
 ## Getting started
 
@@ -131,7 +129,7 @@ comprehensive API makes it pretty flexible.
 
 ### Extras
 
-Experimental features, might be changed or moved out without notice.
+Experimental modules, might be changed or moved out without notice.
 
 <details>
 <summary>Remote actions</summary>
@@ -245,7 +243,7 @@ vim.api.nvim_create_autocmd('User', {
 </details>
 
 <details>
-<summary>Incremental treesitter node selection</summary>
+<summary>Treesitter integration</summary>
 
 Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
 the traversal keys for incremental selection. The labels are forced to be safe,
@@ -266,57 +264,6 @@ end)
 Note that it is worth using (forced) linewise mode (`VRRR...`, `yVR`), as
 redundant nodes are filtered out (only the outermost are kept in a given line
 range), making the selection much more efficient.
-
-</details>
-
-<details>
-<summary>1-character search (enhanced f/t motions)</summary>
-
-The `inpulen` argument allows you to define `f`/`t`-like motions:
-
-```lua
-do
-  local function ft_args (key_specific_args)
-    local common_args = {
-      inputlen = 1,
-      inclusive_op = true,
-      opts = {
-        case_sensitive = true,
-        labels = {},
-        -- Match the modes here for which you don't want to use labels.
-        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
-      },
-    }
-    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
-  end
-
-  local leap = require('leap').leap
-  -- This helper function makes it easier to set "clever-f"-like
-  -- functionality (https://github.com/rhysd/clever-f.vim), returning
-  -- an `opts` table, where:
-  -- * the given keys are set as `next_target` and `prev_target`
-  -- * `prev_target` is removed from `safe_labels` (if appears there)
-  -- * `next_target` is used as the first label
-  local with_traversal_keys = require('leap.user').with_traversal_keys
-  local f_opts = with_traversal_keys('f', 'F')
-  local t_opts = with_traversal_keys('t', 'T')
-  -- You can of course set ;/, for both instead:
-  -- local ft_opts = with_traversal_keys(';', ',')
-
-  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
-    leap(ft_args({ opts = f_opts, }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
-    leap(ft_args({ opts = f_opts, backward = true }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
-    leap(ft_args({ opts = t_opts, offset = -1 }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
-    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
-  end)
-end
-```
 
 </details>
 
@@ -455,6 +402,15 @@ require('leap').opts.safe_labels = {}
 </details>
 
 <details>
+<summary>Force auto-jumping to the first match</summary>
+
+```lua
+require('leap').opts.labels = {}
+```
+
+</details>
+
+<details>
 <summary>Disable previewing labels</summary>
 
 ```lua
@@ -467,8 +423,8 @@ require('leap').opts.preview_filter = function () return false end
 <details>
 <summary>Always show labels at the beginning of the match</summary>
 
-Note: `on_beacons` is an experimental escape hatch, and this workaround depends
-on implementation details.
+Warning: `on_beacons` is an experimental escape hatch, and this workaround
+depends on implementation details.
 
 ```lua
 -- `on_beacons` hooks into `beacons.light_up_beacons`, the function
@@ -490,9 +446,10 @@ end
 <details>
 <summary>Greying out the search area</summary>
 
+Set the `LeapBackdrop` highlight group (usually linking to `Comment` is
+preferable):
+
 ```lua
--- Or just set to grey directly, e.g. { fg = '#777777' },
--- if Comment is saturated.
 vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 ```
 
@@ -543,6 +500,57 @@ the function (search scope, jump offset, etc.), you can:
 * customize the behavior of specific calls via **autocommands**
 
 Some practical examples:
+
+<details>
+<summary>1-character search (enhanced f/t motions)</summary>
+
+Note: `inputlen` is an experimental feature at the moment.
+
+```lua
+do
+  local function ft_args (key_specific_args)
+    local common_args = {
+      inputlen = 1,
+      inclusive_op = true,
+      opts = {
+        case_sensitive = true,
+        labels = {},
+        -- Match the modes here for which you don't want to use labels.
+        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
+      },
+    }
+    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
+  end
+
+  local leap = require('leap').leap
+  -- This helper function makes it easier to set "clever-f"-like
+  -- functionality (https://github.com/rhysd/clever-f.vim), returning
+  -- an `opts` table, where:
+  -- * the given keys are set as `next_target` and `prev_target`
+  -- * `prev_target` is removed from `safe_labels` (if appears there)
+  -- * `next_target` is used as the first label
+  local with_traversal_keys = require('leap.user').with_traversal_keys
+  local f_opts = with_traversal_keys('f', 'F')
+  local t_opts = with_traversal_keys('t', 'T')
+  -- You can of course set ;/, for both instead:
+  -- local ft_opts = with_traversal_keys(';', ',')
+
+  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
+    leap(ft_args({ opts = f_opts, }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
+    leap(ft_args({ opts = f_opts, backward = true }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
+    leap(ft_args({ opts = t_opts, offset = -1 }))
+  end)
+  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
+    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
+  end)
+end
+```
+
+</details>
 
 <details>
 <summary>Jump to lines</summary>

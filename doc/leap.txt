@@ -25,22 +25,22 @@ very quickly, with near-zero mental overhead.
 ==============================================================================
 USAGE                                                               *leap-usage*
 
-Leap does not set key mappings automatically. To use the defaults (implied
-from here on), call `require('leap').set_default_mappings()`. To customize,
-head to |leap-mappings|.
+Note: Leap does not set key mappings automatically. To use the defaults
+(implied from here on), call `require('leap').set_default_mappings()`. To
+customize, head to |leap-mappings|.
 
 • Initiate the search in the current window (`s`), or in the other windows
-  (`S`), and start typing a 2-character search pattern ({char1}{char2}).
+  (`S`), and start typing a 2-character pattern ({char1}{char2}).
 
 • After typing {char1}, you see "labels" appearing next to some pairs. This is
   just a preview - labels only get active after finishing the pattern.
   *leap-preview*
 
-• Type {char2}, which filters out irrelevant matches. If there is an unlabeled
-  pair, you automatically jump there. In case that was your target, you can
-  safely ignore the remaining labels - those will not conflict with any
-  sensible command, and will disappear on the next keypress
-  (|leap.opts.safe_labels|). *leap-autojump*
+• Type {char2}, which filters out some matches. If there is an unlabeled pair,
+  you automatically jump there. In case that was your target, you can safely
+  ignore the remaining labels - those will not conflict with any sensible
+  command, and will disappear on the next keypress (|leap.opts.safe_labels|).
+  *leap-autojump*
 
 • Else: type the label character to jump to the given position. If there are
   more matches than available labels, you can move between groups with <space>
@@ -56,7 +56,7 @@ MAPPINGS                                                         *leap-mappings*
 
 Leap defines some <Plug> keys aliasing calls to |leap.leap()|. To create
 custom motions, simply call that function with your preferred arguments
-instead. E.g., `<Plug>(leap-backward)` is just a synonym for: >lua
+instead. E.g., `<Plug>(leap-backward)` is a synonym for: >lua
     function () require('leap').leap { backward = true } end
 
 Available <Plug> keys ~
