@@ -73,48 +73,70 @@
 (local <esc> (vim.keycode "<esc>"))
 
 
-(fn get-input []
+(fn get-char []
   (local (ok? ch) (pcall vim.fn.getcharstr))  ; pcall for <C-c>
   ; <esc> should cleanly exit anytime.
   (when (and ok? (not= ch <esc>)) ch))
 
 
-; :help mbyte-keymap
-; prompt = {:str <val>} (pass by reference hack)
-(fn get-input-by-keymap [prompt]
+(fn get-char-keymapped [prompt]
+  "Waits for keymapped sequences (see :help mbyte-keymap).
+Gets and returns a `prompt` value, so that multiple calls can be
+sequenced."
+  (var prompt (or prompt ">"))
 
   (fn echo-prompt [seq]
-    (api.nvim_echo [[prompt.str] [(or seq "") :ErrorMsg]] false []))
+    (api.nvim_echo [[prompt] [(or seq "") :ErrorMsg]] false []))
 
   (fn accept [ch]
-    (set prompt.str (.. prompt.str ch))
+    (set prompt (.. prompt ch))
     (echo-prompt)
     ch)
 
-  (fn loop [seq]
+  (fn loop [seq]  ; actual input characters so far (str)
     (local |seq| (length (or seq "")))
     ; Arbitrary limit (`mapcheck` will continue to give back a candidate
     ; if the start of `seq` matches, need to cut the gibberish somewhere).
     (when (<= 1 |seq| 5)
       (echo-prompt seq)
-      (let [rhs-candidate (vim.fn.mapcheck seq :l)
-            rhs (vim.fn.maparg seq :l)]
-        (if (= rhs-candidate "") (accept seq)   ; implies |seq|=1 (no recursion here)
-            (= rhs rhs-candidate) (accept rhs)  ; seq is the longest LHS match
-            (case (get-input)
-              (where (= <bs>)) (loop (if (>= |seq| 2)
-                                         (seq:sub 1 (dec |seq|))
-                                         seq))
-              (where (= <cr>)) (if (not= rhs "") (accept rhs)  ; <enter> can accept a shorter one
-                                   (= |seq| 1) (accept seq)
-                                   (loop seq))
+      (let [candidate-rhs (vim.fn.mapcheck seq :l)
+            matching-rhs (vim.fn.maparg seq :l)]
+        (if (= candidate-rhs "")
+            ; Accept the sole input character as it is
+            ; (implies |seq|=1, no recursion here).
+            (accept seq)
+
+            (= matching-rhs candidate-rhs)
+            (accept matching-rhs)
+
+            (case (get-char)
+              (where (= <bs>))
+              ; Delete back a character.
+              (loop
+                (if (>= |seq| 2)
+                    (seq:sub 1 (dec |seq|))
+                    seq))
+
+              (where (= <cr>))
+              ; Force accepting the current input.
+              (if (not= matching-rhs "")
+                  (accept matching-rhs)
+
+                  (= |seq| 1)
+                  (accept seq)
+
+                  (loop seq))
+
+              ; Else consume and continue.
               ch (loop (.. seq ch)))))))
 
-  (if (not= vim.bo.iminsert 1) (get-input)  ; no keymap is active
-      (do (echo-prompt)
-          (case (loop (get-input))
-            in in
-            _ (echo "")))))
+  (if (not= vim.bo.iminsert 1)  ; no keymap is active
+      (get-char)
+      (do
+        (echo-prompt)
+        (case (loop (get-char))
+          input (values input prompt)
+          _ (echo "")))))
 
 
 {: inc
@@ -126,5 +148,5 @@
  :get_focusable_windows get-focusable-windows
  : get-eqv-pattern
  : get-representative-char
- : get-input
- : get-input-by-keymap}
+ : get-char
+ : get-char-keymapped}

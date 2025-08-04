@@ -88,7 +88,7 @@ end
 local _3cbs_3e = vim.keycode("<bs>")
 local _3ccr_3e = vim.keycode("<cr>")
 local _3cesc_3e = vim.keycode("<esc>")
-local function get_input()
+local function get_char()
   local ok_3f, ch = pcall(vim.fn.getcharstr)
   if (ok_3f and (ch ~= _3cesc_3e)) then
     return ch
@@ -96,12 +96,13 @@ local function get_input()
     return nil
   end
 end
-local function get_input_by_keymap(prompt)
+local function get_char_keymapped(prompt)
+  local prompt0 = (prompt or ">")
   local function echo_prompt(seq)
-    return api.nvim_echo({{prompt.str}, {(seq or ""), "ErrorMsg"}}, false, {})
+    return api.nvim_echo({{prompt0}, {(seq or ""), "ErrorMsg"}}, false, {})
   end
   local function accept(ch)
-    prompt.str = (prompt.str .. ch)
+    prompt0 = (prompt0 .. ch)
     echo_prompt()
     return ch
   end
@@ -109,14 +110,14 @@ local function get_input_by_keymap(prompt)
     local _7cseq_7c = #(seq or "")
     if ((1 <= _7cseq_7c) and (_7cseq_7c <= 5)) then
       echo_prompt(seq)
-      local rhs_candidate = vim.fn.mapcheck(seq, "l")
-      local rhs = vim.fn.maparg(seq, "l")
-      if (rhs_candidate == "") then
+      local candidate_rhs = vim.fn.mapcheck(seq, "l")
+      local matching_rhs = vim.fn.maparg(seq, "l")
+      if (candidate_rhs == "") then
         return accept(seq)
-      elseif (rhs == rhs_candidate) then
-        return accept(rhs)
+      elseif (matching_rhs == candidate_rhs) then
+        return accept(matching_rhs)
       else
-        local _12_, _13_ = get_input()
+        local _12_, _13_ = get_char()
         if (_12_ == _3cbs_3e) then
           local function _14_()
             if (_7cseq_7c >= 2) then
@@ -127,8 +128,8 @@ local function get_input_by_keymap(prompt)
           end
           return loop(_14_())
         elseif (_12_ == _3ccr_3e) then
-          if (rhs ~= "") then
-            return accept(rhs)
+          if (matching_rhs ~= "") then
+            return accept(matching_rhs)
           elseif (_7cseq_7c == 1) then
             return accept(seq)
           else
@@ -146,17 +147,17 @@ local function get_input_by_keymap(prompt)
     end
   end
   if (vim.bo.iminsert ~= 1) then
-    return get_input()
+    return get_char()
   else
     echo_prompt()
-    local _19_ = loop(get_input())
+    local _19_ = loop(get_char())
     if (nil ~= _19_) then
-      local _in = _19_
-      return _in
+      local input = _19_
+      return input, prompt0
     else
       local _ = _19_
       return echo("")
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-pattern"] = get_eqv_pattern, ["get-representative-char"] = get_representative_char, ["get-input"] = get_input, ["get-input-by-keymap"] = get_input_by_keymap}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-pattern"] = get_eqv_pattern, ["get-representative-char"] = get_representative_char, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}

@@ -14,8 +14,8 @@
         : echo
         : get-eqv-pattern
         : get-representative-char
-        : get-input
-        : get-input-by-keymap}
+        : get-char
+        : get-char-keymapped}
        (require "leap.util"))
 
 (local api vim.api)
@@ -323,8 +323,6 @@ char separately.
                       keyboard-input? 2
                       0))
 
-  (local prompt {:str ">"})  ; pass by reference hack (for input fns)
-
   ; Force the values into a table, and translate keycodes.
   ; Using a metatable instead of deepcopy, in case one would modify the
   ; entries on `LeapEnter` (or even later).
@@ -354,6 +352,8 @@ char separately.
              ; Currently selected label group, 0-indexed
              ; (`target.group` starts at 1).
              :group-offset 0
+             ; For getting keymapped input.
+             :prompt nil
              :errmsg nil})
 
   (fn exec-user-autocmds [pattern]
@@ -448,13 +448,14 @@ char separately.
 
   (fn get-first-pattern-input []
     (with-highlight-chores nil)
-    (case (get-input-by-keymap prompt)
+    (case (get-char-keymapped st.prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
-      in1 (if (contains-safe? keys.next_target in1)
-              (do (set st.phase nil)
-                  (get-repeat-input))
-              in1)))
+      (in1 ?prompt) (if (contains-safe? keys.next_target in1)
+                        (do (set st.phase nil)
+                            (get-repeat-input))
+                        (do (set st.prompt ?prompt)
+                            in1))))
 
   (fn get-second-pattern-input [targets]
     ; Note: `count` does _not_ automatically disable two-phase
@@ -462,14 +463,14 @@ char separately.
     ; partial input, but it implies not needing to show beacons.
     (when-not count
       (with-highlight-chores #(light-up-beacons targets)))
-    (get-input-by-keymap prompt))
+    (get-char-keymapped st.prompt))
 
   (fn get-full-pattern-input []
     (case (get-first-pattern-input)
       (in1 in2) (values in1 in2)
       (in1 nil) (if (= inputlen 1)
                     in1
-                    (case (get-input-by-keymap prompt)
+                    (case (get-char-keymapped st.prompt)
                       in2 (values in1 in2)))))
 
   ; Get targets
@@ -648,7 +649,7 @@ char separately.
       (display)
       (when first-invoc?
         (exec-user-autocmds :LeapSelectPre))
-      (case (get-input)
+      (case (get-char)
         input
         (let [switch-group? (or (contains? keys.next_group input)
                                 (and (contains? keys.prev_group input)
@@ -700,7 +701,7 @@ char separately.
       (when first-invoc? (on-first-invoc))
       (set st.curr-idx idx)  ; `display` depends on it!
       (display)
-      (case (get-input)
+      (case (get-char)
         in
         (case (traversal-get-new-idx idx in targets)
           new-idx (do
