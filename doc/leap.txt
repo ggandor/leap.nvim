@@ -36,7 +36,7 @@ customize, head to |leap-mappings|.
   just a preview - labels only get active after finishing the pattern.
   *leap-preview*
 
-• Type {char2}, which filters out some matches. If there is an unlabeled pair,
+• Type {char2}, which filters the matches. When the closest pair is unlabeled,
   you automatically jump there. In case that was your target, you can safely
   ignore the remaining labels - those will not conflict with any sensible
   command, and will disappear on the next keypress (|leap.opts.safe_labels|).

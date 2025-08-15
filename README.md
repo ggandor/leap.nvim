@@ -17,9 +17,9 @@ very quickly, with near-zero mental overhead.
 * After typing `{char1}`, you see "labels" appearing next to some pairs. This
   is just a **preview** - labels only get active after finishing the pattern.
 
-* Type `{char2}`, which filters out some matches. If there is an unlabeled
-  pair, you automatically jump there. In case that was your target, you can
-  safely ignore the remaining labels - those will not conflict with any
+* Type `{char2}`, which filters the matches. When the closest pair is
+  unlabeled, you automatically jump there. In case that was your target, you
+  can safely ignore the remaining labels - those will not conflict with any
   sensible command, and will disappear on the next keypress.
 
 * Else: type the label character to jump to the given position. If there are
@@ -41,9 +41,9 @@ match.
   targetable.
 
 * **Atomic**: no need to compose motions - one command achieves one logical
-  movement (this also means it's repeatable).
+  movement.
 
-* **Context-blind**: no need to read line numbers or count matches - your eyes
+* **Context-blind**: no need to count matches or read line numbers - your eyes
   can focus on the target the whole time.
 
 * **Efficient**: three or four keystrokes bring you anywhere.
@@ -51,10 +51,11 @@ match.
 * **Consistent**: there are no alternative paths - the rhytm of typing two
   search characters and a (potential) label becomes muscle memory in no time.
 
-* **Smooth**: no annoying pause in the middle - once you need to type the
-  label, your brain will already have processed it in the background.
+* **Smooth**: sudden events are less sudden - once you need to type the label,
+  your brain will be processing it already. To jump to the closest match, you
+  only need to type characters you already see, similar to using `f`.
 
-## Getting started
+## 🚀 Getting started
 
 ### Status
 
@@ -71,8 +72,8 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Installation
 
-Use your preferred method or plugin manager. No extra steps needed besides
-defining keybindings - to use the defaults, call
+Use your preferred plugin manager. No extra steps needed besides defining
+keybindings - to use the defaults, call
 `require('leap').set_default_mappings()`. For alternative key mappings and
 arrangements, see `:h leap-mappings`.
 
@@ -267,7 +268,7 @@ range), making the selection much more efficient.
 
 </details>
 
-## Design considerations in detail
+## 🔍 Design considerations in detail
 
 ### The ideal
 
@@ -288,8 +289,8 @@ That is, **you do not want to think about**
   repeats)
 * **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
   you should be able to type the whole sequence in one go, on more or less
-  autopilot (↔ any kind of "just-in-time" labeling method; note that the
-  "search command on steroids" approach by
+  autopilot, concentrating on the task instead (↔ any kind of "just-in-time"
+  labeling method; note that the "search command on steroids" approach by
   [Pounce](https://github.com/rlane/pounce.nvim) and
   [Flash](https://github.com/folke/flash.nvim), where the labels appear at an
   unknown time by design, makes this last goal impossible)
@@ -328,7 +329,7 @@ unique in that it
 
 * feels natural to use for both distant _and_ close targets
 
-## FAQ
+## ❔ FAQ
 
 ### Defaults
 
@@ -488,7 +489,7 @@ the modal paradigm is a fundamental difference in Vim's approach.
 
 </details>
 
-## Extending Leap
+## 🔧 Extending Leap
 
 There are lots of ways you can extend the plugin and bend it to your will - see
 `:h leap.leap()` and `:h leap-events`. Besides tweaking the basic parameters of
