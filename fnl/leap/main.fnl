@@ -228,7 +228,8 @@ char separately.
                        :backward nil
                        :inclusive_op nil
                        :offset nil
-                       :inputlen nil}
+                       :inputlen nil
+                       :opts nil}
               :dot_repeat {:targets nil
                            :pattern nil
                            :in1 nil
@@ -237,7 +238,8 @@ char separately.
                            :backward nil
                            :inclusive_op nil
                            :offset nil
-                           :inputlen nil}
+                           :inputlen nil
+                           :opts nil}
 
               ; We also use this table to reach the argument table
               ; passed to `leap()` in autocommands (using event data
@@ -270,8 +272,22 @@ char separately.
 
   (set state.args kwargs)
 
+  ; `opts` hierarchy: current > saved-for-repeat > default.
+  ; (We might want to give specific arguments exclusively for repeats,
+  ; see e.g. `user.set-repeat-keys`.)
+  (local opts-current-call
+    (if user-given-opts
+        (if invoked-repeat? (vim.tbl_deep_extend :keep
+                              user-given-opts state.repeat.opts)
+            invoked-dot-repeat? (vim.tbl_deep_extend :keep
+                                  user-given-opts state.dot-repeat.opts)
+            user-given-opts)
+        {}))
+
   ; Do this before accessing `opts`.
-  (set opts.current_call (or user-given-opts {}))
+  ; From here on, the metatable of `opts` manages dispatch,
+  ; instead of merging here.
+  (set opts.current_call opts-current-call)
 
   (set opts.current_call.eqv_class_of
        (-?> opts.current_call.equivalence_classes
@@ -549,7 +565,8 @@ char separately.
                       : inputlen
                       ; Mind the naming conventions.
                       :backward backward?
-                      :inclusive_op inclusive-op?})
+                      :inclusive_op inclusive-op?
+                      :opts opts-current-call})
 
   (fn update-repeat-state [in1 in2 pattern]
     (when (or keyboard-input? user-given-pattern)
