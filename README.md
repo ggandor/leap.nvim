@@ -51,9 +51,8 @@ match.
 * **Consistent**: there are no alternative paths - the rhytm of typing two
   search characters and a (potential) label becomes muscle memory in no time.
 
-* **Smooth**: sudden events are less sudden - once you need to type the label,
-  your brain will be processing it already. To jump to the closest match, you
-  only need to type characters you already see, similar to using `f`.
+* **Smooth**: while typing the search pattern, your brain can already
+  start processing the label.
 
 ## 🚀 Getting started
 
@@ -308,18 +307,20 @@ leap.opts.preview_filter`.)
 
 The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with previewing labels can
-eliminate the surprise factor from the search-based method (which is the only
-viable approach - see "jetpack" above). Fortunately, a 2-character pattern \-
-the shortest one with which we can play this trick - is also long enough to
-sufficiently narrow down the matches in the vast majority of cases.
+eliminate the surprise factor, and make the search-based method (our "jetpack")
+work smoothly. Fortunately, even a 2-character pattern - the shortest one with
+which we can play this trick - is long enough to sufficiently narrow down the
+matches most of the time.
 
 Fixed pattern length also makes **(safe) automatic jump to the first target**
-possible. You cannot improve on jumping directly, just like how `f` and `t`
-works, not having to read a label at all, and not having to accept the match
-with `<enter>` either. However, we can do this in a smart way: if there are
-many targets (more than 15-20), we stay put, so we can use a bigger, "unsafe"
-label set - getting the best of both worlds. The non-determinism we're
-introducing is less of an issue here, since the outcome is known in advance.
+possible. Reading labels _is_ annoying, and we should optimize for the common
+case as much as possible (something that Sneak got absolutely right from the
+beginning). You cannot improve on jumping directly, just like how `f` and `t`
+works, not having to use even `<enter>` to accept the match. However, we can do
+this in a smart way: if there are many targets (more than 15-20), we stay put,
+so we can use a bigger, "unsafe" label set - getting the best of both worlds.
+The non-determinism we're introducing is less of an issue here, thanks to the
+preview.
 
 In sum, compared to other methods based on labeling targets, Leap's approach is
 unique in that it
@@ -561,12 +562,11 @@ Note: `pattern` is an experimental feature at the moment.
 ```lua
 local function leap_linewise ()
   local _, l, c = unpack(vim.fn.getpos('.'))
-  -- See `:help /\%l`, `:help /\%c`.
   local pattern =
     '\\v'
-    -- Skip 3-3 lines around the cursor.
+       -- Skip 3-3 lines around the cursor (`:help /\%l`).
     .. "(%<"..(math.max(1,l-3)).."l" .. '|' .. "%>"..(l+3).."l)"
-    -- Cursor column or EOL before the cursor.
+       -- Cursor column or EOL before the cursor (`:help /\%c`).
     .. "(%"..c.."v" .. '|' .. "%<"..c.."v$)"
   require('leap').leap {
     pattern = pattern,
@@ -575,15 +575,7 @@ local function leap_linewise ()
   }
 end
 
--- For maximum comfort, force linewise selection in the mappings:
-vim.keymap.set({'n', 'x', 'o'}, '|', function ()
-  local mode = vim.fn.mode(1)
-  -- Only force V if not already in it (otherwise it exits Visual mode).
-  if not mode:match('n$') and not mode:match('V') then
-    vim.cmd('normal! V')
-  end
-  leap_linewise()
-end)
+vim.keymap.set({'n', 'x', 'o'}, '|', leap_linewise)
 ```
 
 </details>
