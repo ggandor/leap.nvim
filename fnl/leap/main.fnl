@@ -12,7 +12,7 @@
         : dec
         : clamp
         : echo
-        : get-eqv-pattern
+        : char-to-search-pattern
         : get-representative-char
         : get-char
         : get-char-keymapped}
@@ -64,7 +64,7 @@ interrupted change operation."
 
 
 ; Return a char->equivalence-class lookup table (the relevant one for us).
-(fn eqv-classes->membership-lookup [eqv-classes]
+(fn to-membership-lookup [eqv-classes]
   (let [res {}]
     (each [_ cl (ipairs eqv-classes)]
       ; Do not use `vim.split`, it doesn't handle multibyte chars.
@@ -95,9 +95,9 @@ char separately.
   },
 }
 "
-  ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind
-  ; of input mapping (case-insensitivity, character classes, etc.) we
-  ; need to tweak things in two different places:
+  ; NOTE: If preview (two-step processing) is enabled, for any kind of
+  ; input mapping (case-insensitivity, character classes, etc.) we need
+  ; to tweak things in two different places:
   ;   1. For the first input, we modify the search pattern itself (see
   ;   `prepare-pattern`).
   ;   2. For the second input, we play with the sublist keys (here).
@@ -291,7 +291,7 @@ char separately.
 
   (set opts.current_call.eqv_class_of
        (-?> opts.current_call.equivalence_classes
-            eqv-classes->membership-lookup
+            to-membership-lookup
             ; Prevent merging with the defaults, as this is derived
             ; programmatically from a list-like option (see opts.fnl).
             (setmetatable {:merge false})))
@@ -491,37 +491,38 @@ char separately.
 
   ; Get targets
 
-  ; NOTE: If two-step processing is ebabled (AOT beacons), for any kind of
-  ; input mapping (case-insensitivity, character classes, etc.) we need to
-  ; tweak things in two different places:
+  ; NOTE: If preview (two-step processing) is enabled, for any kind of
+  ; input mapping (case-insensitivity, character classes, etc.) we need
+  ; to tweak things in two different places:
   ;   1. For the first input, we modify the search pattern itself (here).
   ;   2. For the second input, we play with the sublist keys (see
   ;   `populate-sublists`).
   (fn prepare-pattern [in1 ?in2]
     "Transform user input to the appropriate search pattern."
-    (local pat1 (or (get-eqv-pattern in1)
-                    ; Sole '\' needs to be escaped even for \V.
-                    (in1:gsub "\\" "\\\\")))
-    (local pat2 (or (and ?in2 (get-eqv-pattern ?in2))
-                    ?in2
-                    (or (and (= inputlen 1) "")
-                        "\\_.")))  ; match anything, including EOL
-    ; If `\n\n` is a possible sequence to appear, add `\n` as a separate
-    ; branch to the pattern, to make our convenience feature - targeting
-    ; EOL positions (including empty lines) by typing the newline alias
-    ; twice - work (see `get-targets-in-current-window`).
-    ; This hack is always necessary for single-step processing, when we
-    ; already have the full pattern (this includes repeating the previous
-    ; search), but also for two-step processing, in the special case of
-    ; targeting EOF (normally, `get-targets` takes care of this situation,
-    ; but the pattern `\n\_.` does not match `\n$` if it's on the last
-    ; line of the file).
-    ; Note: The condition should be checked after the input patterns are
-    ; expanded to include their whole equivalence classes.
-    (local potential-nl-nl? (and (pat1:match "\\n")
-                                 (or (pat2:match "\\n") (not ?in2))))
-    (local pattern (.. pat1 pat2 (if potential-nl-nl? "\\|\\n" "")))
-    (.. (if opts.case_sensitive "\\C" "\\c") "\\V" pattern))
+    (let [any-char "\\_."  ; :help /\_.
+          pat1 (char-to-search-pattern in1)
+          pat2 (if (= inputlen 1) ""
+                   ?in2 (char-to-search-pattern ?in2)
+                   any-char)
+          ; If `\n\n` is a possible sequence to appear, add `|\n` as a
+          ; separate branch after the whole pattern, to make our
+          ; convenience feature - targeting EOL positions by typing the
+          ; newline alias twice - work.
+          ; This hack is always necessary when we already have the full
+          ; pattern (like repeating the previous search), but also for
+          ; two-step processing, in the special case of targeting EOF.
+          ; (Normally, `get-targets` would take care of this situation,
+          ; but the pattern `\n\_.` does not match `\n$` if it's on the
+          ; last line of the file.)
+          ; NOTE: This should be checked on the expanded patterns (once
+          ; equivalence classes have been taken into account).
+          |<nl> (if (and (pat1:match "\\n")
+                         (or (pat2:match "\\n")
+                             (= pat2 any-char)))
+                    "\\|\\n"
+                    "")
+          ic (if opts.case_sensitive "\\C" "\\c")]
+      (.. "\\V" ic pat1 pat2 |<nl>)))
 
   (fn get-targets [pattern in1 ?in2]
     (let [errmsg (if in1 (.. "not found: " in1 (or ?in2 "")) "no targets")
@@ -975,8 +976,8 @@ char separately.
 (fn init []
   ; The equivalence class table can be potentially huge - let's do this
   ; here, and not each time `leap` is called, at least for the defaults.
-  (set opts.default.eqv_class_of (-?> opts.default.equivalence_classes
-                                      eqv-classes->membership-lookup))
+  (set opts.default.eqv_class_of
+       (to-membership-lookup opts.default.equivalence_classes))
   (api.nvim_create_augroup "LeapDefault" {})
   (init-highlight)
   (manage-vim-opts))

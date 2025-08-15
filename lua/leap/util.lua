@@ -1,6 +1,8 @@
 local opts = require("leap.opts")
 local api = vim.api
 local filter = vim.tbl_filter
+local lower = vim.fn.tolower
+local upper = vim.fn.toupper
 local function inc(x)
   return (x + 1)
 end
@@ -34,18 +36,18 @@ end
 local function get_focusable_windows()
   return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}
 end
-local function get_eqv_class(ch)
+local function get_equivalence_class(ch)
   if opts.case_sensitive then
     return opts.eqv_class_of[ch]
   else
-    return (opts.eqv_class_of[vim.fn.tolower(ch)] or opts.eqv_class_of[vim.fn.toupper(ch)])
+    return (opts.eqv_class_of[lower(ch)] or opts.eqv_class_of[upper(ch)])
   end
 end
 local function get_representative_char(ch)
   local ch_2a
   local _5_
   do
-    local t_4_ = get_eqv_class(ch)
+    local t_4_ = get_equivalence_class(ch)
     if (nil ~= t_4_) then
       t_4_ = t_4_[1]
     else
@@ -56,11 +58,11 @@ local function get_representative_char(ch)
   if opts.case_sensitive then
     return ch_2a
   else
-    return vim.fn.tolower(ch_2a)
+    return lower(ch_2a)
   end
 end
 local function char_list_to_branching_regexp(chars)
-  local branches
+  local prepare
   local function _8_(_241)
     if (_241 == "\n") then
       return "\\n"
@@ -73,17 +75,12 @@ local function char_list_to_branching_regexp(chars)
       return nil
     end
   end
-  branches = vim.tbl_map(_8_, chars)
-  local pattern = table.concat(branches, "\\|")
-  return ("\\(" .. pattern .. "\\)")
+  prepare = _8_
+  local branches = vim.tbl_map(prepare, chars)
+  return ("\\(" .. table.concat(branches, "\\|") .. "\\)")
 end
-local function get_eqv_pattern(char)
-  local tmp_3_ = get_eqv_class(char)
-  if (nil ~= tmp_3_) then
-    return char_list_to_branching_regexp(tmp_3_)
-  else
-    return nil
-  end
+local function char_to_search_pattern(char)
+  return char_list_to_branching_regexp((get_equivalence_class(char) or {char}))
 end
 local _3cbs_3e = vim.keycode("<bs>")
 local _3ccr_3e = vim.keycode("<cr>")
@@ -117,17 +114,17 @@ local function get_char_keymapped(prompt)
       elseif (matching_rhs == candidate_rhs) then
         return accept(matching_rhs)
       else
-        local _12_, _13_ = get_char()
-        if (_12_ == _3cbs_3e) then
-          local function _14_()
+        local _11_, _12_ = get_char()
+        if (_11_ == _3cbs_3e) then
+          local function _13_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_14_())
-        elseif (_12_ == _3ccr_3e) then
+          return loop(_13_())
+        elseif (_11_ == _3ccr_3e) then
           if (matching_rhs ~= "") then
             return accept(matching_rhs)
           elseif (_7cseq_7c == 1) then
@@ -135,8 +132,8 @@ local function get_char_keymapped(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _12_) then
-          local ch = _12_
+        elseif (nil ~= _11_) then
+          local ch = _11_
           return loop((seq .. ch))
         else
           return nil
@@ -150,14 +147,14 @@ local function get_char_keymapped(prompt)
     return get_char()
   else
     echo_prompt()
-    local _19_ = loop(get_char())
-    if (nil ~= _19_) then
-      local input = _19_
+    local _18_ = loop(get_char())
+    if (nil ~= _18_) then
+      local input = _18_
       return input, prompt0
     else
-      local _ = _19_
+      local _ = _18_
       return echo("")
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-eqv-pattern"] = get_eqv_pattern, ["get-representative-char"] = get_representative_char, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["char-to-search-pattern"] = char_to_search_pattern, ["get-representative-char"] = get_representative_char, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}

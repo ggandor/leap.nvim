@@ -3,6 +3,10 @@
 (local api vim.api)
 (local filter vim.tbl_filter)
 
+; Mind that lua string.lower/upper are ASCII only.
+(local lower vim.fn.tolower)
+(local upper vim.fn.toupper)
+
 
 (fn inc [x] (+ x 1))
 
@@ -37,33 +41,31 @@
 
 ; Equivalence classes
 
-; NOTE: Lua's string.lower/upper are only for ASCII,
-; use vim.fn.tolower/toupper everywhere.
-
-(fn get-eqv-class [ch]
+(fn get-equivalence-class [ch]
   (if opts.case_sensitive
       (. opts.eqv_class_of ch)
-      (or (. opts.eqv_class_of (vim.fn.tolower ch))
-          (. opts.eqv_class_of (vim.fn.toupper ch)))))
+      (or (. opts.eqv_class_of (lower ch))
+          (. opts.eqv_class_of (upper ch)))))
 
 
 (fn get-representative-char [ch]
   ; We choose the first one from an equivalence class (arbitrary).
-  (local ch* (or (?. (get-eqv-class ch) 1) ch))
-  (if opts.case_sensitive ch* (vim.fn.tolower ch*)))
+  (local ch* (or (?. (get-equivalence-class ch) 1)
+                 ch))
+  (if opts.case_sensitive ch* (lower ch*)))
 
 
 (fn char-list-to-branching-regexp [chars]
   ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
   ; 2. `\` itself might appear in the class, needs to be escaped.
-  (local branches (vim.tbl_map #(case $ "\n" "\\n" "\\" "\\\\" ch ch) chars))
-  (local pattern (table.concat branches "\\|"))
-  (.. "\\(" pattern "\\)"))
+  (let [prepare #(case $ "\n" "\\n" "\\" "\\\\" ch ch)
+        branches (vim.tbl_map prepare chars)]
+    (.. "\\(" (table.concat branches "\\|") "\\)")))
 
 
-(fn get-eqv-pattern [char]                ; <-- 'a'
-  (-?> (get-eqv-class char)               ; --> {'a','á','ä'}
-       (char-list-to-branching-regexp)))  ; --> '\\(a\\|á\\|ä\\)'
+(fn char-to-search-pattern [char]                ; <-- 'a'
+  (-> (or (get-equivalence-class char) [char])   ; --> {'a','á','ä'}
+      (char-list-to-branching-regexp)))          ; --> '\\(a\\|á\\|ä\\)'
 
 
 ; Input
@@ -146,7 +148,7 @@ sequenced."
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
- : get-eqv-pattern
+ : char-to-search-pattern
  : get-representative-char
  : get-char
  : get-char-keymapped}
