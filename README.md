@@ -48,9 +48,6 @@ match.
 
 * **Efficient**: three or four keystrokes bring you anywhere.
 
-* **Consistent**: there are no alternative paths - the rhytm of typing two
-  search characters and a (potential) label becomes muscle memory in no time.
-
 * **Smooth**: while typing the search pattern, your brain can already
   start processing the label.
 
@@ -313,14 +310,14 @@ which we can play this trick - is long enough to sufficiently narrow down the
 matches most of the time.
 
 Fixed pattern length also makes **(safe) automatic jump to the first target**
-possible. Reading labels _is_ annoying, and we should optimize for the common
-case as much as possible (something that Sneak got absolutely right from the
-beginning). You cannot improve on jumping directly, just like how `f` and `t`
-works, not having to use even `<enter>` to accept the match. However, we can do
-this in a smart way: if there are many targets (more than 15-20), we stay put,
-so we can use a bigger, "unsafe" label set - getting the best of both worlds.
-The non-determinism we're introducing is less of an issue here, thanks to the
-preview.
+possible. Even with preview, labels are a necessary evil, and we should
+optimize for the common case as much as possible (something that Sneak got
+absolutely right from the beginning). You cannot improve on jumping directly,
+just like how `f` and `t` works, not having to use even `<enter>` to accept the
+match. However, we can do this in a smart way: if there are many targets (more
+than 15-20), we stay put, so we can use a bigger, "unsafe" label set - getting
+the best of both worlds. The non-determinism we're introducing is less of an
+issue here, since the outcome is known in advance.
 
 In sum, compared to other methods based on labeling targets, Leap's approach is
 unique in that it
@@ -510,44 +507,50 @@ Note: `inputlen` is an experimental feature at the moment.
 
 ```lua
 do
-  local function ft_args (key_specific_args)
+  local leap = require('leap').leap
+
+  -- Return an argument table for `leap()`, tailored for f/t-motions.
+  local function as_ft (key_specific_args)
     local common_args = {
       inputlen = 1,
       inclusive_op = true,
       opts = {
-        case_sensitive = true,
+        -- Force auto-jump.
         labels = {},
-        -- Match the modes here for which you don't want to use labels.
+        -- Match the modes here for which you don't want to use labels
+        -- (`:h mode()`, `:h lua-pattern`).
         safe_labels = vim.fn.mode(1):match('o') and {} or nil,
+        -- You might want to aim for precision instead of typing comfort
+        -- here, to get as many direct jumps as possible.
+        case_sensitive = true,
+        equivalence_classes = {},
       },
     }
-    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
+    return vim.tbl_deep_extend('keep', common_args,
+                               key_specific_args)
   end
 
-  local leap = require('leap').leap
   -- This helper function makes it easier to set "clever-f"-like
   -- functionality (https://github.com/rhysd/clever-f.vim), returning
-  -- an `opts` table, where:
-  -- * the given keys are set as `next_target` and `prev_target`
-  -- * `prev_target` is removed from `safe_labels` (if appears there)
-  -- * `next_target` is used as the first label
+  -- an `opts` table derived from the defaults, where:
+  -- * the given keys are added to `keys.next_target` and `keys.prev_target`
+  -- * the forward key is used as the first label in `safe_labels`
+  -- * the backward (reverse) key is removed from `safe_labels`
   local with_traversal_keys = require('leap.user').with_traversal_keys
-  local f_opts = with_traversal_keys('f', 'F')
-  local t_opts = with_traversal_keys('t', 'T')
-  -- You can of course set ;/, for both instead:
-  -- local ft_opts = with_traversal_keys(';', ',')
+  local clever_f = with_traversal_keys('f', 'F')
+  local clever_t = with_traversal_keys('t', 'T')
 
   vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
-    leap(ft_args({ opts = f_opts, }))
+    leap(as_ft({ opts = clever_f, }))
   end)
   vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
-    leap(ft_args({ opts = f_opts, backward = true }))
+    leap(as_ft({ backward = true, opts = clever_f }))
   end)
   vim.keymap.set({'n', 'x', 'o'}, 't', function ()
-    leap(ft_args({ opts = t_opts, offset = -1 }))
+    leap(as_ft({ offset = -1, opts = clever_t }))
   end)
   vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
-    leap(ft_args({ opts = t_opts, backward = true, offset = 1 }))
+    leap(as_ft({ backward = true, offset = 1, opts = clever_t }))
   end)
 end
 ```
