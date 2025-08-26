@@ -67,11 +67,13 @@ appropriately."
 
   (vim.keymap.set modes fwd-key #(leap-repeat false)
                   {:silent true
-                   :desc "Repeat leap"})
+                   :desc (if relative-directions?
+                             "Repeat leap in the previous direction"
+                             "Repeat leap forward")})
   (vim.keymap.set modes bwd-key #(leap-repeat true)
                   {:silent true
                    :desc (if relative-directions?
-                             "Repeat leap in opposite direction"
+                             "Repeat leap in the opposite direction"
                              "Repeat leap backward")}))
 
 
