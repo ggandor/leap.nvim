@@ -440,31 +440,42 @@ leap({opts})                                                       *leap.leap()*
                     }
 <
                                                                        *leap-ft*
-               • inputlen: (`1|2`) (defaults to 2) Set to 1 for |f|-like
+               • inputlen: (`0|1|2`) (defaults to 2) Set to 1 for |f|-like
                  motions. See an example of a full setup in the README.
                  Note: This feature is experimental, subject to change or
                  removal.
                                                            *leap-custom-pattern*
                • pattern: (`string|function`) A |regexp| pattern to be
                  consumed by |search()|, or a function returning such a
-                 pattern. The advantage of the latter is that the function
-                 will be evaluated after |LeapEnter| (that is, after setting
-                 temporary editor options, etc.), so that you can even prompt
-                 the user for keyboard input while already "in" Leap. Keep in
-                 mind that you need to escape backslashes in the Lua string,
-                 as you want to pass them literally to the Vim function.
+                 pattern.
+                 If user input is expected (`inputlen` is not 0), the function
+                 will get the pattern prepared from the input characters,
+                 allowing you to modify it. Example - search only for word
+                 beginnings: >lua
+                    require('leap').leap {
+                      pattern = function (pat) return '\\<' .. pat end
+                    }
+<
+                 Note: Keep in mind that you need to escape backslashes in the
+                 pattern (a Lua string), as you want to pass them literally to
+                 the Vim function.
                  Note: This feature is experimental, subject to change or
                  removal.
                                                            *leap-custom-targets*
                • targets: (`table|function`) Either a list of targets, or a
-                 function returning such a list (see `pattern`). The elements
-                 of the list are tables of arbitrary structure, with the only
-                 mandatory field being `pos` - a (1,1)-indexed tuple; this is
-                 the position of the label, and also the jump target, if there
-                 is no custom `action` provided. If you have targets in
-                 multiple windows, you also need to provide a `wininfo` field
-                 for each (|getwininfo()|). Targets can represent anything
-                 with a position, like |treesitter| nodes, etc.
+                 function returning such a list (see `pattern`). The advantage
+                 of the latter is that the function will be evaluated after
+                 |LeapEnter| (that is, after setting temporary editor options,
+                 etc.), so that you can even prompt the user for keyboard
+                 input while already "in" Leap.
+                 The elements of the list are tables of arbitrary structure,
+                 with the only mandatory field being `pos` - a (1,1)-indexed
+                 tuple; this is the position of the label, and also the jump
+                 target, if no custom `action` is provided. If you have
+                 targets in multiple windows, you also need to provide a
+                 `wininfo` field for each (|getwininfo()|). Targets can
+                 represent anything with a position, like |treesitter| nodes,
+                 etc.
                                                             *leap-custom-action*
                • action: (`function`) A callback to be executed by Leap in
                  place of the jump, taking the selected target as its

@@ -514,6 +514,8 @@ do
     local common_args = {
       inputlen = 1,
       inclusive_op = true,
+      -- Limit search scope to the current line (`:h leap-custom-pattern`).
+      -- pattern = function (pat) return '\\%.l' .. pat end,
       opts = {
         -- Force auto-jump.
         labels = {},
