@@ -70,8 +70,10 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 Use your preferred plugin manager. No extra steps needed besides defining
 keybindings - to use the defaults, call
-`require('leap').set_default_mappings()`. For alternative key mappings and
-arrangements, see `:h leap-mappings`.
+`require('leap').set_default_mappings()`.
+
+For alternative key mappings and arrangements (e.g. Sneak-style), see `:h
+leap-mappings`.
 
 <details>
 <summary>Suggested additional tweaks</summary>
@@ -79,7 +81,7 @@ arrangements, see `:h leap-mappings`.
 Highly recommended: define a preview filter to reduce visual noise and the
 blinking effect after the first keypress (`:h leap.opts.preview_filter`). You
 can still target any visible positions if needed, but you can define what is
-considered an exceptional case ("don't bother me with preview for them").
+considered an exceptional case.
 
 ```lua
 -- Exclude whitespace and the middle of alphabetic words from preview:
@@ -124,9 +126,7 @@ Help files are not exactly page-turners, but I suggest at least skimming
 While Leap has deeply thought-through, opinionated defaults, its small(ish) but
 comprehensive API makes it pretty flexible.
 
-### Extras
-
-Experimental modules, might be changed or moved out without notice.
+### Extras (experimental modules)
 
 <details>
 <summary>Remote actions</summary>
@@ -134,11 +134,11 @@ Experimental modules, might be changed or moved out without notice.
 Inspired by [leap-spooky.nvim](https://github.com/ggandor/leap-spooky.nvim),
 and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature.
 
-This function allows you to perform an action in a remote location: it
-forgets the current mode or pending operator, lets you leap with the
-cursor (to anywhere on the tab page), then continues where it left off.
-Once an operation or insertion is finished, it moves the cursor back to
-the original position, as if you had operated from the distance.
+This function allows you to perform an action in a remote location: it forgets
+the current mode or pending operator, lets you leap to anywhere on the tab
+page, then continues where it left off. Once an operation or insertion is
+finished, it moves back to the original position, as if you had operated from
+the distance.
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 'gs', function ()
@@ -149,24 +149,26 @@ end)
 Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
 the position specified by `{leap}`.
 
-Tip: As the remote mode is active until returning to Normal mode again (by any
-means), `<ctrl-o>` becomes your friend in Insert mode, or when doing change
-operations.
+**Icing on the cake, no. 1 - automatic paste after yanking**
 
-**Swapping regions**
+With this, you can clone text objects or regions in the blink of an eye, even
+from another window (just `ygs{leap}ap`, or, with predefiend remote text
+object, `yarp{leap}`, and voilà, the remote paragraph appears there):
 
-Exchanging two regions of text becomes moderately simple, without needing a
-custom plugin: `d{region1} gs{leap}v{region2}p P`. Example (swapping two
-words): `diw gs{leap}viwp P`.
+```lua
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'RemoteOperationDone',
+  group = vim.api.nvim_create_augroup('LeapRemote', {}),
+  callback = function (event)
+    -- Do not paste if some special register was in use.
+    if vim.v.operator == 'y' and event.data.register == '"' then
+      vim.cmd('normal! p')
+    end
+  end,
+})
+```
 
-With remote text objects (see below), the swap is even simpler, almost on par
-with [vim-exchange](https://github.com/tommcdo/vim-exchange): `diw virw{leap}p
-P`.
-
-Using remote text objects _and_ combining them with an exchange operator is
-pretty much text editing at the speed of thought: `cxiw cxirw{leap}`.
-
-**Icing on the cake, no. 1 - giving input ahead of time**
+**Icing on the cake, no. 2 - giving input ahead of time (remote text objects)**
 
 The `input` parameter lets you feed keystrokes automatically after the jump:
 
@@ -179,7 +181,7 @@ end)
 -- Other ideas: `V` (forced linewise), `K`, `gx`, etc.
 ```
 
-By feeding text objects as `input`, you can create **remote text objects**, for
+By feeding text objects as `input`, you can create _remote text objects_, for
 an even more intuitive workflow (`yarp{leap}` - "yank a remote paragraph
 at..."):
 
@@ -218,34 +220,33 @@ vim.keymap.set({'x', 'o'}, 'aa', function ()
 end)
 ```
 
-**Icing on the cake, no. 2 - automatic paste after yanking**
+**Swapping regions**
 
-With this, you can clone text objects or regions in the blink of an eye, even
-from another window (`yarp{leap}`, and voilà, the remote paragraph appears
-there):
+It deserves mention that this feature also makes exchanging two regions of text
+moderately simple, without needing a custom plugin: `d{region1} gs{leap}
+v{region2}p <jumping-back-here> P`.
 
-```lua
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'RemoteOperationDone',
-  group = vim.api.nvim_create_augroup('LeapRemote', {}),
-  callback = function (event)
-    -- Do not paste if some special register was in use.
-    if vim.v.operator == 'y' and event.data.register == '"' then
-      vim.cmd('normal! p')
-    end
-  end,
-})
-```
+Example (swapping two words): `diw gs{leap} viwp P`.
+
+With remote text objects, the swap is even simpler, almost on par with
+[vim-exchange](https://github.com/tommcdo/vim-exchange): `diw virw{leap}p P`.
+
+Using remote text objects _and_ combining them with an exchange operator is
+pretty much text editing at the speed of thought: `cxiw cxirw{leap}`.
 
 </details>
 
 <details>
 <summary>Treesitter integration</summary>
 
-Besides choosing a label (`R{label}`), in Normal/Visual mode you can also use
-the traversal keys for incremental selection. The labels are forced to be safe,
-so you can operate on the selection right away (`RRRy`). Traversal can also
-"wrap around" backwards (`Rr` selects the root node).
+You can either choose a node directly (`vR{label}`), or, in Normal/Visual mode,
+use the traversal keys for incremental selection. The labels are forced to be
+safe, so you can operate on the selection right away then (`vRRRy`). Traversal
+can "wrap around" backwards (`vRr` selects the root node).
+
+It is also worth noting that linewise mode (`VRRR...`, `yVR`) filters out
+redundant nodes (only the outermost are kept in a given line range), making the
+selection much more efficient.
 
 ```lua
 vim.keymap.set({'x', 'o'}, 'R',  function ()
@@ -257,10 +258,6 @@ vim.keymap.set({'x', 'o'}, 'R',  function ()
   }
 end)
 ```
-
-Note that it is worth using (forced) linewise mode (`VRRR...`, `yVR`), as
-redundant nodes are filtered out (only the outermost are kept in a given line
-range), making the selection much more efficient.
 
 </details>
 
@@ -285,7 +282,7 @@ That is, **you do not want to think about**
   repeats)
 * **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
   you should be able to type the whole sequence in one go, on more or less
-  autopilot, concentrating on the task instead (↔ any kind of "just-in-time"
+  autopilot, concentrating on the task instead (↔ any kind of just-in-time
   labeling method; note that the "search command on steroids" approach by
   [Pounce](https://github.com/rlane/pounce.nvim) and
   [Flash](https://github.com/folke/flash.nvim), where the labels appear at an
@@ -306,8 +303,8 @@ The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with previewing labels can
 eliminate the surprise factor, and make the search-based method (our "jetpack")
 work smoothly. Fortunately, even a 2-character pattern - the shortest one with
-which we can play this trick - is long enough to sufficiently narrow down the
-matches most of the time.
+which we can play this trick - is usually long enough to sufficiently narrow
+down the matches.
 
 Fixed pattern length also makes **(safe) automatic jump to the first target**
 possible. Even with preview, labels are a necessary evil, and we should
@@ -498,10 +495,10 @@ the function (search scope, jump offset, etc.), you can:
 * give it a custom **action** to perform, instead of jumping
 * customize the behavior of specific calls via **autocommands**
 
-Some practical examples:
+Examples:
 
 <details>
-<summary>1-character search (enhanced f/t motions)</summary>
+<summary>Enhanced f/t motions</summary>
 
 Note: `inputlen` is an experimental feature at the moment.
 
@@ -509,36 +506,24 @@ Note: `inputlen` is an experimental feature at the moment.
 do
   local leap = require('leap').leap
 
-  -- Return an argument table for `leap()`, tailored for f/t-motions.
+  -- Returns an argument table for `leap()`, tailored for f/t-motions.
   local function as_ft (key_specific_args)
     local common_args = {
       inputlen = 1,
       inclusive_op = true,
-      -- Limit search scope to the current line (`:h leap-custom-pattern`).
-      -- pattern = function (pat) return '\\%.l' .. pat end,
       opts = {
-        -- Force auto-jump.
-        labels = {},
-        -- Match the modes here for which you don't want to use labels
-        -- (`:h mode()`, `:h lua-pattern`).
-        safe_labels = vim.fn.mode(1):match('o') and {} or nil,
-        -- You might want to aim for precision instead of typing comfort
-        -- here, to get as many direct jumps as possible.
-        case_sensitive = true,
-        equivalence_classes = {},
+        labels = {},  -- force autojump
+        safe_labels = vim.fn.mode(1):match('o') and {} or nil,          -- [1]
+        case_sensitive = true,                                          -- [2]
+        equivalence_classes = {},                                       -- [2]
       },
+      -- To limit search scope to the current line:
+      -- pattern = function (pat) return '\\%.l' .. pat end,
     }
-    return vim.tbl_deep_extend('keep', common_args,
-                               key_specific_args)
+    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
   end
 
-  -- This helper function makes it easier to set "clever-f"-like
-  -- functionality (https://github.com/rhysd/clever-f.vim), returning
-  -- an `opts` table derived from the defaults, where:
-  -- * the given keys are added to `keys.next_target` and `keys.prev_target`
-  -- * the forward key is used as the first label in `safe_labels`
-  -- * the backward (reverse) key is removed from `safe_labels`
-  local with_traversal_keys = require('leap.user').with_traversal_keys
+  local with_traversal_keys = require('leap.user').with_traversal_keys  -- [3]
   local clever_f = with_traversal_keys('f', 'F')
   local clever_t = with_traversal_keys('t', 'T')
 
@@ -555,6 +540,17 @@ do
     leap(as_ft({ backward = true, offset = 1, opts = clever_t }))
   end)
 end
+
+-- [1] Match the modes here for which you don't want to use labels
+--     (`:h mode()`, `:h lua-pattern`).
+-- [2] You might want to aim for precision instead of typing comfort,
+--     to get as many direct jumps as possible.
+-- [3] This helper function makes it easier to set "clever-f"-like
+--     functionality (https://github.com/rhysd/clever-f.vim), returning
+--     an `opts` table derived from the defaults, where:
+--     * the given keys are added to `keys.next_target` and `keys.prev_target`
+--     * the forward key is used as the first label in `safe_labels`
+--     * the backward (reverse) key is removed from `safe_labels`
 ```
 
 </details>
