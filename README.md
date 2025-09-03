@@ -116,7 +116,9 @@ require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 <summary>Lazy loading</summary>
 
 ...is all the rage now, but doing it via your plugin manager is unnecessary, as
-Leap lazy loads itself. Using the `keys` feature of lazy.nvim might even cause
+Leap already lazy-loads itself, [as it
+should](https://github.com/neovim/neovim/issues/35562#issuecomment-3239702727).
+Using the `keys` feature of lazy.nvim might even cause
 [problems](https://github.com/ggandor/leap.nvim/issues/191).
 
 </details>
@@ -265,10 +267,10 @@ end)
 
 ### The ideal
 
-Premise: jumping from point A to B on the screen should not be some [exciting
-puzzle](https://www.vimgolf.com/), for which you should train yourself; it
-should be a non-issue. An ideal keyboard-driven interface would impose almost no
-more cognitive burden than using a mouse, without the constant context-switching
+Premise: [Vim golf](https://www.vimgolf.com/) is incredibly fun, but efficient
+movement between point A and B on the screen, in particular, should rather be a
+non-issue. An ideal keyboard-driven interface would impose almost no more
+cognitive burden than using a mouse, without the constant context-switching
 required by the latter.
 
 That is, **you do not want to think about**
@@ -277,16 +279,19 @@ That is, **you do not want to think about**
   anywhere: a jetpack on the back, instead of airline routes (↔
   [EasyMotion](https://github.com/easymotion/vim-easymotion) and its
   derivatives)
+
 * **the context**: it should be enough to look at the target, and nothing else
   (↔ vanilla Vim motion combinations using relative line numbers and/or
   repeats)
+
 * **the steps**: the motion should be atomic (↔ Vim motion combos), and ideally
-  you should be able to type the whole sequence in one go, on more or less
-  autopilot, concentrating on the task instead (↔ any kind of just-in-time
-  labeling method; note that the "search command on steroids" approach by
+  you should be able to type the whole input sequence in one go, on more or
+  less autopilot (↔ any kind of just-in-time labeling method; note that the
+  "search command on steroids" approach by
   [Pounce](https://github.com/rlane/pounce.nvim) and
-  [Flash](https://github.com/folke/flash.nvim), where the labels appear at an
-  unknown time by design, makes this last goal impossible)
+  [Flash](https://github.com/folke/flash.nvim), where you can type as many
+  characters as you want, and the labels appear at an unknown time by design,
+  makes this last goal impossible)
 
 All the while using **as few keystrokes as possible**, and getting distracted by
 **as little incidental visual noise as possible**.
@@ -322,7 +327,8 @@ unique in that it
 * offers a smoother experience, by (somewhat) eliminating the pause before
   typing the label
 
-* feels natural to use for both distant _and_ close targets
+* feels natural to use for both distant _and_ close targets (thanks to smart
+  auto-jumping)
 
 ## ❔ FAQ
 
@@ -498,57 +504,105 @@ the function (search scope, jump offset, etc.), you can:
 Examples:
 
 <details>
-<summary>Enhanced f/t motions</summary>
+<summary>Simple search integration</summary>
+
+When finishing a `/` or `?` search command, automatically label visible
+matches, so that you can jump to them directly.
+
+Note: `pattern` is an experimental feature at the moment.
+
+```lua
+vim.api.nvim_create_autocmd('CmdlineLeave', {
+  group = vim.api.nvim_create_augroup('LeapOnSearch', {}),
+  callback = function ()
+    local ev = vim.v.event
+    local is_search_cmd = (ev.cmdtype == '/') or (ev.cmdtype == '?')
+    local cnt = vim.fn.searchcount().total
+
+    if is_search_cmd and (not ev.abort) and (cnt > 1) then
+      -- Allow CmdLineLeave-related chores to be completed before
+      -- invoking Leap.
+      vim.schedule(function ()
+        -- We want "safe" labels, but no auto-jump (as the search
+        -- command already does that), so just use `safe_labels`
+        -- as `labels`, with n/N removed.
+        local safe_labels = require('leap').opts.safe_labels
+        if type(safe_labels) == 'string' then
+          safe_labels = vim.fn.split(safe_labels, '\\zs')
+        end
+        local labels = vim.tbl_filter(function (l) return l:match('[^nN]') end,
+                                      safe_labels)
+        -- For `pattern` search, we never need to adjust conceallevel
+        -- (no user input).
+        local vim_opts = require('leap').opts.vim_opts
+        vim_opts['wo.conceallevel'] = nil
+
+        require('leap').leap {
+          pattern = vim.fn.getreg('/'),  -- last search pattern
+          target_windows = { vim.fn.win_getid() },
+          opts = {
+            safe_labels = '',
+            labels = labels,
+            vim_opts = vim_opts,
+          }
+        }
+      end)
+    end
+  end,
+})
+```
+
+</details>
+
+<details>
+<summary>1-character search (enhanced f/t motions)</summary>
 
 Note: `inputlen` is an experimental feature at the moment.
 
 ```lua
 do
-  local leap = require('leap').leap
-
   -- Returns an argument table for `leap()`, tailored for f/t-motions.
   local function as_ft (key_specific_args)
     local common_args = {
       inputlen = 1,
       inclusive_op = true,
+      -- To limit search scope to the current line:
+      -- pattern = function (pat) return '\\%.l'..pat end,
       opts = {
         labels = {},  -- force autojump
-        safe_labels = vim.fn.mode(1):match('o') and {} or nil,          -- [1]
-        case_sensitive = true,                                          -- [2]
-        equivalence_classes = {},                                       -- [2]
+        safe_labels = vim.fn.mode(1):match('o') and {} or nil,  -- [1]
+        case_sensitive = true,                                  -- [2]
       },
-      -- To limit search scope to the current line:
-      -- pattern = function (pat) return '\\%.l' .. pat end,
     }
     return vim.tbl_deep_extend('keep', common_args, key_specific_args)
   end
 
-  local with_traversal_keys = require('leap.user').with_traversal_keys  -- [3]
-  local clever_f = with_traversal_keys('f', 'F')
-  local clever_t = with_traversal_keys('t', 'T')
+  local clever = require('leap.user').with_traversal_keys       -- [3]
+  local clever_f = clever('f', 'F')
+  local clever_t = clever('t', 'T')
 
-  vim.keymap.set({'n', 'x', 'o'}, 'f', function ()
-    leap(as_ft({ opts = clever_f, }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'F', function ()
-    leap(as_ft({ backward = true, opts = clever_f }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 't', function ()
-    leap(as_ft({ offset = -1, opts = clever_t }))
-  end)
-  vim.keymap.set({'n', 'x', 'o'}, 'T', function ()
-    leap(as_ft({ backward = true, offset = 1, opts = clever_t }))
-  end)
+  for key, args in pairs {
+    f = { opts = clever_f, },
+    F = { backward = true, opts = clever_f },
+    t = { offset = -1, opts = clever_t },
+    T = { backward = true, offset = 1, opts = clever_t },
+  } do
+    vim.keymap.set({'n', 'x', 'o'}, key, function ()
+      require('leap').leap(as_ft(args))
+    end)
+  end
 end
 
+------------------------------------------------------------------------
 -- [1] Match the modes here for which you don't want to use labels
 --     (`:h mode()`, `:h lua-pattern`).
--- [2] You might want to aim for precision instead of typing comfort,
---     to get as many direct jumps as possible.
+-- [2] For 1-char search, you might want to aim for precision instead of
+--     typing comfort, to get as many direct jumps as possible.
 -- [3] This helper function makes it easier to set "clever-f"-like
 --     functionality (https://github.com/rhysd/clever-f.vim), returning
 --     an `opts` table derived from the defaults, where:
---     * the given keys are added to `keys.next_target` and `keys.prev_target`
+--     * the given keys are added to `keys.next_target` and
+--       `keys.prev_target`
 --     * the forward key is used as the first label in `safe_labels`
 --     * the backward (reverse) key is removed from `safe_labels`
 ```
@@ -561,7 +615,7 @@ end
 Note: `pattern` is an experimental feature at the moment.
 
 ```lua
-local function leap_linewise ()
+vim.keymap.set({'n', 'x', 'o'}, '|', function ()
   local _, l, c = unpack(vim.fn.getpos('.'))
   local pattern =
     '\\v'
@@ -569,14 +623,13 @@ local function leap_linewise ()
     .. "(%<"..(math.max(1,l-3)).."l" .. '|' .. "%>"..(l+3).."l)"
        -- Cursor column or EOL before the cursor (`:help /\%c`).
     .. "(%"..c.."v" .. '|' .. "%<"..c.."v$)"
+
   require('leap').leap {
     pattern = pattern,
     target_windows = { vim.fn.win_getid() },
     opts = { safe_labels = '' }
   }
-end
-
-vim.keymap.set({'n', 'x', 'o'}, '|', leap_linewise)
+end)
 ```
 
 </details>
@@ -585,29 +638,34 @@ vim.keymap.set({'n', 'x', 'o'}, '|', leap_linewise)
 <summary>Shortcuts to Telescope results</summary>
 
 ```lua
--- NOTE: If you try to use this before entering any input, an error is thrown.
--- (Help would be appreciated, if someone knows a fix.)
 local function get_targets (buf)
-  local pick = require('telescope.actions.state').get_current_picker(buf)
+  local picker = require('telescope.actions.state').get_current_picker(buf)
   local scroller = require('telescope.pickers.scroller')
-  local wininfo = vim.fn.getwininfo(pick.results_win)[1]
+  local wininfo = vim.fn.getwininfo(picker.results_win)[1]
+
+  local bottom = wininfo.botline - 2  -- skip the current row
   local top = math.max(
-    scroller.top(pick.sorting_strategy, pick.max_results, pick.manager:num_results()),
+    scroller.top(picker.sorting_strategy,
+                 picker.max_results,
+                 picker.manager:num_results()),
     wininfo.topline - 1
   )
-  local bottom = wininfo.botline - 2  -- skip the current row
+
   local targets = {}
-  for lnum = bottom, top, -1 do  -- start labeling from the closest (bottom) row
-    table.insert(targets, { wininfo = wininfo, pos = { lnum + 1, 1 }, pick = pick, })
+  -- Start labeling from the closest (bottom) row.
+  for lnum = bottom, top, -1 do
+    table.insert(targets,
+                 { wininfo = wininfo, pos = { lnum + 1, 1 }, picker = picker, })
   end
+
   return targets
 end
 
 local function pick_with_leap (buf)
   require('leap').leap {
-    targets = function () return get_targets(buf) end,
+    targets = get_targets(buf),
     action = function (target)
-      target.pick:set_selection(target.pos[1] - 1)
+      target.picker:set_selection(target.pos[1] - 1)
       require('telescope.actions').select_default(buf)
     end,
   }
