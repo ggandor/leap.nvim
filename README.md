@@ -504,7 +504,7 @@ the function (search scope, jump offset, etc.), you can:
 Examples:
 
 <details>
-<summary>Simple search integration</summary>
+<summary>Search integration</summary>
 
 When finishing a `/` or `?` search command, automatically label visible
 matches, so that you can jump to them directly.
@@ -550,6 +550,76 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
     end
   end,
 })
+```
+
+The above might be enough for your needs, but here is another snippet, which
+sets keys to leap to visible matches of the previous search pattern anytime. It
+also:
+
+* allows traversing with the trigger key, so that you can `<c-s><c-s>...`.
+* allows using the keys in Command-line mode too, so that you can exit and jump
+  (or traverse) right away, without needing to press `enter` first
+  (`/pattern<c-s>{label}`, `/pattern<c-s><c-s>...`).
+
+Rationale for the suggested keys: `<c-s>` is the default Leap trigger combined
+with a modifier, to make it usable in Command-line mode; and with `<c-q>`, the
+pair resembles `c_CTRL-G` and `c_CTRL-T` (`s` is - sort of - below `q`).
+
+```lua
+do
+  local function leap_search (key, is_reverse)
+    local cmdline_mode = vim.fn.mode(true):match('^c')
+    if cmdline_mode then
+      -- Finish the search command.
+      vim.api.nvim_feedkeys(vim.keycode('<enter>'), 't', false)
+    end
+    if vim.fn.searchcount().total < 1 then
+      return
+    end
+    -- Activate again if `:nohlsearch` has been used (Normal/Visual mode).
+    vim.go.hlsearch = vim.go.hlsearch
+
+    -- Allow the search command to complete its chores before
+    -- invoking Leap (Command-line mode).
+    vim.schedule(function ()
+      local leap = require('leap')
+      -- Allow traversing with the trigger key.
+      local next_target = vim.deepcopy(leap.opts.keys.next_target)
+      if type(next_target) == 'string' then
+        next_target = { next_target }
+      end
+      table.insert(next_target, key)
+
+      leap.leap {
+        pattern = vim.fn.getreg('/'),
+        -- If you always want to go forward/backward with the given key,
+        -- regardless of the previous search direction, just set this to
+        -- `is_reverse`.
+        backward = (is_reverse and vim.v.searchforward == 1)
+                   or (not is_reverse and vim.v.searchforward == 0),
+        opts = {
+          keys = { next_target = next_target },
+          -- Auto-jumping to the second match would be confusing without
+          -- 'incsearch'.
+          safe_labels = (cmdline_mode and not vim.o.incsearch) and ''
+            -- Keep n/N usable in any case.
+            or vim.tbl_filter(function (l) return l:match('[^nN]') end,
+                              leap.opts.safe_labels),
+        }
+      }
+      -- You might want to switch off the highlights after leaping.
+      -- vim.cmd('nohlsearch')
+    end)
+  end
+
+  vim.keymap.set({'n', 'x', 'o', 'c'}, '<c-s>', function ()
+    leap_search('<c-s>', false)
+  end, { desc = 'Leap to search matches' })
+
+  vim.keymap.set({'n', 'x', 'o', 'c'}, '<c-q>', function ()
+    leap_search('<c-q>', true)
+  end, { desc = 'Leap to search matches (reverse)' })
+end
 ```
 
 </details>
