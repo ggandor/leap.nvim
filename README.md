@@ -51,6 +51,24 @@ match.
 * **Smooth**: while typing the search pattern, your brain can already
   start processing the label.
 
+### Extras
+
+While Leap has deeply thought-through, opinionated default motions, it also
+provides (or has API for) useful orthogonal features, like:
+
+ * **Native search integration**: when finishing a `/` or `?` search,
+   visible matches can automatically be labeled for quick access.
+
+ * **Treesitter integration**: parent nodes can be selected either directly via
+   labels, or in an incremental way (with labels being available the whole
+   time).
+
+Leap also bundles a module for so-called **remote actions**, which allows
+operations at a distance, and even lets you predefine **remote text objects**,
+for extra comfort. For example, copying a paragraph from a different window can
+be as simple as typing `yarp`, then pointing to anywhere within the paragraph
+with a regular leap motion as the "laser pen".
+
 ## 🚀 Getting started
 
 ### Status
@@ -128,7 +146,7 @@ Help files are not exactly page-turners, but I suggest at least skimming
 While Leap has deeply thought-through, opinionated defaults, its small(ish) but
 comprehensive API makes it pretty flexible.
 
-### Extras (experimental modules)
+### Experimental modules
 
 <details>
 <summary>Remote actions</summary>
@@ -150,6 +168,11 @@ end)
 
 Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
 the position specified by `{leap}`.
+
+Note: The `remote` module is not really an extension, but more of an "inverse
+plugin" bundled with Leap; the jump logic is not hardcoded - `action` can use
+any function via the `jumper` parameter, be it a custom `leap()` call or
+something entirely different.
 
 **Icing on the cake, no. 1 - automatic paste after yanking**
 
