@@ -53,8 +53,9 @@ match.
 
 ### Extras
 
-While Leap has deeply thought-through, opinionated default motions, it also
-provides (or has API for) useful orthogonal features, like:
+While Leap is built around its deeply thought-through default motions, it is
+also highly extensible, and provides API for lots of useful orthogonal
+features, like:
 
  * **Native search integration**: when finishing a `/` or `?` search,
    visible matches can automatically be labeled for quick access.
@@ -63,11 +64,11 @@ provides (or has API for) useful orthogonal features, like:
    labels, or in an incremental way (with labels being available the whole
    time).
 
-Leap also bundles a module for so-called **remote actions**, which allows
-operations at a distance, and even lets you predefine **remote text objects**,
-for extra comfort. For example, copying a paragraph from a different window can
-be as simple as typing `yarp`, then pointing to anywhere within the paragraph
-with a regular leap motion as the "laser pen".
+ * **Remote actions**: do operations at a distance, or even predefine remote
+   text objects for extra comfort. For example, yanking a paragraph from a
+   different window can be as simple as typing `yarp`, then pointing to
+   anywhere within the paragraph with a regular leaping motion as the "laser
+   pen".
 
 ## 🚀 Getting started
 
@@ -142,11 +143,35 @@ Using the `keys` feature of lazy.nvim might even cause
 </details>
 
 Help files are not exactly page-turners, but I suggest at least skimming
-[`:help leap`](doc/leap.txt), even if you don't have a specific question yet.
-While Leap has deeply thought-through, opinionated defaults, its small(ish) but
-comprehensive API makes it pretty flexible.
+[`:help leap`](doc/leap.txt), even if you don't have a specific question yet,
+as it contains lots of additional information and details.
 
 ### Experimental modules
+
+<details>
+<summary>Treesitter integration</summary>
+
+You can either choose a node directly (`vR{label}`), or, in Normal/Visual mode,
+use the traversal keys for incremental selection. The labels are forced to be
+safe, so you can operate on the selection right away then (`vRRRy`). Traversal
+can "wrap around" backwards (`vRr` selects the root node).
+
+It is also worth noting that linewise mode (`VRRR...`, `yVR`) filters out
+redundant nodes (only the outermost are kept in a given line range), making the
+selection much more efficient.
+
+```lua
+vim.keymap.set({'x', 'o'}, 'R',  function ()
+  require('leap.treesitter').select {
+    -- To increase/decrease the selection in a clever-f-like manner,
+    -- with the trigger key itself (vRRRRrr...). The default keys
+    -- (<enter>/<backspace>) also work, so feel free to skip this.
+    opts = require('leap.user').with_traversal_keys('R', 'r')
+  }
+end)
+```
+
+</details>
 
 <details>
 <summary>Remote actions</summary>
@@ -258,31 +283,6 @@ With remote text objects, the swap is even simpler, almost on par with
 
 Using remote text objects _and_ combining them with an exchange operator is
 pretty much text editing at the speed of thought: `cxiw cxirw{leap}`.
-
-</details>
-
-<details>
-<summary>Treesitter integration</summary>
-
-You can either choose a node directly (`vR{label}`), or, in Normal/Visual mode,
-use the traversal keys for incremental selection. The labels are forced to be
-safe, so you can operate on the selection right away then (`vRRRy`). Traversal
-can "wrap around" backwards (`vRr` selects the root node).
-
-It is also worth noting that linewise mode (`VRRR...`, `yVR`) filters out
-redundant nodes (only the outermost are kept in a given line range), making the
-selection much more efficient.
-
-```lua
-vim.keymap.set({'x', 'o'}, 'R',  function ()
-  require('leap.treesitter').select {
-    -- To increase/decrease the selection in a clever-f-like manner,
-    -- with the trigger key itself (vRRRRrr...). The default keys
-    -- (<enter>/<backspace>) also work, so feel free to skip this.
-    opts = require('leap.user').with_traversal_keys('R', 'r')
-  }
-end)
-```
 
 </details>
 

@@ -210,10 +210,11 @@ Example configuration: >lua
     Note: Wildcard characters (non-mutual aliases) are not possible in Leap,
     for the same reason that supporting |smartcase| is not possible: we cannot
     read your mind, and decide on which label to show for |leap-preview|.
-    (Generally: having any `*` -> `x|y|z` mapping, after pressing `a`, we
-    either label an `ax` match as an item in the `a(x|y|z)` match list -
-    pressing `*` next -, or the potentially smaller `ax` list - pressing `x`
-    next -, and there is no way to know which one to choose.)
+    (Generally: having any `*` -> `(x|y|z)` mapping, when you search for `ax`,
+    you might follow `a` with either `*` or `x`, and `a*` - `a(x|y|z)` - will
+    probably match more items than `ax`. Erring on the safe side, that is,
+    assigning labels to `a*`, means losing the shortcuts, so we are back to
+    square one - mutual aliases.)
 
                                                       *leap.opts.preview_filter*
 `preview_filter = nil`
