@@ -70,17 +70,6 @@ local function action(kwargs)
     end
     return api.nvim_create_autocmd("ModeChanged", {pattern = "*:*", once = true, callback = _8_})
   end
-  local function feed(seq)
-    if seq then
-      api.nvim_feedkeys(seq, "n", false)
-    else
-    end
-    if input then
-      return api.nvim_feedkeys(input, "", false)
-    else
-      return nil
-    end
-  end
   if state.mode:match("no") then
     api.nvim_feedkeys(vim.keycode("<C-\\><C-N>"), "nx", false)
     api.nvim_feedkeys(vim.keycode("<esc>"), "n", false)
@@ -88,26 +77,43 @@ local function action(kwargs)
     api.nvim_feedkeys(state.mode, "n", false)
   else
   end
-  local function _13_()
-    jumper0()
-    vim.cmd("norm! m`")
-    if state.mode:match("no") then
-      local count
-      if (use_count_3f0 and (state.count > 0)) then
-        count = state.count
-      else
-        count = ""
-      end
-      local reg = ("\"" .. state.register)
-      local force = state.mode:sub(3)
-      feed((count .. reg .. vim.v.operator .. force))
-    elseif state.mode:match("[vV\22]") then
-      feed(state.mode)
+  local function _11_()
+    if (type(jumper0) == "string") then
+      api.nvim_feedkeys(jumper0, "n", false)
     else
-      feed()
+      jumper0()
     end
-    return restore_on_finish()
+    local function _13_()
+      local function cbk()
+        vim.cmd("norm! m`")
+        if state.mode:match("no") then
+          local count
+          if (use_count_3f0 and (state.count > 0)) then
+            count = state.count
+          else
+            count = ""
+          end
+          local reg = ("\"" .. state.register)
+          local force = state.mode:sub(3)
+          api.nvim_feedkeys((count .. reg .. vim.v.operator .. force), "n", false)
+        elseif state.mode:match("[vV\22]") then
+          api.nvim_feedkeys(state.mode, "n", false)
+        else
+        end
+        if input then
+          api.nvim_feedkeys(input, "", false)
+        else
+        end
+        return restore_on_finish()
+      end
+      if (type(jumper0) == "string") then
+        return api.nvim_create_autocmd("CmdlineLeave", {once = true, callback = cbk})
+      else
+        return cbk()
+      end
+    end
+    return vim.schedule(_13_)
   end
-  return vim.schedule(_13_)
+  return vim.schedule(_11_)
 end
 return {action = action}

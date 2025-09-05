@@ -79,42 +79,56 @@
                        (api.nvim_create_autocmd :ModeChanged
                          {:pattern "*:n" :once true : callback})))}))
 
-  (fn feed [seq]
-    (when seq (api.nvim_feedkeys seq "n" false))
-    ; Remap keys, custom motions and text objects should work too.
-    (when input (api.nvim_feedkeys input "" false)))
+  ; Execute "spooky" action: jump - operate - restore.
 
   ; Return to Normal mode.
   (if (state.mode:match "no")
+      ; I'm just cargo-culting this TBH, but the combination of the two
+      ; indeed seems to work reliably.
       (do (api.nvim_feedkeys (vim.keycode "<C-\\><C-N>") "nx" false)
-          ; Either schedule the rest, or put this after the jump.
           (api.nvim_feedkeys (vim.keycode "<esc>") "n" false))
 
       (state.mode:match "[vV]")
       (api.nvim_feedkeys state.mode "n" false))
 
-  ; Execute "spooky" action: jump - operate - restore.
+  ; Push the rest into the main event loop (wait for keys sent by
+  ; `feedkeys` to be actually processed).
   (vim.schedule
     (fn []
-      (jumper)
-      ; Add target postion to jumplist.
-      (vim.cmd "norm! m`")
-      (if
-        ; From Operator-pending: re-trigger the operation.
-        (state.mode:match "no")
-        (let [count (if (and use-count? (> state.count 0)) state.count "")
-              reg (.. "\"" state.register)
-              force (state.mode:sub 3)]
-          (feed (.. count reg vim.v.operator force)))
+      ; Note on the API: A jumper function could of course call
+      ; `feedkeys` itself, but then we would still have to tell `action`
+      ; via some parameter to wait for `CmdlineLeave` (see below).
+      (if (= (type jumper) :string)
+          (api.nvim_feedkeys jumper "n" false)
+          (jumper))
 
-        ; From Visual: start the corresponding Visual mode again.
-        (state.mode:match "[vV]")
-        (feed state.mode)
+      ; Again, wait for the jumper to finish its business.
+      (vim.schedule
+        (fn []
+          (fn cbk []
+            ; Add target postion to jumplist.
+            (vim.cmd "norm! m`")
+            ; Re-trigger the previous mode (Visual or O-p).
+            (if (state.mode:match "no")
+                (let [count (if (and use-count? (> state.count 0)) state.count "")
+                      reg (.. "\"" state.register)
+                      force (state.mode:sub 3)]
+                  (api.nvim_feedkeys
+                    (.. count reg vim.v.operator force) "n" false))
 
-        ; From Normal: just feed the (potential) prepared input.
-        (feed))
-      ; Set autocommand to restore state.
-      (restore-on-finish))))
+                (state.mode:match "[vV]")
+                (api.nvim_feedkeys state.mode "n" false))
+            (when input
+              ; Remap keys, custom motions and text objects should work too.
+              (api.nvim_feedkeys input "" false))
+            ; Set autocommand to restore state.
+            (restore-on-finish))
+
+          (if (= (type jumper) :string)
+              ; Wait for finishing the search command.
+              (api.nvim_create_autocmd :CmdlineLeave
+                                       {:once true :callback cbk})
+              (cbk)))))))
 
 
 {: action}
