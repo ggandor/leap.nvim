@@ -178,7 +178,7 @@ local function light_up_beacon(target, endpos_3f)
   return table.insert(hl.extmarks, {buf, id})
 end
 local function light_up_beacons(targets, _3fstart, _3fend)
-  if (not opts.on_beacons or opts.on_beacons(targets, _3fstart, _3fend)) then
+  if (not opts.on_beacons or (opts.on_beacons(targets, _3fstart, _3fend) ~= false)) then
     for i = (_3fstart or 1), (_3fend or #targets) do
       local target = targets[i]
       if target.beacon then

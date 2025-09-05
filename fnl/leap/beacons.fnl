@@ -221,7 +221,8 @@ an autojump. (In short: always err on the safe side.)
 
 
 (fn light-up-beacons [targets ?start ?end]
-  (when (or (not opts.on_beacons) (opts.on_beacons targets ?start ?end))
+  (when (or (not opts.on_beacons)
+            (not= (opts.on_beacons targets ?start ?end) false))
     (for [i (or ?start 1) (or ?end (length targets))]
       (local target (. targets i))
       (when target.beacon
