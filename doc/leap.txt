@@ -104,7 +104,7 @@ sequences as needed and searches for the keymapped result as expected.
 
 Directional motions (like |<Plug>(leap-forward)|) can be preceded with
 |[count]|, skipping labeling, and jumping directly to the n-th match. Also
-works with |leap-partial-input| (`2s{char}<enter>`).
+works with |leap-shortcut| (`2s{char}<enter>`).
 
 |forced-motion|s work, including |o_v| as inclusive/exclusive toggle.
 
@@ -135,7 +135,7 @@ disable this behaviour, see |leap.opts.safe_labels| and |leap.opts.labels|.
                                                     *leap-repeat* *leap-traversal*
 At any stage, <enter> (|leap.opts.keys.next_target|) jumps to the next/closest
 available target: `s<enter>` repeats the previous search; `s{char}<enter>` can
-be used as a multiline substitute for `fFtT` motions. *leap-partial-input*
+be used as a multiline substitute for `fFtT` motions. *leap-shortcut*
 
 In case of directional search, <enter> can continue traversing through the
 rest of the targets (`s<enter><enter>...`). If you overshoot, <backspace>
