@@ -394,6 +394,26 @@ two different futures) at the same time.
 </details>
 
 <details>
+<summary>Working with non-English text</summary>
+
+If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
+([`'keymap'`](https://neovim.io/doc/user/options.html#'keymap')) is active,
+Leap waits for keymapped sequences as needed and searches for the keymapped
+result as expected.
+
+Also check out `opts.equivalence_classes`, that lets you group certain
+characters together as mutual aliases, e.g.:
+
+```lua
+{
+  ' \t\r\n', 'aäàáâãā', 'dḍ', 'eëéèêē', 'gǧğ', 'hḥḫ',
+  'iïīíìîı', 'nñ', 'oō', 'sṣšß', 'tṭ', 'uúûüűū', 'zẓ'
+}
+```
+
+</details>
+
+<details>
 <summary>Arbitrary remote actions instead of jumping</summary>
 
 Basic template:
@@ -466,7 +486,7 @@ end
 </details>
 
 <details>
-<summary>Greying out the search area</summary>
+<summary>Grey out the search area</summary>
 
 Set the `LeapBackdrop` highlight group (usually linking to `Comment` is
 preferable):
@@ -478,21 +498,23 @@ vim.api.nvim_set_hl(0, 'LeapBackdrop', { link = 'Comment' })
 </details>
 
 <details>
-<summary>Working with non-English text</summary>
+<summary>Restore the default highlighting</summary>
 
-If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
-([`'keymap'`](https://neovim.io/doc/user/options.html#'keymap')) is active,
-Leap waits for keymapped sequences as needed and searches for the keymapped
-result as expected.
-
-Also check out `opts.equivalence_classes`, that lets you group certain
-characters together as mutual aliases, e.g.:
+If a certain color scheme sets the highlight groups for Leap in a way that you
+don't particularly like, the simplest solution (besides a PR) is:
 
 ```lua
-{
-  ' \t\r\n', 'aäàáâãā', 'dḍ', 'eëéèêē', 'gǧğ', 'hḥḫ',
-  'iïīíìîı', 'nñ', 'oō', 'sṣšß', 'tṭ', 'uúûüűū', 'zẓ'
-}
+vim.api.nvim_create_autocmd('ColorScheme', {
+  group = vim.api.nvim_create_augroup('LeapColorTweaks', {}),
+  callback = function ()
+    if vim.g.colors_name == 'bad_color_scheme' then
+      -- Forces using the defaults: sets `IncSearch` for labels,
+      -- `Search` for matches, removes `LeapBackdrop`, and updates the
+      -- look of concealed labels.
+      require('leap').init_hl(true)
+    end
+  end
+})
 ```
 
 </details>

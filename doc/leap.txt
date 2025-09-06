@@ -347,7 +347,9 @@ LeapBackdrop		In some cases it might be useful to apply certain
 
 To preserve your custom settings, wrap them in a function, and define an
 autocommand for |ColorScheme|: >lua
+
     vim.api.nvim_create_autocmd('ColorScheme', {
+      group = vim.api.nvim_create_augroup('LeapColorTweaks', {}),
       callback = function ()
         -- Color-scheme-specific settings
         if vim.g.colors_name == 'foo' then
