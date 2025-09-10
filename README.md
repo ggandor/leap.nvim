@@ -53,9 +53,9 @@ match.
 
 ### Extras
 
-While Leap is built around its deeply thought-through default motions, it is
-also highly extensible, and provides API for lots of useful orthogonal
-features, like:
+While Leap is built around its deeply thought-through, opinionated default
+motions, it is also highly extensible, and provides API for lots of useful
+orthogonal features, like:
 
  * **Native search integration**: when finishing a `/` or `?` search,
    visible matches can automatically be labeled for quick access.
@@ -65,10 +65,11 @@ features, like:
    time).
 
  * **Remote actions**: do operations at a distance, or even predefine remote
-   text objects for extra comfort. For example, yanking a paragraph from a
+   text objects for extra comfort. For example, cloning a paragraph from a
    different window can be as simple as typing `yarp`, then pointing to
-   anywhere within the paragraph with a regular leaping motion as the "laser
-   pen".
+   anywhere within the remote paragraph with a leaping motion as the "laser
+   pen" (no jumping back and pasting needed). You can even use the native
+   search command (`/`) for the jump, to operate on off-screen regions.
 
 ## 🚀 Getting started
 
@@ -194,10 +195,27 @@ end)
 Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
 the position specified by `{leap}`.
 
-Note: The `remote` module is not really an extension, but more of an "inverse
-plugin" bundled with Leap; the jump logic is not hardcoded - `action` can use
+**Jump with native search commands to off-screen areas**
+
+The `remote` module is not really an extension, but more of an "inverse plugin"
+bundled with Leap; the jump logic is not hardcoded - `action` can in fact use
 any function via the `jumper` parameter, be it a custom `leap()` call or
 something entirely different.
+
+You can even use the native search commands directly, that is, target
+off-screen regions, with the special `jumper` values `/` and `?`:
+
+```lua
+vim.keymap.set({'n', 'o'}, 'g/', function ()
+  require('leap.remote').action { jumper = '/' }
+end)
+vim.keymap.set({'n', 'o'}, 'g?', function ()
+  require('leap.remote').action { jumper = '?' }
+end)
+```
+
+Vim tip: use `c_CTRL-G` and `c_CTRL-T` to move between matches without
+finishing the search.
 
 **Icing on the cake, no. 1 - automatic paste after yanking**
 
@@ -228,8 +246,9 @@ vim.keymap.set({'n', 'o'}, 'gs', function ()
   require('leap.remote').action { input = 'v' }
 end)
 
--- Other ideas: `V` (forced linewise), `K`, `gx`, etc.
 ```
+
+Other ideas: `V` (forced linewise), `K`, `gx`, etc.
 
 By feeding text objects as `input`, you can create _remote text objects_, for
 an even more intuitive workflow (`yarp{leap}` - "yank a remote paragraph
@@ -238,11 +257,11 @@ at..."):
 ```lua
 -- Create remote versions of all a/i text objects by inserting `r`
 -- into the middle (`iw` becomes `irw`, etc.).
--- A trick to avoid having to create separate hardcoded mappings for
--- each text object: when entering `ar`/`ir`, consume the next
--- character, and create the input from that character concatenated to
--- `a`/`i`.
 do
+  -- A trick to avoid having to create separate hardcoded mappings for
+  -- each text object: when entering `ar`/`ir`, consume the next
+  -- character, and create the input from that character concatenated to
+  -- `a`/`i`.
   local remote_text_object = function (prefix)
      local ok, ch = pcall(vim.fn.getcharstr)  -- pcall for handling <C-c>
      if not ok or (ch == vim.keycode('<esc>')) then
@@ -250,8 +269,11 @@ do
      end
      require('leap.remote').action { input = prefix .. ch }
   end
-  vim.keymap.set({'x', 'o'}, 'ar', function () remote_text_object('a') end)
-  vim.keymap.set({'x', 'o'}, 'ir', function () remote_text_object('i') end)
+  for _, prefix in ipairs { 'a', 'i' } do
+    vim.keymap.set({'x', 'o'}, prefix .. 'r', function ()
+      remote_text_object(prefix)
+    end)
+  end
 end
 ```
 
