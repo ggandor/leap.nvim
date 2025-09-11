@@ -77,20 +77,10 @@ Suggested arrangements ~
     vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
     vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
 
-2. Sneak-style (more granular): >lua
+2. Sneak-style: >lua
     vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
     vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
     vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
-
-3. Jump to anywhere in Normal mode with one key (less granular): >lua
-    vim.keymap.set('n',        's', '<Plug>(leap-anywhere)')
-    vim.keymap.set({'x', 'o'}, 's', '<Plug>(leap)')
-<
-    Trade-off: if you have multiple windows open, you will almost never get
-    |leap-autojump|s, except if all targets are in the same window. (This is
-    an intentional restriction: it would be too disorienting if the cursor
-    could jump in/to a different window than your goal, right before selecting
-    the target.)
 
 You might add a pair of keys for exclusive selection to any of the above: >lua
     vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
@@ -99,26 +89,25 @@ You might add a pair of keys for exclusive selection to any of the above: >lua
 ==============================================================================
 FEATURES                                                         *leap-features*
 
-If a |language-mapping| ('keymap') is active, Leap waits for keymapped
-sequences as needed and searches for the keymapped result as expected.
-
 Directional motions (like |<Plug>(leap-forward)|) can be preceded with
 |[count]|, skipping labeling, and jumping directly to the n-th match. Also
 works with |leap-shortcut| (`2s{char}<enter>`).
 
 |forced-motion|s work, including |o_v| as inclusive/exclusive toggle.
 
+If a |language-mapping| ('keymap') is active, Leap waits for keymapped
+sequences as needed and searches for the keymapped result as expected.
+
+The last character on a line can be targeted by pressing <space> after it.
+There is nothing special going on here: <space> is simply an alias for `\n`
+and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
+
+To target actual EOL positions, including empty lines, press the newline alias
+twice (pretend that each newline character is duplicated). *leap-to-eol*
+
 Same-character sequences (e.g. `-----`) are matched at one position only: by
 default, at the start, and if `offset` in |leap.leap()| is positive, at the
 end.
-
-                                                     *leap-till-eol* *leap-to-eol*
-The last character on a line can be targeted by pressing <space> after it.
-There is nothing special going on here: <space> is simply an alias for `\n`
-and `\r`, set in |leap.opts.equivalence_classes| by default.
-
-To target actual EOL positions, including empty lines, press the newline alias
-twice (pretend that each newline character is duplicated).
 
                                                           *leap-target-ordering*
 When searching bidirectionally, Leap sorts matches by Euclidean (beeline)
@@ -416,28 +405,25 @@ with them.
 There are lots of ways you can extend the plugin and bend it to your will, and
 the combinations of them give you almost infinite possibilities.
 
-Instead of using the provided <Plug> keys (|leap-custom-mappings|), you can
-also call `leap()` directly:
+Instead of using the provided <Plug> keys (|leap-mappings|), you can also call
+`leap()` directly:
 
 leap({opts})                                                       *leap.leap()*
     Entry point for all |leap.nvim| actions.
 
     Parameters: ~
-        {opts} Optional parameters.
-               • backward: (`boolean`) (defaults to false) Search backward
+        {opts} Optional keyword arguments:
+               • {backward}? (`boolean`, default: `false`) Search backward
                  instead of forward in the current window.
-               • target_windows: (`table`) A list of windows (as |winid|s) to
-                 be searched.
-               • offset: (`-1|0|1`) (defaults to 0) Where to land with the
+               • {target_windows}? (`table`) A list of windows (as |winid|s)
+                 to be searched.
+               • {offset}? (`-1|0|1`, default: `0`) Where to land with the
                  cursor compared to the target position.
-               • inclusive_op: (boolean) (defaults to false) A flag indicating
-                 whether an operation should behave as |inclusive| for forward
-                 jumps.
-               • opts: (`table`) A table just like |leap.opts|, to override any
+               • {inclusive_op}? (`boolean`, default: `false`) Make operations
+                 |inclusive| for forward jumps.
+               • {opts}? (`table`) A table like |leap.opts|, to override any
                  default setting for the specific call. Example: >lua
-                    require('leap').leap {
-                      opts = { safe_labels = '' }
-                    }
+                    require('leap').leap { opts = { safe_labels = '' } }
 <
                  For map-like subtables it is also enough to specify only the
                  values to be overridden: >lua
@@ -446,45 +432,43 @@ leap({opts})                                                       *leap.leap()*
                     }
 <
                                                                        *leap-ft*
-               • inputlen: (`0|1|2`) (defaults to 2) Set to 1 for |f|-like
+               • {inputlen}? (`0|1|2`, default: `2`) Set to 1 for |f|-like
                  motions. See an example of a full setup in the README.
                  Note: This feature is experimental, subject to change or
                  removal.
                                                            *leap-custom-pattern*
-               • pattern: (`string|function`) A |regexp| pattern to be
-                 consumed by |search()|, or a function returning such a
-                 pattern.
-                 If user input is expected (`inputlen` is not 0), the function
-                 will get the pattern prepared from the input characters,
+               • {pattern}?
+                 (`string | fun(pattern: string, typed: string[]): string`)
+                 A |regexp| pattern to be consumed by |search()|, or a
+                 function returning such a pattern. Keep in mind that you need
+                 to escape backslashes in the Lua string, as you want to pass
+                 them literally to the Vim function.
+                 If user input is expected, the function will get the raw
+                 input characters {typed}, as well as the prepared {pattern},
                  allowing you to modify it. Example - search only for word
                  beginnings: >lua
                     require('leap').leap {
-                      pattern = function (pat) return '\\<' .. pat end
+                      pattern = function (pat) return '\\<'..pat end
                     }
 <
-                 Note: Keep in mind that you need to escape backslashes in the
-                 pattern (a Lua string), as you want to pass them literally to
-                 the Vim function.
                  Note: This feature is experimental, subject to change or
                  removal.
                                                            *leap-custom-targets*
-               • targets: (`table|function`) Either a list of targets, or a
-                 function returning such a list (see `pattern`). The advantage
-                 of the latter is that the function will be evaluated after
-                 |LeapEnter| (that is, after setting temporary editor options,
-                 etc.), so that you can even prompt the user for keyboard
-                 input while already "in" Leap.
-                 The elements of the list are tables of arbitrary structure,
-                 with the only mandatory field being `pos` - a (1,1)-indexed
-                 tuple; this is the position of the label, and also the jump
-                 target, if no custom `action` is provided. If you have
-                 targets in multiple windows, you also need to provide a
-                 `wininfo` field for each (|getwininfo()|). Targets can
-                 represent anything with a position, like |treesitter| nodes,
-                 etc.
+               • {targets}? (`table|fun():table?`) A list of targets, or a
+                 function returning such a list. The advantage of the latter
+                 is that the function will be evaluated after |LeapEnter|
+                 (that is, after setting temporary editor options, etc.), so
+                 that you can even prompt the user for keyboard input while
+                 already "in" Leap.
+                 Targets are tables of arbitrary structure, with the only
+                 mandatory field being `pos` - a (1,1)-indexed tuple; this is
+                 the position of the label, and also the jump target, if no
+                 custom {action} is provided. If you have targets in multiple
+                 windows, you also need to provide a `wininfo` field for each
+                 (|getwininfo()|).
                                                             *leap-custom-action*
-               • action: (`function`) A callback to be executed by Leap in
-                 place of the jump, taking the selected target as its
+               • {action}? (`fun(target):any?`) A callback to be executed by
+                 Leap in place of the jump, taking the selected target as its
                  argument. (You can obviously implement some custom jump logic
                  here too.)
 

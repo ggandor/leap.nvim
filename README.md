@@ -90,10 +90,8 @@ to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 Use your preferred plugin manager. No extra steps needed besides defining
 keybindings - to use the defaults, call
-`require('leap').set_default_mappings()`.
-
-For alternative key mappings and arrangements (e.g. Sneak-style), see `:h
-leap-mappings`.
+`require('leap').set_default_mappings()`. For alternative key mappings and
+arrangements, see `:h leap-mappings`.
 
 <details>
 <summary>Suggested additional tweaks</summary>
@@ -269,6 +267,7 @@ do
      end
      require('leap.remote').action { input = prefix .. ch }
   end
+
   for _, prefix in ipairs { 'a', 'i' } do
     vim.keymap.set({'x', 'o'}, prefix .. 'r', function ()
       remote_text_object(prefix)
@@ -751,6 +750,7 @@ Note: `pattern` is an experimental feature at the moment.
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, '|', function ()
   local _, l, c = unpack(vim.fn.getpos('.'))
+  -- Some Vim regex magic follows:
   local pattern =
     '\\v'
        -- Skip 3-3 lines around the cursor (`:help /\%l`).
