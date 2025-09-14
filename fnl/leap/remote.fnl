@@ -48,6 +48,12 @@
 
   (local jumper (or jumper default-jumper))
 
+  (fn cursor-moved? []
+    (not
+      (and (= (vim.fn.win_getid) src-win)
+           (= (vim.fn.line ".") saved-view.lnum)
+           (= (vim.fn.col ".") (+ saved-view.col 1)))))
+
   (fn back-to-pending-action []
     (if (state.mode:match "o")
         (let [count (if (and use-count? (> state.count 0)) state.count "")
@@ -110,12 +116,13 @@
   (vim.schedule
     (fn []
       (fn after-jump []
-        ; Add target postion to jumplist.
-        (vim.cmd "norm! m`")
-        (back-to-pending-action)  ; feedkeys...
-        ; No 'n' flag, custom mappings should work here.
-        (when input (api.nvim_feedkeys input "" false))
-        (vim.schedule on-finish))
+        (when (cursor-moved?)
+          ; Add target postion to jumplist.
+          (vim.cmd "norm! m`")
+          (back-to-pending-action)  ; feedkeys...
+          ; No 'n' flag, custom mappings should work here.
+          (when input (api.nvim_feedkeys input "" false))
+          (vim.schedule on-finish)))
 
       ; Note on the API: A jumper function could of course call
       ; `feedkeys` itself, but then we would still have to tell `action`
@@ -130,8 +137,9 @@
           (if (= (type jumper) :string)
               ; Wait for finishing the search command.
               (api.nvim_create_autocmd :CmdlineLeave
-                                       {:once true
-                                        :callback after-jump})
+                {:once true
+                 ; Wait for actually leaving the command line.
+                 :callback (vim.schedule_wrap after-jump)})
               (after-jump)))))))
 
 

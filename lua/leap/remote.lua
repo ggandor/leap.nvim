@@ -33,6 +33,9 @@ local function action(kwargs)
     return leap({opts = _2_, target_windows = util.get_focusable_windows()})
   end
   local jumper0 = (jumper or default_jumper)
+  local function cursor_moved_3f()
+    return not ((vim.fn.win_getid() == src_win) and (vim.fn.line(".") == saved_view.lnum) and (vim.fn.col(".") == (saved_view.col + 1)))
+  end
   local function back_to_pending_action()
     if state.mode:match("o") then
       local count
@@ -101,27 +104,31 @@ local function action(kwargs)
   to_normal_mode()
   local function _13_()
     local function after_jump()
-      vim.cmd("norm! m`")
-      back_to_pending_action()
-      if input then
-        api.nvim_feedkeys(input, "", false)
+      if cursor_moved_3f() then
+        vim.cmd("norm! m`")
+        back_to_pending_action()
+        if input then
+          api.nvim_feedkeys(input, "", false)
+        else
+        end
+        return vim.schedule(on_finish)
       else
+        return nil
       end
-      return vim.schedule(on_finish)
     end
     if (type(jumper0) == "string") then
       api.nvim_feedkeys(jumper0, "n", false)
     else
       jumper0()
     end
-    local function _16_()
+    local function _17_()
       if (type(jumper0) == "string") then
-        return api.nvim_create_autocmd("CmdlineLeave", {once = true, callback = after_jump})
+        return api.nvim_create_autocmd("CmdlineLeave", {once = true, callback = vim.schedule_wrap(after_jump)})
       else
         return after_jump()
       end
     end
-    return vim.schedule(_16_)
+    return vim.schedule(_17_)
   end
   return vim.schedule(_13_)
 end
