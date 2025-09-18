@@ -764,12 +764,11 @@ char separately.
   (when (and need-in1? (not in1))
     (exit-early))
 
+  (local user-given-targets* (or user-given-targets
+                                 (and invoked-dot-repeat?
+                                      state.dot_repeat.targets)))
   (local targets
-    (or (when (or user-given-targets
-                  (and invoked-dot-repeat?
-                       state.dot_repeat.targets))
-          (get-user-given-targets
-            (or user-given-targets state.dot_repeat.targets)))
+    (if user-given-targets* (get-user-given-targets user-given-targets*)
         (let [pattern* (or user-given-pattern
                            (and invoked-repeat? state.repeat.pattern)
                            (and invoked-dot-repeat? state.dot_repeat.pattern))
