@@ -31,25 +31,39 @@ empty line, type `s<space><space>`.
 
 At any stage, `<enter>` jumps to the next/closest available target: `s<enter>`
 repeats the previous search; `s{char}<enter>` accepts the closest `{char}`
-match.
+match (it can be used as a multiline substitute for `fFtT` motions).
 
-### Advantages
+### Why is this method cool?
 
-* **Universal**: the same command can be used for any non-trivial jumps.
+It is ridiculously fast: not counting the trigger key, leaping to literally
+anywhere on the screen rarely takes more than 3 keystrokes in total, that can
+be typed in one go. Often 2 is enough.
 
-* **Reliable**: no blind spots - any position where you can put your cursor is
-  targetable.
+At the same time, it reduces mental effort by all possible means:
 
-* **Atomic**: no need to compose motions - one command achieves one logical
+* _You don't have to weigh alternatives_: a single universal motion type can be
+  used in all non-trivial situations.
+
+* _You don't have to compose motions_: one command achieves one logical
   movement.
 
-* **Context-blind**: no need to count matches or read line numbers - your eyes
-  can focus on the target the whole time.
+* _You don't have to be aware of the context_: the eyes can keep focusing on
+  the target the whole time.
 
-* **Efficient**: three or four keystrokes bring you anywhere.
+* _You don't have to make decisions on the fly_: the sequence you should type
+  is fixed from the start.
 
-* **Smooth**: while typing the search pattern, your brain can already
-  start processing the label.
+* _You don't have to pause in the middle_: if typing at a moderate speed, at
+  each step you already know what the immediate next keypress should be, and
+  your mind can process the rest in the background.
+
+Leap does not replace, but improve the "Vim way" of editing: it simply provides
+an efficient, unified interface for [precision
+targeting](https://speakerdeck.com/nelstrom/vim-precision-editing-at-the-speed-of-thought),
+while staying as native as possible. Auxiliary features like [forced
+motions](https://neovim.io/doc/user/motion.html#forced-motion), dot-repeat, or
+[multibyte keymaps](https://neovim.io/doc/user/mbyte.html#mbyte-keymap) "just
+work".
 
 ### Extras
 
@@ -57,27 +71,19 @@ While Leap is built around its deeply thought-through, opinionated default
 motions, it is also highly extensible, and provides API for lots of useful
 orthogonal features, like:
 
+ * **Remote actions**: do operations at a distance, or even predefine remote
+   text objects for extra comfort. For example, yanking a paragraph from a
+   different window can be as simple as typing `yarp`, then pointing to
+   anywhere within the paragraph with a leaping motion as the "laser pen".
+
+ * **Treesitter node selection**: parent nodes can be selected either directly
+   via labels, or in an incremental way (with labels being available the whole
+   time).
+
  * **Native search integration**: when finishing a `/` or `?` search,
    visible matches can automatically be labeled for quick access.
 
- * **Treesitter integration**: parent nodes can be selected either directly via
-   labels, or in an incremental way (with labels being available the whole
-   time).
-
- * **Remote actions**: do operations at a distance, or even predefine remote
-   text objects for extra comfort. For example, cloning a paragraph from a
-   different window can be as simple as typing `yarp`, then pointing to
-   anywhere within the remote paragraph with a leaping motion as the "laser
-   pen" (no jumping back and pasting needed). You can even use the native
-   search command (`/`) for the jump, to operate on off-screen regions.
-
 ## 🚀 Getting started
-
-### Status
-
-The plugin is not 100% stable yet, but don't let that stop you - the usage
-basics are extremely unlikely to change. To follow breaking changes, subscribe
-to the corresponding [issue](https://github.com/ggandor/leap.nvim/issues/18).
 
 ### Requirements
 
@@ -214,6 +220,10 @@ end)
 
 Vim tip: use `c_CTRL-G` and `c_CTRL-T` to move between matches without
 finishing the search.
+
+Note that in Normal mode you are free to move around after the jump. For
+example, search for a markdown header, then move to the concrete target
+(paragraph, line, word) you want to operate on.
 
 **Icing on the cake, no. 1 - automatic paste after yanking**
 
@@ -603,11 +613,7 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
         require('leap').leap {
           pattern = vim.fn.getreg('/'),  -- last search pattern
           target_windows = { vim.fn.win_getid() },
-          opts = {
-            safe_labels = '',
-            labels = labels,
-            vim_opts = vim_opts,
-          }
+          opts = { safe_labels = '', labels = labels, vim_opts = vim_opts, }
         }
       end)
     end
@@ -772,11 +778,9 @@ end)
 <summary>Shortcuts to Telescope results</summary>
 
 ```lua
-local function get_targets (buf)
-  local picker = require('telescope.actions.state').get_current_picker(buf)
+local function get_targets (buf, picker)
   local scroller = require('telescope.pickers.scroller')
   local wininfo = vim.fn.getwininfo(picker.results_win)[1]
-
   local bottom = wininfo.botline - 2  -- skip the current row
   local top = math.max(
     scroller.top(picker.sorting_strategy,
@@ -784,22 +788,19 @@ local function get_targets (buf)
                  picker.manager:num_results()),
     wininfo.topline - 1
   )
-
   local targets = {}
-  -- Start labeling from the closest (bottom) row.
   for lnum = bottom, top, -1 do
-    table.insert(targets,
-                 { wininfo = wininfo, pos = { lnum + 1, 1 }, picker = picker, })
+    table.insert(targets, { wininfo = wininfo, pos = { lnum + 1, 1 } })
   end
-
   return targets
 end
 
 local function pick_with_leap (buf)
+  local picker = require('telescope.actions.state').get_current_picker(buf)
   require('leap').leap {
-    targets = get_targets(buf),
+    targets = get_targets(buf, picker),
     action = function (target)
-      target.picker:set_selection(target.pos[1] - 1)
+      picker:set_selection(target.pos[1] - 1)
       require('telescope.actions').select_default(buf)
     end,
   }
