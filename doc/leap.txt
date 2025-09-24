@@ -205,7 +205,7 @@ Example configuration: >lua
     to cover all `ax|ay|az` matches with one shared label sequence, since you
     might type `?` next. But then `?xyz` is in fact a mutual alias group,
     there are no shortcuts anymore. |smartcase| is a specific instance of this
-    issue: `x` -> `x|X`.)
+    issue: `x` -> `x|X`.) *leap-wildcard-problem*
 
                                                       *leap.opts.preview_filter*
 `preview_filter = nil`
@@ -439,16 +439,26 @@ leap({opts})                                                       *leap.leap()*
                • {pattern}?
                  (`string | fun(pattern: string, typed: string[]): string`)
                  A |regexp| pattern to be consumed by |search()|, or a
-                 function returning such a pattern. Keep in mind that you need
-                 to escape backslashes in the Lua string, as you want to pass
-                 them literally to the Vim function.
+                 function returning such a pattern. (Remember to escape
+                 backslashes in the Lua string, as you want to pass those
+                 literally to the Vim function.)
+
                  If user input is expected, the function will get the raw
                  input characters {typed}, as well as the prepared {pattern},
-                 allowing you to modify it. Example - search only for word
-                 beginnings: >lua
-                    require('leap').leap {
-                      pattern = function (pat) return '\\<'..pat end
-                    }
+                 allowing you to modify it. Keep in mind, however, that in
+                 case of |leap-preview|, the actual search pattern is based on
+                 the first input character only - the second part is
+                 substituted by the catch-all pattern |\_.|. This means that
+                 regexp modifiers that affect each character individually
+                 (e.g. |/\c|) will not work with preview - such features need
+                 to be implemented as black-box magic by the plugin. (Related:
+                 |leap-wildcard-problem|.)
+
+                 Examples: >lua
+                    -- Search only for word beginnings:
+                    pattern = function (pat) return '\\<'..pat end
+                    -- Limit search scope to the current line:
+                    pattern = function (pat) return '\\%.l'..pat end
 <
                  Note: This feature is experimental, subject to change or
                  removal.
