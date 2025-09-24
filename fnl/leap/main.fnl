@@ -681,12 +681,11 @@ char separately.
 
 
   (fn traversal-get-new-idx [idx in targets]
-    ; Wrap around in both directions.
     (if (contains? keys.next_target in)
-        (if (= (inc idx) (length targets)) (length targets)
-            (% (inc idx) (length targets)))
+        (min (inc idx) (length targets))
 
         (contains? keys.prev_target in)
+        ; Wrap around backwards.
         (if (<= idx 1) (length targets) (dec idx))))
 
 
