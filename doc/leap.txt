@@ -25,12 +25,8 @@ very quickly, with near-zero mental overhead.
 ==============================================================================
 USAGE                                                               *leap-usage*
 
-Note: Leap does not set key mappings automatically. To use the defaults
-(implied from here on), call `require('leap').set_default_mappings()`. To
-customize, head to |leap-mappings|.
-
-• Initiate the search in the current window (`s`), or in the other windows
-  (`S`), and start typing a 2-character pattern ({char1}{char2}).
+• Initiate the search in a given scope (|leap-mappings|), and start typing a
+  2-character pattern ({char1}{char2}).
 
 • After typing {char1}, you see "labels" appearing next to some pairs. This is
   just a preview - labels only get active after finishing the pattern.
@@ -46,8 +42,8 @@ customize, head to |leap-mappings|.
   more matches than available labels, you can move between groups with <space>
   and <backspace> (|leap.opts.keys|).
 
-To move to the last character on a line, type `s{char}<space>`. To move to an
-empty line, type `s<space><space>`.
+To move to the last character on a line, type `{char}<space>`. To move to an
+empty line, type `<space><space>`. |leap-till-eol| |leap-to-eol|
 
 See |leap-features| for lots of additional details.
 
@@ -71,6 +67,8 @@ Available <Plug> keys ~
     *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  *
     *<Plug>(leap-backward-till)*  |  Before cursor   |  +1      |
 
+   See also |leap-target-ordering|.
+
 Suggested arrangements ~
 
 1. Default: >lua
@@ -85,7 +83,7 @@ Suggested arrangements ~
 You might add a pair of keys for exclusive selection to any of the above: >lua
     vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
     vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
-<
+
 ==============================================================================
 FEATURES                                                         *leap-features*
 
@@ -110,10 +108,10 @@ default, at the start, and if `offset` in |leap.leap()| is positive, at the
 end.
 
                                                           *leap-target-ordering*
-When searching bidirectionally, Leap sorts matches by Euclidean (beeline)
-distance from the cursor, but the current line you're on, and on that line,
-forward direction is prioritized. That is, you can be sure that the targets
-right in front of you will be the first ones.
+When searching bidirectionally (e.g., |<Plug>(leap)|), matches are sorted by
+Euclidean (beeline) distance from the cursor, but the current line you're on,
+and on that line, forward direction is prioritized. That is, you can be sure
+that the targets right in front of you will be the first ones.
 
                                                            *leap-smart-autojump*
 |leap-autojump| is only triggered if the remaining matches can be covered by a
@@ -123,8 +121,9 @@ disable this behaviour, see |leap.opts.safe_labels| and |leap.opts.labels|.
 
                                                     *leap-repeat* *leap-traversal*
 At any stage, <enter> (|leap.opts.keys.next_target|) jumps to the next/closest
-available target: `s<enter>` repeats the previous search; `s{char}<enter>` can
-be used as a multiline substitute for `fFtT` motions. *leap-shortcut*
+available target: pressing `<enter>` right away repeats the previous search;
+`{char}<enter>` accepts the closest `{char}` match (can be used as a multiline
+substitute for `fFtT` motions). *leap-shortcut*
 
 In case of directional search, <enter> can continue traversing through the
 rest of the targets (`s<enter><enter>...`). If you overshoot, <backspace>
@@ -134,8 +133,8 @@ There is a convenience function in the `user` module to set keys to repeat the
 previous search without explicitly invoking Leap (`<enter><enter>...` instead
 of `s<enter><enter>...`): >lua
     require('leap.user').set_repeat_keys('<enter>', '<backspace>', {
-      -- When true, repeat in the direction of the last motion;
-      -- by default, <cr>/<bs> always goes forward/backward.
+      -- When true, repeat in the direction of the last motion
+      -- (by default, <cr>/<bs> always goes forward/backward).
       relative_directions = false,
       modes = {'n', 'x', 'o'},
     })

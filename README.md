@@ -11,8 +11,8 @@ very quickly, with near-zero mental overhead.
 
 ### How to use it (TL;DR)
 
-* Initiate the search in the current window (`s`) or in the other windows
-  (`S`), and start typing a 2-character pattern (`{char1}{char2}`).
+* Initiate the search in a given scope, and start typing a 2-character pattern
+  (`{char1}{char2}`).
 
 * After typing `{char1}`, you see "labels" appearing next to some pairs. This
   is just a **preview** - labels only get active after finishing the pattern.
@@ -26,12 +26,13 @@ very quickly, with near-zero mental overhead.
   more matches than available labels, you can move between groups with
   `<space>` and `<backspace>`.
 
-To move to the last character on a line, type `s{char}<space>`. To move to an
-empty line, type `s<space><space>`.
+To move to the last character on a line, type `{char}<space>`. To move to an
+empty line, type `<space><space>`.
 
-At any stage, `<enter>` jumps to the next/closest available target: `s<enter>`
-repeats the previous search; `s{char}<enter>` accepts the closest `{char}`
-match (it can be used as a multiline substitute for `fFtT` motions).
+At any stage, `<enter>` jumps to the next/closest available target: pressing
+`<enter>` right away repeats the previous search; `{char}<enter>` accepts the
+closest `{char}` match (can be used as a multiline substitute for `fFtT`
+motions).
 
 ### Why is this method cool?
 
@@ -95,9 +96,14 @@ orthogonal features, like:
 ### Installation
 
 Use your preferred plugin manager. No extra steps needed besides defining
-keybindings - to use the defaults, call
-`require('leap').set_default_mappings()`. For alternative key mappings and
-arrangements, see `:h leap-mappings`.
+keybindings - our recommended arrangement is:
+
+```
+vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
+vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
+```
+
+See `:h leap-mappings` for more.
 
 <details>
 <summary>Suggested additional tweaks</summary>
@@ -404,8 +410,6 @@ Visual mode
 
 * `s` = `c`
 * `S` = `Vc`, or `c` if already in linewise mode
-
-If you are not convinced, just head to `:h leap-mappings`.
 
 </details>
 

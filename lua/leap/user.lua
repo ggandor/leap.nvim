@@ -1,35 +1,14 @@
-local function set_default_mappings()
-  for _, _1_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap)", "Leap"}, {{"n"}, "S", "<Plug>(leap-from-window)", "Leap from window"}}) do
-    local modes = _1_[1]
-    local lhs = _1_[2]
-    local rhs = _1_[3]
-    local desc = _1_[4]
-    for _0, mode in ipairs(modes) do
-      local rhs_2a = vim.fn.mapcheck(lhs, mode)
-      if (rhs_2a == "") then
-        vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
-      else
-        if (rhs_2a ~= rhs) then
-          local msg = ("leap.nvim: set_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
-          vim.notify(msg, vim.log.levels.WARN)
-        else
-        end
-      end
-    end
-  end
-  return nil
-end
 local function with_traversal_keys(fwd_key, bwd_key)
   local leap = require("leap")
   local keys = vim.deepcopy(leap.opts.keys)
   local function with_key(t, key)
     local t0
     do
-      local _4_ = type(t)
-      if (_4_ == "table") then
+      local _1_ = type(t)
+      if (_1_ == "table") then
         t0 = t
       else
-        local _ = _4_
+        local _ = _1_
         t0 = {t}
       end
     end
@@ -65,19 +44,19 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
   local function leap_repeat(backward_invoc_3f)
     local leap = require("leap")
     local opts
-    local _8_
+    local _5_
     if backward_invoc_3f then
-      _8_ = bwd_key
+      _5_ = bwd_key
     else
-      _8_ = fwd_key
+      _5_ = fwd_key
     end
-    local _10_
+    local _7_
     if backward_invoc_3f then
-      _10_ = fwd_key
+      _7_ = fwd_key
     else
-      _10_ = bwd_key
+      _7_ = bwd_key
     end
-    opts = {keys = vim.tbl_extend("force", leap.opts.keys, {next_target = _8_, prev_target = _10_})}
+    opts = {keys = vim.tbl_extend("force", leap.opts.keys, {next_target = _5_, prev_target = _7_})}
     local backward
     if relative_directions_3f then
       if backward_invoc_3f then
@@ -90,26 +69,47 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
     end
     return leap.leap({["repeat"] = true, opts = opts, backward = backward})
   end
-  local function _14_()
+  local function _11_()
     return leap_repeat(false)
+  end
+  local _12_
+  if relative_directions_3f then
+    _12_ = "Repeat leap in the previous direction"
+  else
+    _12_ = "Repeat leap forward"
+  end
+  vim.keymap.set(modes, fwd_key, _11_, {silent = true, desc = _12_})
+  local function _14_()
+    return leap_repeat(true)
   end
   local _15_
   if relative_directions_3f then
-    _15_ = "Repeat leap in the previous direction"
+    _15_ = "Repeat leap in the opposite direction"
   else
-    _15_ = "Repeat leap forward"
+    _15_ = "Repeat leap backward"
   end
-  vim.keymap.set(modes, fwd_key, _14_, {silent = true, desc = _15_})
-  local function _17_()
-    return leap_repeat(true)
+  return vim.keymap.set(modes, bwd_key, _14_, {silent = true, desc = _15_})
+end
+local function set_default_mappings()
+  for _, _17_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap)", "Leap"}, {{"n"}, "S", "<Plug>(leap-from-window)", "Leap from window"}}) do
+    local modes = _17_[1]
+    local lhs = _17_[2]
+    local rhs = _17_[3]
+    local desc = _17_[4]
+    for _0, mode in ipairs(modes) do
+      local rhs_2a = vim.fn.mapcheck(lhs, mode)
+      if (rhs_2a == "") then
+        vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
+      else
+        if (rhs_2a ~= rhs) then
+          local msg = ("leap.nvim: set_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
+          vim.notify(msg, vim.log.levels.WARN)
+        else
+        end
+      end
+    end
   end
-  local _18_
-  if relative_directions_3f then
-    _18_ = "Repeat leap in the opposite direction"
-  else
-    _18_ = "Repeat leap backward"
-  end
-  return vim.keymap.set(modes, bwd_key, _17_, {silent = true, desc = _18_})
+  return nil
 end
 local function create_default_mappings()
   for _, _20_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
@@ -172,4 +172,4 @@ end
 local function _28_()
   return require("leap.util").get_focusable_windows()
 end
-return {set_default_mappings = set_default_mappings, with_traversal_keys = with_traversal_keys, set_repeat_keys = set_repeat_keys, get_enterable_windows = _27_, get_focusable_windows = _28_, create_default_mappings = create_default_mappings, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
+return {with_traversal_keys = with_traversal_keys, set_repeat_keys = set_repeat_keys, get_enterable_windows = _27_, get_focusable_windows = _28_, set_default_mappings = set_default_mappings, create_default_mappings = create_default_mappings, add_repeat_mappings = set_repeat_keys, add_default_mappings = add_default_mappings, set_default_keymaps = set_default_keymaps, setup = setup}
