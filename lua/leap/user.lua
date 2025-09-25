@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/user.fnl - do not edit directly.
+
 local function with_traversal_keys(fwd_key, bwd_key)
   local leap = require("leap")
   local keys = vim.deepcopy(leap.opts.keys)

@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/treesitter.fnl - do not edit directly.
+
 local api = vim.api
 local function get_nodes()
   if not pcall(vim.treesitter.get_parser) then

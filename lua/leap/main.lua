@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/main.fnl - do not edit directly.
+
 local hl = require("leap.highlight")
 local opts = require("leap.opts")
 local _local_1_ = require("leap.beacons")

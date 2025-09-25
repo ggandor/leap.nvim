@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/beacons.fnl - do not edit directly.
+
 local hl = require("leap.highlight")
 local opts = require("leap.opts")
 local api = vim.api

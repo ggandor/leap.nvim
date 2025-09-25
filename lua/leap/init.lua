@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/init.fnl - do not edit directly.
+
 local function _1_(_, k)
   if (k == "opts") then
     return require("leap.opts").default

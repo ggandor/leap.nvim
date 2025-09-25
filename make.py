@@ -2,6 +2,8 @@
 
 import glob
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 FNL_ROOT = 'fnl'
@@ -20,13 +22,17 @@ changes = False
 for src in fnlfiles:
     out = src.replace(FNL_ROOT, LUA_ROOT, 1).replace('.fnl', '.lua')
     if (not os.path.exists(out)
-            or os.path.getmtime(src) > os.path.getmtime(out)):
+            or os.path.getmtime(src) > os.path.getmtime(out)
+            or len(sys.argv) == 2 and sys.argv[1] == '--force'):
         changes = True
         # Create parent directories if they don't exist.
         Path(os.path.dirname(out)).mkdir(parents=True, exist_ok=True)
-        cmd = "fennel --compile " + src + " > " + out
-        print(cmd)
-        os.system(cmd)
+        cmd = ['fennel', '--compile', src]
+        print(' '.join(cmd))
+        compiled = subprocess.check_output(cmd, text=True)
+        with open(out, 'w') as f:
+            f.write(f'-- Code generated from {src} - do not edit directly.\n\n'
+                    + compiled)
 if not changes:
     print("nothing to compile")
 

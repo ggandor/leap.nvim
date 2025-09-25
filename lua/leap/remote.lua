@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/remote.fnl - do not edit directly.
+
 local api = vim.api
 local function action(kwargs)
   local kwargs0 = (kwargs or {})

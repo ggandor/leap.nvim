@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/search.fnl - do not edit directly.
+
 local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
 local get_cursor_pos = _local_1_["get-cursor-pos"]

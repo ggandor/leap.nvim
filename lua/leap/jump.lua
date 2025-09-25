@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/jump.fnl - do not edit directly.
+
 local api = vim.api
 local function cursor_before_eol_3f()
   return (vim.fn.search("\\_.", "Wn") ~= vim.fn.line("."))

@@ -1,3 +1,5 @@
+-- Code generated from fnl/leap/highlight.fnl - do not edit directly.
+
 local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
 local inc = _local_1_["inc"]
