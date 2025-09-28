@@ -317,9 +317,6 @@ char separately.
   (local multi-window-search? (and ?target-windows
                                    (> (length ?target-windows) 1)))
 
-  (local curr-win (api.nvim_get_current_win))
-  (local hl-affected-windows (or ?target-windows [curr-win]))
-
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
   (local mode (. (api.nvim_get_mode) :mode))
@@ -378,7 +375,6 @@ char separately.
   ; Exit macros
 
   (fn exit* []
-    (hl:cleanup hl-affected-windows)
     (exec-user-autocmds :LeapLeave))
 
   ; Be sure not to call this twice accidentally,
@@ -396,10 +392,10 @@ char separately.
 
   ; Misc. helpers
 
-  (fn with-highlight-chores [callback]
-    (hl:cleanup hl-affected-windows)
-    (when-not count
-      (hl:apply-backdrop backward? ?target-windows))
+  (fn redraw [callback]
+    (exec-user-autocmds :LeapRedraw)
+    ; Should be called after `LeapRedraw` - the idea is that callbacks
+    ; clean up after themselves on that event (next time, that is).
     (when callback (callback))
     (vim.cmd :redraw))
 
@@ -460,7 +456,7 @@ char separately.
         (set st.errmsg "no previous search")))
 
   (fn get-first-pattern-input []
-    (with-highlight-chores nil)
+    (redraw)
     (case (get-char-keymapped st.prompt)
       ; Here we can handle any other modifier key as "zeroth" input,
       ; if the need arises.
@@ -475,7 +471,7 @@ char separately.
     ; processing altogether, as we might want to do a char<enter>
     ; shortcut, but it implies not needing to show beacons.
     (when-not count
-      (with-highlight-chores #(light-up-beacons targets)))
+      (redraw #(light-up-beacons targets)))
     (get-char-keymapped st.prompt))
 
   (fn get-full-pattern-input []
@@ -541,7 +537,7 @@ char separately.
         (do
           ; Fill wininfo-s when not provided.
           (when-not (. targets* 1 :wininfo)
-            (local wininfo (. (vim.fn.getwininfo curr-win) 1))
+            (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
             (each [_ t (ipairs targets*)]
               (set t.wininfo wininfo)))
           targets*)))
@@ -656,7 +652,7 @@ char separately.
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
                             : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-      (with-highlight-chores
+      (redraw
         #(light-up-beacons targets start end)))
 
     (fn loop [first-invoc?]
@@ -707,7 +703,7 @@ char separately.
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
                             : use-no-labels?})
       (local (start end) (get-highlighted-idx-range targets use-no-labels?))
-      (with-highlight-chores
+      (redraw
         #(light-up-beacons targets start end)))
 
     (fn loop [idx first-invoc?]

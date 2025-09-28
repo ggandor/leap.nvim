@@ -1,69 +1,49 @@
 -- Code generated from fnl/leap/highlight.fnl - do not edit directly.
 
 local opts = require("leap.opts")
-local _local_1_ = require("leap.util")
-local inc = _local_1_["inc"]
-local dec = _local_1_["dec"]
-local get_cursor_pos = _local_1_["get-cursor-pos"]
 local api = vim.api
 local map = vim.tbl_map
-local function has_hl_group_3f(name)
-  return not vim.tbl_isempty(api.nvim_get_hl(0, {name = name}))
-end
-local M = {ns = api.nvim_create_namespace(""), extmarks = {}, group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
-M.cleanup = function(self, affected_windows)
-  for _, _2_ in ipairs(self.extmarks) do
-    local buf = _2_[1]
-    local id = _2_[2]
-    if api.nvim_buf_is_valid(buf) then
-      api.nvim_buf_del_extmark(buf, self.ns, id)
+local M = {group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
+local function get_search_ranges()
+  local ranges = {}
+  local args = require("leap").state.args
+  if args.target_windows then
+    for _, win in ipairs(args.target_windows) do
+      local wininfo = vim.fn.getwininfo(win)[1]
+      ranges[wininfo.bufnr] = {{(wininfo.topline - 1), 0}, {(wininfo.botline - 1), -1}}
+    end
+  else
+    local curline = (vim.fn.line(".") - 1)
+    local curcol = (vim.fn.col(".") - 1)
+    local wininfo = vim.fn.getwininfo(vim.fn.win_getid())[1]
+    if args.backward then
+      ranges[wininfo.bufnr] = {{(wininfo.topline - 1), 0}, {curline, curcol}}
     else
+      ranges[wininfo.bufnr] = {{curline, (curcol + 1)}, {(wininfo.botline - 1), -1}}
     end
   end
-  self.extmarks = {}
-  if has_hl_group_3f(self.group.backdrop) then
-    for _, win in ipairs(affected_windows) do
-      if api.nvim_win_is_valid(win) then
-        local wininfo = vim.fn.getwininfo(win)[1]
-        api.nvim_buf_clear_namespace(wininfo.bufnr, self.ns, dec(wininfo.topline), wininfo.botline)
+  return ranges
+end
+local function apply_backdrop(ranges, higroup)
+  local ns = vim.api.nvim_create_namespace("")
+  for buf, _3_ in pairs(ranges) do
+    local start = _3_[1]
+    local finish = _3_[2]
+    vim.hl.range(buf, ns, higroup, start, finish)
+  end
+  local function _4_()
+    for buf, _5_ in pairs(ranges) do
+      local start = _5_[1]
+      local finish = _5_[2]
+      if api.nvim_buf_is_valid(buf) then
+        vim.api.nvim_buf_clear_namespace(buf, ns, start[1], finish[1])
       else
       end
     end
-    return api.nvim_buf_clear_namespace(0, self.ns, dec(vim.fn.line("w0")), vim.fn.line("w$"))
-  else
-    return nil
+    return vim.api.nvim_buf_clear_namespace(0, ns, (vim.fn.line("w0") - 1), vim.fn.line("w$"))
   end
-end
-M["apply-backdrop"] = function(self, backward_3f, _3ftarget_windows)
-  if has_hl_group_3f(self.group.backdrop) then
-    if _3ftarget_windows then
-      for _, win in ipairs(_3ftarget_windows) do
-        local wininfo = vim.fn.getwininfo(win)[1]
-        vim.highlight.range(wininfo.bufnr, self.ns, self.group.backdrop, {dec(wininfo.topline), 0}, {dec(wininfo.botline), -1}, {priority = self.priority.backdrop})
-      end
-      return nil
-    else
-      local _let_6_ = map(dec, get_cursor_pos())
-      local curline = _let_6_[1]
-      local curcol = _let_6_[2]
-      local _let_7_ = map(dec, {vim.fn.line("w0"), vim.fn.line("w$")})
-      local win_top = _let_7_[1]
-      local win_bot = _let_7_[2]
-      local function _8_()
-        if backward_3f then
-          return {{win_top, 0}, {curline, curcol}}
-        else
-          return {{curline, inc(curcol)}, {win_bot, -1}}
-        end
-      end
-      local _let_9_ = _8_()
-      local start = _let_9_[1]
-      local finish = _let_9_[2]
-      return vim.highlight.range(0, self.ns, self.group.backdrop, start, finish, {priority = self.priority.backdrop})
-    end
-  else
-    return nil
-  end
+  vim.api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _4_})
+  return nil
 end
 local function __3ergb(n)
   local r = math.floor((n / 65536))
@@ -110,27 +90,27 @@ local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#
 M.init = function(self, force_3f)
   local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
-  local _15_
+  local _10_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _15_ = custom_def_maps["leap-label-default-light"]
+      _10_ = custom_def_maps["leap-label-default-light"]
     else
-      _15_ = custom_def_maps["leap-label-default-dark"]
+      _10_ = custom_def_maps["leap-label-default-dark"]
     end
   else
-    _15_ = {link = "IncSearch"}
+    _10_ = {link = "IncSearch"}
   end
-  local _18_
+  local _13_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _18_ = custom_def_maps["leap-match-default-light"]
+      _13_ = custom_def_maps["leap-match-default-light"]
     else
-      _18_ = custom_def_maps["leap-match-default-dark"]
+      _13_ = custom_def_maps["leap-match-default-dark"]
     end
   else
-    _18_ = {link = "Search"}
+    _13_ = {link = "Search"}
   end
-  defaults = {[self.group.label] = _15_, [self.group.match] = _18_}
+  defaults = {[self.group.label] = _10_, [self.group.match] = _13_}
   for group_name, def_map in pairs(vim.deepcopy(defaults)) do
     if not force_3f then
       def_map.default = true
@@ -138,11 +118,21 @@ M.init = function(self, force_3f)
     end
     api.nvim_set_hl(0, group_name, def_map)
   end
-  if force_3f then
-    vim.api.nvim_set_hl(0, self.group.backdrop, {link = "None"})
-  else
-  end
   set_label_dimmed()
-  return set_concealed_label_char()
+  set_concealed_label_char()
+  local has_backdrop_group_3f = not vim.tbl_isempty(api.nvim_get_hl(0, {name = self.group.backdrop}))
+  if has_backdrop_group_3f then
+    if force_3f then
+      return vim.api.nvim_set_hl(0, self.group.backdrop, {link = "None"})
+    else
+      local user = require("leap.user")
+      local function _17_()
+        return apply_backdrop(get_search_ranges(), self.group.backdrop)
+      end
+      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw"}, group = api.nvim_create_augroup("LeapDefault_Backdrop", {}), callback = _17_})
+    end
+  else
+    return nil
+  end
 end
 return M

@@ -1,21 +1,10 @@
 (local opts (require "leap.opts"))
 
-(local {: inc
-        : dec
-        : get-cursor-pos}
-       (require "leap.util"))
-
 (local api vim.api)
 (local map vim.tbl_map)
 
 
-(fn has-hl-group? [name]
-  (not (vim.tbl_isempty (api.nvim_get_hl 0 {: name}))))
-
-
-(local M {:ns (api.nvim_create_namespace "")
-          :extmarks []
-          :group {:label "LeapLabel"
+(local M {:group {:label "LeapLabel"
                   :label-dimmed "LeapLabelDimmed"
                   :match "LeapMatch"
                   :backdrop "LeapBackdrop"}
@@ -23,44 +12,43 @@
                      :backdrop 65534}})
 
 
-(fn M.cleanup [self affected-windows]
-  ; Clear beacons.
-  (each [_ [buf id] (ipairs self.extmarks)]
-    (when (api.nvim_buf_is_valid buf)
-      (api.nvim_buf_del_extmark buf self.ns id)))
-  (set self.extmarks [])
-  ; Clear backdrop.
-  (when (has-hl-group? self.group.backdrop)
-    (each [_ win (ipairs affected-windows)]
-      ; TODO: Edge case: what if the window has become invalid, but the
-      ;       buffer is still there?
-      (when (api.nvim_win_is_valid win)
+(fn get-search-ranges []
+  (local ranges [])
+  (local args (. (require "leap") :state :args))
+  (if args.target_windows
+      (each [_ win (ipairs args.target_windows)]
         (local wininfo (. (vim.fn.getwininfo win) 1))
-        (api.nvim_buf_clear_namespace
-          wininfo.bufnr self.ns (dec wininfo.topline) wininfo.botline)))
-    ; Safety measure for scrolloff > 0: we always clean up the current view too.
-    (api.nvim_buf_clear_namespace 0 self.ns
-                                  (dec (vim.fn.line "w0"))
-                                  (vim.fn.line "w$"))))
+        (set (. ranges wininfo.bufnr) [[(- wininfo.topline 1) 0]
+                                       [(- wininfo.botline 1) -1]]))
+      (let [curline (- (vim.fn.line ".") 1)
+            curcol (- (vim.fn.col ".") 1)
+            wininfo (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]
+        (set (. ranges wininfo.bufnr)
+             (if args.backward
+                 [[(- wininfo.topline 1) 0] [curline curcol]]
+                 [[curline (+ curcol 1)] [(- wininfo.botline 1) -1]]))))
+  ranges)
 
 
-(fn M.apply-backdrop [self backward? ?target-windows]
-  (when (has-hl-group? self.group.backdrop)
-    (if ?target-windows
-        (each [_ win (ipairs ?target-windows)]
-          (local wininfo (. (vim.fn.getwininfo win) 1))
-          (vim.highlight.range wininfo.bufnr self.ns self.group.backdrop
-                               [(dec wininfo.topline) 0]
-                               [(dec wininfo.botline) -1]
-                               {:priority self.priority.backdrop}))
-        (let [[curline curcol] (map dec (get-cursor-pos))
-              [win-top win-bot] (map dec [(vim.fn.line "w0") (vim.fn.line "w$")])
-              [start finish] (if backward?
-                                 [[win-top 0] [curline curcol]]
-                                 [[curline (inc curcol)] [win-bot -1]])]
-          ; Expects 0,0-indexed args; `finish` is exclusive.
-          (vim.highlight.range 0 self.ns self.group.backdrop start finish
-                               {:priority self.priority.backdrop})))))
+(fn apply-backdrop [ranges higroup]
+  (local ns (vim.api.nvim_create_namespace ""))
+  (each [buf [start finish] (pairs ranges)]
+    (vim.hl.range buf ns higroup start finish))
+  (vim.api.nvim_create_autocmd "User"
+    {:pattern ["LeapRedraw" "LeapLeave"]
+     :once true
+     :callback
+     (fn []
+       (each [buf [start finish] (pairs ranges)]
+         (when (api.nvim_buf_is_valid buf)
+           (vim.api.nvim_buf_clear_namespace buf ns (. start 1) (. finish 1))))
+       ; Safety measure for scrolloff > 0: we always clean up the
+       ; current view too.
+       (vim.api.nvim_buf_clear_namespace
+         0 ns (- (vim.fn.line "w0") 1) (vim.fn.line "w$")))})
+  ; When used as an autocmd callback, a truthy return value would remove
+  ; the autocommand itself (:h nvim_create_autocmd).
+  nil)
 
 
 (fn ->rgb [n]  ; n=(r+g+b), as returned by `nvim_get_hl`
@@ -150,12 +138,23 @@
         ; Set only as the default (fallback). (:h hi-default)
         (set def-map.default true))
       (api.nvim_set_hl 0 group-name def-map))
-    (when force?
-      ; Remove LeapBackdrop, if set.
-      (vim.api.nvim_set_hl 0 self.group.backdrop {:link "None"}))
     ; These should be done last, based on the actual group definitions.
     (set-label-dimmed)
-    (set-concealed-label-char)))
+    (set-concealed-label-char)
+
+    (local has-backdrop-group?
+      (not (vim.tbl_isempty (api.nvim_get_hl 0 {:name self.group.backdrop}))))
+    (when has-backdrop-group?
+      (if force? (vim.api.nvim_set_hl 0 self.group.backdrop {:link "None"})
+          (let [user (require "leap.user")]
+            ; Note: The autocommand will not be removed on a subsequent
+            ; `force?`d call (it will apply None to the areas).
+            (api.nvim_create_autocmd "User"
+              {:pattern ["LeapRedraw"]
+               :group (api.nvim_create_augroup "LeapDefault_Backdrop" {})
+               :callback (fn []
+                           (apply-backdrop
+                             (get-search-ranges) self.group.backdrop))}))))))
 
 
 M

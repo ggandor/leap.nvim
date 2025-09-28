@@ -168,33 +168,51 @@ local function resolve_conflicts(targets)
   end
   return nil
 end
-local function light_up_beacon(target, endpos_3f)
-  local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
-  local lnum = _let_24_[1]
-  local col = _let_24_[2]
-  local buf = target.wininfo.bufnr
-  local offset = target.beacon[1]
-  local opts_2a = target.beacon[2]
-  local opts0 = vim.tbl_extend("keep", opts_2a, {virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false})
-  local id = api.nvim_buf_set_extmark(buf, hl.ns, (lnum - 1), (col + -1 + offset), opts0)
-  return table.insert(hl.extmarks, {buf, id})
-end
-local function light_up_beacons(targets, _3fstart, _3fend)
-  if (not opts.on_beacons or (opts.on_beacons(targets, _3fstart, _3fend) ~= false)) then
-    for i = (_3fstart or 1), (_3fend or #targets) do
-      local target = targets[i]
-      if target.beacon then
-        light_up_beacon(target)
-        if target.endpos then
-          light_up_beacon(target, true)
+local light_up_beacons
+do
+  local ns = api.nvim_create_namespace("")
+  local extmarks = {}
+  local function light_up_beacon(target, endpos_3f)
+    local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
+    local lnum = _let_24_[1]
+    local col = _let_24_[2]
+    local buf = target.wininfo.bufnr
+    local offset = target.beacon[1]
+    local opts_2a = target.beacon[2]
+    local opts0 = vim.tbl_extend("keep", opts_2a, {virt_text_pos = (opts.virt_text_pos or "overlay"), hl_mode = "combine", priority = hl.priority.label, strict = false})
+    local id = api.nvim_buf_set_extmark(buf, ns, (lnum - 1), (col + -1 + offset), opts0)
+    return table.insert(extmarks, {buf, id})
+  end
+  local function _25_(targets, _3fstart, _3fend)
+    if (not opts.on_beacons or (opts.on_beacons(targets, _3fstart, _3fend) ~= false)) then
+      for i = (_3fstart or 1), (_3fend or #targets) do
+        local target = targets[i]
+        if target.beacon then
+          light_up_beacon(target)
+          if target.endpos then
+            light_up_beacon(target, true)
+          else
+          end
         else
         end
-      else
       end
+      local function _28_()
+        for _, _29_ in ipairs(extmarks) do
+          local buf = _29_[1]
+          local id = _29_[2]
+          if api.nvim_buf_is_valid(buf) then
+            api.nvim_buf_del_extmark(buf, ns, id)
+          else
+          end
+        end
+        extmarks = {}
+        return nil
+      end
+      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _28_})
+    else
+      return nil
     end
-    return nil
-  else
-    return nil
   end
+  light_up_beacons = _25_
 end
 return {["set-beacons"] = set_beacons, ["resolve-conflicts"] = resolve_conflicts, ["light-up-beacons"] = light_up_beacons}

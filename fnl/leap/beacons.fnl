@@ -202,33 +202,45 @@ an autojump. (In short: always err on the safe side.)
               (set (. unlabeled-match-positions (->key col-ch2)) target)))))))
 
 
-(fn light-up-beacon [target endpos?]
-  (let [[lnum col] (or (and endpos? target.endpos) target.pos)
-        buf target.wininfo.bufnr
-        [offset opts*] target.beacon
-        opts (vim.tbl_extend :keep opts*
-               {:virt_text_pos (or opts.virt_text_pos "overlay")
-                :strict false
-                :hl_mode "combine"
-                :priority hl.priority.label})]
-    (local id (api.nvim_buf_set_extmark
-                buf hl.ns (- lnum 1) (+ col -1 offset) opts))
+(local light-up-beacons
+  (do
+    (local ns (api.nvim_create_namespace ""))
     ; Register each newly set extmark in a table, so that we can delete
     ; them one by one, without needing any further contextual
     ; information. This is relevant if we process user-given targets and
     ; have no knowledge about the boundaries of the search area.
-    (table.insert hl.extmarks [buf id])))
+    (var extmarks [])
 
+    (fn light-up-beacon [target endpos?]
+      (let [[lnum col] (or (and endpos? target.endpos) target.pos)
+            buf target.wininfo.bufnr
+            [offset opts*] target.beacon
+            opts (vim.tbl_extend :keep opts*
+                   {:virt_text_pos (or opts.virt_text_pos "overlay")
+                    :strict false
+                    :hl_mode "combine"
+                    :priority hl.priority.label})]
+        (local id (api.nvim_buf_set_extmark
+                    buf ns (- lnum 1) (+ col -1 offset) opts))
+        (table.insert extmarks [buf id])))
 
-(fn light-up-beacons [targets ?start ?end]
-  (when (or (not opts.on_beacons)
-            (not= (opts.on_beacons targets ?start ?end) false))
-    (for [i (or ?start 1) (or ?end (length targets))]
-      (local target (. targets i))
-      (when target.beacon
-        (light-up-beacon target)
-        (when target.endpos
-          (light-up-beacon target true))))))
+    (fn [targets ?start ?end]
+      (when (or (not opts.on_beacons)
+                (not= (opts.on_beacons targets ?start ?end) false))
+        (for [i (or ?start 1) (or ?end (length targets))]
+          (local target (. targets i))
+          (when target.beacon
+            (light-up-beacon target)
+            (when target.endpos
+              (light-up-beacon target true))))
+        (api.nvim_create_autocmd "User"
+          {:pattern ["LeapRedraw" "LeapLeave"]
+           :once true
+           :callback (fn []
+                       (each [_ [buf id] (ipairs extmarks)]
+                         (when (api.nvim_buf_is_valid buf)
+                           (api.nvim_buf_del_extmark buf ns id)))
+                       (set extmarks []))})))))
 
 
 {: set-beacons
