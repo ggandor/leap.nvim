@@ -1,7 +1,6 @@
 (local opts (require "leap.opts"))
 
 (local api vim.api)
-(local map vim.tbl_map)
 
 
 (local M {:group {:label "LeapLabel"

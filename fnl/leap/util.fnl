@@ -1,7 +1,6 @@
 (local opts (require "leap.opts"))
 
 (local api vim.api)
-(local filter vim.tbl_filter)
 
 ; Mind that lua string.lower/upper are ASCII only.
 (local lower vim.fn.tolower)
@@ -27,12 +26,13 @@
 (fn get-enterable-windows []
   (let [wins (api.nvim_tabpage_list_wins 0)
         curr-win (api.nvim_get_current_win)]
-    (filter #(let [config (api.nvim_win_get_config $)]
-               (and config.focusable
-                    ; Exclude auto-closing hover popups (e.g. LSP) (#137).
-                    (= config.relative "")
-                    (not= $ curr-win)))
-            wins)))
+    (vim.tbl_filter
+      #(let [config (api.nvim_win_get_config $)]
+         (and config.focusable
+              ; Exclude auto-closing hover popups (e.g. LSP) (#137).
+              (= config.relative "")
+              (not= $ curr-win)))
+      wins)))
 
 
 (fn get-focusable-windows []

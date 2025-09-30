@@ -2,7 +2,6 @@
 (local opts (require "leap.opts"))
 
 (local api vim.api)
-(local map vim.tbl_map)
 
 
 ; "Beacon" is an umbrella term for any kind of visual overlay tied to

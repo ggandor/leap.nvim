@@ -20,7 +20,6 @@
 
 (local api vim.api)
 (local empty? vim.tbl_isempty)
-(local map vim.tbl_map)
 (local {: abs : ceil : floor : min} math)
 
 
@@ -342,8 +341,9 @@ char separately.
   (local keys (setmetatable {}
                 {:__index (fn [_ k]
                             (case (. opts.keys k)
-                              v (map vim.keycode
-                                     (if (= (type v) :string) [v] v))))}))
+                              v (vim.tbl_map
+                                  vim.keycode
+                                  (if (= (type v) :string) [v] v))))}))
   ; The first key on a `keys` list is considered "safe" (not to be used
   ; as search input).
   (local contains? vim.list_contains)

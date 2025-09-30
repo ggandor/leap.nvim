@@ -2,7 +2,6 @@
 
 local opts = require("leap.opts")
 local api = vim.api
-local filter = vim.tbl_filter
 local lower = vim.fn.tolower
 local upper = vim.fn.toupper
 local function inc(x)
@@ -33,7 +32,7 @@ local function get_enterable_windows()
     local config = api.nvim_win_get_config(_241)
     return (config.focusable and (config.relative == "") and (_241 ~= curr_win))
   end
-  return filter(_2_, wins)
+  return vim.tbl_filter(_2_, wins)
 end
 local function get_focusable_windows()
   return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}

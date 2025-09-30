@@ -3,7 +3,6 @@
 local hl = require("leap.highlight")
 local opts = require("leap.opts")
 local api = vim.api
-local map = vim.tbl_map
 local function set_beacon_to_match_hl(target)
   local _local_1_ = target["chars"]
   local ch1 = _local_1_[1]

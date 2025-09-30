@@ -17,7 +17,6 @@ local get_char = _local_2_["get-char"]
 local get_char_keymapped = _local_2_["get-char-keymapped"]
 local api = vim.api
 local empty_3f = vim.tbl_isempty
-local map = vim.tbl_map
 local abs = math["abs"]
 local ceil = math["ceil"]
 local floor = math["floor"]
@@ -286,7 +285,7 @@ local function leap(kwargs)
           return v
         end
       end
-      return map(vim.keycode, _39_())
+      return vim.tbl_map(vim.keycode, _39_())
     else
       return nil
     end

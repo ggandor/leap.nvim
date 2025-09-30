@@ -2,7 +2,6 @@
 
 local opts = require("leap.opts")
 local api = vim.api
-local map = vim.tbl_map
 local M = {group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", match = "LeapMatch", backdrop = "LeapBackdrop"}, priority = {label = 65535, backdrop = 65534}}
 local function get_search_ranges()
   local ranges = {}
