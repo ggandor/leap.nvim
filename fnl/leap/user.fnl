@@ -5,29 +5,27 @@
 `keys.next_target`, `keys.prev_target`, and `safe_labels` set
 appropriately."
   (local leap (require "leap"))
-  (local keys (vim.deepcopy leap.opts.keys))
 
   (fn with-key [t key]
     (local t (case (type t) :table t _ [t]))
     (table.insert t key)
     t)
 
+  (local keys (vim.deepcopy leap.opts.keys))
   (local keys* {:next_target (with-key keys.next_target fwd-key)
                 :prev_target (with-key keys.prev_target bwd-key)})
 
   ; Remove the "prev" key from `safe_labels`, and use the "next" key as
   ; the first label.
+  ; NOTE: support for tables is deprecated.
   (var safe-labels (vim.deepcopy leap.opts.safe_labels))
-  (when (= (type safe-labels) :string)
-    (set safe-labels (vim.fn.split safe-labels "\\zs")))
-
-  (local safe-labels*
-         (icollect [_ l (ipairs safe-labels) :into [fwd-key]]
-           (when (and (not= l fwd-key) (not= l bwd-key))
-             l)))
+  (when (= (type safe-labels) :table)
+    (set safe-labels (table.concat safe-labels)))
+  (set safe-labels (.. fwd-key
+                       (safe-labels:gsub (.. "[" fwd-key bwd-key "]") "")))
 
   {:keys keys*
-   :safe_labels safe-labels*})
+   :safe_labels safe-labels})
 
 
 (fn set-repeat-keys [fwd-key bwd-key opts*]

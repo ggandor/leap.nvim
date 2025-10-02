@@ -16,7 +16,6 @@ local get_representative_char = _local_2_["get-representative-char"]
 local get_char = _local_2_["get-char"]
 local get_char_keymapped = _local_2_["get-char-keymapped"]
 local api = vim.api
-local empty_3f = vim.tbl_isempty
 local abs = math["abs"]
 local ceil = math["ceil"]
 local floor = math["floor"]
@@ -108,17 +107,17 @@ do
     end
   end
   local function set_autojump(targets)
-    if not empty_3f(opts.safe_labels) then
-      targets["autojump?"] = (empty_3f(opts.labels) or (#opts.safe_labels >= dec(#targets)))
+    if (opts.safe_labels ~= "") then
+      targets["autojump?"] = ((opts.labels == "") or (#opts.safe_labels >= dec(#targets)))
       return nil
     else
       return nil
     end
   end
   local function attach_label_set(targets)
-    if empty_3f(opts.labels) then
+    if (opts.labels == "") then
       targets["label-set"] = opts.safe_labels
-    elseif empty_3f(opts.safe_labels) then
+    elseif (opts.safe_labels == "") then
       targets["label-set"] = opts.labels
     elseif targets["autojump?"] then
       targets["label-set"] = opts.safe_labels
@@ -142,11 +141,11 @@ do
         if (i >= 1) then
           local _17_ = (i % _7clabel_set_7c)
           if (_17_ == 0) then
-            target.label = label_set[_7clabel_set_7c]
+            target.label = label_set:sub(_7clabel_set_7c, _7clabel_set_7c)
             target.group = floor((i / _7clabel_set_7c))
           elseif (nil ~= _17_) then
             local n = _17_
-            target.label = label_set[n]
+            target.label = label_set:sub(n, n)
             target.group = inc(floor((i / _7clabel_set_7c)))
           else
           end
@@ -229,20 +228,20 @@ local function leap(kwargs)
   end
   for _, t in ipairs({"default", "current_call"}) do
     for _0, k in ipairs({"labels", "safe_labels"}) do
-      if (type(opts[t][k]) == "string") then
-        opts[t][k] = vim.fn.split(opts[t][k], "\\zs")
+      if (type(opts[t][k]) == "table") then
+        opts[t][k] = table.concat(opts[t][k])
       else
       end
     end
   end
   local directional_3f = not target_windows
-  local no_labels_to_use_3f = (empty_3f(opts.labels) and empty_3f(opts.safe_labels))
+  local no_labels_to_use_3f = ((opts.labels == "") and (opts.safe_labels == ""))
   if (not directional_3f and no_labels_to_use_3f) then
     echo("no labels to use")
     return
   else
   end
-  if (target_windows and empty_3f(target_windows)) then
+  if (target_windows and vim.tbl_isempty(target_windows)) then
     echo("no targetable windows")
     return
   else
@@ -680,7 +679,7 @@ local function leap(kwargs)
           t.label = nil
         end
         return nil
-      elseif not empty_3f(opts.safe_labels) then
+      elseif (opts.safe_labels ~= "") then
         local last_labeled = inc(#opts.safe_labels)
         for i = inc(last_labeled), #targets do
           targets[i]["label"] = nil

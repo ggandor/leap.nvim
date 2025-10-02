@@ -238,20 +238,16 @@ Example configuration: >lua
     These should be keys that you never use right after leaping (e.g. a search
     command), so that we can trigger |leap-autojump| whenever this list covers
     the rest of the matches. Any other key "falls through" to Normal mode.
+    Setting the list to `''` effectively disables the autojump feature.
 
-    Can be a string or a table. Setting it to `''` or `{}` effectively
-    disables the autojump feature.
-
-    Note: Operator-pending mode ignores this, and tries to use
-    |leap.opts.labels|, since we should select the final target right away.
+    Note: Operator-pending mode only checks this if |leap.opts.labels| is
+    empty, since we should select the final target right away.
 
                                                               *leap.opts.labels*
 `labels = 'sfnjklhodweimbuyvrgtaqpcxz/SFNJKLHODWEIMBUYVRGTAQPCXZ?'`
 
     Target labels to be used when there are more matches than
-    |leap.opts.safe_labels| plus one.
-
-    Can be a string or a table. Setting it to `''` or `{}` forces
+    |leap.opts.safe_labels| plus one. Setting the list to `''` forces
     |leap-autojump| to always be on. In that case, do not forget to set
     |leap.opts.keys.next_group| to something "safe" too.
 

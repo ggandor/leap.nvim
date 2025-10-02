@@ -19,7 +19,6 @@
        (require "leap.util"))
 
 (local api vim.api)
-(local empty? vim.tbl_isempty)
 (local {: abs : ceil : floor : min} math)
 
 
@@ -159,14 +158,14 @@ char separately.
         (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
 
     (fn set-autojump [targets]
-      (when-not (empty? opts.safe_labels)
+      (when (not= opts.safe_labels "")
         (set targets.autojump?
-             (or (empty? opts.labels)                                       ; forced
+             (or (= opts.labels "")                                         ; forced
                  (>= (length opts.safe_labels) (dec (length targets)))))))  ; smart
 
     (fn attach-label-set [targets]
-      (set targets.label-set (if (empty? opts.labels) opts.safe_labels
-                                 (empty? opts.safe_labels) opts.labels
+      (set targets.label-set (if (= opts.labels "") opts.safe_labels
+                                 (= opts.safe_labels "") opts.labels
                                  targets.autojump? opts.safe_labels
                                  opts.labels)))
 
@@ -180,10 +179,10 @@ char separately.
           (when (>= i 1)
             (case (% i |label-set|)
               0 (do
-                  (set target.label (. label-set |label-set|))
+                  (set target.label (label-set:sub |label-set| |label-set|))
                   (set target.group (floor (/ i |label-set|))))
               n (do
-                  (set target.label (. label-set n))
+                  (set target.label (label-set:sub n n))
                   (set target.group (inc (floor (/ i |label-set|))))))))))
 
     (fn [targets force-noautojump? multi-window-search?]
@@ -294,20 +293,22 @@ char separately.
             ; Prevent merging with the defaults, as this is derived
             ; programmatically from a list-like option (see opts.fnl).
             (setmetatable {:merge false})))
-  ; Force the label lists into tables.
+
+  ; Force the label lists into strings (table support is deprecated).
   (each [_ t (ipairs [:default :current_call])]
     (each [_ k (ipairs [:labels :safe_labels])]
-      (when (= (type (. opts t k)) :string)
-        (set (. opts t k) (vim.fn.split (. opts t k) "\\zs")))))
+      (when (= (type (. opts t k)) :table)
+        (set (. opts t k)
+             (table.concat (. opts t k))))))
 
   (local directional? (not target-windows))
-  (local no-labels-to-use? (and (empty? opts.labels)
-                                (empty? opts.safe_labels)))
+  (local no-labels-to-use? (and (= opts.labels "")
+                                (= opts.safe_labels "")))
 
   (when (and (not directional?) no-labels-to-use?)
     (echo "no labels to use")
     (lua :return))
-  (when (and target-windows (empty? target-windows))
+  (when (and target-windows (vim.tbl_isempty target-windows))
     (echo "no targetable windows")
     (lua :return))
 
@@ -694,7 +695,7 @@ char separately.
             (set t.label nil))
 
           ; Remove all the subsequent label groups if needed.
-          (not (empty? opts.safe_labels))
+          (not= opts.safe_labels "")
           (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
             (for [i (inc last-labeled) (length targets)]
               (set (. targets i :label) nil)

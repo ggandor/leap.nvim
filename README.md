@@ -476,7 +476,7 @@ See [Extending Leap](#extending-leap) for more.
 <summary>Disable auto-jumping to the first match</summary>
 
 ```lua
-require('leap').opts.safe_labels = {}
+require('leap').opts.safe_labels = ''
 ```
 
 </details>
@@ -485,7 +485,7 @@ require('leap').opts.safe_labels = {}
 <summary>Force auto-jumping to the first match</summary>
 
 ```lua
-require('leap').opts.labels = {}
+require('leap').opts.labels = ''
 ```
 
 </details>
@@ -603,12 +603,7 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
         -- We want "safe" labels, but no auto-jump (as the search
         -- command already does that), so just use `safe_labels`
         -- as `labels`, with n/N removed.
-        local safe_labels = require('leap').opts.safe_labels
-        if type(safe_labels) == 'string' then
-          safe_labels = vim.fn.split(safe_labels, '\\zs')
-        end
-        local labels = vim.tbl_filter(function (l) return l:match('[^nN]') end,
-                                      safe_labels)
+        local labels = require('leap').opts.safe_labels:gsub('[nN]', '')
         -- For `pattern` search, we never need to adjust conceallevel
         -- (no user input).
         local vim_opts = require('leap').opts.vim_opts
@@ -676,8 +671,7 @@ do
           -- 'incsearch'.
           safe_labels = (cmdline_mode and not vim.o.incsearch) and ''
             -- Keep n/N usable in any case.
-            or vim.tbl_filter(function (l) return l:match('[^nN]') end,
-                              leap.opts.safe_labels),
+            or leap.opts.safe_labels:gsub('[nN]', ''),
         }
       }
       -- You might want to switch off the highlights after leaping.
@@ -712,8 +706,8 @@ do
       -- To limit search scope to the current line:
       -- pattern = function (pat) return '\\%.l'..pat end,
       opts = {
-        labels = {},  -- force autojump
-        safe_labels = vim.fn.mode(1):match('o') and {} or nil,  -- [1]
+        labels = '',  -- force autojump
+        safe_labels = vim.fn.mode(1):match('o') and '' or nil,  -- [1]
         case_sensitive = true,                                  -- [2]
       },
     }
