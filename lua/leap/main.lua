@@ -264,7 +264,7 @@ local function leap(kwargs)
   else
     count = vim.v.count
   end
-  local keyboard_input_3f = not (invoked_repeat_3f or invoked_dot_repeat_3f or (type(user_given_pattern) == "string") or user_given_targets)
+  local keyboard_input_3f = not (invoked_repeat_3f or invoked_dot_repeat_3f or (inputlen == 0) or (type(user_given_pattern) == "string") or user_given_targets)
   local inputlen0
   if inputlen then
     inputlen0 = inputlen

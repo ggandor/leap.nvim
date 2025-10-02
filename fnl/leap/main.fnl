@@ -328,6 +328,7 @@ char separately.
 
   (local keyboard-input? (not (or invoked-repeat?
                                   invoked-dot-repeat?
+                                  (= inputlen 0)
                                   (= (type user-given-pattern) :string)
                                   user-given-targets)))
 
