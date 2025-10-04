@@ -145,9 +145,6 @@ local function select(kwargs)
   local leap = require("leap")
   local op_mode_3f = vim.fn.mode(true):match("o")
   local inc_select_3f = not op_mode_3f
-  local keys = vim.deepcopy(leap.opts.keys)
-  keys.next_target = vim.fn.flatten(vim.list_extend({";"}, {keys.next_target}))
-  keys.prev_target = vim.fn.flatten(vim.list_extend({","}, {keys.prev_target}))
   local ok_3f, context = pcall(require, "treesitter-context")
   local context_3f = (ok_3f and context.enabled())
   if context_3f then
@@ -166,7 +163,7 @@ local function select(kwargs)
   else
     _24_ = nil
   end
-  leap.leap({target_windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline", keys = keys})})
+  leap.leap({target_windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline"})})
   if inc_select_3f then
     clear_fill()
   else
