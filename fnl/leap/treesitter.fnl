@@ -80,17 +80,16 @@
   (pcall api.nvim__redraw {:flush true}))  ; EXPERIMENTAL
 
 
-(local ns (api.nvim_create_namespace ""))
-
-(fn clear-fill []
-  (api.nvim_buf_clear_namespace 0 ns 0 -1))
-
 ; Fill the gap left by the cursor (which is down on the command line).
 ; Note: redrawing the cursor with nvim__redraw() is not a satisfying
 ; solution, since the cursor might still appear in a wrong place
 ; (thanks to inline labels).
 (fn fill-cursor-pos [targets start-idx]
-  (clear-fill)
+  (local ns (api.nvim_create_namespace ""))
+  (vim.api.nvim_create_autocmd "User"
+    {:pattern ["LeapRedraw" "LeapLeave"] :once true
+     :callback (fn [] (api.nvim_buf_clear_namespace 0 ns 0 -1))})
+
   (let [[line col] [(vim.fn.line ".") (vim.fn.col ".")]
         line-str (vim.fn.getline line)
         ch-at-curpos (vim.fn.strpart line-str (- col 1) 1 true)
@@ -119,9 +118,7 @@
       {:virt_text [[text :Visual]]
        :virt_text_pos "overlay"
        :virt_text_win_col (when conflict? (+ col shift -1))
-       :hl_mode "combine"}))
-  ; Continue with the native function body.
-  true)
+       :hl_mode "combine"})))
 
 
 (fn select [kwargs]
@@ -143,7 +140,6 @@
                          :on_beacons (when inc-select? fill-cursor-pos)
                          :virt_text_pos "inline"})})
 
-    (when inc-select? (clear-fill))
     (when context? (context.enable))))
 
 

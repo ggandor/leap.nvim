@@ -81,64 +81,61 @@ local function select_range(target)
   vim.cmd("normal! o")
   return pcall(api.nvim__redraw, {flush = true})
 end
-local ns = api.nvim_create_namespace("")
-local function clear_fill()
-  return api.nvim_buf_clear_namespace(0, ns, 0, -1)
-end
 local function fill_cursor_pos(targets, start_idx)
-  clear_fill()
-  do
-    local line,col = vim.fn.line("."), vim.fn.col(".")
-    local line_str = vim.fn.getline(line)
-    local ch_at_curpos = vim.fn.strpart(line_str, (col - 1), 1, true)
-    local text
-    if (ch_at_curpos == "") then
-      text = " "
-    else
-      text = ch_at_curpos
-    end
-    local conflict_3f
-    do
-      local _13_ = targets[start_idx]
-      if ((_G.type(_13_) == "table") and ((_G.type(_13_.pos) == "table") and (nil ~= _13_.pos[1]) and (nil ~= _13_.pos[2]))) then
-        local line_2a = _13_.pos[1]
-        local col_2a = _13_.pos[2]
-        conflict_3f = ((line_2a == line) and (col_2a == col))
-      else
-        conflict_3f = nil
-      end
-    end
-    local shift = 1
-    if conflict_3f then
-      local loop_3f = true
-      local idx = (start_idx + 1)
-      while loop_3f do
-        local _15_ = targets[idx]
-        if (_15_ == nil) then
-          loop_3f = false
-        elseif ((_G.type(_15_) == "table") and ((_G.type(_15_.pos) == "table") and (nil ~= _15_.pos[1]) and true)) then
-          local line_2a = _15_.pos[1]
-          local _ = _15_.pos[2]
-          if (line_2a == line) then
-            shift = (shift + 1)
-            idx = (idx + 1)
-          else
-            loop_3f = false
-          end
-        else
-        end
-      end
-    else
-    end
-    local _19_
-    if conflict_3f then
-      _19_ = (col + shift + -1)
-    else
-      _19_ = nil
-    end
-    api.nvim_buf_set_extmark(0, ns, (line - 1), (col - 1), {virt_text = {{text, "Visual"}}, virt_text_pos = "overlay", virt_text_win_col = _19_, hl_mode = "combine"})
+  local ns = api.nvim_create_namespace("")
+  local function _12_()
+    return api.nvim_buf_clear_namespace(0, ns, 0, -1)
   end
-  return true
+  vim.api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _12_})
+  local line,col = vim.fn.line("."), vim.fn.col(".")
+  local line_str = vim.fn.getline(line)
+  local ch_at_curpos = vim.fn.strpart(line_str, (col - 1), 1, true)
+  local text
+  if (ch_at_curpos == "") then
+    text = " "
+  else
+    text = ch_at_curpos
+  end
+  local conflict_3f
+  do
+    local _14_ = targets[start_idx]
+    if ((_G.type(_14_) == "table") and ((_G.type(_14_.pos) == "table") and (nil ~= _14_.pos[1]) and (nil ~= _14_.pos[2]))) then
+      local line_2a = _14_.pos[1]
+      local col_2a = _14_.pos[2]
+      conflict_3f = ((line_2a == line) and (col_2a == col))
+    else
+      conflict_3f = nil
+    end
+  end
+  local shift = 1
+  if conflict_3f then
+    local loop_3f = true
+    local idx = (start_idx + 1)
+    while loop_3f do
+      local _16_ = targets[idx]
+      if (_16_ == nil) then
+        loop_3f = false
+      elseif ((_G.type(_16_) == "table") and ((_G.type(_16_.pos) == "table") and (nil ~= _16_.pos[1]) and true)) then
+        local line_2a = _16_.pos[1]
+        local _ = _16_.pos[2]
+        if (line_2a == line) then
+          shift = (shift + 1)
+          idx = (idx + 1)
+        else
+          loop_3f = false
+        end
+      else
+      end
+    end
+  else
+  end
+  local _20_
+  if conflict_3f then
+    _20_ = (col + shift + -1)
+  else
+    _20_ = nil
+  end
+  return api.nvim_buf_set_extmark(0, ns, (line - 1), (col - 1), {virt_text = {{text, "Visual"}}, virt_text_pos = "overlay", virt_text_win_col = _20_, hl_mode = "combine"})
 end
 local function select(kwargs)
   local kwargs0 = (kwargs or {})
@@ -151,23 +148,19 @@ local function select(kwargs)
     context.disable()
   else
   end
-  local _22_
+  local _23_
   if inc_select_3f then
-    _22_ = ""
+    _23_ = ""
   else
-    _22_ = nil
+    _23_ = nil
   end
-  local _24_
+  local _25_
   if inc_select_3f then
-    _24_ = fill_cursor_pos
+    _25_ = fill_cursor_pos
   else
-    _24_ = nil
+    _25_ = nil
   end
-  leap.leap({windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline"})})
-  if inc_select_3f then
-    clear_fill()
-  else
-  end
+  leap.leap({windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _23_, on_beacons = _25_, virt_text_pos = "inline"})})
   if context_3f then
     return context.enable()
   else
