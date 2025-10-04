@@ -163,7 +163,7 @@ local function select(kwargs)
   else
     _24_ = nil
   end
-  leap.leap({target_windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline"})})
+  leap.leap({windows = {api.nvim_get_current_win()}, targets = get_targets, action = select_range, traversal = inc_select_3f, opts = vim.tbl_extend("keep", (kwargs0.opts or {}), {labels = _22_, on_beacons = _24_, virt_text_pos = "inline"})})
   if inc_select_3f then
     clear_fill()
   else

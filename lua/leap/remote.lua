@@ -32,7 +32,7 @@ local function action(kwargs)
     else
       _2_ = nil
     end
-    return leap({opts = _2_, target_windows = util.get_focusable_windows()})
+    return leap({opts = _2_, windows = util.get_focusable_windows()})
   end
   local jumper0 = (jumper or default_jumper)
   local function cursor_moved_3f()

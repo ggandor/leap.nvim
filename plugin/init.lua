@@ -1,12 +1,11 @@
 local plug_mappings = {
-  -- Default
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap)',
     function ()
       require('leap').leap {
-        target_windows = { vim.api.nvim_get_current_win() },
-        inclusive_op = true
+        windows = { vim.api.nvim_get_current_win() },
+        inclusive = true
       }
     end
   },
@@ -15,35 +14,33 @@ local plug_mappings = {
     '<Plug>(leap-from-window)',
     function ()
       require('leap').leap {
-        target_windows = require('leap.util').get_enterable_windows()
+        windows = require('leap.util').get_enterable_windows()
       }
     end
   },
-
-  -- Alternative
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-anywhere)',
     function ()
       require('leap').leap {
-        target_windows = require('leap.util').get_focusable_windows()
+        windows = require('leap.util').get_focusable_windows()
       }
     end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-forward)',
-    function () require('leap').leap { inclusive_op = true } end
-  },
-  {
-    { 'n', 'x', 'o' },
-    '<Plug>(leap-forward-till)',
-    function () require('leap').leap { offset = -1, inclusive_op = true } end
+    function () require('leap').leap { inclusive = true } end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-backward)',
     function () require('leap').leap { backward = true } end
+  },
+  {
+    { 'n', 'x', 'o' },
+    '<Plug>(leap-forward-till)',
+    function () require('leap').leap { offset = -1, inclusive = true } end
   },
   {
     { 'n', 'x', 'o' },
@@ -70,7 +67,7 @@ local plug_mappings = {
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-forward-x)',
-    function () require('leap').leap { offset = 1, inclusive_op = true } end
+    function () require('leap').leap { offset = 1, inclusive = true } end
   },
   {
     { 'n', 'x', 'o' },

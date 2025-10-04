@@ -72,7 +72,7 @@ local function jump_to_21(_9_, _10_)
   local mode = _10_["mode"]
   local offset = _10_["offset"]
   local backward_3f = _10_["backward?"]
-  local inclusive_op_3f = _10_["inclusive-op?"]
+  local inclusive_3f = _10_["inclusive?"]
   local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
@@ -87,7 +87,7 @@ local function jump_to_21(_9_, _10_)
     add_offset_21(offset)
   else
   end
-  if (op_mode_3f and inclusive_op_3f and not backward_3f) then
+  if (op_mode_3f and inclusive_3f and not backward_3f) then
     simulate_inclusive_op_21(mode)
   else
   end

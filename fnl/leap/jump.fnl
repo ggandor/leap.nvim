@@ -76,7 +76,7 @@ the API), make the motion appear to behave as an inclusive one."
                : mode
                : offset
                : backward?
-               : inclusive-op?}]
+               : inclusive?}]
   (local op-mode? (mode:match :o))
   (when add-to-jumplist?
     ; Note: <C-o> will ignore this on the same line (neovim#9874).
@@ -87,7 +87,7 @@ the API), make the motion appear to behave as an inclusive one."
   ; Set cursor.
   (api.nvim_win_set_cursor 0 [lnum (- col 1)])  ; (1,1) -> (1,0)
   (when offset (add-offset! offset))
-  (when (and op-mode? inclusive-op? (not backward?))
+  (when (and op-mode? inclusive? (not backward?))
     ; Since Vim interprets our jump as exclusive (:h exclusive), we need
     ; custom tweaks to behave as inclusive. (This is only relevant in
     ; the forward direction, as inclusiveness applies to the end of the

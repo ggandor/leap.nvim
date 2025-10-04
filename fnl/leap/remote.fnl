@@ -44,7 +44,7 @@
       ; jumper.
       (leap {:opts (when (or input (not= mode "n"))
                      {:safe_labels ""})
-             :target_windows (util.get_focusable_windows)})))
+             :windows (util.get_focusable_windows)})))
 
   (local jumper (or jumper default-jumper))
 

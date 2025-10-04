@@ -133,7 +133,7 @@
     (local context? (and ok? (context.enabled)))
     (when context? (context.disable))
 
-    (leap.leap {:target_windows [(api.nvim_get_current_win)]
+    (leap.leap {:windows [(api.nvim_get_current_win)]
                 :targets get-targets
                 :action select-range
                 :traversal inc-select?  ; allow traversal for the custom action

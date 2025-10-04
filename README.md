@@ -456,7 +456,7 @@ Basic template:
 ```lua
 local function remote_action ()
   require('leap').leap {
-    target_windows = require('leap.user').get_focusable_windows(),
+    windows = require('leap.user').get_focusable_windows(),
     action = function (target)
       local winid = target.wininfo.winid
       local lnum, col = unpack(target.pos)  -- 1/1-based indexing!
@@ -611,7 +611,7 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
 
         require('leap').leap {
           pattern = vim.fn.getreg('/'),  -- last search pattern
-          target_windows = { vim.fn.win_getid() },
+          windows = { vim.fn.win_getid() },
           opts = { safe_labels = '', labels = labels, vim_opts = vim_opts, }
         }
       end)
@@ -702,7 +702,7 @@ do
   local function as_ft (key_specific_args)
     local common_args = {
       inputlen = 1,
-      inclusive_op = true,
+      inclusive = true,
       -- To limit search scope to the current line:
       -- pattern = function (pat) return '\\%.l'..pat end,
       opts = {
@@ -764,7 +764,7 @@ vim.keymap.set({'n', 'x', 'o'}, '|', function ()
 
   require('leap').leap {
     pattern = pattern,
-    target_windows = { vim.fn.win_getid() },
+    windows = { vim.fn.win_getid() },
     opts = { safe_labels = '' }
   }
 end)

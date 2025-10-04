@@ -227,22 +227,22 @@ local function rank(targets, cursor_positions, src_win)
 end
 local function get_targets(pattern, _33_)
   local backward_3f = _33_["backward?"]
+  local windows = _33_["windows"]
   local offset = _33_["offset"]
   local op_mode_3f = _33_["op-mode?"]
-  local target_windows = _33_["target-windows"]
   local inputlen = _33_["inputlen"]
-  local whole_window_3f = target_windows
+  local whole_window_3f = windows
   local src_win = api.nvim_get_current_win()
-  local target_windows0 = (target_windows or {src_win})
+  local windows0 = (windows or {src_win})
   local curr_win_only_3f
-  if ((_G.type(target_windows0) == "table") and (target_windows0[1] == src_win) and (target_windows0[2] == nil)) then
+  if ((_G.type(windows0) == "table") and (windows0[1] == src_win) and (windows0[2] == nil)) then
     curr_win_only_3f = true
   else
     curr_win_only_3f = nil
   end
   local cursor_positions = {[src_win] = get_cursor_pos()}
   local targets = {}
-  for _, win in ipairs(target_windows0) do
+  for _, win in ipairs(windows0) do
     if not curr_win_only_3f then
       api.nvim_set_current_win(win)
     else

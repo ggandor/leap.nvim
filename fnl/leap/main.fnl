@@ -214,7 +214,7 @@ char separately.
                        ; For when wanting to repeat in relative direction
                        ; (for "outside" use only).
                        :backward nil
-                       :inclusive_op nil
+                       :inclusive nil
                        :offset nil
                        :inputlen nil
                        :opts nil}
@@ -224,7 +224,7 @@ char separately.
                            :in2 nil
                            :target_idx nil
                            :backward nil
-                           :inclusive_op nil
+                           :inclusive nil
                            :offset nil
                            :inputlen nil
                            :opts nil}
@@ -239,9 +239,15 @@ char separately.
 
 (fn leap [kwargs]
   "Entry point for Leap motions."
+  ; Handle deprecated field names.
+  ; Note: Keep the legacy fields too, do not break user autocommands.
+  (when kwargs.target_windows
+    (set kwargs.windows kwargs.target_windows))
+  (when kwargs.inclusive_op
+    (set kwargs.inclusive kwargs.inclusive_op))
   (local {:repeat invoked-repeat?
           :dot_repeat invoked-dot-repeat?
-          :target_windows target-windows
+          : windows
           :opts user-given-opts
           :targets user-given-targets
           :action user-given-action
@@ -250,7 +256,7 @@ char separately.
   (local {:backward backward?}
          (if invoked-dot-repeat? state.dot_repeat
              kwargs))
-  (local {:inclusive_op inclusive-op?
+  (local {:inclusive inclusive?
           : offset
           : inputlen
           :pattern user-given-pattern}
@@ -291,21 +297,18 @@ char separately.
         (set (. opts t k)
              (table.concat (. opts t k))))))
 
-  (local directional? (not target-windows))
+  (local directional? (not windows))
   (local no-labels-to-use? (and (= opts.labels "")
                                 (= opts.safe_labels "")))
 
   (when (and (not directional?) no-labels-to-use?)
     (echo "no labels to use")
     (lua :return))
-  (when (and target-windows (vim.tbl_isempty target-windows))
+  (when (and windows (vim.tbl_isempty windows))
     (echo "no targetable windows")
     (lua :return))
 
-  (local ?target-windows target-windows)
-
-  (local multi-window-search? (and ?target-windows
-                                   (> (length ?target-windows) 1)))
+  (local multi-window-search? (and windows (> (length windows) 1)))
 
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
@@ -512,8 +515,7 @@ char separately.
   (fn get-targets [pattern in1 ?in2]
     (let [errmsg (if in1 (.. "not found: " in1 (or ?in2 "")) "no targets")
           search (require :leap.search)
-          kwargs {: backward? : offset : op-mode? : inputlen
-                  :target-windows ?target-windows}
+          kwargs {: backward? : windows : offset : op-mode? : inputlen}
           targets (search.get-targets pattern kwargs)]
       (or targets (set st.errmsg errmsg))))
 
@@ -549,7 +551,7 @@ char separately.
 
   (local repeat-state {:offset kwargs.offset
                        :backward kwargs.backward
-                       :inclusive_op kwargs.inclusive_op
+                       :inclusive kwargs.inclusive
                        :pattern kwargs.pattern
                        :inputlen inputlen
                        :opts opts-current-call})
@@ -625,7 +627,7 @@ char separately.
                         : offset
                         :backward? (or backward?
                                        (and target.idx (< target.idx 0)))
-                        : inclusive-op?})
+                        : inclusive?})
         (set first-jump? false))))
 
   (local do-action (or user-given-action jump-to!))
@@ -917,7 +919,9 @@ char separately.
   (var saved-vim-opts {})
 
   (fn set-vim-opts [t]
-    (let [wins (or (. state.args :target_windows) [(api.nvim_get_current_win)])]
+    (let [wins (or (. state.args :windows)
+                   (. state.args :target_windows)  ; deprecated
+                   [(api.nvim_get_current_win)])]
       (set saved-vim-opts {})
       (each [opt val (pairs t)]
         (let [[scope name] (vim.split opt "." {:plain true})]

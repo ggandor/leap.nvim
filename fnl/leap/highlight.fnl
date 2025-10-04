@@ -14,8 +14,10 @@
 (fn get-search-ranges []
   (local ranges [])
   (local args (. (require "leap") :state :args))
-  (if args.target_windows
-      (each [_ win (ipairs args.target_windows)]
+  (local windows (or args.windows
+                     args.target_windows))  ; deprecated
+  (if windows
+      (each [_ win (ipairs windows)]
         (local wininfo (. (vim.fn.getwininfo win) 1))
         (set (. ranges wininfo.bufnr) [[(- wininfo.topline 1) 0]
                                        [(- wininfo.botline 1) -1]]))

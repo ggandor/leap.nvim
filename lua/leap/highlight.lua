@@ -6,8 +6,9 @@ local M = {group = {label = "LeapLabel", ["label-dimmed"] = "LeapLabelDimmed", m
 local function get_search_ranges()
   local ranges = {}
   local args = require("leap").state.args
-  if args.target_windows then
-    for _, win in ipairs(args.target_windows) do
+  local windows = (args.windows or args.target_windows)
+  if windows then
+    for _, win in ipairs(windows) do
       local wininfo = vim.fn.getwininfo(win)[1]
       ranges[wininfo.bufnr] = {{(wininfo.topline - 1), 0}, {(wininfo.botline - 1), -1}}
     end

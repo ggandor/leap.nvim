@@ -206,22 +206,23 @@ in-window pairs that match `pattern`, in the order of discovery."
                           (or curr-line-fwd-bonus 0))))))
 
 
-(fn get-targets [pattern {: backward? : offset : op-mode? : target-windows : inputlen}]
-  (let [whole-window? target-windows
+(fn get-targets [pattern {: backward? : windows : offset : op-mode? : inputlen}]
+  (let [whole-window? windows
         src-win (api.nvim_get_current_win)
-        target-windows (or target-windows [src-win])
-        curr-win-only? (match target-windows [src-win nil] true)
+        windows (or windows [src-win])
+        curr-win-only? (match windows [src-win nil] true)
         cursor-positions {src-win (get-cursor-pos)}
         targets []]
-    (each [_ win (ipairs target-windows)]
+    (each [_ win (ipairs windows)]
       (when (not curr-win-only?)
         (api.nvim_set_current_win win))
       (when whole-window?
         (set (. cursor-positions win) (get-cursor-pos)))
       ; Fill up the provided `targets`, instead of returning a new table.
-      (get-targets-in-current-window pattern targets
-                                     {: backward? : offset : whole-window? : inputlen
-                                      :skip-curpos? (= win src-win)}))
+      (get-targets-in-current-window
+        pattern targets
+        {: backward? : offset : whole-window? : inputlen
+         :skip-curpos? (= win src-win)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win src-win))
     (when (not (empty? targets))
