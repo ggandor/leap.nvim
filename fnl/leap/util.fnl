@@ -68,6 +68,17 @@
       (char-list-to-branching-regexp)))          ; --> '\\(a\\|á\\|ä\\)'
 
 
+; Return a char->equivalence-class lookup table.
+(fn to-membership-lookup [eqv-classes]
+  (let [res {}]
+    (each [_ cl (ipairs eqv-classes)]
+      ; Do not use `vim.split`, it doesn't handle multibyte chars.
+      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
+        (each [_ ch (ipairs cl*)]
+          (set (. res ch) cl*))))
+    res))
+
+
 ; Input
 
 (local <bs> (vim.keycode "<bs>"))
@@ -150,5 +161,6 @@ sequenced."
  :get_focusable_windows get-focusable-windows
  : char-to-search-pattern
  : get-representative-char
+ : to-membership-lookup
  : get-char
  : get-char-keymapped}

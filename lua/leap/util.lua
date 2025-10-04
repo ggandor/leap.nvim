@@ -83,6 +83,21 @@ end
 local function char_to_search_pattern(char)
   return char_list_to_branching_regexp((get_equivalence_class(char) or {char}))
 end
+local function to_membership_lookup(eqv_classes)
+  local res = {}
+  for _, cl in ipairs(eqv_classes) do
+    local cl_2a
+    if (type(cl) == "string") then
+      cl_2a = vim.fn.split(cl, "\\zs")
+    else
+      cl_2a = cl
+    end
+    for _0, ch in ipairs(cl_2a) do
+      res[ch] = cl_2a
+    end
+  end
+  return res
+end
 local _3cbs_3e = vim.keycode("<bs>")
 local _3ccr_3e = vim.keycode("<cr>")
 local _3cesc_3e = vim.keycode("<esc>")
@@ -115,17 +130,17 @@ local function get_char_keymapped(prompt)
       elseif (matching_rhs == candidate_rhs) then
         return accept(matching_rhs)
       else
-        local _11_, _12_ = get_char()
-        if (_11_ == _3cbs_3e) then
-          local function _13_()
+        local _12_, _13_ = get_char()
+        if (_12_ == _3cbs_3e) then
+          local function _14_()
             if (_7cseq_7c >= 2) then
               return seq:sub(1, dec(_7cseq_7c))
             else
               return seq
             end
           end
-          return loop(_13_())
-        elseif (_11_ == _3ccr_3e) then
+          return loop(_14_())
+        elseif (_12_ == _3ccr_3e) then
           if (matching_rhs ~= "") then
             return accept(matching_rhs)
           elseif (_7cseq_7c == 1) then
@@ -133,8 +148,8 @@ local function get_char_keymapped(prompt)
           else
             return loop(seq)
           end
-        elseif (nil ~= _11_) then
-          local ch = _11_
+        elseif (nil ~= _12_) then
+          local ch = _12_
           return loop((seq .. ch))
         else
           return nil
@@ -148,14 +163,14 @@ local function get_char_keymapped(prompt)
     return get_char()
   else
     echo_prompt()
-    local _18_ = loop(get_char())
-    if (nil ~= _18_) then
-      local input = _18_
+    local _19_ = loop(get_char())
+    if (nil ~= _19_) then
+      local input = _19_
       return input, prompt0
     else
-      local _ = _18_
+      local _ = _19_
       return echo("")
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["char-to-search-pattern"] = char_to_search_pattern, ["get-representative-char"] = get_representative_char, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}
+return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["char-to-search-pattern"] = char_to_search_pattern, ["get-representative-char"] = get_representative_char, ["to-membership-lookup"] = to_membership_lookup, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}

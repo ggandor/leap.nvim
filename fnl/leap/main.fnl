@@ -14,6 +14,7 @@
         : echo
         : char-to-search-pattern
         : get-representative-char
+        : to-membership-lookup
         : get-char
         : get-char-keymapped}
        (require "leap.util"))
@@ -59,17 +60,6 @@ interrupted change operation."
     (pcall vim.fn.repeat#setreg seq vim.v.register)
     ; Note: we're feeding count inside the seq itself.
     (pcall vim.fn.repeat#set seq -1)))
-
-
-; Return a char->equivalence-class lookup table (the relevant one for us).
-(fn to-membership-lookup [eqv-classes]
-  (let [res {}]
-    (each [_ cl (ipairs eqv-classes)]
-      ; Do not use `vim.split`, it doesn't handle multibyte chars.
-      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
-        (each [_ ch (ipairs cl*)]
-          (set (. res ch) cl*))))
-    res))
 
 
 ; Processing targets ///1
