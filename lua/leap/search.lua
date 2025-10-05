@@ -2,21 +2,13 @@
 
 local opts = require("leap.opts")
 local _local_1_ = require("leap.util")
+local get_horizontal_bounds = _local_1_["get-horizontal-bounds"]
 local get_cursor_pos = _local_1_["get-cursor-pos"]
 local get_representative_char = _local_1_["get-representative-char"]
 local api = vim.api
 local abs = math["abs"]
 local max = math["max"]
 local pow = math["pow"]
-local function get_horizontal_bounds()
-  local window_width = api.nvim_win_get_width(0)
-  local textoff = vim.fn.getwininfo(api.nvim_get_current_win())[1].textoff
-  local offset_in_win = (vim.fn.wincol() - 1)
-  local offset_in_editable_win = (offset_in_win - textoff)
-  local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
-  local right_bound = (left_bound + (window_width - textoff - 1))
-  return {left_bound, right_bound}
-end
 local function get_match_positions(pattern, bounds, _2_)
   local backward_3f = _2_["backward?"]
   local whole_window_3f = _2_["whole-window?"]

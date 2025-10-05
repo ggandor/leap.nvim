@@ -4,12 +4,6 @@ local opts = require("leap.opts")
 local api = vim.api
 local lower = vim.fn.tolower
 local upper = vim.fn.toupper
-local function inc(x)
-  return (x + 1)
-end
-local function dec(x)
-  return (x - 1)
-end
 local function clamp(x, min, max)
   if (x < min) then
     return min
@@ -36,6 +30,15 @@ local function get_enterable_windows()
 end
 local function get_focusable_windows()
   return {vim.api.nvim_get_current_win(), unpack(get_enterable_windows())}
+end
+local function get_horizontal_bounds()
+  local window_width = api.nvim_win_get_width(0)
+  local textoff = vim.fn.getwininfo(api.nvim_get_current_win())[1].textoff
+  local offset_in_win = (vim.fn.wincol() - 1)
+  local offset_in_editable_win = (offset_in_win - textoff)
+  local left_bound = (vim.fn.virtcol(".") - offset_in_editable_win)
+  local right_bound = (left_bound + (window_width - textoff - 1))
+  return {left_bound, right_bound}
 end
 local function get_equivalence_class(ch)
   if opts.case_sensitive then
@@ -173,4 +176,4 @@ local function get_char_keymapped(prompt)
     end
   end
 end
-return {inc = inc, dec = dec, clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["char-to-search-pattern"] = char_to_search_pattern, ["get-representative-char"] = get_representative_char, ["to-membership-lookup"] = to_membership_lookup, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}
+return {clamp = clamp, echo = echo, ["get-cursor-pos"] = get_cursor_pos, get_enterable_windows = get_enterable_windows, get_focusable_windows = get_focusable_windows, ["get-horizontal-bounds"] = get_horizontal_bounds, ["char-to-search-pattern"] = char_to_search_pattern, ["get-representative-char"] = get_representative_char, ["to-membership-lookup"] = to_membership_lookup, ["get-char"] = get_char, ["get-char-keymapped"] = get_char_keymapped}

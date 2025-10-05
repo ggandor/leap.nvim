@@ -1,35 +1,12 @@
 (local opts (require "leap.opts"))
 
-(local {: get-cursor-pos
+(local {: get-horizontal-bounds
+        : get-cursor-pos
         : get-representative-char}
        (require "leap.util"))
 
 (local api vim.api)
 (local {: abs : max : pow} math)
-
-
-(fn get-horizontal-bounds []
-  "Return the first an last visible virtual column of the editable
-window area.
-
-+----------------------+
-|XXXX                  |
-|XXXX     C            |
-|XXXX                  |
-+----------------------+
- [--------------------]  window-width
- [--]                    textoff (e.g. foldcolumn)
- (--------]              offset-in-win
-     (----]              offset-in-editable-win
-"
-  (let [window-width (api.nvim_win_get_width 0)
-        textoff (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1 :textoff)
-        offset-in-win (- (vim.fn.wincol) 1)
-        offset-in-editable-win (- offset-in-win textoff)
-        ; Screen column of the first visible column in the editable area.
-        left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
-        right-bound (+ left-bound (- window-width textoff 1))]
-    [left-bound right-bound]))
 
 
 (fn get-match-positions [pattern bounds {: backward? : whole-window?}]
@@ -229,6 +206,6 @@ window area.
       targets)))
 
 
-{: get-horizontal-bounds
- : get-match-positions
+{: get-horizontal-bounds  ; flit.nvim
+ : get-match-positions    ; flit.nvim
  : get-targets}

@@ -8,9 +8,7 @@
         : light-up-beacons}
         (require "leap.beacons"))
 
-(local {: inc
-        : dec
-        : clamp
+(local {: clamp
         : echo
         : char-to-search-pattern
         : get-representative-char
@@ -23,10 +21,11 @@
 (local {: abs : ceil : floor : min} math)
 
 
-; Fennel utils ///1
+; Macros ///1
 
-(macro when-not [cond ...]
-  `(when (not ,cond) ,...))
+(macro inc [x] `(+ ,x 1))
+(macro dec [x] `(- ,x 1))
+(macro when-not [cond ...] `(when (not ,cond) ,...))
 
 
 ; Utils ///1
@@ -62,10 +61,48 @@ interrupted change operation."
     (pcall vim.fn.repeat#set seq -1)))
 
 
+; Search pattern ///1
+
+; NOTE: If preview (two-step processing) is enabled, for any kind of
+; input mapping (case-insensitivity, character classes, etc.) we need to
+; tweak things in two different places:
+;   1. For the first input, we modify the search pattern itself (here).
+;   2. For the second input, we play with the sublist keys (see
+;   `populate-sublists`).
+
+(fn prepare-pattern [in1 ?in2]
+  "Transform user input to the appropriate search pattern."
+  (let [any-char "\\_."  ; :help /\_.
+        pat1 (char-to-search-pattern in1)
+        pat2 (if (= inputlen 1) ""
+                 ?in2 (char-to-search-pattern ?in2)
+                 any-char)
+        ; If `\n\n` is a possible sequence to appear, add `|\n` as a
+        ; separate branch after the whole pattern, to make our
+        ; convenience feature - targeting EOL positions by typing the
+        ; newline alias twice - work.
+        ; This hack is always necessary when we already have the full
+        ; pattern (like repeating the previous search), but also for
+        ; two-step processing, in the special case of targeting EOF.
+        ; (Normally, `get-targets` would take care of this situation,
+        ; but the pattern `\n\_.` does not match `\n$` if it's on the
+        ; last line of the file.)
+        ; NOTE: This should be checked on the expanded patterns (once
+        ; equivalence classes have been taken into account).
+        |<nl> (if (and (pat1:match "\\n")
+                       (or (pat2:match "\\n")
+                           (= pat2 any-char)))
+                  "\\|\\n"
+                  "")
+        ic (if opts.case_sensitive "\\C" "\\c")]
+    (.. "\\V" ic pat1 pat2 |<nl>)))
+
+
 ; Processing targets ///1
 
 ; Might be skipped, if two-step processing is disabled.
 
+; SEE the comment above `prepare-pattern`.
 (fn populate-sublists [targets]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
@@ -75,13 +112,6 @@ char.
 { T1, T2, T3, T4 } =>
 { T1, T2, T3, T4, sublists = { a = { T1, T3 }, b = { T2 }, c = { T4 } } }
 "
-  ; NOTE: If preview (two-step processing) is enabled, for any kind of
-  ; input mapping (case-insensitivity, character classes, etc.) we need
-  ; to tweak things in two different places:
-  ;   1. For the first input, we modify the search pattern itself (see
-  ;   `prepare-pattern`).
-  ;   2. For the second input, we play with the sublist keys (here).
-
   ; Setting a metatable to handle case insensitivity and equivalence
   ; classes (in both cases: multiple keys -> one value).
   ; If `ch` is not found, try to get a sublist belonging to some common
@@ -182,6 +212,25 @@ char.
         (set-autojump targets))
       (attach-label-set targets)
       (set-labels targets))))
+
+
+(fn normalize-directional-indexes [targets]
+  "Like: -7 -4 -2  1  3  7 => -3 -2 -1  1  2  3"
+  (local bwd [])
+  (local fwd [])
+  (each [_ t (ipairs targets)]
+    (if (< t.idx 0)
+        (table.insert bwd t.idx)
+        (table.insert fwd t.idx)))
+  (table.sort bwd #(> $1 $2))
+  (table.sort fwd)
+  (local new-idx {})
+  (collect [i idx (ipairs bwd) &into new-idx]
+    (values idx (- i)))
+  (collect [i idx (ipairs fwd) &into new-idx]
+    (values idx i))
+  (each [_ t (ipairs targets)]
+    (set t.idx (. new-idx t.idx))))
 
 
 ; Main ///1
@@ -456,39 +505,6 @@ char.
 
   ; Get targets
 
-  ; NOTE: If preview (two-step processing) is enabled, for any kind of
-  ; input mapping (case-insensitivity, character classes, etc.) we need
-  ; to tweak things in two different places:
-  ;   1. For the first input, we modify the search pattern itself (here).
-  ;   2. For the second input, we play with the sublist keys (see
-  ;   `populate-sublists`).
-  (fn prepare-pattern [in1 ?in2]
-    "Transform user input to the appropriate search pattern."
-    (let [any-char "\\_."  ; :help /\_.
-          pat1 (char-to-search-pattern in1)
-          pat2 (if (= inputlen 1) ""
-                   ?in2 (char-to-search-pattern ?in2)
-                   any-char)
-          ; If `\n\n` is a possible sequence to appear, add `|\n` as a
-          ; separate branch after the whole pattern, to make our
-          ; convenience feature - targeting EOL positions by typing the
-          ; newline alias twice - work.
-          ; This hack is always necessary when we already have the full
-          ; pattern (like repeating the previous search), but also for
-          ; two-step processing, in the special case of targeting EOF.
-          ; (Normally, `get-targets` would take care of this situation,
-          ; but the pattern `\n\_.` does not match `\n$` if it's on the
-          ; last line of the file.)
-          ; NOTE: This should be checked on the expanded patterns (once
-          ; equivalence classes have been taken into account).
-          |<nl> (if (and (pat1:match "\\n")
-                         (or (pat2:match "\\n")
-                             (= pat2 any-char)))
-                    "\\|\\n"
-                    "")
-          ic (if opts.case_sensitive "\\C" "\\c")]
-      (.. "\\V" ic pat1 pat2 |<nl>)))
-
   (fn get-targets [pattern in1 ?in2]
     (let [errmsg (if in1 (.. "not found: " in1 (or ?in2 "")) "no targets")
           search (require :leap.search)
@@ -566,25 +582,6 @@ char.
     (when dot-repeatable-call?
       (update-dot-repeat-state)
       (set-dot-repeat*)))
-
-
-  (fn normalize-directional-indexes [targets]
-    "Like: -7 -4 -2  1  3  7 => -3 -2 -1  1  2  3"
-    (local bwd [])
-    (local fwd [])
-    (each [_ t (ipairs targets)]
-      (if (< t.idx 0)
-          (table.insert bwd t.idx)
-          (table.insert fwd t.idx)))
-    (table.sort bwd #(> $1 $2))
-    (table.sort fwd)
-    (local new-idx {})
-    (collect [i idx (ipairs bwd) &into new-idx]
-      (values idx (- i)))
-    (collect [i idx (ipairs fwd) &into new-idx]
-      (values idx i))
-    (each [_ t (ipairs targets)]
-      (set t.idx (. new-idx t.idx))))
 
   ; Jump
 

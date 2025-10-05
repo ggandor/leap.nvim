@@ -7,10 +7,6 @@
 (local upper vim.fn.toupper)
 
 
-(fn inc [x] (+ x 1))
-
-(fn dec [x] (- x 1))
-
 (fn clamp [x min max]
   (if (< x min) min
       (> x max) max
@@ -37,6 +33,30 @@
 
 (fn get-focusable-windows []
   [(vim.api.nvim_get_current_win) (unpack (get-enterable-windows))])
+
+
+(fn get-horizontal-bounds []
+  "Return the first an last visible virtual column of the editable
+window area.
+
++----------------------+
+|XXXX                  |
+|XXXX     C            |
+|XXXX                  |
++----------------------+
+ [--------------------]  window-width
+ [--]                    textoff (e.g. foldcolumn)
+ (--------]              offset-in-win
+     (----]              offset-in-editable-win
+"
+  (let [window-width (api.nvim_win_get_width 0)
+        textoff (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1 :textoff)
+        offset-in-win (- (vim.fn.wincol) 1)
+        offset-in-editable-win (- offset-in-win textoff)
+        ; Screen column of the first visible column in the editable area.
+        left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
+        right-bound (+ left-bound (- window-width textoff 1))]
+    [left-bound right-bound]))
 
 
 ; Equivalence classes
@@ -152,13 +172,12 @@ sequenced."
           _ (echo "")))))
 
 
-{: inc
- : dec
- : clamp
+{: clamp
  : echo
  : get-cursor-pos
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
+ : get-horizontal-bounds
  : char-to-search-pattern
  : get-representative-char
  : to-membership-lookup
