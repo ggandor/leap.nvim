@@ -69,19 +69,11 @@ interrupted change operation."
 (fn populate-sublists [targets]
   "Populate a sub-table in `targets` containing lists that allow for
 easy iteration through each subset of targets with a given successor
-char separately.
+char.
 
-  ab  ac  ab  ab  ac  ac  ad  ac
-{ T1, T2, T3, T4, T5, T6, T7, T8 }
--->
-{
-  T1, T2, T3, T4, T5, T6, T7, T8,
-  sublists = {
-    ['b'] = { T1, T3, T4 },
-    ['c'] = { T2, T5, T6, T8 },
-    ['d'] = { T7 }
-  },
-}
+  xa  xb  xa  xc
+{ T1, T2, T3, T4 } =>
+{ T1, T2, T3, T4, sublists = { a = { T1, T3 }, b = { T2 }, c = { T4 } } }
 "
   ; NOTE: If preview (two-step processing) is enabled, for any kind of
   ; input mapping (case-insensitivity, character classes, etc.) we need
@@ -109,8 +101,6 @@ char separately.
       (set (. targets.sublists ch2) []))
     (table.insert (. targets.sublists ch2) target)))
 
-
-; `targets` might be a sublist of an original target list from here on.
 
 (local prepare-labeled-targets
   (do
@@ -148,18 +138,28 @@ char separately.
         (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
 
     (fn set-autojump [targets]
+      "Set a flag indicating whether we can automatically jump to the
+      first target, without having to select a label."
       (when (not= opts.safe_labels "")
         (set targets.autojump?
              (or (= opts.labels "")                                         ; forced
                  (>= (length opts.safe_labels) (dec (length targets)))))))  ; smart
 
     (fn attach-label-set [targets]
+      ; Note that there is no one-to-one correspondence between the
+      ; `autojump?` flag and this field. No-autojump might be forced
+      ; implicitly, regardless of using safe labels.
       (set targets.label-set (if (= opts.labels "") opts.safe_labels
                                  (= opts.safe_labels "") opts.labels
                                  targets.autojump? opts.safe_labels
                                  opts.labels)))
 
     (fn set-labels [targets]
+      "Assign a label to each target, by repeating the given label set
+      indefinitely, and register the number of the label group the
+      target is part of.
+      Note that these are once-and-for-all fixed attributes, regardless
+      of the actual UI state ('beacons')."
       (when-not (and (= (length targets) 1) targets.autojump?)
         (local {: autojump? : label-set} targets)
         (local |label-set| (length label-set))
@@ -175,30 +175,9 @@ char separately.
                   (set target.label (label-set:sub n n))
                   (set target.group (inc (floor (/ i |label-set|))))))))))
 
-    (fn [targets force-noautojump? multi-window-search?]
-      "Set the following attributes for `targets`:
-
-      `autojump?`: A flag indicating whether we should autojump to the
-                   first target, without having to select a label.
-      `label-set`: a field referencing the label set to be used for
-                   `targets` (safe or unsafe). Note that there is no
-                   one-to-one correspondence between the `autojump?`
-                   flag and this field. No-autojump might be forced
-                   implicitly, regardless of using safe labels.
-
-      Set the following attributes for each individual target:
-
-      `label`: Label characters are assigned by using the given
-               `label-set` repeated indefinitely. Note that this is a
-               once and for all fixed attribute - whether and how the
-               labels should actually be displayed depends on other
-               parts of the code.
-      `group`: Number of the label group (also a fixed attribute - the
-               actual state is followed in `st.group-offset` in
-               `leap`)."
+    (fn [targets force-noautojump? multi-window?]
       (when-not (or force-noautojump?
-                    (and multi-window-search?
-                         (not (all-in-the-same-window? targets)))
+                    (and multi-window? (not (all-in-the-same-window? targets)))
                     (first-target-covers-label-of-second? targets))
         (set-autojump targets))
       (attach-label-set targets)
@@ -304,11 +283,9 @@ char separately.
   (when (and (not directional?) no-labels-to-use?)
     (echo "no labels to use")
     (lua :return))
-  (when (and windows (vim.tbl_isempty windows))
+  (when (and windows (= (length windows) 0))
     (echo "no targetable windows")
     (lua :return))
-
-  (local multi-window-search? (and windows (> (length windows) 1)))
 
   ; We need to save the mode here, because the `:normal` command in
   ; `jump.jump-to!` can change the state. See vim/vim#9332.
@@ -539,13 +516,14 @@ char separately.
   ; Sets `autojump` and `label_set` attributes for the target list, plus
   ; `label` and `group` attributes for each individual target.
   (fn prepare-labeled-targets* [targets]
-    (local force-noautojump? (and (not action-can-traverse?)
-                                  (or
-                                    ; No jump, doing sg else.
-                                    user-given-action
-                                    ; Should be able to select our target.
-                                    (and op-mode? (> (length targets) 1)))))
-    (prepare-labeled-targets targets force-noautojump? multi-window-search?))
+    (let [force-noautojump? (and (not action-can-traverse?)
+                                 (or
+                                   ; No jump, doing sg else.
+                                   user-given-action
+                                   ; Should be able to select our target.
+                                   (and op-mode? (> (length targets) 1))))
+          multi-window? (and windows (> (length windows) 1))]
+      (prepare-labeled-targets targets force-noautojump? multi-window?)))
 
   ; Repeat
 
@@ -590,13 +568,8 @@ char separately.
       (set-dot-repeat*)))
 
 
-  (fn normalize-indexes-for-dot-repeat [targets]
-    "On a filtered sublist, update the directional indexes of the
-    targets, like:
-    -7 -4 -2   1  3  7
-    -->
-    -3 -2 -1   1  2  3
-    "
+  (fn normalize-directional-indexes [targets]
+    "Like: -7 -4 -2  1  3  7 => -3 -2 -1  1  2  3"
     (local bwd [])
     (local fwd [])
     (each [_ t (ipairs targets)]
@@ -837,7 +810,7 @@ char separately.
     (set st.errmsg (.. "not found: " in1 ?in2))
     (exit-early))
   (when (and (not= targets* targets) (. targets* 1 :idx))
-    (normalize-indexes-for-dot-repeat targets*))
+    (normalize-directional-indexes targets*))  ; for dot-repeat
 
   (fn exit-with-action-on* [idx]
     (local target (. targets* idx))

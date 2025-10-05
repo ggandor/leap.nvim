@@ -70,13 +70,8 @@ the API), make the motion appear to behave as an inclusive one."
   (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
-(fn jump-to! [[lnum col]
-              {: win
-               : add-to-jumplist?
-               : mode
-               : offset
-               : backward?
-               : inclusive?}]
+(fn jump-to! [[lnum col] kwargs]
+  (local {: win : add-to-jumplist? : mode : offset : backward? : inclusive?} kwargs)
   (local op-mode? (mode:match :o))
   (when add-to-jumplist?
     ; Note: <C-o> will ignore this on the same line (neovim#9874).

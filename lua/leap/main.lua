@@ -143,8 +143,8 @@ do
       return nil
     end
   end
-  local function _20_(targets, force_noautojump_3f, multi_window_search_3f)
-    if not (force_noautojump_3f or (multi_window_search_3f and not all_in_the_same_window_3f(targets)) or first_target_covers_label_of_second_3f(targets)) then
+  local function _20_(targets, force_noautojump_3f, multi_window_3f)
+    if not (force_noautojump_3f or (multi_window_3f and not all_in_the_same_window_3f(targets)) or first_target_covers_label_of_second_3f(targets)) then
       set_autojump(targets)
     else
     end
@@ -235,12 +235,11 @@ local function leap(kwargs)
     return
   else
   end
-  if (windows and vim.tbl_isempty(windows)) then
+  if (windows and (#windows == 0)) then
     echo("no targetable windows")
     return
   else
   end
-  local multi_window_search_3f = (windows and (#windows > 1))
   local mode = api.nvim_get_mode().mode
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
@@ -522,7 +521,8 @@ local function leap(kwargs)
   end
   local function prepare_labeled_targets_2a(targets)
     local force_noautojump_3f = (not action_can_traverse_3f and (user_given_action or (op_mode_3f and (#targets > 1))))
-    return prepare_labeled_targets(targets, force_noautojump_3f, multi_window_search_3f)
+    local multi_window_3f = (windows and (#windows > 1))
+    return prepare_labeled_targets(targets, force_noautojump_3f, multi_window_3f)
   end
   local repeat_state = {offset = kwargs.offset, backward = kwargs.backward, inclusive = kwargs.inclusive, pattern = kwargs.pattern, inputlen = inputlen0, opts = opts_current_call}
   local function update_repeat_state(in1, in2)
@@ -553,7 +553,7 @@ local function leap(kwargs)
       return nil
     end
   end
-  local function normalize_indexes_for_dot_repeat(targets)
+  local function normalize_directional_indexes(targets)
     local bwd = {}
     local fwd = {}
     for _, t in ipairs(targets) do
@@ -869,7 +869,7 @@ local function leap(kwargs)
   else
   end
   if ((targets_2a ~= targets) and targets_2a[1].idx) then
-    normalize_indexes_for_dot_repeat(targets_2a)
+    normalize_directional_indexes(targets_2a)
   else
   end
   local function exit_with_action_on_2a(idx)

@@ -64,15 +64,15 @@ local function force_matchparen_refresh()
   pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
   return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
 end
-local function jump_to_21(_9_, _10_)
+local function jump_to_21(_9_, kwargs)
   local lnum = _9_[1]
   local col = _9_[2]
-  local win = _10_["win"]
-  local add_to_jumplist_3f = _10_["add-to-jumplist?"]
-  local mode = _10_["mode"]
-  local offset = _10_["offset"]
-  local backward_3f = _10_["backward?"]
-  local inclusive_3f = _10_["inclusive?"]
+  local win = kwargs["win"]
+  local add_to_jumplist_3f = kwargs["add-to-jumplist?"]
+  local mode = kwargs["mode"]
+  local offset = kwargs["offset"]
+  local backward_3f = kwargs["backward?"]
+  local inclusive_3f = kwargs["inclusive?"]
   local op_mode_3f = mode:match("o")
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")

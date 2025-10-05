@@ -5,8 +5,7 @@
        (require "leap.util"))
 
 (local api vim.api)
-(local empty? vim.tbl_isempty)
-(local {: abs : pow} math)
+(local {: abs : max : pow} math)
 
 
 (fn get-horizontal-bounds []
@@ -33,13 +32,12 @@ window area.
     [left-bound right-bound]))
 
 
-(fn get-match-positions [pattern [left-bound right-bound]
-                         {: backward? : whole-window?}]
-  "Return all visible positions of `pattern` in the current window."
-  (let [horizontal-bounds (if vim.wo.wrap ""
-                              (.. "\\%>" (- left-bound 1) "v"
-                                  "\\%<" (+ right-bound 1) "v"))
-        pattern (.. horizontal-bounds pattern)
+(fn get-match-positions [pattern bounds {: backward? : whole-window?}]
+  (let [[left-bound right-bound] bounds
+        bounds-pat (if vim.wo.wrap ""
+                       (.. "\\%>" (- left-bound 1) "v"
+                           "\\%<" (+ right-bound 1) "v"))
+        pattern (.. bounds-pat pattern)
         flags (if backward? "b" "")
         stopline (vim.fn.line (if backward? "w0" "w$"))
         saved-view (vim.fn.winsaveview)
@@ -78,18 +76,14 @@ window area.
     (values positions win-edge?)))
 
 
-(fn get-targets-in-current-window [pattern targets
-                                   {: backward? : offset : inputlen
-                                    : whole-window? : skip-curpos?}]
-  "Fill a table that will store the positions and other metadata of all
-in-window pairs that match `pattern`, in the order of discovery."
+(fn get-targets-in-current-window [pattern targets kwargs]
+  (local {: backward? : offset : inputlen : whole-window? : skip-curpos?} kwargs)
   (local offset (or offset 0))
   (local wininfo (. (vim.fn.getwininfo (api.nvim_get_current_win)) 1))
   (local [curline curcol] (get-cursor-pos))
   (local bounds (get-horizontal-bounds))  ; [left right]
-  (when (= inputlen 2)
-    ; The whole match should be visible.
-    (set (. bounds 2) (- (. bounds 2) 1)))
+  ; The whole match should be visible.
+  (when inputlen (set (. bounds 2) (- (. bounds 2) (max 0 (- inputlen 1)))))
 
   (local (match-positions win-edge?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
@@ -168,7 +162,7 @@ in-window pairs that match `pattern`, in the order of discovery."
                                                (previewable? col ch1 ch2))})))))
 
 
-(fn add-directional-idxs [targets cursor-positions src-win]
+(fn add-directional-indexes [targets cursor-positions src-win]
   (local [curline curcol] (. cursor-positions src-win))
   (var first-after (+ 1 (length targets)))  ; first idx after cursor pos
   (var stop? false)
@@ -225,11 +219,11 @@ in-window pairs that match `pattern`, in the order of discovery."
          :skip-curpos? (= win src-win)}))
     (when (not curr-win-only?)
       (api.nvim_set_current_win src-win))
-    (when (not (empty? targets))
+    (when (> (length targets) 0)
       (when whole-window?  ; = bidirectional
         (when (and op-mode? curr-win-only?)
           ; Preserve the original (byte) order for dot-repeat, before sorting.
-          (add-directional-idxs targets cursor-positions src-win))
+          (add-directional-indexes targets cursor-positions src-win))
         (rank targets cursor-positions src-win)
         (table.sort targets #(< (. $1 :rank) (. $2 :rank))))
       targets)))
