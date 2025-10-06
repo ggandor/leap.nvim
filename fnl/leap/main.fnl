@@ -10,14 +10,15 @@
 
 (local {: clamp
         : echo
-        : char-to-search-pattern
-        : get-representative-char
-        : to-membership-lookup
         : get-char
         : get-char-keymapped}
        (require "leap.util"))
 
 (local api vim.api)
+; Mind that lua string.lower/upper are ASCII only.
+(local lower vim.fn.tolower)
+(local upper vim.fn.toupper)
+
 (local {: abs : ceil : floor : min} math)
 
 
@@ -61,7 +62,50 @@ interrupted change operation."
     (pcall vim.fn.repeat#set seq -1)))
 
 
+; Equivalence classes
+
+; Return a char->equivalence-class lookup table.
+(fn to-membership-lookup [eqv-classes]
+  (let [res {}]
+    (each [_ cl (ipairs eqv-classes)]
+      ; Do not use `vim.split`, it doesn't handle multibyte chars.
+      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
+        (each [_ ch (ipairs cl*)]
+          (set (. res ch) cl*))))
+    res))
+
+(fn get-equivalence-class [ch]
+  (if opts.case_sensitive
+      (. opts.eqv_class_of ch)
+      (or (. opts.eqv_class_of (lower ch))
+          (. opts.eqv_class_of (upper ch)))))
+
+(fn get-representative-char [ch]
+  ; We choose the first one from an equivalence class (arbitrary).
+  (local ch* (or (?. (get-equivalence-class ch) 1) ch))
+  (if opts.case_sensitive ch* (lower ch*)))
+
+
 ; Search pattern ///1
+
+(fn char-list-to-collection [chars]
+  (let [prepare #(case $
+                   ; lua escape seqs (:h lua-literal)
+                   "\a" "\\a"  "\b" "\\b"  "\f" "\\f"
+                   "\n" "\\n"  "\r" "\\r"  "\t" "\\t"
+                   "\v" "\\v"
+                   "\\" "\\\\"
+                   ; vim collection magic chars (:h /collection)
+                   "]" "\\]"  "^" "\\^"  "-" "\\-"
+                   ; else
+                   ch ch)]
+    (table.concat (vim.tbl_map prepare chars))))
+
+
+(fn expand-to-eqv-coll [char]                   ; <-- 'a'
+  (-> (or (get-equivalence-class char) [char])  ; --> {'a','á','ä'}
+      (char-list-to-collection)))               ; --> 'aáä'
+
 
 ; NOTE: If preview (two-step processing) is enabled, for any kind of
 ; input mapping (case-insensitivity, character classes, etc.) we need to
@@ -70,37 +114,39 @@ interrupted change operation."
 ;   2. For the second input, we play with the sublist keys (see
 ;   `populate-sublists`).
 
-(fn prepare-pattern [in1 ?in2]
+(fn prepare-pattern [in1 ?in2 inputlen]
   "Transform user input to the appropriate search pattern."
-  (let [any-char "\\_."  ; :help /\_.
-        pat1 (char-to-search-pattern in1)
-        pat2 (if (= inputlen 1) ""
-                 ?in2 (char-to-search-pattern ?in2)
-                 any-char)
-        ; If `\n\n` is a possible sequence to appear, add `|\n` as a
-        ; separate branch after the whole pattern, to make our
-        ; convenience feature - targeting EOL positions by typing the
-        ; newline alias twice - work.
-        ; This hack is always necessary when we already have the full
-        ; pattern (like repeating the previous search), but also for
-        ; two-step processing, in the special case of targeting EOF.
-        ; (Normally, `get-targets` would take care of this situation,
-        ; but the pattern `\n\_.` does not match `\n$` if it's on the
-        ; last line of the file.)
-        ; NOTE: This should be checked on the expanded patterns (once
-        ; equivalence classes have been taken into account).
-        |<nl> (if (and (pat1:match "\\n")
-                       (or (pat2:match "\\n")
-                           (= pat2 any-char)))
-                  "\\|\\n"
-                  "")
-        ic (if opts.case_sensitive "\\C" "\\c")]
-    (.. "\\V" ic pat1 pat2 |<nl>)))
+  (let [prefix (.. "\\V" (if opts.case_sensitive "\\C" "\\c"))
+        in1* (expand-to-eqv-coll in1)
+        pat1 (.. "\\[" in1* "]")
+        ^pat1 (.. "\\[^" in1* "]")
+        ?pat2 (and ?in2 (.. "\\[" (expand-to-eqv-coll ?in2) "]"))
+        ; Two convenience features are implemented here:
+        ; 1. Same-character pairs (==) match longer sequences (=====)
+        ;    only at the beginning.
+        ; 2. EOL can be matched by typing a newline alias twice.
+        pattern
+        (if ?pat2
+            (if (not= pat1 ?pat2)
+                ; x,y => trivial
+                (.. pat1 ?pat2)
+                ; x,x =>
+                (.. ; match xx, but only once in xxx* (1)
+                    "\\(\\^\\|" ^pat1 "\\)" "\\zs" pat1 pat1
+                    ; if x might represent newline, add `$` as a
+                    ; separate branch to the whole pattern (2)
+                    (if (pat1:match "\\n") "\\|\\$" "")))
+
+            ; x =>
+            (.. ; match xx, but only once in xxx* (1)
+                "\\(\\^\\|" ^pat1 "\\)" "\\zs" pat1 (if (= inputlen 1) "" pat1)
+                "\\|"
+                ; or match xY where Y=/=x or Y=$ (2)
+                pat1 (if (= inputlen 1) "\\ze" "") "\\(" ^pat1 "\\|\\$\\)"))]
+    (.. prefix "\\(" pattern "\\)")))
 
 
 ; Processing targets ///1
-
-; Might be skipped, if two-step processing is disabled.
 
 ; SEE the comment above `prepare-pattern`.
 (fn populate-sublists [targets]
@@ -734,10 +780,11 @@ char.
               pattern (if (= (type pattern*) :string) pattern*
 
                           (= (type pattern*) :function)
-                          (pattern* (if in1 (prepare-pattern in1 ?in2) "")
-                                    [in1 ?in2])
+                          (pattern*
+                            (if in1 (prepare-pattern in1 ?in2 st.inputlen) "")
+                            [in1 ?in2])
 
-                          (prepare-pattern in1 ?in2))]
+                          (prepare-pattern in1 ?in2 st.inputlen))]
           ; TODO: refactor errmsg-handling
           (get-targets pattern in1 ?in2))))
   (when-not targets

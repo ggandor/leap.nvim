@@ -103,9 +103,9 @@ and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
 To target actual EOL positions, including empty lines, press the newline alias
 twice (pretend that each newline character is duplicated). *leap-to-eol*
 
-Same-character sequences (e.g. `-----`) are matched at one position only: by
-default, at the start, and if `offset` in |leap.leap()| is positive, at the
-end.
+A same-character pair (`==`) will match a longer sequence (`=====`) only at
+the beginning, so that e.g. separator lines will not create unnecessary noise
+and eat up all the labels.
 
                                                           *leap-target-ordering*
 When searching bidirectionally (e.g., |<Plug>(leap)|), matches are sorted by

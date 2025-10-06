@@ -1,8 +1,7 @@
 (local opts (require "leap.opts"))
 
 (local {: get-horizontal-bounds
-        : get-cursor-pos
-        : get-representative-char}
+        : get-cursor-pos}
        (require "leap.util"))
 
 (local api vim.api)
@@ -15,7 +14,7 @@
                        (.. "\\%>" (- left-bound 1) "v"
                            "\\%<" (+ right-bound 1) "v"))
         pattern (.. bounds-pat pattern)
-        flags (if backward? "b" "")
+        flags (if backward? "bW" "W")
         stopline (vim.fn.line (if backward? "w0" "w$"))
         saved-view (vim.fn.winsaveview)
         saved-cpo vim.o.cpo]
@@ -65,78 +64,42 @@
   (local (match-positions win-edge?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
 
-  ; It is desirable for a same-character sequence to behave as a chunk,
-  ; so if `offset` is positive, we want to match at the end, to include
-  ; or exclude the whole sequence:
-
-  ; ^ -> match position, | -> cursor with offset
-  ; xxxxxxy
-  ;     ^|     (forward +1)
-  ; xxxxxxy
-  ;     ^ |    (backward +2)
-  (local match-at-end? (> offset 0))
-  (local match-at-start? (not match-at-end?))
-
-  (var line-str nil)
-  (var prev-match {:line nil :col nil :ch1 nil :ch2 nil})  ; to find overlaps
-  (var add-target? false)
-
   (fn previewable? [col ch1 ch2]
     (if (= ch1 "\n")
         (opts.preview_filter "" ch1 "")
         (opts.preview_filter (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))
 
+  (var prev-line nil)
+  (var line-str nil)
   (each [i [line col &as pos] (ipairs match-positions)]
     (when (not (and skip-curpos? (= line curline) (= (+ col offset) curcol)))
-      (when (not= line prev-match.line)
-        (set line-str (vim.fn.getline line)))
+      (when (not= line prev-line)
+        (set line-str (vim.fn.getline line))
+        (set prev-line line))
       ; Extracting the actual characters from the buffer at the
       ; match position.
       (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
       (var ch2 nil)
-          ; On EOL - in this case, we're adding another, virtual
-          ; \n after the real one, so that these can be targeted
-          ; by pressing a newline alias twice. (See also
-          ; `prepare-pattern` in `main.fnl`.)
-      (if (= ch1 "") (do (set ch1 "\n")
-                         (when (= inputlen 2)
-                           (set ch2 "\n"))
-                         (set add-target? true))
+      (if (= ch1 "")
+          ; On EOL - in this case, we're adding another, virtual \n
+          ; after the real one, so that these can be targeted by
+          ; pressing a newline alias twice. (See also `prepare-pattern`
+          ; in `main.fnl`.)
+          (do (set ch1 "\n")
+              (when (= inputlen 2) (set ch2 "\n")))
 
-          (< inputlen 2) (set add-target? true)
-
+          (= inputlen 2)
           (do
             (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
             (when (= ch2 "")  ; = ch1 is right before EOL
-              (set ch2 "\n"))
-            (local overlap?
-                   (and (= line prev-match.line)
-                        (if backward?
-                            ; c1 c2
-                            ;    p1 p2
-                            (= col (- prev-match.col (ch1:len)))
-                            ;    c1 c2
-                            ; p1 p2
-                            (= col (+ prev-match.col (prev-match.ch1:len))))))
-            (local triplet?
-                   (and overlap?
-                        ; Same pair? (Eqv-classes & ignorecase considered.)
-                        (= (get-representative-char ch2)
-                           (get-representative-char prev-match.ch2))))
-            (local skip? (and triplet?
-                              (if backward? match-at-end? match-at-start?)))
-            (set add-target? (not skip?))
-            (when (and add-target? triplet?)
-              (table.remove targets))
-            (set prev-match {: line : col : ch1 : ch2})))
-
-            (when add-target?
-              (table.insert targets
-                            {: wininfo : pos :chars [ch1 ch2]
-                             :win-edge? (. win-edge? i)
-                             :previewable? (or (< inputlen 2)
-                                               (not opts.preview_filter)
-                                               (previewable? col ch1 ch2))})))))
+              (set ch2 "\n"))))
+      (table.insert targets
+        {: wininfo : pos
+         :chars [ch1 ch2]
+         :win-edge? (. win-edge? i)
+         :previewable? (or (< inputlen 2)
+                           (not opts.preview_filter)
+                           (previewable? col ch1 ch2))}))))
 
 
 (fn add-directional-indexes [targets cursor-positions src-win]

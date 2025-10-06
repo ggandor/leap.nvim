@@ -2,10 +2,6 @@
 
 (local api vim.api)
 
-; Mind that lua string.lower/upper are ASCII only.
-(local lower vim.fn.tolower)
-(local upper vim.fn.toupper)
-
 
 (fn clamp [x min max]
   (if (< x min) min
@@ -57,46 +53,6 @@ window area.
         left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
         right-bound (+ left-bound (- window-width textoff 1))]
     [left-bound right-bound]))
-
-
-; Equivalence classes
-
-(fn get-equivalence-class [ch]
-  (if opts.case_sensitive
-      (. opts.eqv_class_of ch)
-      (or (. opts.eqv_class_of (lower ch))
-          (. opts.eqv_class_of (upper ch)))))
-
-
-(fn get-representative-char [ch]
-  ; We choose the first one from an equivalence class (arbitrary).
-  (local ch* (or (?. (get-equivalence-class ch) 1)
-                 ch))
-  (if opts.case_sensitive ch* (lower ch*)))
-
-
-(fn char-list-to-branching-regexp [chars]
-  ; 1. Actual `\n` chars should appear as raw `\` + `n` in the pattern.
-  ; 2. `\` itself might appear in the class, needs to be escaped.
-  (let [prepare #(case $ "\n" "\\n" "\\" "\\\\" ch ch)
-        branches (vim.tbl_map prepare chars)]
-    (.. "\\(" (table.concat branches "\\|") "\\)")))
-
-
-(fn char-to-search-pattern [char]                ; <-- 'a'
-  (-> (or (get-equivalence-class char) [char])   ; --> {'a','á','ä'}
-      (char-list-to-branching-regexp)))          ; --> '\\(a\\|á\\|ä\\)'
-
-
-; Return a char->equivalence-class lookup table.
-(fn to-membership-lookup [eqv-classes]
-  (let [res {}]
-    (each [_ cl (ipairs eqv-classes)]
-      ; Do not use `vim.split`, it doesn't handle multibyte chars.
-      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
-        (each [_ ch (ipairs cl*)]
-          (set (. res ch) cl*))))
-    res))
 
 
 ; Input
@@ -178,8 +134,5 @@ sequenced."
  :get_enterable_windows get-enterable-windows
  :get_focusable_windows get-focusable-windows
  : get-horizontal-bounds
- : char-to-search-pattern
- : get-representative-char
- : to-membership-lookup
  : get-char
  : get-char-keymapped}
