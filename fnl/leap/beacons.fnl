@@ -12,29 +12,24 @@
 
 
 (fn set-beacon-to-match-hl [target]
-  (local {:chars [ch1 ch2]} target)
-  (if (= ch1 "\n")
-      (set target.beacon [0 {:virt_text [[" " hl.group.match]]}])
-      (do
-        (local col (. target.pos 2))
-        (local len (+ (ch1:len)
-                      (or (and ch2 (not= ch2 "\n") (ch2:len))
-                          0)))
-        (set target.beacon
-             [0 {:end_col (+ col len -1) :hl_group hl.group.match}]))))
+  (let [{:chars [ch1 ch2] :pos [_ col]} target
+        extmark-opts (if (= ch1 "")
+                         {:virt_text [[" " hl.group.match]]}
+                         {:hl_group hl.group.match
+                          :end_col (+ col (ch1:len) (ch2:len) -1)})]
+    (set target.beacon [0 extmark-opts])))
 
 
 ; Handling multibyte characters.
 (fn get-label-offset [target]
   (let [{:chars [ch1 ch2]} target]
-    (if (= ch1 "\n") 0  ; on EOL
-        (or (= ch2 "\n") target.win-edge?) (ch1:len)
-        (+ (ch1:len) (ch2:len)))))
+    (+ (ch1:len) (if target.win-edge? 0 (ch2:len)))))
 
 
 (fn set-beacon-for-labeled [target ?group-offset ?phase]
   (let [offset (if (and target.chars ?phase) (get-label-offset target) 0)
-        pad (if (and (not ?phase) target.chars (. target.chars 2)) " " "")
+        has-ch2? (and target.chars (not= (. target.chars 2) ""))
+        pad (if (and has-ch2? (not ?phase)) " " "")
         label (or (. opts.substitute_chars target.label) target.label)
         relative-group (- target.group (or ?group-offset 0))
         ; In unlabeled matches are not highlighted, then "no highlight"
@@ -122,7 +117,7 @@ an autojump. (In short: always err on the safe side.)
   ; source of conflict. That is why we need to check two separate
   ; subcases for both A and B (for C, they are the same).
   (each [_ target (ipairs targets)]
-    (local empty-line? (and (= (. target.chars 1) "\n")
+    (local empty-line? (and (= (. target.chars 1) "")
                             (= (. target.pos 2) 0)))
     (when (not empty-line?)
       (let [{:bufnr buf :winid win} target.wininfo

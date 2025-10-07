@@ -4,30 +4,32 @@ local hl = require("leap.highlight")
 local opts = require("leap.opts")
 local api = vim.api
 local function set_beacon_to_match_hl(target)
-  local _local_1_ = target["chars"]
-  local ch1 = _local_1_[1]
-  local ch2 = _local_1_[2]
-  if (ch1 == "\n") then
-    target.beacon = {0, {virt_text = {{" ", hl.group.match}}}}
-    return nil
+  local _let_1_ = target["chars"]
+  local ch1 = _let_1_[1]
+  local ch2 = _let_1_[2]
+  local _let_2_ = target["pos"]
+  local _ = _let_2_[1]
+  local col = _let_2_[2]
+  local extmark_opts
+  if (ch1 == "") then
+    extmark_opts = {virt_text = {{" ", hl.group.match}}}
   else
-    local col = target.pos[2]
-    local len = (ch1:len() + ((ch2 and (ch2 ~= "\n") and ch2:len()) or 0))
-    target.beacon = {0, {end_col = (col + len + -1), hl_group = hl.group.match}}
-    return nil
+    extmark_opts = {hl_group = hl.group.match, end_col = (col + ch1:len() + ch2:len() + -1)}
   end
+  target.beacon = {0, extmark_opts}
+  return nil
 end
 local function get_label_offset(target)
-  local _let_3_ = target["chars"]
-  local ch1 = _let_3_[1]
-  local ch2 = _let_3_[2]
-  if (ch1 == "\n") then
-    return 0
-  elseif ((ch2 == "\n") or target["win-edge?"]) then
-    return ch1:len()
+  local _let_4_ = target["chars"]
+  local ch1 = _let_4_[1]
+  local ch2 = _let_4_[2]
+  local _5_
+  if target["win-edge?"] then
+    _5_ = 0
   else
-    return (ch1:len() + ch2:len())
+    _5_ = ch2:len()
   end
+  return (ch1:len() + _5_)
 end
 local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   local offset
@@ -36,8 +38,9 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   else
     offset = 0
   end
+  local has_ch2_3f = (target.chars and (target.chars[2] ~= ""))
   local pad
-  if (not _3fphase and target.chars and target.chars[2]) then
+  if (has_ch2_3f and not _3fphase) then
     pad = " "
   else
     pad = ""
@@ -62,10 +65,10 @@ local function set_beacon_for_labeled(target, _3fgroup_offset, _3fphase)
   end
   return nil
 end
-local function set_beacons(targets, _9_)
-  local group_offset = _9_["group-offset"]
-  local use_no_labels_3f = _9_["use-no-labels?"]
-  local phase = _9_["phase"]
+local function set_beacons(targets, _11_)
+  local group_offset = _11_["group-offset"]
+  local use_no_labels_3f = _11_["use-no-labels?"]
+  local phase = _11_["phase"]
   if use_no_labels_3f then
     if targets[1].chars then
       for _, target in ipairs(targets) do
@@ -106,7 +109,7 @@ local function resolve_conflicts(targets)
   local unlabeled_match_positions = {}
   local label_positions = {}
   for _, target in ipairs(targets) do
-    local empty_line_3f = ((target.chars[1] == "\n") and (target.pos[2] == 0))
+    local empty_line_3f = ((target.chars[1] == "") and (target.pos[2] == 0))
     if not empty_line_3f then
       local buf = target.wininfo["bufnr"]
       local win = target.wininfo["winid"]
@@ -119,21 +122,21 @@ local function resolve_conflicts(targets)
         local col_label = (col_ch1 + label_offset)
         local shifted_label_3f = (col_label == col_ch2)
         do
-          local _15_
-          local or_16_ = label_positions[(key_prefix .. col_label)]
-          if not or_16_ then
+          local _17_
+          local or_18_ = label_positions[(key_prefix .. col_label)]
+          if not or_18_ then
             if shifted_label_3f then
-              or_16_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
+              or_18_ = unlabeled_match_positions[(key_prefix .. col_ch1)]
             else
-              or_16_ = nil
+              or_18_ = nil
             end
           end
-          if not or_16_ then
-            or_16_ = unlabeled_match_positions[(key_prefix .. col_label)]
+          if not or_18_ then
+            or_18_ = unlabeled_match_positions[(key_prefix .. col_label)]
           end
-          _15_ = or_16_
-          if (nil ~= _15_) then
-            local other = _15_
+          _17_ = or_18_
+          if (nil ~= _17_) then
+            local other = _17_
             other.beacon = nil
             set_beacon_to_concealed_label(target)
           else
@@ -143,17 +146,17 @@ local function resolve_conflicts(targets)
       else
         local col_ch3 = (col_ch2 + string.len(target.chars[2]))
         do
-          local _19_
-          local or_20_ = label_positions[(key_prefix .. col_ch1)]
-          if not or_20_ then
-            or_20_ = label_positions[(key_prefix .. col_ch2)]
+          local _21_
+          local or_22_ = label_positions[(key_prefix .. col_ch1)]
+          if not or_22_ then
+            or_22_ = label_positions[(key_prefix .. col_ch2)]
           end
-          if not or_20_ then
-            or_20_ = label_positions[(key_prefix .. col_ch3)]
+          if not or_22_ then
+            or_22_ = label_positions[(key_prefix .. col_ch3)]
           end
-          _19_ = or_20_
-          if (nil ~= _19_) then
-            local other = _19_
+          _21_ = or_22_
+          if (nil ~= _21_) then
+            local other = _21_
             target.beacon = nil
             set_beacon_to_concealed_label(other)
           else
@@ -172,9 +175,9 @@ do
   local ns = api.nvim_create_namespace("")
   local extmarks = {}
   local function light_up_beacon(target, endpos_3f)
-    local _let_24_ = ((endpos_3f and target.endpos) or target.pos)
-    local lnum = _let_24_[1]
-    local col = _let_24_[2]
+    local _let_26_ = ((endpos_3f and target.endpos) or target.pos)
+    local lnum = _let_26_[1]
+    local col = _let_26_[2]
     local buf = target.wininfo.bufnr
     local offset = target.beacon[1]
     local opts_2a = target.beacon[2]
@@ -182,7 +185,7 @@ do
     local id = api.nvim_buf_set_extmark(buf, ns, (lnum - 1), (col + -1 + offset), opts0)
     return table.insert(extmarks, {buf, id})
   end
-  local function _25_(targets, _3fstart, _3fend)
+  local function _27_(targets, _3fstart, _3fend)
     if (not opts.on_beacons or (opts.on_beacons(targets, _3fstart, _3fend) ~= false)) then
       for i = (_3fstart or 1), (_3fend or #targets) do
         local target = targets[i]
@@ -195,10 +198,10 @@ do
         else
         end
       end
-      local function _28_()
-        for _, _29_ in ipairs(extmarks) do
-          local buf = _29_[1]
-          local id = _29_[2]
+      local function _30_()
+        for _, _31_ in ipairs(extmarks) do
+          local buf = _31_[1]
+          local id = _31_[2]
           if api.nvim_buf_is_valid(buf) then
             api.nvim_buf_del_extmark(buf, ns, id)
           else
@@ -207,11 +210,11 @@ do
         extmarks = {}
         return nil
       end
-      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _28_})
+      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _30_})
     else
       return nil
     end
   end
-  light_up_beacons = _25_
+  light_up_beacons = _27_
 end
 return {["set-beacons"] = set_beacons, ["resolve-conflicts"] = resolve_conflicts, ["light-up-beacons"] = light_up_beacons}

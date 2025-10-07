@@ -125,6 +125,7 @@ interrupted change operation."
         ; 1. Same-character pairs (==) match longer sequences (=====)
         ;    only at the beginning.
         ; 2. EOL can be matched by typing a newline alias twice.
+        ;    (See also `populate-sublists`.)
         pattern
         (if ?pat2
             (if (not= pat1 ?pat2)
@@ -172,10 +173,12 @@ char.
           :__newindex (fn [self ch sublist]
                         (rawset self (get-representative-char ch) sublist))}))
   ; Filling the sublists.
-  (each [_ {:chars [_ ch2] &as target} (ipairs targets)]
-    (when-not (. targets.sublists ch2)
-      (set (. targets.sublists ch2) []))
-    (table.insert (. targets.sublists ch2) target)))
+  (each [_ {:chars [ch1 ch2] &as target} (ipairs targets)]
+    ; Handle newline matches.
+    (local key (if (or (= ch1 "") (= ch2 "")) "\n" ch2))
+    (when-not (. targets.sublists key)
+      (set (. targets.sublists key) []))
+    (table.insert (. targets.sublists key) target)))
 
 
 (local prepare-labeled-targets

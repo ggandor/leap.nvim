@@ -64,11 +64,6 @@
   (local (match-positions win-edge?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
 
-  (fn previewable? [col ch1 ch2]
-    (if (= ch1 "\n")
-        (opts.preview_filter "" ch1 "")
-        (opts.preview_filter (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))
-
   (var prev-line nil)
   (var line-str nil)
   (each [i [line col &as pos] (ipairs match-positions)]
@@ -78,28 +73,19 @@
         (set prev-line line))
       ; Extracting the actual characters from the buffer at the
       ; match position.
-      (var ch1 (vim.fn.strpart line-str (- col 1) 1 true))
-      (var ch2 nil)
-      (if (= ch1 "")
-          ; On EOL - in this case, we're adding another, virtual \n
-          ; after the real one, so that these can be targeted by
-          ; pressing a newline alias twice. (See also `prepare-pattern`
-          ; in `main.fnl`.)
-          (do (set ch1 "\n")
-              (when (= inputlen 2) (set ch2 "\n")))
-
-          (= inputlen 2)
-          (do
-            (set ch2 (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true))
-            (when (= ch2 "")  ; = ch1 is right before EOL
-              (set ch2 "\n"))))
+      (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
+      (local ch2 (if (or (= ch1 "") (< inputlen 2)) ""
+                     (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true)))
       (table.insert targets
         {: wininfo : pos
          :chars [ch1 ch2]
          :win-edge? (. win-edge? i)
-         :previewable? (or (< inputlen 2)
-                           (not opts.preview_filter)
-                           (previewable? col ch1 ch2))}))))
+         :previewable?
+         (or (< inputlen 2)
+             (not opts.preview_filter)
+             (opts.preview_filter
+               ; Extract the previous character too for a filter fn.
+               (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2))}))))
 
 
 (fn add-directional-indexes [targets cursor-positions src-win]

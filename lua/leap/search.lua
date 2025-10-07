@@ -91,19 +91,12 @@ local function get_targets_in_current_window(pattern, targets, kwargs)
   else
   end
   local match_positions, win_edge_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
-  local function previewable_3f(col, ch1, ch2)
-    if (ch1 == "\n") then
-      return opts.preview_filter("", ch1, "")
-    else
-      return opts.preview_filter(vim.fn.strpart(__fnl_global__line_2dstr, (col - 2), 1, true), ch1, ch2)
-    end
-  end
   local prev_line = nil
   local line_str = nil
-  for i, _14_ in ipairs(match_positions) do
-    local line = _14_[1]
-    local col = _14_[2]
-    local pos = _14_
+  for i, _13_ in ipairs(match_positions) do
+    local line = _13_[1]
+    local col = _13_[2]
+    local pos = _13_
     if not (skip_curpos_3f and (line == curline) and ((col + offset0) == curcol)) then
       if (line ~= prev_line) then
         line_str = vim.fn.getline(line)
@@ -111,31 +104,22 @@ local function get_targets_in_current_window(pattern, targets, kwargs)
       else
       end
       local ch1 = vim.fn.strpart(line_str, (col - 1), 1, true)
-      local ch2 = nil
-      if (ch1 == "") then
-        ch1 = "\n"
-        if (inputlen == 2) then
-          ch2 = "\n"
-        else
-        end
-      elseif (inputlen == 2) then
-        ch2 = vim.fn.strpart(line_str, (col + -1 + ch1:len()), 1, true)
-        if (ch2 == "") then
-          ch2 = "\n"
-        else
-        end
+      local ch2
+      if ((ch1 == "") or (inputlen < 2)) then
+        ch2 = ""
       else
+        ch2 = vim.fn.strpart(line_str, (col + -1 + ch1:len()), 1, true)
       end
-      table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["win-edge?"] = win_edge_3f[i], ["previewable?"] = ((inputlen < 2) or not opts.preview_filter or previewable_3f(col, ch1, ch2))})
+      table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["win-edge?"] = win_edge_3f[i], ["previewable?"] = ((inputlen < 2) or not opts.preview_filter or opts.preview_filter(vim.fn.strpart(line_str, (col - 2), 1, true), ch1, ch2))})
     else
     end
   end
   return nil
 end
 local function add_directional_indexes(targets, cursor_positions, src_win)
-  local _local_20_ = cursor_positions[src_win]
-  local curline = _local_20_[1]
-  local curcol = _local_20_[2]
+  local _local_17_ = cursor_positions[src_win]
+  local curline = _local_17_[1]
+  local curcol = _local_17_[2]
   local first_after = (1 + #targets)
   local stop_3f = false
   for i, t in ipairs(targets) do
@@ -154,11 +138,11 @@ local function add_directional_indexes(targets, cursor_positions, src_win)
   end
   return nil
 end
-local function euclidean_distance(_22_, _23_)
-  local l1 = _22_[1]
-  local c1 = _22_[2]
-  local l2 = _23_[1]
-  local c2 = _23_[2]
+local function euclidean_distance(_19_, _20_)
+  local l1 = _19_[1]
+  local c1 = _19_[2]
+  local l2 = _20_[1]
+  local c2 = _20_[2]
   local editor_grid_aspect_ratio = 0.3
   local dx = (abs((c1 - c2)) * editor_grid_aspect_ratio)
   local dy = abs((l1 - l2))
@@ -170,10 +154,10 @@ local function rank(targets, cursor_positions, src_win)
     local line = target.pos[1]
     local col = target.pos[2]
     local pos = target.pos
-    local _let_24_ = cursor_positions[win]
-    local cur_line = _let_24_[1]
-    local cur_col = _let_24_[2]
-    local cur_pos = _let_24_
+    local _let_21_ = cursor_positions[win]
+    local cur_line = _let_21_[1]
+    local cur_col = _let_21_[2]
+    local cur_pos = _let_21_
     local distance = euclidean_distance(pos, cur_pos)
     local curr_win_bonus = ((win == src_win) and 30)
     local curr_line_bonus = (curr_win_bonus and (line == cur_line) and 999)
@@ -182,12 +166,12 @@ local function rank(targets, cursor_positions, src_win)
   end
   return nil
 end
-local function get_targets(pattern, _25_)
-  local backward_3f = _25_["backward?"]
-  local windows = _25_["windows"]
-  local offset = _25_["offset"]
-  local op_mode_3f = _25_["op-mode?"]
-  local inputlen = _25_["inputlen"]
+local function get_targets(pattern, _22_)
+  local backward_3f = _22_["backward?"]
+  local windows = _22_["windows"]
+  local offset = _22_["offset"]
+  local op_mode_3f = _22_["op-mode?"]
+  local inputlen = _22_["inputlen"]
   local whole_window_3f = windows
   local src_win = api.nvim_get_current_win()
   local windows0 = (windows or {src_win})
@@ -221,10 +205,10 @@ local function get_targets(pattern, _25_)
       else
       end
       rank(targets, cursor_positions, src_win)
-      local function _31_(_241, _242)
+      local function _28_(_241, _242)
         return (_241.rank < _242.rank)
       end
-      table.sort(targets, _31_)
+      table.sort(targets, _28_)
     else
     end
     return targets
