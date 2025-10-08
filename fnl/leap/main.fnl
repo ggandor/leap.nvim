@@ -116,12 +116,20 @@ interrupted change operation."
 
 (fn prepare-pattern [in1 ?in2 inputlen]
   "Transform user input to the appropriate search pattern."
-  (let [prefix (.. "\\V" (if opts.case_sensitive "\\C" "\\c"))
+  (let [prefix (.. "\\V"
+                   (if opts.case_sensitive "\\C" "\\c")
+                   ; Skip the current line in linewise modes.
+                   (if (string.match (vim.fn.mode true) "V")
+                       ; Hardcode the line number, we might set the
+                       ; cursor before starting the search.
+                       (let [cl (vim.fn.line ".")]
+                         (.. "\\(\\%<" cl "l\\|\\%>" cl "l\\)"))
+                       ""))
         in1* (expand-to-eqv-coll in1)
         pat1 (.. "\\[" in1* "]")
         ^pat1 (.. "\\[^" in1* "]")
         ?pat2 (and ?in2 (.. "\\[" (expand-to-eqv-coll ?in2) "]"))
-        ; Two convenience features are implemented here:
+        ; Two other convenience features:
         ; 1. Same-character pairs (==) match longer sequences (=====)
         ;    only at the beginning.
         ; 2. EOL can be matched by typing a newline alias twice.

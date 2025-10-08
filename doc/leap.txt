@@ -107,6 +107,8 @@ A same-character pair (`==`) will match a longer sequence (`=====`) only at
 the beginning, so that e.g. separator lines will not create unnecessary noise
 and eat up all the labels.
 
+|V| or |o_V| will make the search skip the current line.
+
                                                           *leap-target-ordering*
 When searching bidirectionally (e.g., |<Plug>(leap)|), matches are sorted by
 Euclidean (beeline) distance from the cursor, but the current line you're on,

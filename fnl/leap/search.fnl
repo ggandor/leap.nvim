@@ -11,8 +11,10 @@
 (fn get-match-positions [pattern bounds {: backward? : whole-window?}]
   (let [[left-bound right-bound] bounds
         bounds-pat (if vim.wo.wrap ""
-                       (.. "\\%>" (- left-bound 1) "v"
-                           "\\%<" (+ right-bound 1) "v"))
+                       (.. "\\("
+                           "\\%>" (- left-bound 1) "v"
+                           "\\%<" (+ right-bound 1) "v"
+                           "\\)"))
         pattern (.. bounds-pat pattern)
         flags (if backward? "bW" "W")
         stopline (vim.fn.line (if backward? "w0" "w$"))

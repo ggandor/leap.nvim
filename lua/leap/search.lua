@@ -17,7 +17,7 @@ local function get_match_positions(pattern, bounds, _2_)
   if vim.wo.wrap then
     bounds_pat = ""
   else
-    bounds_pat = ("\\%>" .. (left_bound - 1) .. "v" .. "\\%<" .. (right_bound + 1) .. "v")
+    bounds_pat = ("\\(" .. "\\%>" .. (left_bound - 1) .. "v" .. "\\%<" .. (right_bound + 1) .. "v" .. "\\)")
   end
   local pattern0 = (bounds_pat .. pattern)
   local flags
