@@ -27,7 +27,7 @@ local function action(kwargs)
     local util = require("leap.util")
     local leap = require("leap").leap
     local _2_
-    if (input or (mode ~= "n")) then
+    if ((input and (#input > 0)) or (mode ~= "n")) then
       _2_ = {safe_labels = ""}
     else
       _2_ = nil

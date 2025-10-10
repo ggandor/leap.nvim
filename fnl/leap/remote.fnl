@@ -42,7 +42,8 @@
       ; we could only re-trigger them inside the leap() call, with a
       ; custom action, and that would prevent users from customizing the
       ; jumper.
-      (leap {:opts (when (or input (not= mode "n"))
+      (leap {:opts (when (or (and input (> (length input) 0))
+                             (not= mode "n"))
                      {:safe_labels ""})
              :windows (util.get_focusable_windows)})))
 
