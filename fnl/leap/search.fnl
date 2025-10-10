@@ -10,7 +10,8 @@
 
 (fn get-match-positions [pattern bounds {: backward? : whole-window?}]
   (let [[left-bound right-bound] bounds
-        bounds-pat (if vim.wo.wrap ""
+        bounded? (and whole-window? (not vim.wo.wrap))
+        bounds-pat (if (not bounded?) ""
                        (.. "\\("
                            "\\%>" (- left-bound 1) "v"
                            "\\%<" (+ right-bound 1) "v"
@@ -28,7 +29,8 @@
       (vim.fn.cursor [(vim.fn.line "w0") 1]))
 
     (local positions [])
-    (local win-edge? {})  ; set of indexes (in `positions`)
+    (local win-edge? {})   ; set of indexes in `positions`
+    (local offscreen? {})  ; likewise
     (var idx 0)  ; ~ match count
 
     (while true
@@ -48,10 +50,15 @@
 
           (do (table.insert positions pos)
               (set idx (+ idx 1))
-              (when (= (vim.fn.virtcol ".") right-bound)
-                (set (. win-edge? idx) true)))))
+              (let [vcol (vim.fn.virtcol ".")]
+                (if (= vcol right-bound)
+                    (set (. win-edge? idx) true)
 
-    (values positions win-edge?)))
+                    (and (not bounded?)
+                         (or (> vcol right-bound) (< vcol left-bound)))
+                    (set (. offscreen? idx) true))))))
+
+    (values positions win-edge? offscreen?)))
 
 
 (fn get-targets-in-current-window [pattern targets kwargs]
@@ -63,7 +70,7 @@
   ; The whole match should be visible.
   (when inputlen (set (. bounds 2) (- (. bounds 2) (max 0 (- inputlen 1)))))
 
-  (local (match-positions win-edge?)
+  (local (match-positions win-edge? offscreen?)
          (get-match-positions pattern bounds {: backward? : whole-window?}))
 
   (var prev-line nil)
@@ -84,6 +91,7 @@
         {: wininfo : pos
          :chars [ch1 ch2]
          :win-edge? (. win-edge? i)
+         :offscreen? (. offscreen? i)
          :previewable?
          (or (< inputlen 2)
              (not opts.preview_filter)

@@ -13,8 +13,9 @@ local function get_match_positions(pattern, bounds, _2_)
   local whole_window_3f = _2_["whole-window?"]
   local left_bound = bounds[1]
   local right_bound = bounds[2]
+  local bounded_3f = (whole_window_3f and not vim.wo.wrap)
   local bounds_pat
-  if vim.wo.wrap then
+  if not bounded_3f then
     bounds_pat = ""
   else
     bounds_pat = ("\\(" .. "\\%>" .. (left_bound - 1) .. "v" .. "\\%<" .. (right_bound + 1) .. "v" .. "\\)")
@@ -45,6 +46,7 @@ local function get_match_positions(pattern, bounds, _2_)
   end
   local positions = {}
   local win_edge_3f = {}
+  local offscreen_3f = {}
   local idx = 0
   while true do
     local flags0 = ((match_at_curpos_3f and (flags .. "c")) or flags)
@@ -66,13 +68,16 @@ local function get_match_positions(pattern, bounds, _2_)
     else
       table.insert(positions, pos)
       idx = (idx + 1)
-      if (vim.fn.virtcol(".") == right_bound) then
+      local vcol = vim.fn.virtcol(".")
+      if (vcol == right_bound) then
         win_edge_3f[idx] = true
+      elseif (not bounded_3f and ((vcol > right_bound) or (vcol < left_bound))) then
+        offscreen_3f[idx] = true
       else
       end
     end
   end
-  return positions, win_edge_3f
+  return positions, win_edge_3f, offscreen_3f
 end
 local function get_targets_in_current_window(pattern, targets, kwargs)
   local backward_3f = kwargs["backward?"]
@@ -90,7 +95,7 @@ local function get_targets_in_current_window(pattern, targets, kwargs)
     bounds[2] = (bounds[2] - max(0, (inputlen - 1)))
   else
   end
-  local match_positions, win_edge_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
+  local match_positions, win_edge_3f, offscreen_3f = get_match_positions(pattern, bounds, {["backward?"] = backward_3f, ["whole-window?"] = whole_window_3f})
   local prev_line = nil
   local line_str = nil
   for i, _13_ in ipairs(match_positions) do
@@ -110,7 +115,7 @@ local function get_targets_in_current_window(pattern, targets, kwargs)
       else
         ch2 = vim.fn.strpart(line_str, (col + -1 + ch1:len()), 1, true)
       end
-      table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["win-edge?"] = win_edge_3f[i], ["previewable?"] = ((inputlen < 2) or not opts.preview_filter or opts.preview_filter(vim.fn.strpart(line_str, (col - 2), 1, true), ch1, ch2))})
+      table.insert(targets, {wininfo = wininfo, pos = pos, chars = {ch1, ch2}, ["win-edge?"] = win_edge_3f[i], ["offscreen?"] = offscreen_3f[i], ["previewable?"] = ((inputlen < 2) or not opts.preview_filter or opts.preview_filter(vim.fn.strpart(line_str, (col - 2), 1, true), ch1, ch2))})
     else
     end
   end

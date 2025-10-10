@@ -247,20 +247,21 @@ char.
       target is part of.
       Note that these are once-and-for-all fixed attributes, regardless
       of the actual UI state ('beacons')."
-      (when-not (and (= (length targets) 1) targets.autojump?)
-        (local {: autojump? : label-set} targets)
-        (local |label-set| (length label-set))
-        (each [i* target (ipairs targets)]
-          ; Skip labeling the first target if autojump is set.
-          (local i (if autojump? (dec i*) i*))
-          (when (>= i 1)
-            (case (% i |label-set|)
-              0 (do
-                  (set target.label (label-set:sub |label-set| |label-set|))
-                  (set target.group (floor (/ i |label-set|))))
-              n (do
-                  (set target.label (label-set:sub n n))
-                  (set target.group (inc (floor (/ i |label-set|))))))))))
+      (local {: autojump? : label-set} targets)
+      (local |label-set| (length label-set))
+      (var skipped 0)
+      (for [i* (if autojump? 0 1) (length targets)]
+        (local target (. targets i*))
+        (when target
+          (local i (- i* skipped))
+          (if target.offscreen? (set skipped (inc skipped))
+              (case (% i |label-set|)
+                0 (do
+                    (set target.label (label-set:sub |label-set| |label-set|))
+                    (set target.group (floor (/ i |label-set|))))
+                n (do
+                    (set target.label (label-set:sub n n))
+                    (set target.group (inc (floor (/ i |label-set|))))))))))
 
     (fn [targets force-noautojump? multi-window?]
       (when-not (or force-noautojump?
