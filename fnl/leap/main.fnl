@@ -102,7 +102,7 @@ interrupted change operation."
     (table.concat (vim.tbl_map prepare chars))))
 
 
-(fn expand-to-eqv-coll [char]                   ; <-- 'a'
+(fn expand-to-eqv-collection [char]             ; <-- 'a'
   (-> (or (get-equivalence-class char) [char])  ; --> {'a','á','ä'}
       (char-list-to-collection)))               ; --> 'aáä'
 
@@ -110,9 +110,10 @@ interrupted change operation."
 ; NOTE: If preview (two-step processing) is enabled, for any kind of
 ; input mapping (case-insensitivity, character classes, etc.) we need to
 ; tweak things in two different places:
-;   1. For the first input, we modify the search pattern itself (here).
-;   2. For the second input, we play with the sublist keys (see
-;   `populate-sublists`).
+;   1. For the first input, we can modify the search pattern itself.
+;   2. The second input is only acquired once the search is done; for
+;      that, we need to play with the sublist keys (see
+;      `populate-sublists`).
 
 (fn prepare-pattern [in1 ?in2 inputlen]
   "Transform user input to the appropriate search pattern."
@@ -125,20 +126,20 @@ interrupted change operation."
                        (let [cl (vim.fn.line ".")]
                          (.. "\\(\\%<" cl "l\\|\\%>" cl "l\\)"))
                        ""))
-        in1* (expand-to-eqv-coll in1)
+        in1* (expand-to-eqv-collection in1)
         pat1 (.. "\\[" in1* "]")
         ^pat1 (.. "\\[^" in1* "]")
-        ?pat2 (and ?in2 (.. "\\[" (expand-to-eqv-coll ?in2) "]"))
+        pat2 (and ?in2 (.. "\\[" (expand-to-eqv-collection ?in2) "]"))
         ; Two other convenience features:
         ; 1. Same-character pairs (==) match longer sequences (=====)
         ;    only at the beginning.
         ; 2. EOL can be matched by typing a newline alias twice.
         ;    (See also `populate-sublists`.)
         pattern
-        (if ?pat2
-            (if (not= pat1 ?pat2)
+        (if pat2
+            (if (not= pat1 pat2)
                 ; x,y => trivial
-                (.. pat1 ?pat2)
+                (.. pat1 pat2)
                 ; x,x =>
                 (.. ; match xx, but only once in xxx* (1)
                     "\\(\\^\\|" ^pat1 "\\)" "\\zs" pat1 pat1
@@ -247,21 +248,21 @@ char.
       target is part of.
       Note that these are once-and-for-all fixed attributes, regardless
       of the actual UI state ('beacons')."
-      (local {: autojump? : label-set} targets)
-      (local |label-set| (length label-set))
+      (local {: autojump? :label-set labels} targets)
+      (local |labels| (length labels))
       (var skipped 0)
       (for [i* (if autojump? 0 1) (length targets)]
         (local target (. targets i*))
         (when target
           (local i (- i* skipped))
           (if target.offscreen? (set skipped (inc skipped))
-              (case (% i |label-set|)
+              (case (% i |labels|)
                 0 (do
-                    (set target.label (label-set:sub |label-set| |label-set|))
-                    (set target.group (floor (/ i |label-set|))))
+                    (set target.label (labels:sub |labels| |labels|))
+                    (set target.group (floor (/ i |labels|))))
                 n (do
-                    (set target.label (label-set:sub n n))
-                    (set target.group (inc (floor (/ i |label-set|))))))))))
+                    (set target.label (labels:sub n n))
+                    (set target.group (inc (floor (/ i |labels|))))))))))
 
     (fn [targets force-noautojump? multi-window?]
       (when-not (or force-noautojump?
@@ -645,7 +646,7 @@ char.
 
   (local jump-to!
     (do
-      (var first-jump? true)  ; better be managed by the function itself
+      (var first-jump? true)
       (fn [target]
         (local jump (require "leap.jump"))
         (jump.jump-to! target.pos

@@ -167,6 +167,4 @@
       targets)))
 
 
-{: get-horizontal-bounds  ; flit.nvim
- : get-match-positions    ; flit.nvim
- : get-targets}
+{: get-targets}

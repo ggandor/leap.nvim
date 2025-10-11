@@ -116,7 +116,7 @@ local function char_list_to_collection(chars)
   prepare = _12_
   return table.concat(vim.tbl_map(prepare, chars))
 end
-local function expand_to_eqv_coll(char)
+local function expand_to_eqv_collection(char)
   return char_list_to_collection((get_equivalence_class(char) or {char}))
 end
 local function prepare_pattern(in1, _3fin2, inputlen)
@@ -135,14 +135,14 @@ local function prepare_pattern(in1, _3fin2, inputlen)
     _16_ = ""
   end
   prefix = ("\\V" .. _14_ .. _16_)
-  local in1_2a = expand_to_eqv_coll(in1)
+  local in1_2a = expand_to_eqv_collection(in1)
   local pat1 = ("\\[" .. in1_2a .. "]")
   local _5epat1 = ("\\[^" .. in1_2a .. "]")
-  local _3fpat2 = (_3fin2 and ("\\[" .. expand_to_eqv_coll(_3fin2) .. "]"))
+  local pat2 = (_3fin2 and ("\\[" .. expand_to_eqv_collection(_3fin2) .. "]"))
   local pattern
-  if _3fpat2 then
-    if (pat1 ~= _3fpat2) then
-      pattern = (pat1 .. _3fpat2)
+  if pat2 then
+    if (pat1 ~= pat2) then
+      pattern = (pat1 .. pat2)
     else
       local _19_
       if pat1:match("\\n") then
@@ -249,8 +249,8 @@ do
   end
   local function set_labels(targets)
     local autojump_3f = targets["autojump?"]
-    local label_set = targets["label-set"]
-    local _7clabel_set_7c = #label_set
+    local labels = targets["label-set"]
+    local _7clabels_7c = #labels
     local skipped = 0
     local _38_
     if autojump_3f then
@@ -265,14 +265,14 @@ do
         if target["offscreen?"] then
           skipped = (skipped + 1)
         else
-          local _40_ = (i % _7clabel_set_7c)
+          local _40_ = (i % _7clabels_7c)
           if (_40_ == 0) then
-            target.label = label_set:sub(_7clabel_set_7c, _7clabel_set_7c)
-            target.group = floor((i / _7clabel_set_7c))
+            target.label = labels:sub(_7clabels_7c, _7clabels_7c)
+            target.group = floor((i / _7clabels_7c))
           elseif (nil ~= _40_) then
             local n = _40_
-            target.label = label_set:sub(n, n)
-            target.group = (floor((i / _7clabel_set_7c)) + 1)
+            target.label = labels:sub(n, n)
+            target.group = (floor((i / _7clabels_7c)) + 1)
           else
           end
         end
