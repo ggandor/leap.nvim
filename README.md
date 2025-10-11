@@ -58,19 +58,7 @@ At the same time, it reduces mental effort by all possible means:
   each step you already know what the immediate next keypress should be, and
   your mind can process the rest in the background.
 
-Leap does not replace, but improve the "Vim way" of editing: it simply provides
-an efficient, unified interface for [precision
-targeting](https://speakerdeck.com/nelstrom/vim-precision-editing-at-the-speed-of-thought),
-while staying as native as possible. Auxiliary features like [forced
-motions](https://neovim.io/doc/user/motion.html#forced-motion), dot-repeat, or
-[multibyte keymaps](https://neovim.io/doc/user/mbyte.html#mbyte-keymap) "just
-work".
-
 ### Extras
-
-While Leap is built around its deeply thought-through, opinionated default
-motions, it is also highly extensible, and provides API for lots of useful
-orthogonal features, like:
 
  * **Remote actions**: do operations at a distance, or even predefine remote
    text objects for extra comfort. For example, yanking a paragraph from a
@@ -80,9 +68,6 @@ orthogonal features, like:
  * **Treesitter node selection**: parent nodes can be selected either directly
    via labels, or in an incremental way (with labels being available the whole
    time).
-
- * **Native search integration**: when finishing a `/` or `?` search,
-   visible matches can automatically be labeled for quick access.
 
 ## 🚀 Getting started
 
@@ -421,7 +406,7 @@ aliases)</summary>
 
 The preview phase, unfortunately, makes them impossible, by design: for a
 potential match, we might need to show two different labels (corresponding to
-two different futures) at the same time.
+two different futures) at the same time (`:h leap-wildcard-problem`).
 ([1](https://github.com/ggandor/leap.nvim/issues/28),
 [2](https://github.com/ggandor/leap.nvim/issues/89#issuecomment-1368885497),
 [3](https://github.com/ggandor/leap.nvim/issues/155#issuecomment-1556124351))
@@ -698,7 +683,7 @@ Note: `inputlen` is an experimental feature at the moment.
 
 ```lua
 do
-  -- Returns an argument table for `leap()`, tailored for f/t-motions.
+  -- Return an argument table for `leap()`, tailored for f/t-motions.
   local function as_ft (key_specific_args)
     local common_args = {
       inputlen = 1,
@@ -707,25 +692,25 @@ do
       -- pattern = function (pat) return '\\%.l'..pat end,
       opts = {
         labels = '',  -- force autojump
-        safe_labels = vim.fn.mode(1):match('o') and '' or nil,  -- [1]
-        case_sensitive = true,                                  -- [2]
+        safe_labels = vim.fn.mode(1):match'[no]' and '' or nil,  -- [1]
+        case_sensitive = true,                                   -- [2]
       },
     }
     return vim.tbl_deep_extend('keep', common_args, key_specific_args)
   end
 
-  local clever = require('leap.user').with_traversal_keys       -- [3]
+  local clever = require('leap.user').with_traversal_keys        -- [3]
   local clever_f = clever('f', 'F')
   local clever_t = clever('t', 'T')
 
-  for key, args in pairs {
+  for key, key_specific_args in pairs {
     f = { opts = clever_f, },
     F = { backward = true, opts = clever_f },
     t = { offset = -1, opts = clever_t },
     T = { backward = true, offset = 1, opts = clever_t },
   } do
     vim.keymap.set({'n', 'x', 'o'}, key, function ()
-      require('leap').leap(as_ft(args))
+      require('leap').leap(as_ft(key_specific_args))
     end)
   end
 end
@@ -753,17 +738,11 @@ Note: `pattern` is an experimental feature at the moment.
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, '|', function ()
-  local _, l, c = unpack(vim.fn.getpos('.'))
-  -- Some Vim regex magic follows:
-  local pattern =
-    '\\v'
-       -- Skip 3-3 lines around the cursor (`:help /\%l`).
-    .. "(%<"..(math.max(1,l-3)).."l" .. '|' .. "%>"..(l+3).."l)"
-       -- Cursor column or EOL before the cursor (`:help /\%c`).
-    .. "(%"..c.."v" .. '|' .. "%<"..c.."v$)"
-
+  local line = vim.fn.line('.')
+  -- Skip 3-3 lines around the cursor.
+  local top, bot = unpack { math.max(1, line - 3), line + 3 }
   require('leap').leap {
-    pattern = pattern,
+    pattern = '\\v(%<'..top..'l|%>'..bot..'l)$',
     windows = { vim.fn.win_getid() },
     opts = { safe_labels = '' }
   }
@@ -776,7 +755,7 @@ end)
 <summary>Shortcuts to Telescope results</summary>
 
 ```lua
-local function get_targets (buf, picker)
+local function get_targets (picker)
   local scroller = require('telescope.pickers.scroller')
   local wininfo = vim.fn.getwininfo(picker.results_win)[1]
   local bottom = wininfo.botline - 2  -- skip the current row
@@ -796,7 +775,7 @@ end
 local function pick_with_leap (buf)
   local picker = require('telescope.actions.state').get_current_picker(buf)
   require('leap').leap {
-    targets = get_targets(buf, picker),
+    targets = get_targets(picker),
     action = function (target)
       picker:set_selection(target.pos[1] - 1)
       require('telescope.actions').select_default(buf)

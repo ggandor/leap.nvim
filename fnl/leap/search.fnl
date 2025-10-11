@@ -73,8 +73,10 @@
       (when (not= line prev-line)
         (set line-str (vim.fn.getline line))
         (set prev-line line))
-      ; Extracting the actual characters from the buffer at the
-      ; match position.
+      ; Extracting the characters from the buffer at the match position.
+      ; (Note: No matter how we change the implementation, at some point
+      ; we will have to know at least the second character, by design,
+      ; for grouping the matches into sublists.)
       (local ch1 (vim.fn.strpart line-str (- col 1) 1 true))
       (local ch2 (if (or (= ch1 "") (< inputlen 2)) ""
                      (vim.fn.strpart line-str (+ col -1 (ch1:len)) 1 true)))

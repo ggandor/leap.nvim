@@ -100,12 +100,12 @@ The last character on a line can be targeted by pressing <space> after it.
 There is nothing special going on here: <space> is simply an alias for `\n`
 and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
 
-To target actual EOL positions, including empty lines, press the newline alias
+To target actual EOL positions, including empty lines, press a newline alias
 twice (pretend that each newline character is duplicated). *leap-to-eol*
 
-A same-character pair (`==`) will match a longer sequence (`=====`) only at
-the beginning, so that e.g. separator lines will not create unnecessary noise
-and eat up all the labels.
+A same-character pair (`==`) will match a longer such sequence (`=====`) only
+at the beginning, so that e.g. separator lines will not create unnecessary
+noise and eat up all the labels.
 
 |V| or |o_V| will make the search skip the current line.
 
@@ -279,6 +279,7 @@ Shift to the next group of labeled targets.
 *leap.opts.keys.prev_group*
 Shift to the previous group of labeled targets (revert `next_group`).
 
+                                                            *leap-clever-repeat*
 Each value can be a table too, with alternatives. In `next_target` and
 `prev_target`, subsequent keys only get active once we have the full search
 pattern (no more input characters are needed). Example ("clever-s"):
@@ -437,26 +438,31 @@ leap({opts})                                                       *leap.leap()*
                • {pattern}?
                  (`string | fun(pattern: string, typed: string[]): string`)
                  A |regexp| pattern to be consumed by |search()|, or a
-                 function returning such a pattern. (Remember to escape
-                 backslashes in the Lua string, as you want to pass those
-                 literally to the Vim function.)
+                 function returning such a pattern. (Remember to use raw
+                 strings, or escape backslashes, as you want to pass those
+                 literally to the Vim function from Lua.)
 
-                 If user input is expected, the function will get the raw
-                 input characters {typed}, as well as the prepared {pattern},
+                 If user input is expected, the function gets the raw input
+                 characters {typed}, as well as the prepared {pattern},
                  allowing you to modify it. Keep in mind, however, that in
                  case of |leap-preview|, the actual search pattern is based on
                  the first input character only - the second part is
-                 substituted by the catch-all pattern |\_.|. This means that
-                 regexp modifiers that affect each character individually
-                 (e.g. |/\c|) will not work with preview - such features need
-                 to be implemented as black-box magic by the plugin. (Related:
+                 substituted by a catch-all pattern. This means that regexp
+                 modifiers that affect each character individually (e.g.
+                 |/\c|) will not work with preview - such features need to be
+                 implemented as black-box magic by the plugin. (Related:
                  |leap-wildcard-problem|.)
 
                  Examples: >lua
                     -- Search only for word beginnings:
                     pattern = function (pat) return '\\<'..pat end
+
                     -- Limit search scope to the current line:
-                    pattern = function (pat) return '\\%.l'..pat end
+                    -- (Note: It is best to always hardcode line numbers,
+                    -- as we might move the cursor before the search starts.)
+                    pattern = function (pat)
+                      return '\\%'..vim.fn.line('.')..'l'..pat
+                    end
 <
                  Note: This feature is experimental, subject to change or
                  removal.
