@@ -722,11 +722,8 @@ end
 --     typing comfort, to get as many direct jumps as possible.
 -- [3] This helper function makes it easier to set "clever-f"-like
 --     functionality (https://github.com/rhysd/clever-f.vim), returning
---     an `opts` table derived from the defaults, where:
---     * the given keys are added to `keys.next_target` and
---       `keys.prev_target`
---     * the forward key is used as the first label in `safe_labels`
---     * the backward (reverse) key is removed from `safe_labels`
+--     an `opts` table derived from the defaults, where the given keys
+--     are added to `keys.next_target` and `keys.prev_target`
 ```
 
 </details>

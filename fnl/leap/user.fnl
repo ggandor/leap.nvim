@@ -2,30 +2,12 @@
 
 (fn with-traversal-keys [fwd-key bwd-key]
   "Returns a table can be used as or merged with `opts`, with
-`keys.next_target`, `keys.prev_target`, and `safe_labels` set
-appropriately."
-  (local leap (require "leap"))
-
-  (fn with-key [t key]
-    (local t (case (type t) :table t _ [t]))
-    (table.insert t key)
-    t)
-
-  (local keys (vim.deepcopy leap.opts.keys))
-  (local keys* {:next_target (with-key keys.next_target fwd-key)
-                :prev_target (with-key keys.prev_target bwd-key)})
-
-  ; Remove the "prev" key from `safe_labels`, and use the "next" key as
-  ; the first label.
-  ; NOTE: support for tables is deprecated.
-  (var safe-labels (vim.deepcopy leap.opts.safe_labels))
-  (when (= (type safe-labels) :table)
-    (set safe-labels (table.concat safe-labels)))
-  (set safe-labels (.. fwd-key
-                       (safe-labels:gsub (.. "[" fwd-key bwd-key "]") "")))
-
-  {:keys keys*
-   :safe_labels safe-labels})
+`keys.next_target` and `keys.prev_target` set appropriately."
+  (let [with-key (fn [t key]
+                   (if (= (type t) :table) [(. t 1) key] [t key]))
+        keys (vim.deepcopy (. (require "leap") :opts :keys))]
+    {:keys {:next_target (with-key keys.next_target fwd-key)
+            :prev_target (with-key keys.prev_target bwd-key)}}))
 
 
 (fn set-repeat-keys [fwd-key bwd-key opts*]

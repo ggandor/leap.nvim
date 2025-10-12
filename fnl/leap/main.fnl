@@ -190,87 +190,109 @@ char.
     (table.insert (. targets.sublists key) target)))
 
 
-(local prepare-labeled-targets
-  (do
-    ; Problem:
-    ; We are autojumping to some position in window A, but our chosen
-    ; labeled target happens to be in window B - in that case we do not
-    ; actually want to reposition the cursor in window A. Restoring it
-    ; afterwards would be overcomplicated, not to mention that the jump
-    ; itself is disorienting in the first place, especially an A->B->C
-    ; version (autojumping to B from A, before moving on to C).
-    (fn all-in-the-same-window? [targets]
-      (var same-win? true)
-      (local win (. targets 1 :wininfo :winid))
-      (each [_ target (ipairs targets) &until (= same-win? false)]
-        (when (not= target.wininfo.winid win)
-          (set same-win? false)))
-      same-win?)
+; Does _not_ mutate its argument.
+(fn get-traversable-labels [labels]
+  (local ks opts.keys)
+  (var bad-keys "")
+  (each [_ key (ipairs [ks.next_target ks.prev_target])]
+    (set bad-keys (.. bad-keys
+                      (if (= (type key) :table)
+                          (table.concat (vim.tbl_map vim.keycode key))
+                          (vim.keycode key)))))
+  (local sanitized (labels:gsub (.. "[" bad-keys "]") ""))
+  (local nxt (and (= (type ks.next_target) :table)
+                  (. ks.next_target 2)))
+  (if (and nxt (= (vim.keycode nxt) nxt))
+      (.. nxt sanitized)
+      sanitized))
 
-    ; Problem:
-    ;     xy   target #1
-    ;   xyL    target #2 (labeled)
-    ;     ^    auto-jump would move the cursor here (covering the label)
-    ;
-    ; Note: The situation implies backward search, and may arise in
-    ; phase two, when only the chosen sublist remained.
-    ;
-    ; Caveat: this case in fact depends on the label position, for
-    ; which the `beacons` module is responsible (e.g. the label is on
-    ; top of the match when repeating), but we're not considering
-    ; that, and just err on the safe side instead of complicating the
-    ; code.
-    (fn first-target-covers-label-of-second? [targets]
-      (case targets
-        [{:pos [l1 c1]} {:pos [l2 c2] :chars [char1 char2]}]
-        (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
 
-    (fn set-autojump [targets]
-      "Set a flag indicating whether we can automatically jump to the
-      first target, without having to select a label."
-      (when (not= opts.safe_labels "")
-        (set targets.autojump?
-             (or (= opts.labels "")                                         ; forced
-                 (>= (length opts.safe_labels) (dec (length targets)))))))  ; smart
+(fn prepare-labeled-targets [targets can-traverse? force-noautojump? multi-window?]
+  (local [labels safe-labels]
+         (if can-traverse? [(if (= opts.labels "") opts.labels
+                                (get-traversable-labels opts.labels))
+                            (if (= opts.safe_labels "") opts.safe_labels
+                                (get-traversable-labels opts.safe_labels))]
+                           [opts.labels opts.safe_labels]))
 
-    (fn attach-label-set [targets]
-      ; Note that there is no one-to-one correspondence between the
-      ; `autojump?` flag and this field. No-autojump might be forced
-      ; implicitly, regardless of using safe labels.
-      (set targets.label-set (if (= opts.labels "") opts.safe_labels
-                                 (= opts.safe_labels "") opts.labels
-                                 targets.autojump? opts.safe_labels
-                                 opts.labels)))
+  ; Problem:
+  ; We are autojumping to some position in window A, but our chosen
+  ; labeled target happens to be in window B - in that case we do not
+  ; actually want to reposition the cursor in window A. Restoring it
+  ; afterwards would be overcomplicated, not to mention that the jump
+  ; itself is disorienting in the first place, especially an A->B->C
+  ; version (autojumping to B from A, before moving on to C).
+  (fn all-in-the-same-window? [targets]
+    (var same-win? true)
+    (local win (. targets 1 :wininfo :winid))
+    (each [_ target (ipairs targets) &until (= same-win? false)]
+      (when (not= target.wininfo.winid win)
+        (set same-win? false)))
+    same-win?)
 
-    (fn set-labels [targets]
-      "Assign a label to each target, by repeating the given label set
-      indefinitely, and register the number of the label group the
-      target is part of.
-      Note that these are once-and-for-all fixed attributes, regardless
-      of the actual UI state ('beacons')."
-      (local {: autojump? :label-set labels} targets)
-      (local |labels| (length labels))
-      (var skipped (if autojump? 1 0))
-      (for [i (if autojump? 2 1) (length targets)]
-        (local target (. targets i))
-        (when target
-          (local i* (- i skipped))  ; label idx
-          (if target.offscreen? (set skipped (inc skipped))
-              (case (% i* |labels|)
-                0 (do
-                    (set target.label (labels:sub |labels| |labels|))
-                    (set target.group (floor (/ i* |labels|))))
-                n (do
-                    (set target.label (labels:sub n n))
-                    (set target.group (inc (floor (/ i* |labels|))))))))))
+  ; Problem:
+  ;     xy   target #1
+  ;   xyL    target #2 (labeled)
+  ;     ^    auto-jump would move the cursor here (covering the label)
+  ;
+  ; Note: The situation implies backward search, and may arise in
+  ; phase two, when only the chosen sublist remained.
+  ;
+  ; Caveat: this case in fact depends on the label position, for
+  ; which the `beacons` module is responsible (e.g. the label is on
+  ; top of the match when repeating), but we're not considering
+  ; that, and just err on the safe side instead of complicating the
+  ; code.
+  (fn first-target-covers-label-of-second? [targets]
+    (case targets
+      [{:pos [l1 c1]} {:pos [l2 c2] :chars [char1 char2]}]
+      (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
 
-    (fn [targets force-noautojump? multi-window?]
-      (when-not (or force-noautojump?
-                    (and multi-window? (not (all-in-the-same-window? targets)))
-                    (first-target-covers-label-of-second? targets))
-        (set-autojump targets))
-      (attach-label-set targets)
-      (set-labels targets))))
+  (fn set-autojump [targets]
+    "Set a flag indicating whether we can automatically jump to the
+    first target, without having to select a label."
+    (when (not= safe-labels "")
+      (set targets.autojump?
+           (or (= labels "")                                         ; forced
+               (>= (length safe-labels) (dec (length targets)))))))  ; smart
+
+  (fn attach-label-set [targets]
+    ; Note that there is no one-to-one correspondence between the
+    ; `autojump?` flag and this field. No-autojump might be forced
+    ; implicitly, regardless of using safe labels.
+    (set targets.label-set (if (= labels "") safe-labels
+                               (= safe-labels "") labels
+                               targets.autojump? safe-labels
+                               labels)))
+
+  (fn set-labels [targets]
+    "Assign a label to each target, by repeating the given label set
+    indefinitely, and register the number of the label group the
+    target is part of.
+    Note that these are once-and-for-all fixed attributes, regardless
+    of the actual UI state ('beacons')."
+    (local {: autojump? :label-set labels} targets)
+    (local |labels| (length labels))
+    (var skipped (if autojump? 1 0))
+    (for [i (if autojump? 2 1) (length targets)]
+      (local target (. targets i))
+      (when target
+        (local i* (- i skipped))  ; label idx
+        (if target.offscreen? (set skipped (inc skipped))
+          (case (% i* |labels|)
+            0 (do
+                (set target.label (labels:sub |labels| |labels|))
+                (set target.group (floor (/ i* |labels|))))
+            n (do
+                (set target.label (labels:sub n n))
+                (set target.group (inc (floor (/ i* |labels|))))))))))
+
+  (when-not (or force-noautojump?
+                (and multi-window? (not (all-in-the-same-window? targets)))
+                (first-target-covers-label-of-second? targets))
+    (set-autojump targets))
+  (attach-label-set targets)
+  (set-labels targets))
 
 
 (fn normalize-directional-indexes [targets]
@@ -598,7 +620,10 @@ char.
                                    ; Should be able to select our target.
                                    (and op-mode? (> (length targets) 1))))
           multi-window? (and windows (> (length windows) 1))]
-      (prepare-labeled-targets targets force-noautojump? multi-window?)))
+      (prepare-labeled-targets targets
+                               (can-traverse? targets)
+                               force-noautojump?
+                               multi-window?)))
 
   ; Repeat
 
