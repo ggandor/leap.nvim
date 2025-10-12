@@ -714,13 +714,18 @@ char.
       (if use-no-labels?
           (each [_ t (ipairs targets)]
             (set t.label nil))
-
-          ; Remove all the subsequent label groups if needed.
-          (not= opts.safe_labels "")
-          (let [last-labeled (inc (length opts.safe_labels))]  ; skipped the first
-            (for [i (inc last-labeled) (length targets)]
-              (set (. targets i :label) nil)
-              (set (. targets i :beacon) nil)))))
+          ; Else remove subsequent label groups.
+          (do
+            ; Because of offscreen (unlabeled) targets anywhere
+            ; in-between, we need linear search.
+            (var start nil)
+            (each [i target (ipairs targets) &until start]
+              (when (and target.group (> target.group 1))
+                (set start i)))
+            (when start
+              (for [i start (length targets)]
+                (set (. targets i :label) nil)
+                (set (. targets i :beacon) nil))))))
 
     (fn display []
       (set-beacons targets {:group-offset st.group-offset :phase st.phase
