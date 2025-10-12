@@ -250,19 +250,19 @@ char.
       of the actual UI state ('beacons')."
       (local {: autojump? :label-set labels} targets)
       (local |labels| (length labels))
-      (var skipped 0)
-      (for [i* (if autojump? 0 1) (length targets)]
-        (local target (. targets i*))
+      (var skipped (if autojump? 1 0))
+      (for [i (if autojump? 2 1) (length targets)]
+        (local target (. targets i))
         (when target
-          (local i (- i* skipped))
+          (local i* (- i skipped))  ; label idx
           (if target.offscreen? (set skipped (inc skipped))
-              (case (% i |labels|)
+              (case (% i* |labels|)
                 0 (do
                     (set target.label (labels:sub |labels| |labels|))
-                    (set target.group (floor (/ i |labels|))))
+                    (set target.group (floor (/ i* |labels|))))
                 n (do
                     (set target.label (labels:sub n n))
-                    (set target.group (inc (floor (/ i |labels|))))))))))
+                    (set target.group (inc (floor (/ i* |labels|))))))))))
 
     (fn [targets force-noautojump? multi-window?]
       (when-not (or force-noautojump?
