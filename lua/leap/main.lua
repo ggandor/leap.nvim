@@ -910,7 +910,7 @@ local function leap(kwargs)
       populate_sublists(targets)
       for _, sublist in pairs(targets.sublists) do
         prepare_labeled_targets_2a(sublist)
-        set_beacons(targets, {phase = st.phase})
+        set_beacons(sublist, {phase = st.phase})
       end
       if (st.phase == 1) then
         resolve_conflicts(targets)

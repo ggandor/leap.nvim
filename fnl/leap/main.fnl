@@ -819,7 +819,7 @@ char.
           (populate-sublists targets)
           (each [_ sublist (pairs targets.sublists)]
             (prepare-labeled-targets* sublist)
-            (set-beacons targets {:phase st.phase}))
+            (set-beacons sublist {:phase st.phase}))
           (when (= st.phase 1)
             (resolve-conflicts targets)))
         (if use-no-labels?
