@@ -80,8 +80,11 @@ At the same time, it reduces mental effort by all possible means:
 
 ### Installation
 
-Use your preferred plugin manager. No extra steps needed besides defining
-keybindings - our recommended arrangement is:
+<details>
+<summary>Mappings</summary>
+
+No setup is required, just define keybindings - our recommended
+arrangement is:
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 's', '<Plug>(leap)')
@@ -90,15 +93,17 @@ vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
 
 See `:h leap-mappings` for more.
 
+</details>
+
 <details>
 <summary>Suggested additional tweaks</summary>
 
-Highly recommended: define a preview filter to reduce visual noise and the
-blinking effect after the first keypress (`:h leap.opts.preview_filter`). You
-can still target any visible positions if needed, but you can define what is
-considered an exceptional case.
-
 ```lua
+-- Highly recommended: define a preview filter to reduce visual noise
+-- and the blinking effect after the first keypress
+-- (`:h leap.opts.preview_filter`). You can still target any visible
+-- positions if needed, but you can define what is considered an
+-- exceptional case.
 -- Exclude whitespace and the middle of alphabetic words from preview:
 --   foobar[baaz] = quux
 --   ^----^^^--^^-^-^--^
@@ -109,19 +114,15 @@ require('leap').opts.preview_filter =
       ch0:match('%a') and ch1:match('%a') and ch2:match('%a')
     )
   end
-```
 
-Define equivalence classes for brackets and quotes, in addition to the default
-whitespace group:
+-- Define equivalence classes for brackets and quotes, in addition to
+-- the default whitespace group:
+require('leap').opts.equivalence_classes = {
+  ' \t\r\n', '([{', ')]}', '\'"`'
+}
 
-```lua
-require('leap').opts.equivalence_classes = { ' \t\r\n', '([{', ')]}', '\'"`' }
-```
-
-Use the traversal keys to repeat the previous motion without explicitly
-invoking Leap:
-
-```lua
+-- Use the traversal keys to repeat the previous motion without
+-- explicitly invoking Leap:
 require('leap.user').set_repeat_keys('<enter>', '<backspace>')
 ```
 
@@ -372,8 +373,7 @@ unique in that it
 * offers a smoother experience, by (somewhat) eliminating the pause before
   typing the label
 
-* feels natural to use for both distant _and_ close targets (thanks to smart
-  auto-jumping)
+* feels natural to use for both distant _and_ close targets
 
 ## ❔ FAQ
 

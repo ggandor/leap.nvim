@@ -123,7 +123,7 @@ disable this behaviour, see |leap.opts.safe_labels| and |leap.opts.labels|.
 
                                                     *leap-repeat* *leap-traversal*
 At any stage, <enter> (|leap.opts.keys.next_target|) jumps to the next/closest
-available target: pressing `<enter>` right away repeats the previous search;
+available target: pressing <enter> right away repeats the previous search;
 `{char}<enter>` accepts the closest `{char}` match (can be used as a multiline
 substitute for `fFtT` motions). *leap-shortcut*
 
@@ -197,17 +197,15 @@ Example configuration: >lua
     Note: If you want to be able to target empty lines and characters at the
     end of a line, keep an alias for `\n` and `\r`. |leap-till-eol|
 
-    Note: Wildcard characters (non-mutual aliases), at least ones that work
-    for the whole pattern, are not possible in Leap, for the same reason that
-    supporting |smartcase| is not possible: we cannot read your mind, and
-    decide on which label to show for |leap-preview|. (Let's say you have
-    entered `a`, and there is a `?` -> `x|y|z` wildcard mapping. Since we
-    cannot show two different futures at the same time, the more general
-    pattern should win in all places - that is, we have no other choice than
-    to cover all `ax|ay|az` matches with one shared label sequence, since you
-    might type `?` next. But then `?xyz` is in fact a mutual alias group,
-    there are no shortcuts anymore. |smartcase| is a specific instance of this
-    issue: `x` -> `x|X`.) *leap-wildcard-problem*
+    Note: Non-mutual aliases (wildcard characters), at least ones that work
+    for the whole pattern, are not possible in Leap, because we cannot read
+    your mind, and decide on which label to show for |leap-preview|. (Let's
+    say you have entered `a`, and there is a `?` -> `x|y|z` wildcard mapping.
+    We have no other choice than to cover all `ax|ay|az` matches with one
+    shared label sequence, since you might type `?` next. But then `?xyz` is,
+    by definition, a mutual alias group, there are no shortcuts anymore.
+    |smartcase| is a specific instance of this issue: `x` -> `x|X`.)
+    *leap-wildcard-problem*
 
                                                       *leap.opts.preview_filter*
 `preview_filter = nil`
@@ -279,11 +277,10 @@ Shift to the next group of labeled targets.
 *leap.opts.keys.prev_group*
 Shift to the previous group of labeled targets (revert `next_group`).
 
-                                                            *leap-clever-repeat*
 Each value can be a table too, with alternatives. In `next_target` and
 `prev_target`, subsequent keys only get active once we have the full search
-pattern (no more input characters are needed). Example ("clever-s"):
->lua
+pattern (no more input characters are needed). *leap-clever-repeat*
+Example ("clever-s"): >lua
     local keys = require('leap').opts.keys
     keys.next_target = { '<enter>', 's' }
     keys.prev_target = { '<backspace>', 'S' }
