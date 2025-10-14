@@ -52,27 +52,54 @@ local plug_mappings = {
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-forward-to)',
-    '<Plug>(leap-forward)',
+    function ()
+      local msg = ('leap.nvim: <Plug>(leap-forward-to) is deprecated. '
+                   .. 'See `:help leap-mappings` to update your config.')
+      vim.notify(msg, vim.log.levels.WARN)
+      require('leap').leap { inclusive = true }
+    end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-backward-to)',
-    '<Plug>(leap-backward)',
+    function ()
+      local msg = ('leap.nvim: <Plug>(leap-backward-to) is deprecated. '
+                   .. 'See `:help leap-mappings` to update your config.')
+      vim.notify(msg, vim.log.levels.WARN)
+      require('leap').leap { backward = true }
+    end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-cross-window)',
-    '<Plug>(leap-from-window)'
+    function ()
+      local msg = ('leap.nvim: <Plug>(leap-cross-window) is deprecated. '
+                   .. 'See `:help leap-mappings` to update your config.')
+      vim.notify(msg, vim.log.levels.WARN)
+      require('leap').leap {
+        windows = require('leap.util').get_enterable_windows()
+      }
+    end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-forward-x)',
-    function () require('leap').leap { offset = 1, inclusive = true } end
+    function ()
+      local msg = ('leap.nvim: <Plug>(leap-forward-x) is deprecated. '
+                   .. 'See `:help leap-mappings` to update your config.')
+      vim.notify(msg, vim.log.levels.WARN)
+      require('leap').leap { offset = 1, inclusive = true }
+    end
   },
   {
     { 'n', 'x', 'o' },
     '<Plug>(leap-backward-x)',
-    function () require('leap').leap { backward = true, offset = 2 } end
+    function ()
+      local msg = ('leap.nvim: <Plug>(leap-backward-x) is deprecated. '
+                   .. 'See `:help leap-mappings` to update your config.')
+      vim.notify(msg, vim.log.levels.WARN)
+      require('leap').leap { backward = true, offset = 2 }
+    end
   },
 }
 

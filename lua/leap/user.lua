@@ -67,6 +67,8 @@ local function set_repeat_keys(fwd_key, bwd_key, opts_2a)
   return vim.keymap.set(modes, bwd_key, _12_, {silent = true, desc = _13_})
 end
 local function set_default_mappings()
+  local msg = ("leap.nvim: `set_default_mappings()` is deprecated. " .. "See `:help leap-mappings` to update your config.")
+  vim.notify(msg, vim.log.levels.WARN)
   for _, _15_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap)", "Leap"}, {{"n"}, "S", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local modes = _15_[1]
     local lhs = _15_[2]
@@ -78,8 +80,8 @@ local function set_default_mappings()
         vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
       else
         if (rhs_2a ~= rhs) then
-          local msg = ("leap.nvim: set_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
-          vim.notify(msg, vim.log.levels.WARN)
+          local msg0 = ("leap.nvim: set_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
+          vim.notify(msg0, vim.log.levels.WARN)
         else
         end
       end
@@ -88,6 +90,8 @@ local function set_default_mappings()
   return nil
 end
 local function create_default_mappings()
+  local msg = ("leap.nvim: `create_default_mappings()` is deprecated. " .. "See `:help leap-mappings` to update your config.")
+  vim.notify(msg, vim.log.levels.WARN)
   for _, _18_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local modes = _18_[1]
     local lhs = _18_[2]
@@ -99,8 +103,8 @@ local function create_default_mappings()
         vim.keymap.set(mode, lhs, rhs, {silent = true, desc = desc})
       else
         if (rhs_2a ~= rhs) then
-          local msg = ("leap.nvim: create_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
-          vim.notify(msg, vim.log.levels.WARN)
+          local msg0 = ("leap.nvim: create_default_mappings() " .. "found conflicting mapping for " .. lhs .. ": " .. rhs_2a)
+          vim.notify(msg0, vim.log.levels.WARN)
         else
         end
       end
@@ -109,7 +113,9 @@ local function create_default_mappings()
   return nil
 end
 local function add_default_mappings(force_3f)
-  for _, _21_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward-to)", "Leap forward to"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward-to)", "Leap backward to"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-cross-window)", "Leap from window"}}) do
+  local msg = ("leap.nvim: `add_default_mappings()` is deprecated. " .. "See `:help leap-mappings` to update your config.")
+  vim.notify(msg, vim.log.levels.WARN)
+  for _, _21_ in ipairs({{{"n", "x", "o"}, "s", "<Plug>(leap-forward)", "Leap forward"}, {{"n", "x", "o"}, "S", "<Plug>(leap-backward)", "Leap backward"}, {{"x", "o"}, "x", "<Plug>(leap-forward-till)", "Leap forward till"}, {{"x", "o"}, "X", "<Plug>(leap-backward-till)", "Leap backward till"}, {{"n", "x", "o"}, "gs", "<Plug>(leap-from-window)", "Leap from window"}}) do
     local modes = _21_[1]
     local lhs = _21_[2]
     local rhs = _21_[3]
@@ -124,6 +130,8 @@ local function add_default_mappings(force_3f)
   return nil
 end
 local function set_default_keymaps(force_3f)
+  local msg = ("leap.nvim: `set_default_keymaps()` is deprecated. " .. "See `:help leap-mappings` to update your config.")
+  vim.notify(msg, vim.log.levels.WARN)
   for _, _23_ in ipairs({{"n", "s", "<Plug>(leap-forward)"}, {"n", "S", "<Plug>(leap-backward)"}, {"x", "s", "<Plug>(leap-forward)"}, {"x", "S", "<Plug>(leap-backward)"}, {"o", "z", "<Plug>(leap-forward)"}, {"o", "Z", "<Plug>(leap-backward)"}, {"o", "x", "<Plug>(leap-forward-x)"}, {"o", "X", "<Plug>(leap-backward-x)"}, {"n", "gs", "<Plug>(leap-cross-window)"}, {"x", "gs", "<Plug>(leap-cross-window)"}, {"o", "gs", "<Plug>(leap-cross-window)"}}) do
     local mode = _23_[1]
     local lhs = _23_[2]

@@ -43,6 +43,9 @@
 
 ; Deprecated.
 (fn set-default-mappings []
+  (local msg (.. "leap.nvim: `set_default_mappings()` is deprecated. "
+                 "See `:help leap-mappings` to update your config."))
+  (vim.notify msg vim.log.levels.WARN)
   (each [_ [modes lhs rhs desc]
          (ipairs
           [[[:n :x :o] "s" "<Plug>(leap)" "Leap"]
@@ -60,6 +63,9 @@
 
 ; Deprecated.
 (fn create-default-mappings []
+  (local msg (.. "leap.nvim: `create_default_mappings()` is deprecated. "
+                 "See `:help leap-mappings` to update your config."))
+  (vim.notify msg vim.log.levels.WARN)
   (each [_ [modes lhs rhs desc]
          (ipairs
           [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
@@ -78,14 +84,16 @@
 
 ; Deprecated.
 (fn add-default-mappings [force?]
+  (local msg (.. "leap.nvim: `add_default_mappings()` is deprecated. "
+                 "See `:help leap-mappings` to update your config."))
+  (vim.notify msg vim.log.levels.WARN)
   (each [_ [modes lhs rhs desc]
          (ipairs
-          [[[:n :x :o] "s"  "<Plug>(leap-forward-to)" "Leap forward to"]
-           [[:n :x :o] "S"  "<Plug>(leap-backward-to)" "Leap backward to"]
+          [[[:n :x :o] "s"  "<Plug>(leap-forward)" "Leap forward"]
+           [[:n :x :o] "S"  "<Plug>(leap-backward)" "Leap backward"]
            [   [:x :o] "x"  "<Plug>(leap-forward-till)" "Leap forward till"]
            [   [:x :o] "X"  "<Plug>(leap-backward-till)" "Leap backward till"]
            [[:n :x :o] "gs" "<Plug>(leap-from-window)" "Leap from window"]
-           [[:n :x :o] "gs" "<Plug>(leap-cross-window)" "Leap from window"]  ; deprecated
            ])]
     (each [_ mode (ipairs modes)]
       (when (or force?
@@ -100,6 +108,9 @@
 
 ; Deprecated.
 (fn set-default-keymaps [force?]
+  (local msg (.. "leap.nvim: `set_default_keymaps()` is deprecated. "
+                 "See `:help leap-mappings` to update your config."))
+  (vim.notify msg vim.log.levels.WARN)
   (each [_ [mode lhs rhs]
          (ipairs
           [[:n "s"  "<Plug>(leap-forward)"]
