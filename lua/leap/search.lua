@@ -13,12 +13,12 @@ local function get_match_positions(pattern, bounds, _2_)
   local whole_window_3f = _2_["whole-window?"]
   local left_bound = bounds[1]
   local right_bound = bounds[2]
-  local bounded_3f = (whole_window_3f and not vim.wo.wrap)
+  local bounded_search_3f = (not vim.wo.wrap and whole_window_3f)
   local bounds_pat
-  if not bounded_3f then
-    bounds_pat = ""
-  else
+  if bounded_search_3f then
     bounds_pat = ("\\(" .. "\\%>" .. (left_bound - 1) .. "v" .. "\\%<" .. (right_bound + 1) .. "v" .. "\\)")
+  else
+    bounds_pat = ""
   end
   local pattern0 = (bounds_pat .. pattern)
   local flags
@@ -71,7 +71,7 @@ local function get_match_positions(pattern, bounds, _2_)
       local vcol = vim.fn.virtcol(".")
       if (vcol == right_bound) then
         win_edge_3f[idx] = true
-      elseif (not bounded_3f and ((vcol > right_bound) or (vcol < left_bound))) then
+      elseif (not vim.wo.wrap and ((vcol > right_bound) or (vcol < left_bound))) then
         offscreen_3f[idx] = true
       else
       end

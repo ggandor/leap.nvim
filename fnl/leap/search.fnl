@@ -10,12 +10,13 @@
 
 (fn get-match-positions [pattern bounds {: backward? : whole-window?}]
   (let [[left-bound right-bound] bounds
-        bounded? (and whole-window? (not vim.wo.wrap))
-        bounds-pat (if (not bounded?) ""
+        bounded-search? (and (not vim.wo.wrap) whole-window?)
+        bounds-pat (if bounded-search?
                        (.. "\\("
                            "\\%>" (- left-bound 1) "v"
                            "\\%<" (+ right-bound 1) "v"
-                           "\\)"))
+                           "\\)")
+                       "")
         pattern (.. bounds-pat pattern)
         flags (if backward? "bW" "W")
         stopline (vim.fn.line (if backward? "w0" "w$"))
@@ -54,7 +55,7 @@
                 (if (= vcol right-bound)
                     (set (. win-edge? idx) true)
 
-                    (and (not bounded?)
+                    (and (not vim.wo.wrap)
                          (or (> vcol right-bound) (< vcol left-bound)))
                     (set (. offscreen? idx) true))))))
 
