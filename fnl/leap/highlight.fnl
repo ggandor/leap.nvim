@@ -34,7 +34,9 @@
 (fn apply-backdrop [ranges higroup]
   (local ns (vim.api.nvim_create_namespace ""))
   (each [buf [start finish] (pairs ranges)]
-    (vim.hl.range buf ns higroup start finish))
+    (if (= (vim.fn.has "nvim-0.11") 1)
+        (vim.hl.range buf ns higroup start finish)
+        (vim.highlight.range buf ns higroup start finish)))
   (vim.api.nvim_create_autocmd "User"
     {:pattern ["LeapRedraw" "LeapLeave"]
      :once true

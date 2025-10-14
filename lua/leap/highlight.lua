@@ -29,12 +29,16 @@ local function apply_backdrop(ranges, higroup)
   for buf, _3_ in pairs(ranges) do
     local start = _3_[1]
     local finish = _3_[2]
-    vim.hl.range(buf, ns, higroup, start, finish)
+    if (vim.fn.has("nvim-0.11") == 1) then
+      vim.hl.range(buf, ns, higroup, start, finish)
+    else
+      vim.highlight.range(buf, ns, higroup, start, finish)
+    end
   end
-  local function _4_()
-    for buf, _5_ in pairs(ranges) do
-      local start = _5_[1]
-      local finish = _5_[2]
+  local function _5_()
+    for buf, _6_ in pairs(ranges) do
+      local start = _6_[1]
+      local finish = _6_[2]
       if api.nvim_buf_is_valid(buf) then
         vim.api.nvim_buf_clear_namespace(buf, ns, start[1], finish[1])
       else
@@ -42,7 +46,7 @@ local function apply_backdrop(ranges, higroup)
     end
     return vim.api.nvim_buf_clear_namespace(0, ns, (vim.fn.line("w0") - 1), vim.fn.line("w$"))
   end
-  vim.api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _4_})
+  vim.api.nvim_create_autocmd("User", {pattern = {"LeapRedraw", "LeapLeave"}, once = true, callback = _5_})
   return nil
 end
 local function __3ergb(n)
@@ -90,27 +94,27 @@ local custom_def_maps = {["leap-label-default-light"] = {fg = "#eef1f0", bg = "#
 M.init = function(self, force_3f)
   local custom_defaults_3f = ((vim.g.colors_name == "default") or vim.g.vscode)
   local defaults
-  local _10_
+  local _11_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _10_ = custom_def_maps["leap-label-default-light"]
+      _11_ = custom_def_maps["leap-label-default-light"]
     else
-      _10_ = custom_def_maps["leap-label-default-dark"]
+      _11_ = custom_def_maps["leap-label-default-dark"]
     end
   else
-    _10_ = {link = "IncSearch"}
+    _11_ = {link = "IncSearch"}
   end
-  local _13_
+  local _14_
   if custom_defaults_3f then
     if (vim.o.background == "light") then
-      _13_ = custom_def_maps["leap-match-default-light"]
+      _14_ = custom_def_maps["leap-match-default-light"]
     else
-      _13_ = custom_def_maps["leap-match-default-dark"]
+      _14_ = custom_def_maps["leap-match-default-dark"]
     end
   else
-    _13_ = {link = "Search"}
+    _14_ = {link = "Search"}
   end
-  defaults = {[self.group.label] = _10_, [self.group.match] = _13_}
+  defaults = {[self.group.label] = _11_, [self.group.match] = _14_}
   for group_name, def_map in pairs(vim.deepcopy(defaults)) do
     if not force_3f then
       def_map.default = true
@@ -126,10 +130,10 @@ M.init = function(self, force_3f)
       return vim.api.nvim_set_hl(0, self.group.backdrop, {link = "None"})
     else
       local user = require("leap.user")
-      local function _17_()
+      local function _18_()
         return apply_backdrop(get_search_ranges(), self.group.backdrop)
       end
-      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw"}, group = api.nvim_create_augroup("LeapDefault_Backdrop", {}), callback = _17_})
+      return api.nvim_create_autocmd("User", {pattern = {"LeapRedraw"}, group = api.nvim_create_augroup("LeapDefault_Backdrop", {}), callback = _18_})
     end
   else
     return nil
