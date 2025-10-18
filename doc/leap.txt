@@ -207,16 +207,13 @@ Example configuration: >lua
     |smartcase| is a specific instance of this issue: `x` -> `x|X`.)
     *leap-wildcard-problem*
 
-                                                      *leap.opts.preview_filter*
-`preview_filter = nil`
+                                                             *leap.opts.preview*
+`preview = true`
 
-    A function that only lets through selected matches for |leap-preview|, to
-    reduce visual noise. It gets three characters as arguments: the character
-    preceding the match (might be an empty string) and the matched pair
-    itself. Examples: >lua
-
-    -- Disable preview altogether.
-    function () return false end
+    Enable |leap-preview|. Can also be a function that only lets through
+    selected matches, to reduce visual noise. It gets three characters as
+    arguments: the character preceding the match, and the matched pair itself.
+    Missing characters are represented by empty strings. Example: >lua
 
     -- Exclude whitespace and the middle of alphabetic words from preview:
     --   foobar[baaz] = quux

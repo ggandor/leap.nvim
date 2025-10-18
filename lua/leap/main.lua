@@ -513,7 +513,7 @@ local function leap(kwargs)
   contains_safe_3f = _78_
   local st
   local _79_
-  if (keyboard_input_3f and (inputlen0 == 2) and not no_labels_to_use_3f) then
+  if (keyboard_input_3f and (inputlen0 == 2) and not no_labels_to_use_3f and (opts.preview ~= false)) then
     _79_ = 1
   else
     _79_ = nil

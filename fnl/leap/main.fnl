@@ -457,7 +457,8 @@ char.
              ; right after the first input)?
              :phase (when (and keyboard-input?
                                (= inputlen 2)
-                               (not no-labels-to-use?))
+                               (not no-labels-to-use?)
+                               (not= opts.preview false))
                       1)
              ; When repeating a `{char}<enter>` search (started to
              ; traverse after the first input).

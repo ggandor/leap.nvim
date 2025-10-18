@@ -101,19 +101,18 @@ See `:h leap-mappings` for more.
 ```lua
 -- Highly recommended: define a preview filter to reduce visual noise
 -- and the blinking effect after the first keypress
--- (`:h leap.opts.preview_filter`). You can still target any visible
+-- (`:h leap.opts.preview`). You can still target any visible
 -- positions if needed, but you can define what is considered an
 -- exceptional case.
 -- Exclude whitespace and the middle of alphabetic words from preview:
 --   foobar[baaz] = quux
 --   ^----^^^--^^-^-^--^
-require('leap').opts.preview_filter =
-  function (ch0, ch1, ch2)
-    return not (
-      ch1:match('%s') or
-      ch0:match('%a') and ch1:match('%a') and ch2:match('%a')
-    )
-  end
+require('leap').opts.preview = function (ch0, ch1, ch2)
+  return not (
+    ch1:match('%s')
+    or (ch0:match('%a') and ch1:match('%a') and ch2:match('%a'))
+  )
+end
 
 -- Define equivalence classes for brackets and quotes, in addition to
 -- the default whitespace group:
@@ -348,7 +347,7 @@ It is obviously impossible to achieve all of the above at the same time, without
 some trade-offs at least; but in our opinion Leap comes pretty close, occupying
 a sweet spot in the design space. (The worst remaining offender might be visual
 noise, but clever filtering in the preview phase can help - see `:h
-leap.opts.preview_filter`.)
+leap.opts.preview`.)
 
 The **one-step shift between perception and action** is the big idea that cuts
 the Gordian knot: a fixed pattern length combined with previewing labels can
@@ -479,7 +478,7 @@ require('leap').opts.labels = ''
 <summary>Disable previewing labels</summary>
 
 ```lua
-require('leap').opts.preview_filter = function () return false end
+require('leap').opts.preview = false
 ```
 
 </details>

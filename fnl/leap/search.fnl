@@ -95,10 +95,13 @@
          :offscreen? (. offscreen? i)
          :previewable?
          (or (< inputlen 2)
-             (not opts.preview_filter)
-             (opts.preview_filter
-               ; Extract the previous character too for a filter fn.
-               (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2))}))))
+             (let [preview (or opts.preview_filter  ; deprecated
+                               opts.preview)]
+               (and (= (type preview) :function)
+                    (preview
+                      (vim.fn.strpart line-str (- col 2) 1 true) ch1 ch2)))
+             (and (not opts.preview_filter)  ; deprecated
+                  (= opts.preview true)))}))))
 
 
 (fn add-directional-indexes [targets cursor-positions src-win]

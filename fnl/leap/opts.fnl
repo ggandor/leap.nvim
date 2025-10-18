@@ -1,6 +1,6 @@
 (local M {:default {:case_sensitive false
                     :equivalence_classes [" \t\r\n"]
-                    :preview_filter nil
+                    :preview true
                     :safe_labels "sfnut/SFNLHMUGTZ?"
                     :labels (.. "sfnjklhodweimbuyvrgtaqpcxz/"
                                 "SFNJKLHODWEIMBUYVRGTAQPCXZ?")
