@@ -56,7 +56,8 @@
                     (set (. win-edge? idx) true)
 
                     (and (not vim.wo.wrap)
-                         (or (> vcol right-bound) (< vcol left-bound)))
+                         (or (> vcol right-bound)
+                             (< vcol left-bound)))
                     (set (. offscreen? idx) true))))))
 
     (values positions win-edge? offscreen?)))

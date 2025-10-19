@@ -1,5 +1,3 @@
-(local opts (require "leap.opts"))
-
 (local api vim.api)
 
 

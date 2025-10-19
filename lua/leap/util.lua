@@ -1,6 +1,5 @@
 -- Code generated from fnl/leap/util.fnl - do not edit directly.
 
-local opts = require("leap.opts")
 local api = vim.api
 local function clamp(x, min, max)
   if (x < min) then

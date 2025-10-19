@@ -453,8 +453,7 @@ char.
 
   ; Ephemeral state (of the current call) that is not interesting for
   ; the outside world.
-  (local st {; Multi-phase processing (show beacons ahead of time,
-             ; right after the first input)?
+  (local st {; Multi-phase processing (show preview)?
              :phase (when (and keyboard-input?
                                (= inputlen 2)
                                (not no-labels-to-use?)
@@ -817,20 +816,22 @@ char.
                                  (and invoked-dot-repeat?
                                       state.dot_repeat.targets)))
   (local targets
-    (if user-given-targets* (get-user-given-targets user-given-targets*)
-        (let [pattern* (or user-given-pattern
-                           (and invoked-repeat? state.repeat.pattern)
-                           (and invoked-dot-repeat? state.dot_repeat.pattern))
-              pattern (if (= (type pattern*) :string) pattern*
+    (if user-given-targets*
+        (get-user-given-targets user-given-targets*)
+        (let [pattern (or user-given-pattern
+                          (and invoked-repeat? state.repeat.pattern)
+                          (and invoked-dot-repeat? state.dot_repeat.pattern))
+              pattern* (if (= (type pattern) :string)
+                          pattern
 
-                          (= (type pattern*) :function)
-                          (pattern*
-                            (if in1 (prepare-pattern in1 ?in2 st.inputlen) "")
-                            [in1 ?in2])
+                          (= (type pattern) :function)
+                          (pattern (if in1 (prepare-pattern
+                                             in1 ?in2 st.inputlen)
+                                       "")
+                                   [in1 ?in2])
 
                           (prepare-pattern in1 ?in2 st.inputlen))]
-          ; TODO: refactor errmsg-handling
-          (get-targets pattern in1 ?in2))))
+          (get-targets pattern* in1 ?in2))))  ; TODO: refactor errmsg-handling
   (when-not targets
     (exit-early))
 
@@ -843,7 +844,7 @@ char.
                         (not (or ?in2 st.repeating-shortcut?))))
 
   (do
-    (local preview? need-in2?)
+    (local preview? st.phase)
     (local use-no-labels? (or no-labels-to-use? st.repeating-shortcut?))
     (if preview?
         (do

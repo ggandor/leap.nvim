@@ -919,22 +919,22 @@ local function leap(kwargs)
   if user_given_targets_2a then
     targets = get_user_given_targets(user_given_targets_2a)
   else
-    local pattern_2a = (user_given_pattern or (invoked_repeat_3f and state["repeat"].pattern) or (invoked_dot_repeat_3f and state.dot_repeat.pattern))
-    local pattern
-    if (type(pattern_2a) == "string") then
-      pattern = pattern_2a
-    elseif (type(pattern_2a) == "function") then
+    local pattern = (user_given_pattern or (invoked_repeat_3f and state["repeat"].pattern) or (invoked_dot_repeat_3f and state.dot_repeat.pattern))
+    local pattern_2a
+    if (type(pattern) == "string") then
+      pattern_2a = pattern
+    elseif (type(pattern) == "function") then
       local _143_
       if in1 then
         _143_ = prepare_pattern(in1, _3fin2, st.inputlen)
       else
         _143_ = ""
       end
-      pattern = pattern_2a(_143_, {in1, _3fin2})
+      pattern_2a = pattern(_143_, {in1, _3fin2})
     else
-      pattern = prepare_pattern(in1, _3fin2, st.inputlen)
+      pattern_2a = prepare_pattern(in1, _3fin2, st.inputlen)
     end
-    targets = get_targets(pattern, in1, _3fin2)
+    targets = get_targets(pattern_2a, in1, _3fin2)
   end
   if not targets then
     exit_early_2a()
@@ -957,7 +957,7 @@ local function leap(kwargs)
   end
   local need_in2_3f = ((inputlen0 == 2) and not (_3fin2 or st["repeating-shortcut?"]))
   do
-    local preview_3f = need_in2_3f
+    local preview_3f = st.phase
     local use_no_labels_3f = (no_labels_to_use_3f or st["repeating-shortcut?"])
     if preview_3f then
       populate_sublists(targets)
