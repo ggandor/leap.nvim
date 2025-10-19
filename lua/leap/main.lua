@@ -56,8 +56,8 @@ local function to_membership_lookup(eqv_classes)
   end
   return res
 end
-local function get_equivalence_class(ch)
-  if opts.case_sensitive then
+local function get_equivalence_class(ch, consider_smartcase_3f)
+  if (opts.case_sensitive or not vim.go.ignorecase or (consider_smartcase_3f and vim.go.smartcase and (lower(ch) ~= ch))) then
     return opts.eqv_class_of[ch]
   else
     return (opts.eqv_class_of[lower(ch)] or opts.eqv_class_of[upper(ch)])
@@ -75,7 +75,7 @@ local function get_representative_char(ch)
     _9_ = t_8_
   end
   ch_2a = (_9_ or ch)
-  if opts.case_sensitive then
+  if (opts.case_sensitive or not vim.go.ignorecase) then
     return ch_2a
   else
     return lower(ch_2a)
@@ -117,15 +117,17 @@ local function char_list_to_collection(chars)
   return table.concat(vim.tbl_map(prepare, chars))
 end
 local function expand_to_eqv_collection(char)
-  return char_list_to_collection((get_equivalence_class(char) or {char}))
+  return char_list_to_collection((get_equivalence_class(char, true) or {char}))
 end
 local function prepare_pattern(in1, _3fin2, inputlen)
   local prefix
   local _14_
-  if opts.case_sensitive then
+  if (opts.case_sensitive == true) then
     _14_ = "\\C"
-  else
+  elseif (opts.case_sensitive == false) then
     _14_ = "\\c"
+  else
+    _14_ = ""
   end
   local _16_
   if string.match(vim.fn.mode(true), "V") then

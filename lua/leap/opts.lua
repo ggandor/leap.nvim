@@ -1,6 +1,6 @@
 -- Code generated from fnl/leap/opts.fnl - do not edit directly.
 
-local M = {default = {equivalence_classes = {" \9\13\n"}, preview = true, safe_labels = "sfnut/SFNLHMUGTZ?", labels = ("sfnjklhodweimbuyvrgtaqpcxz/" .. "SFNJKLHODWEIMBUYVRGTAQPCXZ?"), keys = {next_target = "<enter>", prev_target = "<backspace>", next_group = "<space>", prev_group = "<backspace>"}, vim_opts = {["wo.scrolloff"] = 0, ["wo.sidescrolloff"] = 0, ["wo.conceallevel"] = 0, ["bo.modeline"] = false}, max_highlighted_traversal_targets = 10, substitute_chars = {}, case_sensitive = false, highlight_unlabeled_phase_one_targets = false}, current_call = {}}
+local M = {default = {preview = true, equivalence_classes = {" \9\13\n"}, safe_labels = "sfnut/SFNLHMUGTZ?", labels = ("sfnjklhodweimbuyvrgtaqpcxz/" .. "SFNJKLHODWEIMBUYVRGTAQPCXZ?"), keys = {next_target = "<enter>", prev_target = "<backspace>", next_group = "<space>", prev_group = "<backspace>"}, vim_opts = {["wo.scrolloff"] = 0, ["wo.sidescrolloff"] = 0, ["wo.conceallevel"] = 0, ["bo.modeline"] = false}, case_sensitive = nil, max_highlighted_traversal_targets = 10, substitute_chars = {}, highlight_unlabeled_phase_one_targets = false}, current_call = {}}
 local function _1_(self, key_2a)
   local key
   if (key_2a == "special_keys") then

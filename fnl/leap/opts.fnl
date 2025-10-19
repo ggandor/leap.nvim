@@ -1,6 +1,5 @@
-(local M {:default {:case_sensitive false
+(local M {:default {:preview true
                     :equivalence_classes [" \t\r\n"]
-                    :preview true
                     :safe_labels "sfnut/SFNLHMUGTZ?"
                     :labels (.. "sfnjklhodweimbuyvrgtaqpcxz/"
                                 "SFNJKLHODWEIMBUYVRGTAQPCXZ?")
@@ -13,6 +12,7 @@
                                :wo.conceallevel 0
                                :bo.modeline false}  ; lightspeed#81
                     ; Deprecated options.
+                    :case_sensitive nil
                     :highlight_unlabeled_phase_one_targets false
                     :max_highlighted_traversal_targets 10
                     :substitute_chars {}}

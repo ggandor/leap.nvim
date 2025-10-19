@@ -74,16 +74,27 @@ interrupted change operation."
           (set (. res ch) cl*))))
     res))
 
-(fn get-equivalence-class [ch]
-  (if opts.case_sensitive
+; We use this helper fn both for the search pattern and for the sublist
+; keys, but 'smartcase' should only be considered in the search phase
+; (see `:help leap-wildcard-problem`).
+(fn get-equivalence-class [ch consider-smartcase?]
+  (if (or opts.case_sensitive  ; deprecated
+          (not vim.go.ignorecase)
+          (and consider-smartcase? vim.go.smartcase (not= (lower ch) ch)))
       (. opts.eqv_class_of ch)
+      ; For collections in the search pattern, either is fine, since
+      ; 'ignorecase' applies here. With sublists, the contract is that
+      ; lowercase will be the representative character.
       (or (. opts.eqv_class_of (lower ch))
           (. opts.eqv_class_of (upper ch)))))
 
 (fn get-representative-char [ch]
   ; We choose the first one from an equivalence class (arbitrary).
   (local ch* (or (?. (get-equivalence-class ch) 1) ch))
-  (if opts.case_sensitive ch* (lower ch*)))
+  (if (or opts.case_sensitive  ; deprecated
+          (not vim.go.ignorecase))
+      ch*
+      (lower ch*)))
 
 
 ; Search pattern ///1
@@ -102,9 +113,9 @@ interrupted change operation."
     (table.concat (vim.tbl_map prepare chars))))
 
 
-(fn expand-to-eqv-collection [char]             ; <-- 'a'
-  (-> (or (get-equivalence-class char) [char])  ; --> {'a','á','ä'}
-      (char-list-to-collection)))               ; --> 'aáä'
+(fn expand-to-eqv-collection [char]                  ; <-- 'a'
+  (-> (or (get-equivalence-class char true) [char])  ; --> {'a','á','ä'}
+      (char-list-to-collection)))                    ; --> 'aáä'
 
 
 ; NOTE: If preview (two-step processing) is enabled, for any kind of
@@ -118,7 +129,9 @@ interrupted change operation."
 (fn prepare-pattern [in1 ?in2 inputlen]
   "Transform user input to the appropriate search pattern."
   (let [prefix (.. "\\V"
-                   (if opts.case_sensitive "\\C" "\\c")
+                   (if (= opts.case_sensitive true) "\\C"   ; deprecated
+                       (= opts.case_sensitive false) "\\c"  ; deprecated
+                       "")
                    ; Skip the current line in linewise modes.
                    (if (string.match (vim.fn.mode true) "V")
                        ; Hardcode the line number, we might set the

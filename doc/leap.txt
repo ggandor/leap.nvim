@@ -103,6 +103,20 @@ and `\r`, set in |leap.opts.equivalence_classes| by default. *leap-till-eol*
 To target actual EOL positions, including empty lines, press a newline alias
 twice (pretend that each newline character is duplicated). *leap-to-eol*
 
+Case sensitivity is determined by 'ignorecase' and 'smartcase'. If you want
+specific settings for Leap motions, you can set these to temporary values in
+|leap.opts.vim_opts|.
+
+NOTE: 'smartcase' is experimentally supported for |leap-preview| too, but
+there are serious caveats: it can only be applied on the first input
+character, by design, since the second one just filters the already acquired
+and _labeled_ targets (see |leap-wildcard-problem|). A related issue is that,
+as of the current implementation, |leap-repeat| will not find the same matches
+- while an `Ab` input with 'smartcase' will match both `Ab` and `AB` (see
+above), repeat will only match `Ab`-s, like a normal search command would (it
+is not a step-by-step replay of the previous invocation's phases).
+*leap-smartcase*
+
 A same-character pair (`==`) will match a longer such sequence (`=====`) only
 at the beginning, so that e.g. separator lines will not create unnecessary
 noise and eat up all the labels.
@@ -178,35 +192,9 @@ their defaults.
 
 Example configuration: >lua
     local leap = require('leap')
-    leap.opts.case_sensitive = true
+    leap.opts.vim_opts['go.ignorecase'] = false
     leap.opts.keys.prev_target = '<s-enter>'
 <
-                                                      *leap.opts.case_sensitive*
-`case_sensitive = false`
-
-    Consider case in search patterns.
-
-                                                 *leap.opts.equivalence_classes*
-`equivalence_classes = { ' \t\r\n' }`
-
-    A character in search patterns will match any other in its equivalence
-    class. The sets can either be defined as strings or tables.
-    Example - whitespace, brackets, and quotes: >lua
-        { ' \t\r\n', '([{', ')]}', '\'"`' }
-<
-    Note: If you want to be able to target empty lines and characters at the
-    end of a line, keep an alias for `\n` and `\r`. |leap-till-eol|
-
-    Note: Non-mutual aliases (wildcard characters), at least ones that work
-    for the whole pattern, are not possible in Leap, because we cannot read
-    your mind, and decide on which label to show for |leap-preview|. (Let's
-    say you have entered `a`, and there is a `?` -> `x|y|z` wildcard mapping.
-    We have no other choice than to cover all `ax|ay|az` matches with one
-    shared label sequence, since you might type `?` next. But then `?xyz` is,
-    by definition, a mutual alias group, there are no shortcuts anymore.
-    |smartcase| is a specific instance of this issue: `x` -> `x|X`.)
-    *leap-wildcard-problem*
-
                                                              *leap.opts.preview*
 `preview = true`
 
@@ -228,6 +216,27 @@ Example configuration: >lua
     You can implement more involved checks here (camel case, keywords, you
     name it), but keep in mind that this function will be called for every
     single match, so efficiency is something to consider.
+
+                          *leap-equivalence-class* *leap.opts.equivalence_classes*
+`equivalence_classes = { ' \t\r\n' }`
+
+    A character in search patterns will match any other in its equivalence
+    class. The sets can either be defined as strings or tables.
+    Example - whitespace, brackets, and quotes: >lua
+        { ' \t\r\n', '([{', ')]}', '\'"`' }
+<
+    Note: If you want to be able to target empty lines and characters at the
+    end of a line, keep an alias for `\n` and `\r`. |leap-till-eol|
+
+    Note: Non-mutual aliases (wildcard characters), at least ones that work
+    for the whole pattern, are not possible in Leap, because we cannot read
+    your mind after the first input, and decide on which label to show for
+    |leap-preview|. (Let's say you have entered `a`, and there is a
+    `?` -> `x|y|z` wildcard mapping. We have no other choice than to cover all
+    `ax|ay|az` matches with one shared label sequence, since you might type
+    `?` next. But then `?xyz` is, by definition, a mutual alias group, there
+    are no shortcuts anymore. |smartcase| is a specific instance of this
+    issue: `x` -> `x|X`.) *leap-wildcard-problem*
 
                                                          *leap.opts.safe_labels*
 `safe_labels = 'sfnut/SFNLHMUGTZ?'`
@@ -296,7 +305,6 @@ Note: <esc> is hardcoded to exit Leap at any stage cleanly.
 Temporary |options| to be set on |LeapEnter|, and restored to their original
 value upon |LeapLeave|. The keys should follow the above pattern, the prefix
 corresponding to |vim.wo|, |vim.bo|, or |vim.go|.
-
 Example - turning off |hlsearch| while leaping: >lua
     require('leap').opts.vim_opts['go.hlsearch'] = false
 <
@@ -420,7 +428,7 @@ leap({opts})                                                       *leap.leap()*
                  For map-like subtables it is also enough to specify only the
                  values to be overridden: >lua
                     require('leap').leap {
-                      opts = { vim_opts = { ['go.hlsearch'] = false } }
+                      opts = { vim_opts = { ['go.ignorecase'] = false } }
                     }
 <
                                                                        *leap-ft*

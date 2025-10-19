@@ -692,13 +692,12 @@ do
       opts = {
         labels = '',  -- force autojump
         safe_labels = vim.fn.mode(1):match'[no]' and '' or nil,  -- [1]
-        case_sensitive = true,                                   -- [2]
       },
     }
     return vim.tbl_deep_extend('keep', common_args, key_specific_args)
   end
 
-  local clever = require('leap.user').with_traversal_keys        -- [3]
+  local clever = require('leap.user').with_traversal_keys        -- [2]
   local clever_f = clever('f', 'F')
   local clever_t = clever('t', 'T')
 
@@ -717,9 +716,7 @@ end
 ------------------------------------------------------------------------
 -- [1] Match the modes here for which you don't want to use labels
 --     (`:h mode()`, `:h lua-pattern`).
--- [2] For 1-char search, you might want to aim for precision instead of
---     typing comfort, to get as many direct jumps as possible.
--- [3] This helper function makes it easier to set "clever-f"-like
+-- [2] This helper function makes it easier to set "clever-f"-like
 --     functionality (https://github.com/rhysd/clever-f.vim), returning
 --     an `opts` table derived from the defaults, where the given keys
 --     are added to `keys.next_target` and `keys.prev_target`
