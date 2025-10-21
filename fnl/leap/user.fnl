@@ -1,13 +1,14 @@
 ; Convenience functions for users.
 
-(fn with-traversal-keys [fwd-key bwd-key]
+(fn with-traversal-keys [fwd-key bwd-key opts]
   "Returns a table can be used as or merged with `opts`, with
 `keys.next_target` and `keys.prev_target` set appropriately."
   (let [with-key (fn [t key]
                    (if (= (type t) :table) [(. t 1) key] [t key]))
-        keys (vim.deepcopy (. (require "leap") :opts :keys))]
-    {:keys {:next_target (with-key keys.next_target fwd-key)
-            :prev_target (with-key keys.prev_target bwd-key)}}))
+        keys (vim.deepcopy (. (require "leap") :opts :keys))
+        opts* {:keys {:next_target (with-key keys.next_target fwd-key)
+                      :prev_target (with-key keys.prev_target bwd-key)}}]
+    (if opts (vim.tbl_deep_extend :error opts opts*) opts*)))
 
 
 (fn set-repeat-keys [fwd-key bwd-key opts*]
