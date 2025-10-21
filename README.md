@@ -7,6 +7,18 @@ primarily on [vim-sneak](https://github.com/justinmk/vim-sneak). Using some
 clever ideas, it allows you to jump to any position in the visible editor area
 very quickly, with near-zero mental overhead.
 
+### Features
+
+* Previewing target labels while typing, for smoother jumps
+* Safe automatic jump to the first match (no need to press `<enter>`)
+* No blind spots - even empty lines are reachable with the same command
+* Multi-window search
+* Consistent, intuitive way to traverse matches and repeat motions
+* Native feel (`forced-motion`, `.`-repeat, `'keymap'` support)
+* Treesitter integration
+* Bundled module for remote operations ("spooky actions at a distance")
+* Small API surface, yet highly extensible
+
 ![showcase](../media/showcase.gif?raw=true)
 
 ### How to use it (TL;DR)
@@ -57,17 +69,6 @@ At the same time, it reduces mental effort by all possible means:
 * _You don't have to pause in the middle_: if typing at a moderate speed, at
   each step you already know what the immediate next keypress should be, and
   your mind can process the rest in the background.
-
-### Extras
-
- * **Remote actions**: do operations at a distance, or even predefine remote
-   text objects for extra comfort. For example, yanking a paragraph from a
-   different window can be as simple as typing `yarp`, then pointing to
-   anywhere within the paragraph with a leaping motion as the "laser pen".
-
- * **Treesitter node selection**: parent nodes can be selected either directly
-   via labels, or in an incremental way (with labels being available the whole
-   time).
 
 ## 🚀 Getting started
 
@@ -177,9 +178,8 @@ and [flash.nvim](https://github.com/folke/flash.nvim)'s similar feature.
 
 This function allows you to perform an action in a remote location: it forgets
 the current mode or pending operator, lets you leap to anywhere on the tab
-page, then continues where it left off. Once an operation or insertion is
-finished, it moves back to the original position, as if you had operated from
-the distance.
+page, then continues where it left off. Once returning to Normal mode, it jumps
+back, as if you had operated from the distance.
 
 ```lua
 vim.keymap.set({'n', 'x', 'o'}, 'gs', function ()
@@ -189,32 +189,6 @@ end)
 
 Example: `gs{leap}yap`, `vgs{leap}apy`, or `ygs{leap}ap` yank the paragraph at
 the position specified by `{leap}`.
-
-**Jump with native search commands to off-screen areas**
-
-The `remote` module is not really an extension, but more of an "inverse plugin"
-bundled with Leap; the jump logic is not hardcoded - `action` can in fact use
-any function via the `jumper` parameter, be it a custom `leap()` call or
-something entirely different.
-
-You can even use the native search commands directly, that is, target
-off-screen regions, with the special `jumper` values `/` and `?`:
-
-```lua
-vim.keymap.set({'n', 'o'}, 'g/', function ()
-  require('leap.remote').action { jumper = '/' }
-end)
-vim.keymap.set({'n', 'o'}, 'g?', function ()
-  require('leap.remote').action { jumper = '?' }
-end)
-```
-
-Vim tip: use `c_CTRL-G` and `c_CTRL-T` to move between matches without
-finishing the search.
-
-Note that in Normal mode you are free to move around after the jump. For
-example, search for a markdown header, then move to the concrete target
-(paragraph, line, word) you want to operate on.
 
 **Icing on the cake, no. 1 - automatic paste after yanking**
 
@@ -305,6 +279,32 @@ With remote text objects, the swap is even simpler, almost on par with
 
 Using remote text objects _and_ combining them with an exchange operator is
 pretty much text editing at the speed of thought: `cxiw cxirw{leap}`.
+
+**Jumping to off-screen areas with native search commands**
+
+The `remote` module is not really an extension, but more of an "inverse plugin"
+bundled with Leap; the jump logic is not hardcoded - `action` can in fact use
+any function via the `jumper` parameter, be it a custom `leap()` call or
+something entirely different.
+
+You can even use the native search commands directly, that is, target
+off-screen regions, with the special `jumper` values `/` and `?`:
+
+```lua
+vim.keymap.set({'n', 'o'}, 'g/', function ()
+  require('leap.remote').action { jumper = '/' }
+end)
+vim.keymap.set({'n', 'o'}, 'g?', function ()
+  require('leap.remote').action { jumper = '?' }
+end)
+```
+
+Vim tip: use `c_CTRL-G` and `c_CTRL-T` to move between matches without
+finishing the search.
+
+Note that in Normal mode you are free to move around after the jump. For
+example, search for a markdown header, then move to the concrete target
+(paragraph, line, word) you want to operate on.
 
 </details>
 
@@ -418,7 +418,7 @@ two different futures) at the same time (`:h leap-wildcard-problem`).
 If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
 ([`'keymap'`](https://neovim.io/doc/user/options.html#'keymap')) is active,
 Leap waits for keymapped sequences as needed and searches for the keymapped
-result as expected.
+result.
 
 Also check out `opts.equivalence_classes`, that lets you group certain
 characters together as mutual aliases, e.g.:
@@ -579,7 +579,6 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
     local ev = vim.v.event
     local is_search_cmd = (ev.cmdtype == '/') or (ev.cmdtype == '?')
     local cnt = vim.fn.searchcount().total
-
     if is_search_cmd and (not ev.abort) and (cnt > 1) then
       -- Allow CmdLineLeave-related chores to be completed before
       -- invoking Leap.
@@ -589,10 +588,9 @@ vim.api.nvim_create_autocmd('CmdlineLeave', {
         -- as `labels`, with n/N removed.
         local labels = require('leap').opts.safe_labels:gsub('[nN]', '')
         -- For `pattern` search, we never need to adjust conceallevel
-        -- (no user input).
-        local vim_opts = require('leap').opts.vim_opts
-        vim_opts['wo.conceallevel'] = nil
-
+        -- (no user input). We cannot merge `nil` from a table, but
+        -- using the option's current value has the same effect.
+        local vim_opts = { ['wo.conceallevel'] = vim.wo.conceallevel }
         require('leap').leap {
           pattern = vim.fn.getreg('/'),  -- last search pattern
           windows = { vim.fn.win_getid() },
@@ -630,33 +628,23 @@ do
     end
     -- Activate again if `:nohlsearch` has been used (Normal/Visual mode).
     vim.go.hlsearch = vim.go.hlsearch
-
     -- Allow the search command to complete its chores before
     -- invoking Leap (Command-line mode).
     vim.schedule(function ()
-      local leap = require('leap')
-      -- Allow traversing with the trigger key.
-      local next_target = vim.deepcopy(leap.opts.keys.next_target)
-      if type(next_target) == 'string' then
-        next_target = { next_target }
-      end
-      table.insert(next_target, key)
-
-      leap.leap {
+      require('leap').leap {
         pattern = vim.fn.getreg('/'),
         -- If you always want to go forward/backward with the given key,
         -- regardless of the previous search direction, just set this to
         -- `is_reverse`.
         backward = (is_reverse and vim.v.searchforward == 1)
                    or (not is_reverse and vim.v.searchforward == 0),
-        opts = {
-          keys = { next_target = next_target },
+        opts = require('leap.user').with_traversal_keys(key, nil, {
           -- Auto-jumping to the second match would be confusing without
           -- 'incsearch'.
           safe_labels = (cmdline_mode and not vim.o.incsearch) and ''
-            -- Keep n/N usable in any case.
-            or leap.opts.safe_labels:gsub('[nN]', ''),
-        }
+                        -- Keep n/N usable in any case.
+                        or require('leap').opts.safe_labels:gsub('[nN]', '')
+        })
       }
       -- You might want to switch off the highlights after leaping.
       -- vim.cmd('nohlsearch')
