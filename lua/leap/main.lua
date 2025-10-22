@@ -267,13 +267,21 @@ local function prepare_labeled_targets(targets, can_traverse_3f, force_noautojum
       return nil
     end
   end
+  local function enough_safe_labels_3f(targets0)
+    local limit = (#safe_labels + 1)
+    local count = 0
+    for _, t in ipairs(targets0) do
+      if (count > limit) then break end
+      if not t["offscreen?"] then
+        count = (count + 1)
+      else
+      end
+    end
+    return (count <= limit)
+  end
   local function set_autojump(targets0)
     if (safe_labels ~= "") then
-      local or_43_ = (labels == "")
-      if not or_43_ then
-        or_43_ = (#safe_labels >= (#targets0 - 1))
-      end
-      targets0["autojump?"] = or_43_
+      targets0["autojump?"] = ((labels == "") or enough_safe_labels_3f(targets0))
       return nil
     else
       return nil

@@ -261,13 +261,21 @@ char.
       [{:pos [l1 c1]} {:pos [l2 c2] :chars [char1 char2]}]
       (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
 
+  (fn enough-safe-labels? [targets]
+    (local limit (+ (length safe-labels) 1))
+    (var count 0)
+    (each [_ t (ipairs targets) &until (> count limit)]
+      (when-not t.offscreen?
+        (set count (+ count 1))))
+    (<= count limit))
+
   (fn set-autojump [targets]
     "Set a flag indicating whether we can automatically jump to the
     first target, without having to select a label."
     (when (not= safe-labels "")
       (set targets.autojump?
-           (or (= labels "")                                         ; forced
-               (>= (length safe-labels) (dec (length targets)))))))  ; smart
+           (or (= labels "")                      ; forced
+               (enough-safe-labels? targets)))))  ; smart
 
   (fn attach-label-set [targets]
     ; Note that there is no one-to-one correspondence between the
