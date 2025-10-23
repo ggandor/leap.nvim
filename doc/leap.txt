@@ -84,6 +84,11 @@ You might add a pair of keys for exclusive selection to any of the above: >lua
     vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
     vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
 
+`<Plug>(leap-anywhere)` is only recommended if you are okay with its
+trade-offs: if multiple windows are open, you will almost _never_ get
+|leap-autojump|s, except if all matches are in one window (an intentional
+restriction to avoid confusing behaviour and implementation problems).
+
 ==============================================================================
 FEATURES                                                         *leap-features*
 
