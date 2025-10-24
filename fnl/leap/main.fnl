@@ -204,29 +204,34 @@ char.
 
 
 ; Does _not_ mutate its argument.
-(fn get-traversable-labels [labels]
-  (local ks opts.keys)
-  (var bad-keys "")
-  (each [_ key (ipairs [ks.next_target ks.prev_target])]
-    (set bad-keys (.. bad-keys
-                      (if (= (type key) :table)
-                          (table.concat (vim.tbl_map vim.keycode key))
-                          (vim.keycode key)))))
-  (local sanitized (labels:gsub (.. "[" bad-keys "]") ""))
-  (local nxt (and (= (type ks.next_target) :table)
-                  (. ks.next_target 2)))
-  (if (and nxt (= (vim.keycode nxt) nxt))
-      (.. nxt sanitized)
-      sanitized))
+(fn as-traversable [labels]
+  (if (= (length labels) 0) labels
+      (do
+        (local ks opts.keys)
+        (var bad-keys "")
+        (each [_ key (ipairs [ks.next_target ks.prev_target])]
+          (set bad-keys (.. bad-keys
+                            (if (= (type key) :table)
+                                (table.concat (vim.tbl_map vim.keycode key))
+                                (vim.keycode key)))))
+        (local sanitized (labels:gsub (.. "[" bad-keys "]") ""))
+        (local next-key (and (= (type ks.next_target) :table)
+                             (. ks.next_target 2)))
+        (if (and next-key (= (vim.keycode next-key) next-key))
+            (.. next-key sanitized)
+            sanitized))))
 
 
-(fn prepare-labeled-targets [targets can-traverse? force-noautojump? multi-window?]
-  (local [labels safe-labels]
-         (if can-traverse? [(if (= opts.labels "") opts.labels
-                                (get-traversable-labels opts.labels))
-                            (if (= opts.safe_labels "") opts.safe_labels
-                                (get-traversable-labels opts.safe_labels))]
-                           [opts.labels opts.safe_labels]))
+(fn prepare-labeled-targets [targets kwargs]
+  (local {: can-traverse? : force-noautojump? : multi-window?} kwargs)
+  (local [labels safe-labels] (if can-traverse?
+                                  (vim.tbl_map as-traversable
+                                               [opts.labels opts.safe_labels])
+                                  [opts.labels opts.safe_labels]))
+  ; Strings are handy as API and for manipulations, but from this point
+  ; on we want efficient access. (Use vim.fn.split for unicode.)
+  (local [labels safe-labels] (vim.tbl_map #(vim.fn.split $ "\\zs")
+                                           [labels safe-labels]))
 
   ; Problem:
   ; We are autojumping to some position in window A, but our chosen
@@ -272,17 +277,17 @@ char.
   (fn set-autojump [targets]
     "Set a flag indicating whether we can automatically jump to the
     first target, without having to select a label."
-    (when (not= safe-labels "")
+    (when (> (length safe-labels) 0)
       (set targets.autojump?
-           (or (= labels "")                      ; forced
+           (or (= (length labels) 0)              ; forced
                (enough-safe-labels? targets)))))  ; smart
 
   (fn attach-label-set [targets]
     ; Note that there is no one-to-one correspondence between the
     ; `autojump?` flag and this field. No-autojump might be forced
     ; implicitly, regardless of using safe labels.
-    (set targets.label-set (if (= labels "") safe-labels
-                               (= safe-labels "") labels
+    (set targets.label-set (if (= (length labels) 0) safe-labels
+                               (= (length safe-labels) 0) labels
                                targets.autojump? safe-labels
                                labels)))
 
@@ -302,10 +307,10 @@ char.
         (if target.offscreen? (set skipped (inc skipped))
           (case (% i* |labels|)
             0 (do
-                (set target.label (labels:sub |labels| |labels|))
+                (set target.label (. labels |labels|))
                 (set target.group (floor (/ i* |labels|))))
             n (do
-                (set target.label (labels:sub n n))
+                (set target.label (. labels n))
                 (set target.group (inc (floor (/ i* |labels|))))))))))
 
   (when-not (or force-noautojump?
@@ -428,8 +433,8 @@ char.
              (table.concat (. opts t k))))))
 
   (local directional? (not windows))
-  (local no-labels-to-use? (and (= opts.labels "")
-                                (= opts.safe_labels "")))
+  (local no-labels-to-use? (and (= (length opts.labels) 0)
+                                (= (length opts.safe_labels) 0)))
 
   (when (and (not directional?) no-labels-to-use?)
     (echo "no labels to use")
@@ -642,9 +647,9 @@ char.
                                    (and op-mode? (> (length targets) 1))))
           multi-window? (and windows (> (length windows) 1))]
       (prepare-labeled-targets targets
-                               (can-traverse? targets)
-                               force-noautojump?
-                               multi-window?)))
+                               {:can-traverse? (can-traverse? targets)
+                                : force-noautojump?
+                                : multi-window?})))
 
   ; Repeat
 

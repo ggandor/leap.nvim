@@ -198,50 +198,50 @@ local function populate_sublists(targets)
   end
   return nil
 end
-local function get_traversable_labels(labels)
-  local ks = opts.keys
-  local bad_keys = ""
-  for _, key in ipairs({ks.next_target, ks.prev_target}) do
-    local _33_
-    if (type(key) == "table") then
-      _33_ = table.concat(vim.tbl_map(vim.keycode, key))
-    else
-      _33_ = vim.keycode(key)
-    end
-    bad_keys = (bad_keys .. _33_)
-  end
-  local sanitized = labels:gsub(("[" .. bad_keys .. "]"), "")
-  local nxt = ((type(ks.next_target) == "table") and ks.next_target[2])
-  if (nxt and (vim.keycode(nxt) == nxt)) then
-    return (nxt .. sanitized)
+local function as_traversable(labels)
+  if (#labels == 0) then
+    return labels
   else
-    return sanitized
+    local ks = opts.keys
+    local bad_keys = ""
+    for _, key in ipairs({ks.next_target, ks.prev_target}) do
+      local _33_
+      if (type(key) == "table") then
+        _33_ = table.concat(vim.tbl_map(vim.keycode, key))
+      else
+        _33_ = vim.keycode(key)
+      end
+      bad_keys = (bad_keys .. _33_)
+    end
+    local sanitized = labels:gsub(("[" .. bad_keys .. "]"), "")
+    local next_key = ((type(ks.next_target) == "table") and ks.next_target[2])
+    if (next_key and (vim.keycode(next_key) == next_key)) then
+      return (next_key .. sanitized)
+    else
+      return sanitized
+    end
   end
 end
-local function prepare_labeled_targets(targets, can_traverse_3f, force_noautojump_3f, multi_window_3f)
-  local function _39_()
+local function prepare_labeled_targets(targets, kwargs)
+  local can_traverse_3f = kwargs["can-traverse?"]
+  local force_noautojump_3f = kwargs["force-noautojump?"]
+  local multi_window_3f = kwargs["multi-window?"]
+  local function _37_()
     if can_traverse_3f then
-      local _36_
-      if (opts.labels == "") then
-        _36_ = opts.labels
-      else
-        _36_ = get_traversable_labels(opts.labels)
-      end
-      local function _38_()
-        if (opts.safe_labels == "") then
-          return opts.safe_labels
-        else
-          return get_traversable_labels(opts.safe_labels)
-        end
-      end
-      return {_36_, _38_()}
+      return vim.tbl_map(as_traversable, {opts.labels, opts.safe_labels})
     else
       return {opts.labels, opts.safe_labels}
     end
   end
-  local _local_40_ = _39_()
-  local labels = _local_40_[1]
-  local safe_labels = _local_40_[2]
+  local _local_38_ = _37_()
+  local labels = _local_38_[1]
+  local safe_labels = _local_38_[2]
+  local function _39_(_241)
+    return vim.fn.split(_241, "\\zs")
+  end
+  local _local_40_ = vim.tbl_map(_39_, {labels, safe_labels})
+  local labels0 = _local_40_[1]
+  local safe_labels0 = _local_40_[2]
   local function all_in_the_same_window_3f(targets0)
     local same_win_3f = true
     local win = targets0[1].wininfo.winid
@@ -268,7 +268,7 @@ local function prepare_labeled_targets(targets, can_traverse_3f, force_noautojum
     end
   end
   local function enough_safe_labels_3f(targets0)
-    local limit = (#safe_labels + 1)
+    local limit = (#safe_labels0 + 1)
     local count = 0
     for _, t in ipairs(targets0) do
       if (count > limit) then break end
@@ -280,29 +280,29 @@ local function prepare_labeled_targets(targets, can_traverse_3f, force_noautojum
     return (count <= limit)
   end
   local function set_autojump(targets0)
-    if (safe_labels ~= "") then
-      targets0["autojump?"] = ((labels == "") or enough_safe_labels_3f(targets0))
+    if (#safe_labels0 > 0) then
+      targets0["autojump?"] = ((#labels0 == 0) or enough_safe_labels_3f(targets0))
       return nil
     else
       return nil
     end
   end
   local function attach_label_set(targets0)
-    if (labels == "") then
-      targets0["label-set"] = safe_labels
-    elseif (safe_labels == "") then
-      targets0["label-set"] = labels
+    if (#labels0 == 0) then
+      targets0["label-set"] = safe_labels0
+    elseif (#safe_labels0 == 0) then
+      targets0["label-set"] = labels0
     elseif targets0["autojump?"] then
-      targets0["label-set"] = safe_labels
+      targets0["label-set"] = safe_labels0
     else
-      targets0["label-set"] = labels
+      targets0["label-set"] = labels0
     end
     return nil
   end
   local function set_labels(targets0)
     local autojump_3f = targets0["autojump?"]
-    local labels0 = targets0["label-set"]
-    local _7clabels_7c = #labels0
+    local labels1 = targets0["label-set"]
+    local _7clabels_7c = #labels1
     local skipped
     if autojump_3f then
       skipped = 1
@@ -324,11 +324,11 @@ local function prepare_labeled_targets(targets, can_traverse_3f, force_noautojum
         else
           local _49_ = (i_2a % _7clabels_7c)
           if (_49_ == 0) then
-            target.label = labels0:sub(_7clabels_7c, _7clabels_7c)
+            target.label = labels1[_7clabels_7c]
             target.group = floor((i_2a / _7clabels_7c))
           elseif (nil ~= _49_) then
             local n = _49_
-            target.label = labels0:sub(n, n)
+            target.label = labels1[n]
             target.group = (floor((i_2a / _7clabels_7c)) + 1)
           else
           end
@@ -462,7 +462,7 @@ local function leap(kwargs)
     end
   end
   local directional_3f = not windows
-  local no_labels_to_use_3f = ((opts.labels == "") and (opts.safe_labels == ""))
+  local no_labels_to_use_3f = ((#opts.labels == 0) and (#opts.safe_labels == 0))
   if (not directional_3f and no_labels_to_use_3f) then
     echo("no labels to use")
     return
@@ -730,7 +730,7 @@ local function leap(kwargs)
   local function prepare_labeled_targets_2a(targets)
     local force_noautojump_3f = (not action_can_traverse_3f and (user_given_action or (op_mode_3f and (#targets > 1))))
     local multi_window_3f = (windows and (#windows > 1))
-    return prepare_labeled_targets(targets, can_traverse_3f(targets), force_noautojump_3f, multi_window_3f)
+    return prepare_labeled_targets(targets, {["can-traverse?"] = can_traverse_3f(targets), ["force-noautojump?"] = force_noautojump_3f, ["multi-window?"] = multi_window_3f})
   end
   local repeat_state = {offset = kwargs.offset, backward = kwargs.backward, inclusive = kwargs.inclusive, pattern = kwargs.pattern, inputlen = inputlen0, opts = opts_current_call}
   local function update_repeat_state(in1, in2)
