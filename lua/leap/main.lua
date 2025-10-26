@@ -12,6 +12,7 @@ local echo = _local_2_["echo"]
 local get_char = _local_2_["get-char"]
 local get_char_keymapped = _local_2_["get-char-keymapped"]
 local api = vim.api
+local split = vim.fn.split
 local lower = vim.fn.tolower
 local upper = vim.fn.toupper
 local abs = math["abs"]
@@ -46,7 +47,7 @@ local function to_membership_lookup(eqv_classes)
   for _, cl in ipairs(eqv_classes) do
     local cl_2a
     if (type(cl) == "string") then
-      cl_2a = vim.fn.split(cl, "\\zs")
+      cl_2a = split(cl, "\\zs")
     else
       cl_2a = cl
     end
@@ -237,7 +238,7 @@ local function prepare_labeled_targets(targets, kwargs)
   local labels = _local_38_[1]
   local safe_labels = _local_38_[2]
   local function _39_(_241)
-    return vim.fn.split(_241, "\\zs")
+    return split(_241, "\\zs")
   end
   local _local_40_ = vim.tbl_map(_39_, {labels, safe_labels})
   local labels0 = _local_40_[1]

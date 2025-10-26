@@ -15,7 +15,8 @@
        (require "leap.util"))
 
 (local api vim.api)
-; Mind that lua string.lower/upper are ASCII only.
+; Use these to handle multibyte characters.
+(local split vim.fn.split)
 (local lower vim.fn.tolower)
 (local upper vim.fn.toupper)
 
@@ -68,8 +69,7 @@ interrupted change operation."
 (fn to-membership-lookup [eqv-classes]
   (let [res {}]
     (each [_ cl (ipairs eqv-classes)]
-      ; Do not use `vim.split`, it doesn't handle multibyte chars.
-      (let [cl* (if (= (type cl) :string) (vim.fn.split cl "\\zs") cl)]
+      (let [cl* (if (= (type cl) :string) (split cl "\\zs") cl)]
         (each [_ ch (ipairs cl*)]
           (set (. res ch) cl*))))
     res))
@@ -229,9 +229,8 @@ char.
                                                [opts.labels opts.safe_labels])
                                   [opts.labels opts.safe_labels]))
   ; Strings are handy as API and for manipulations, but from this point
-  ; on we want efficient access. (Use vim.fn.split for unicode.)
-  (local [labels safe-labels] (vim.tbl_map #(vim.fn.split $ "\\zs")
-                                           [labels safe-labels]))
+  ; on we want efficient access.
+  (local [labels safe-labels] (vim.tbl_map #(split $ "\\zs") [labels safe-labels]))
 
   ; Problem:
   ; We are autojumping to some position in window A, but our chosen
