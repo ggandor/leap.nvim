@@ -14,7 +14,8 @@ very quickly, with near-zero mental overhead.
 * No blind spots - even empty lines are reachable with the same command
 * Multi-window search
 * Consistent, intuitive way to traverse matches and repeat motions
-* Native feel (`forced-motion`, `.`-repeat, `'keymap'` support)
+* Native feel (`forced-motion`, `.`-repeat)
+* Friendly to non-English languages (`'keymap'`, mutual aliases)
 * Treesitter integration
 * Bundled module for remote operations ("spooky actions at a distance")
 * Small API surface, yet highly extensible
@@ -93,6 +94,34 @@ vim.keymap.set('n',             'S', '<Plug>(leap-from-window)')
 ```
 
 See `:h leap-mappings` for more.
+
+Remote operations (`gs{leap}apy` or `ygs{leap}ap` - `{leap}` means
+`{char1}{char2}{label?}`, as usual):
+
+```lua
+vim.keymap.set({'n', 'o'}, 'gs', function ()
+  require('leap.remote').action {
+    -- Automatically enter Visual mode when coming from Normal.
+    input = vim.fn.mode(true):match('o') and '' or 'v'
+  }
+end)
+-- Forced linewise version (`gS{leap}jjy`):
+vim.keymap.set({'n', 'o'}, 'gS', function ()
+  require('leap.remote').action { input = 'V' }
+end)
+```
+
+See below for more (e.g. setting up automatic paste after yanking).
+
+Treesitter node selection (`vRRR...y` or `yR{label}`):
+
+```lua
+vim.keymap.set({'x', 'o'}, 'R',  function ()
+  require('leap.treesitter').select {
+    opts = require('leap.user').with_traversal_keys('R', 'r')
+  }
+end)
+```
 
 </details>
 
@@ -249,21 +278,6 @@ do
     end)
   end
 end
-```
-
-A very handy custom mapping - remote line(s), with optional `count`
-(`yaa{leap}`, `y3aa{leap}`):
-
-```lua
-vim.keymap.set({'x', 'o'}, 'aa', function ()
-  -- Force linewise selection.
-  local V = vim.fn.mode(true):match('V') and '' or 'V'
-  -- In any case, move horizontally, to trigger operations.
-  local input = vim.v.count > 1 and (vim.v.count - 1 .. 'j') or 'hl'
-  -- With `count=false` you can skip feeding count to the command
-  -- automatically (we need -1 here, see above).
-  require('leap.remote').action { input = V .. input, count = false }
-end)
 ```
 
 **Swapping regions**

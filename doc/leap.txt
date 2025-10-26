@@ -85,9 +85,10 @@ You might add a pair of keys for exclusive selection to any of the above: >lua
     vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
 
 `<Plug>(leap-anywhere)` is only recommended if you are okay with its
-trade-offs: if multiple windows are open, you will almost _never_ get
-|leap-autojump|s, except if all matches are in one window (an intentional
-restriction to avoid confusing behaviour and implementation problems).
+trade-off: whenever multiple windows are open, you can practically say goodbye
+to |leap-autojump|, as it is only allowed in the rare case when all matches
+are in one window (an intentional restriction to avoid confusing behaviour and
+implementation problems).
 
 ==============================================================================
 FEATURES                                                         *leap-features*
@@ -118,12 +119,11 @@ specific settings for Leap motions, you can set these to temporary values in
 NOTE: 'smartcase' is experimentally supported for |leap-preview| too, but
 there are serious caveats: it can only be applied on the first input
 character, by design, since the second one just filters the already acquired
-and _labeled_ targets (see |leap-wildcard-problem|). A related issue is that,
-as of the current implementation, |leap-repeat| will not find the same matches
-- while an `Ab` input with 'smartcase' will match both `Ab` and `AB` (see
-above), repeat will only match `Ab`-s, like a normal search command would (it
-is not a step-by-step replay of the original invocation's phases).
-*leap-smartcase*
+and _labeled_ targets (see |leap-wildcard-problem|). A related issue is that
+while an `Ab` input with 'smartcase' will match both `Ab` and `AB`, the
+repeated invocation will only match `Ab`-s, like a regular search command
+would (|leap-repeat| is not implemented as a step-by-step replay of the
+original invocation's phases). *leap-smartcase*
 
 A same-character pair (`==`) will match a longer such sequence (`=====`) only
 at the beginning, so that e.g. separator lines will not create unnecessary
