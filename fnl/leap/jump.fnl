@@ -2,29 +2,19 @@
 
 
 (fn cursor-before-eol? []
-  (not= (vim.fn.search "\\_." "Wn") (vim.fn.line ".")))
+  (= (vim.fn.virtcol ".") (- (vim.fn.virtcol "$") 1)))
 
 
 (fn cursor-before-eof? []
-  (and (= (vim.fn.line ".") (vim.fn.line "$"))
-       (= (vim.fn.virtcol ".") (- (vim.fn.virtcol "$") 1))))
+  (and cursor-before-eol? (= (vim.fn.line ".") (vim.fn.line "$"))))
 
 
 (fn push-cursor! [dir]
-  "Push cursor 1 character to the left or right, possibly beyond EOL."
+  "Push cursor 1 character forward or backward, possibly beyond EOL."
   (vim.fn.search "\\_." (case dir :fwd "W" :bwd "bW")))
 
 
-(fn add-offset! [offset]
-  (if (< offset 0) (push-cursor! :bwd)
-      ; Safe first forward push for pre-EOL matches.
-      (> offset 0) (do (when (not (cursor-before-eol?))
-                         (push-cursor! :fwd))
-                       (when (> offset 1)
-                         (push-cursor! :fwd)))))
-
-
-(fn push-beyond-eof! []
+(fn push-beyond-eol! []
   (local saved vim.o.virtualedit)
   (set vim.o.virtualedit :onemore)
   ; Note: No need to undo this afterwards, the cursor will be moved to
@@ -36,13 +26,22 @@
      :once true}))
 
 
+(fn add-offset! [offset]
+  (if (< offset 0) (push-cursor! :bwd)
+      (> offset 0) (do (if (cursor-before-eol?) (push-beyond-eol!)
+                           (push-cursor! :fwd))
+                       (when (> offset 1)  ; deprecated
+                         (if (cursor-before-eol?) (push-beyond-eol!)
+                             (push-cursor! :fwd))))))
+
+
 (fn simulate-inclusive-op! [mode]
   "When applied after an exclusive motion (like setting the cursor via
 the API), make the motion appear to behave as an inclusive one."
   (case (vim.fn.matchstr mode "^no\\zs.")  ; get forcing modifier
     ; In the normal case (no modifier), we should push the cursor
     ; forward. (The EOF edge case requires some hackery though.)
-    "" (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
+    "" (if (cursor-before-eof?) (push-beyond-eol!) (push-cursor! :fwd))
     ; We also want the `v` modifier to behave in the native way, that
     ; is, to toggle between inclusive/exclusive if applied to a charwise
     ; motion (:h o_v). As `v` will change our (technically) exclusive
