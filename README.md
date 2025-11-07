@@ -25,7 +25,8 @@ very quickly, with near-zero mental overhead.
 ### How to use it (TL;DR)
 
 * Initiate the search in a given scope, and start typing a 2-character pattern
-  (`{char1}{char2}`).
+  (`{char1}{char2}`). To target the last character on a line, type
+  `{char}<space>`. To target an empty line, type `<space><space>`.
 
 * After typing `{char1}`, you see "labels" appearing next to some pairs. This
   is just a **preview** - labels only get active after finishing the pattern.
@@ -38,9 +39,6 @@ very quickly, with near-zero mental overhead.
 * Else: type the label character to jump to the given position. If there are
   more matches than available labels, you can move between groups with
   `<space>` and `<backspace>`.
-
-To move to the last character on a line, type `{char}<space>`. To move to an
-empty line, type `<space><space>`.
 
 At any stage, `<enter>` jumps to the next/closest available target: pressing
 `<enter>` right away repeats the previous search; `{char}<enter>` accepts the
@@ -389,27 +387,6 @@ unique in that it
 * feels natural to use for both distant _and_ close targets
 
 ## ❔ FAQ
-
-### Defaults
-
-<details>
-<summary>Why remap `s`/`S`?</summary>
-
-Common operations should use the fewest keystrokes and the most comfortable
-keys, so it makes sense to take those over by Leap, especially given that both
-native commands have synonyms:
-
-Normal mode
-
-* `s` = `cl` (or `xi`)
-* `S` = `cc`
-
-Visual mode
-
-* `s` = `c`
-* `S` = `Vc`, or `c` if already in linewise mode
-
-</details>
 
 ### Features
 

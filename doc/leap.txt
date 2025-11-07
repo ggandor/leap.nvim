@@ -26,7 +26,9 @@ very quickly, with near-zero mental overhead.
 USAGE                                                               *leap-usage*
 
 • Initiate the search in a given scope (|leap-mappings|), and start typing a
-  2-character pattern ({char1}{char2}).
+  2-character pattern ({char1}{char2}). To target the last character on a
+  line, type `{char}<space>`. To target an empty line, type `<space><space>`.
+  |leap-till-eol| |leap-to-eol|
 
 • After typing {char1}, you see "labels" appearing next to some pairs. This is
   just a preview - labels only get active after finishing the pattern.
@@ -35,37 +37,36 @@ USAGE                                                               *leap-usage*
 • Type {char2}, which filters the matches. When the closest pair is unlabeled,
   you automatically jump there. In case that was your target, you can safely
   ignore the remaining labels - those will not conflict with any sensible
-  command, and will disappear on the next keypress (|leap.opts.safe_labels|).
+  command, and will disappear on the next keypress. |leap.opts.safe_labels|
   *leap-autojump*
 
 • Else: type the label character to jump to the given position. If there are
   more matches than available labels, you can move between groups with <space>
-  and <backspace> (|leap.opts.keys|).
-
-To move to the last character on a line, type `{char}<space>`. To move to an
-empty line, type `<space><space>`. |leap-till-eol| |leap-to-eol|
+  and <backspace>. |leap.opts.keys|
 
 See |leap-features| for lots of additional details.
 
 ==============================================================================
 MAPPINGS                                                         *leap-mappings*
 
-Leap defines some <Plug> keys aliasing calls to |leap.leap()|. To create
-custom motions, simply call that function with your preferred arguments
-instead. E.g., `<Plug>(leap-backward)` is a synonym for: >lua
+Leap defines some <Plug> keys aliasing calls to |leap.leap()|. E.g.,
+`<Plug>(leap-backward)` is a synonym for: >lua
     function () require('leap').leap { backward = true } end
+
+To create custom motions, simply call `leap()` with your preferred arguments
+instead.
 
 Available <Plug> keys ~
 
     Key                         |  Search scope    |  Offset  |  |inclusive|
     ----------------------------|------------------|----------|-------------
-    *<Plug>(leap)*                |  Current window  |          |  * (forward)
-    *<Plug>(leap-from-window)*    |  Other windows   |          |
-    *<Plug>(leap-anywhere)*       |  All windows     |          |
     *<Plug>(leap-forward)*        |  After cursor    |          |  *
     *<Plug>(leap-backward)*       |  Before cursor   |          |
     *<Plug>(leap-forward-till)*   |  After cursor    |  -1      |  *
     *<Plug>(leap-backward-till)*  |  Before cursor   |  +1      |
+    *<Plug>(leap)*                |  Current window  |          |  * (forward)
+    *<Plug>(leap-from-window)*    |  Other windows   |          |
+    *<Plug>(leap-anywhere)*       |  All windows     |          |
 
    See also |leap-target-ordering|.
 
@@ -81,14 +82,17 @@ Suggested arrangements ~
     vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
 You might add a pair of keys for exclusive selection to any of the above: >lua
-    vim.keymap.set({'x', 'o'}, 'x', '<Plug>(leap-forward-till)')
-    vim.keymap.set({'x', 'o'}, 'X', '<Plug>(leap-backward-till)')
+    vim.keymap.set({'x', 'o'},      'x', '<Plug>(leap-forward-till)')
+    vim.keymap.set({'x', 'o'},      'X', '<Plug>(leap-backward-till)')
+
+(Note that each overridden editing command has an alias: |s| = `cl`, |S| =
+|cc|, |v_s| = |v_c|, |v_S| = |v_c| in |V|, |v_x| = |v_d|, |v_X| = |v_D|.)
 
 `<Plug>(leap-anywhere)` is only recommended if you are okay with its
-trade-off: whenever multiple windows are open, you can practically say goodbye
-to |leap-autojump|, as it is only allowed in the rare case when all matches
-are in one window (an intentional restriction to avoid confusing behaviour and
-implementation problems).
+trade-off: whenever multiple windows are open, you can rarely expect
+|leap-autojump|s, as it is only allowed when all matches are in one window (an
+intentional restriction to avoid confusing behaviour and implementation
+problems).
 
 ==============================================================================
 FEATURES                                                         *leap-features*
@@ -392,11 +396,19 @@ define custom behaviours for it: >lua
 
     vim.api.nvim_create_autocmd('User', {
       pattern = 'LeapEnter',
-      callback = function (event)
+      callback = function ()
         if require('leap').state.args.called_leap2 then
           -- Put some special logic here (set options, highlight groups,
-          -- mappings, anything you like), that will only apply to leap2().
-          -- You can do cleanup in an analogous LeapLeave autocommand.
+          -- mappings, etc.), that will only apply to `leap2()`.
+          local saved = vim.g.foo
+          vim.g.foo = 'bar'
+          -- The most elegant way to do cleanup is defining an analogous
+          -- `LeapLeave` autocommand right here, with |autocmd-once|:
+          vim.api.nvim_create_autocmd('User', {
+            pattern = 'LeapLeave',
+            once = true,
+            callback = function () vim.g.foo = saved end,
+          })
         end
       end
     })
@@ -464,13 +476,13 @@ leap({opts})                                                       *leap.leap()*
 
                  Examples: >lua
                     -- Search only for word beginnings:
-                    pattern = function (pat) return '\\<'..pat end
+                    pattern = function (pat) return '\\<' .. pat end
 
                     -- Limit search scope to the current line:
-                    -- (Note: It is best to always hardcode line numbers,
-                    -- as we might move the cursor before the search starts.)
                     pattern = function (pat)
-                      return '\\%'..vim.fn.line('.')..'l'..pat
+                      -- It is best to hardcode line numbers, as `leap()`
+                      -- might move the cursor before the search starts.
+                      return '\\%'..vim.fn.line('.')..'l' .. pat
                     end
 <
                  Note: This feature is experimental, subject to change or
