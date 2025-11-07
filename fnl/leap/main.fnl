@@ -206,20 +206,13 @@ char.
 ; Does _not_ mutate its argument.
 (fn as-traversable [labels]
   (if (= (length labels) 0) labels
-      (do
-        (local ks opts.keys)
-        (var bad-keys "")
-        (each [_ key (ipairs [ks.next_target ks.prev_target])]
-          (set bad-keys (.. bad-keys
-                            (if (= (type key) :table)
-                                (table.concat (vim.tbl_map vim.keycode key))
-                                (vim.keycode key)))))
-        (local sanitized (labels:gsub (.. "[" bad-keys "]") ""))
-        (local next-key (and (= (type ks.next_target) :table)
-                             (. ks.next_target 2)))
-        (if (and next-key (= (vim.keycode next-key) next-key))
-            (.. next-key sanitized)
-            sanitized))))
+      (do (var bad-keys "")
+          (each [_ key (ipairs [opts.keys.next_target opts.keys.prev_target])]
+            (set bad-keys (.. bad-keys
+                              (if (= (type key) :table)
+                                  (table.concat (vim.tbl_map vim.keycode key))
+                                  (vim.keycode key)))))
+          (labels:gsub (.. "[" bad-keys "]") ""))))
 
 
 (fn prepare-labeled-targets [targets kwargs]
