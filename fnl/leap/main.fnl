@@ -204,7 +204,7 @@ char.
 
 
 ; Does _not_ mutate its argument.
-(fn as-traversable [labels]
+(fn as-traversable [labels first-offscreen?]
   (if (= (length labels) 0) labels
       (do
         (local ks opts.keys)
@@ -219,20 +219,14 @@ char.
                              (. ks.next_target 2)))
         (if (and next-key
                  (= (vim.keycode next-key) next-key)
-                 (string.match next-key "%S"))
+                 (string.match next-key "%S")
+                 (not first-offscreen?))
             (.. next-key sanitized)
             sanitized))))
 
 
 (fn prepare-labeled-targets [targets kwargs]
   (local {: can-traverse? : force-noautojump? : multi-window?} kwargs)
-  (local [labels safe-labels] (if can-traverse?
-                                  (vim.tbl_map as-traversable
-                                               [opts.labels opts.safe_labels])
-                                  [opts.labels opts.safe_labels]))
-  ; Strings are handy as API and for manipulations, but from this point
-  ; on we want efficient access.
-  (local [labels safe-labels] (vim.tbl_map #(split $ "\\zs") [labels safe-labels]))
 
   ; Problem:
   ; We are autojumping to some position in window A, but our chosen
@@ -262,10 +256,25 @@ char.
   ; top of the match when repeating), but we're not considering
   ; that, and just err on the safe side instead of complicating the
   ; code.
-  (fn first-target-covers-label-of-second? [targets]
-    (case targets
-      [{:pos [l1 c1]} {:pos [l2 c2] :chars [char1 char2]}]
-      (and (= l1 l2) (= c1 (+ c2 (char1:len) (char2:len))))))
+  (fn first-covers-label-of-second? [targets]
+    (local [t1 t2] [(. targets 1) (. targets 2)])
+    (when (and t2 t2.chars (not t2.offscreen?))
+      (let [{:pos [line1 col1]} t1
+            {:pos [line2 col2]} t2]
+        (and (= line1 line2)
+             (= col1 (+ col2 (length (table.concat t2.chars))))))))
+
+  (fn first-offscreen? [targets]
+    (and (> (length targets) 1) (. targets 1 :offscreen?)))
+
+  (local [labels safe-labels] (if can-traverse?
+                                  (vim.tbl_map #(as-traversable
+                                                  $ (first-offscreen? targets))
+                                               [opts.labels opts.safe_labels])
+                                  [opts.labels opts.safe_labels]))
+  ; Strings are handy as API and for manipulations, but from this point
+  ; on we want efficient access.
+  (local [labels safe-labels] (vim.tbl_map #(split $ "\\zs") [labels safe-labels]))
 
   (fn enough-safe-labels? [targets]
     (local limit (+ (length safe-labels) 1))
@@ -278,10 +287,14 @@ char.
   (fn set-autojump [targets]
     "Set a flag indicating whether we can automatically jump to the
     first target, without having to select a label."
-    (when (> (length safe-labels) 0)
-      (set targets.autojump?
-           (or (= (length labels) 0)              ; forced
-               (enough-safe-labels? targets)))))  ; smart
+    (when-not (or force-noautojump?
+                  (and multi-window?
+                       (not (all-in-the-same-window? targets)))
+                  (first-offscreen? targets)
+                  (first-covers-label-of-second? targets)
+                  (= (length safe-labels) 0))
+      (set targets.autojump? (or (= (length labels) 0)              ; forced
+                                 (enough-safe-labels? targets)))))  ; smart
 
   (fn attach-label-set [targets]
     ; Note that there is no one-to-one correspondence between the
@@ -314,10 +327,7 @@ char.
                 (set target.label (. labels n))
                 (set target.group (inc (floor (/ i* |labels|))))))))))
 
-  (when-not (or force-noautojump?
-                (and multi-window? (not (all-in-the-same-window? targets)))
-                (first-target-covers-label-of-second? targets))
-    (set-autojump targets))
+  (set-autojump targets)
   (attach-label-set targets)
   (set-labels targets))
 
