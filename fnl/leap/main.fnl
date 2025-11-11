@@ -206,13 +206,22 @@ char.
 ; Does _not_ mutate its argument.
 (fn as-traversable [labels]
   (if (= (length labels) 0) labels
-      (do (var bad-keys "")
-          (each [_ key (ipairs [opts.keys.next_target opts.keys.prev_target])]
-            (set bad-keys (.. bad-keys
-                              (if (= (type key) :table)
-                                  (table.concat (vim.tbl_map vim.keycode key))
-                                  (vim.keycode key)))))
-          (labels:gsub (.. "[" bad-keys "]") ""))))
+      (do
+        (local ks opts.keys)
+        (var bad-keys "")
+        (each [_ key (ipairs [ks.next_target ks.prev_target])]
+          (set bad-keys (.. bad-keys
+                            (if (= (type key) :table)
+                                (table.concat (vim.tbl_map vim.keycode key))
+                                (vim.keycode key)))))
+        (local sanitized (labels:gsub (.. "[" bad-keys "]") ""))
+        (local next-key (and (= (type ks.next_target) :table)
+                             (. ks.next_target 2)))
+        (if (and next-key
+                 (= (vim.keycode next-key) next-key)
+                 (string.match next-key "%S"))
+            (.. next-key sanitized)
+            sanitized))))
 
 
 (fn prepare-labeled-targets [targets kwargs]
@@ -292,7 +301,7 @@ char.
     (local {: autojump? :label-set labels} targets)
     (local |labels| (length labels))
     (var skipped (if autojump? 1 0))
-    (for [i (if autojump? 2 1) (length targets)]
+    (for [i (+ skipped 1) (length targets)]
       (local target (. targets i))
       (when target
         (local i* (- i skipped))  ; label idx
@@ -948,7 +957,8 @@ char.
       (exit-early)
 
       ; Traversal - `prev_target` can also start it, wrapping backwards.
-      (and (can-traverse? targets*)
+      (and (= st.group-offset 0)
+           (can-traverse? targets*)
            (or (contains? keys.next_target in-final)
                (contains? keys.prev_target in-final)))
       (let [use-no-labels? (or no-labels-to-use?
@@ -962,8 +972,9 @@ char.
 
       ; `next_target` accepts the first match if the cursor hasn't moved
       ; yet (no autojump).
-      (and (contains? keys.next_target in-final)
-           (= st.curr-idx 0))
+      (and (= st.group-offset 0)
+           (= st.curr-idx 0)
+           (contains? keys.next_target in-final))
       (exit-with-action-on 1)
 
       ; Otherwise try to get a labeled target, and feed the key to
