@@ -75,8 +75,8 @@ At the same time, it reduces mental effort by all possible means:
 
 * Neovim >= 0.10.0 stable, or latest nightly
 
-* [repeat.vim](https://github.com/tpope/vim-repeat), for dot-repeats (`.`) to
-  work
+* [repeat.vim](https://github.com/tpope/vim-repeat), for dot-repeating (`.`)
+  delete/change/etc. operations
 
 ### Installation
 
@@ -404,6 +404,23 @@ two different futures) at the same time (`:h leap-wildcard-problem`).
 </details>
 
 <details>
+<summary>"Clever s" (à la Sneak)</summary>
+
+```lua
+do
+  local clever_s = require('leap.user').with_traversal_keys('s', 'S')
+  vim.keymap.set({ 'n', 'x', 'o' }, 's', function ()
+    require('leap').leap { opts = clever_s }
+  end)
+  vim.keymap.set({ 'n', 'x', 'o' }, 'S', function ()
+    require('leap').leap { opts = clever_s, backward = true }
+  end)
+end
+```
+
+</details>
+
+<details>
 <summary>Working with non-English text</summary>
 
 If a [`language-mapping`](https://neovim.io/doc/user/map.html#language-mapping)
@@ -496,7 +513,7 @@ end
 </details>
 
 <details>
-<summary>Grey out the search area</summary>
+<summary>Grey out the search area ("backdrop" highlight)</summary>
 
 Set the `LeapBackdrop` highlight group (usually linking to `Comment` is
 preferable):
@@ -554,6 +571,55 @@ the function (search scope, jump offset, etc.), you can:
 * customize the behavior of specific calls via **autocommands**
 
 Examples:
+
+<details>
+<summary>1-character search (enhanced f/t motions)</summary>
+
+Note: `inputlen` is an experimental feature at the moment.
+
+```lua
+do
+  -- Return an argument table for `leap()`, tailored for f/t-motions.
+  local function as_ft (key_specific_args)
+    local common_args = {
+      inputlen = 1,
+      inclusive = true,
+      -- To limit search scope to the current line:
+      -- pattern = function (pat) return '\\%.l'..pat end,
+      opts = {
+        labels = '',  -- force autojump
+        safe_labels = vim.fn.mode(1):match'[no]' and '' or nil,  -- [1]
+      },
+    }
+    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
+  end
+
+  local clever = require('leap.user').with_traversal_keys        -- [2]
+  local clever_f = clever('f', 'F')
+  local clever_t = clever('t', 'T')
+
+  for key, key_specific_args in pairs {
+    f = { opts = clever_f, },
+    F = { backward = true, opts = clever_f },
+    t = { offset = -1, opts = clever_t },
+    T = { backward = true, offset = 1, opts = clever_t },
+  } do
+    vim.keymap.set({'n', 'x', 'o'}, key, function ()
+      require('leap').leap(as_ft(key_specific_args))
+    end)
+  end
+end
+
+------------------------------------------------------------------------
+-- [1] Match the modes here for which you don't want to use labels
+--     (`:h mode()`, `:h lua-pattern`).
+-- [2] This helper function makes it easier to set "clever-f"-like
+--     functionality (https://github.com/rhysd/clever-f.vim), returning
+--     an `opts` table derived from the defaults, where the given keys
+--     are added to `keys.next_target` and `keys.prev_target`
+```
+
+</details>
 
 <details>
 <summary>Search integration</summary>
@@ -650,55 +716,6 @@ do
     leap_search('<c-q>', true)
   end, { desc = 'Leap to search matches (reverse)' })
 end
-```
-
-</details>
-
-<details>
-<summary>1-character search (enhanced f/t motions)</summary>
-
-Note: `inputlen` is an experimental feature at the moment.
-
-```lua
-do
-  -- Return an argument table for `leap()`, tailored for f/t-motions.
-  local function as_ft (key_specific_args)
-    local common_args = {
-      inputlen = 1,
-      inclusive = true,
-      -- To limit search scope to the current line:
-      -- pattern = function (pat) return '\\%.l'..pat end,
-      opts = {
-        labels = '',  -- force autojump
-        safe_labels = vim.fn.mode(1):match'[no]' and '' or nil,  -- [1]
-      },
-    }
-    return vim.tbl_deep_extend('keep', common_args, key_specific_args)
-  end
-
-  local clever = require('leap.user').with_traversal_keys        -- [2]
-  local clever_f = clever('f', 'F')
-  local clever_t = clever('t', 'T')
-
-  for key, key_specific_args in pairs {
-    f = { opts = clever_f, },
-    F = { backward = true, opts = clever_f },
-    t = { offset = -1, opts = clever_t },
-    T = { backward = true, offset = 1, opts = clever_t },
-  } do
-    vim.keymap.set({'n', 'x', 'o'}, key, function ()
-      require('leap').leap(as_ft(key_specific_args))
-    end)
-  end
-end
-
-------------------------------------------------------------------------
--- [1] Match the modes here for which you don't want to use labels
---     (`:h mode()`, `:h lua-pattern`).
--- [2] This helper function makes it easier to set "clever-f"-like
---     functionality (https://github.com/rhysd/clever-f.vim), returning
---     an `opts` table derived from the defaults, where the given keys
---     are added to `keys.next_target` and `keys.prev_target`
 ```
 
 </details>

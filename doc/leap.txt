@@ -85,8 +85,9 @@ You might add a pair of keys for exclusive selection to any of the above: >lua
     vim.keymap.set({'x', 'o'},      'x', '<Plug>(leap-forward-till)')
     vim.keymap.set({'x', 'o'},      'X', '<Plug>(leap-backward-till)')
 
-(Note that each overridden editing command has an alias: |s| = `cl`, |S| =
-|cc|, |v_s| = |v_c|, |v_S| = |v_c| in |V|, |v_x| = |v_d|, |v_X| = |v_D|.)
+Note that each overridden native editing command has an alias:
+|s| = `cl`, |S| = |cc|, |v_s| = |v_c|, |v_S| = |v_c| in |V|, |v_x| = |v_d|,
+|v_X| = |v_D|.
 
 `<Plug>(leap-anywhere)` is only recommended if you are okay with its
 trade-off: whenever multiple windows are open, you can rarely expect
