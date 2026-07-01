@@ -1,23 +1,22 @@
 -- Code generated from fnl/leap/treesitter.fnl - do not edit directly.
 
 local api = vim.api
+local ts_utils = require('nvim-treesitter.ts_utils')
+
 local function get_nodes()
   if not pcall(vim.treesitter.get_parser) then
     return nil, "No treesitter parser for this filetype."
   else
-    local _1_ = vim.treesitter.get_node()
-    if (nil ~= _1_) then
-      local node = _1_
-      local nodes = {node}
-      local parent = node:parent()
-      while parent do
-        table.insert(nodes, parent)
-        parent = parent:parent()
-      end
-      return nodes
-    else
-      return nil
+    local cur_node = ts_utils.get_node_at_cursor(0)
+    if not cur_node then return end
+    -- Get parent nodes recursively.
+    local nodes = { cur_node }
+    local parent = cur_node:parent()
+    while parent do
+      table.insert(nodes, parent)
+      parent = parent:parent()
     end
+    return nodes
   end
 end
 local function nodes__3etargets(nodes)
